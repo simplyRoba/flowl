@@ -1,9 +1,11 @@
+mod common;
+
 use axum::http::StatusCode;
 use tower::ServiceExt;
 
 #[tokio::test]
 async fn health_returns_200_with_status_ok() {
-    let app = flowl::server::router();
+    let app = common::test_app().await;
 
     let response = app
         .oneshot(

@@ -2,15 +2,18 @@ use axum::Router;
 use axum::response::Json;
 use axum::routing::get;
 use serde_json::{Value, json};
+use sqlx::SqlitePool;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tracing::info;
 
+use crate::api;
 use crate::embedded::static_handler;
 
-pub fn router() -> Router {
+pub fn router(pool: SqlitePool) -> Router {
     Router::new()
         .route("/health", get(health))
+        .nest("/api", api::router(pool))
         .fallback(static_handler)
 }
 

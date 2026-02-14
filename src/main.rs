@@ -1,3 +1,4 @@
+mod api;
 mod config;
 mod db;
 mod embedded;
@@ -34,7 +35,7 @@ async fn main() {
         config.mqtt_host, config.mqtt_port
     );
 
-    let router = server::router();
+    let router = server::router(pool);
 
     if let Err(e) = server::serve(router, config.port).await {
         error!("Server error: {e}");

@@ -47,6 +47,12 @@ The server SHALL serve the embedded SvelteKit build output as static files. Any 
 - **WHEN** a GET request is made to a path that does not match any API route or static file
 - **THEN** the server responds with the SvelteKit `index.html` for client-side routing
 
+#### Scenario: API routes handled by API router
+
+- **WHEN** a GET request is made to a path starting with `/api`
+- **THEN** the request is handled by the nested API router
+- **AND** does not fall through to the SPA handler
+
 ### Requirement: Structured Logging
 
 The application SHALL use `tracing` for structured logging, configured via `FLOWL_LOG_LEVEL` (default `info`).
