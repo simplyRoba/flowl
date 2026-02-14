@@ -389,20 +389,49 @@ Configuration page.
 
 ## Iconography
 
-Use a simple, consistent icon set. Prefer outline-style icons that match the organic feel.
+Hybrid icon system using two libraries:
 
-| Concept    | Icon | Context                        |
-|------------|------|--------------------------------|
-| Water      | 💧   | Watering actions, schedule     |
-| Plant      | 🌱   | New plant, repotting, growth   |
-| Fertilize  | 🧪   | Fertilizing log entries        |
-| Note       | 📝   | General notes, observations    |
-| Prune      | ✂️    | Pruning log entries            |
-| Location   | 📍   | Room/location labels           |
-| Settings   | ⚙️    | Configuration                  |
-| Warning    | ⚠️    | Overdue, attention needed      |
+- **Lucide** (`lucide-svelte`) — monochrome outline icons for UI chrome (navigation, buttons, actions, status indicators). Icons inherit the current text color and adapt to light/dark themes.
+- **Noto Color Emoji** (Google, Apache 2.0) — colored SVG emoji for plant identity icons (plant card photos, emoji picker). Downloaded locally to `ui/static/emoji/` to avoid CDN calls at runtime.
 
-For production, replace emoji with an SVG icon library (Lucide or Phosphor — both have plant/nature icons and fit the organic style).
+### UI Chrome Icons (Lucide)
+
+| Concept    | Lucide name      | Context                        |
+|------------|------------------|--------------------------------|
+| Water      | `droplet`        | Watering actions, schedule     |
+| Plant      | `sprout`         | New plant, repotting, growth   |
+| Fertilize  | `flask-conical`  | Fertilizing log entries        |
+| Note       | `file-text`      | General notes, observations    |
+| Prune      | `scissors`       | Pruning log entries            |
+| Location   | `map-pin`        | Room/location labels           |
+| Settings   | `settings`       | Configuration                  |
+| Warning    | `alert-triangle` | Overdue, attention needed      |
+| Plants nav | `leaf`           | Sidebar/bottom nav             |
+| Log nav    | `book-open`      | Sidebar/bottom nav             |
+| Logo       | `sprout`         | App logo in sidebar            |
+| Back       | `arrow-left`     | Navigation back                |
+| Edit       | `pencil`         | Edit plant                     |
+| Delete     | `trash-2`        | Delete plant                   |
+| Camera     | `camera`         | Photo upload                   |
+| Sun        | `sun`            | Direct light                   |
+| Partial    | `cloud-sun`      | Indirect light                 |
+| Shade      | `cloud`          | Low light                      |
+
+### Plant Identity Icons (Noto Color Emoji)
+
+| File                   | Emoji | Usage                  |
+|------------------------|-------|------------------------|
+| `emoji_u1fab4.svg`     | 🪴    | Potted plant (default) |
+| `emoji_u1f33f.svg`     | 🌿    | Herb                   |
+| `emoji_u1f335.svg`     | 🌵    | Cactus                 |
+| `emoji_u1f338.svg`     | 🌸    | Cherry blossom         |
+| `emoji_u1fabb.svg`     | 🪻    | Hyacinth               |
+| `emoji_u1f331.svg`     | 🌱    | Seedling               |
+| `emoji_u1f337.svg`     | 🌷    | Tulip                  |
+| `emoji_u1f33b.svg`     | 🌻    | Sunflower              |
+| `emoji_u1f340.svg`     | 🍀    | Four leaf clover       |
+
+Served from `/emoji/` as static assets. Source: https://github.com/googlefonts/noto-emoji (Apache 2.0).
 
 ## Animations & Interactions
 
