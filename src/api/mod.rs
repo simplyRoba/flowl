@@ -8,7 +8,10 @@ use sqlx::SqlitePool;
 
 pub fn router(pool: SqlitePool) -> Router {
     Router::new()
-        .route("/plants", get(plants::list_plants).post(plants::create_plant))
+        .route(
+            "/plants",
+            get(plants::list_plants).post(plants::create_plant),
+        )
         .route(
             "/plants/{id}",
             get(plants::get_plant)

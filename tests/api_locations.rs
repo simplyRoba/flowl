@@ -100,7 +100,12 @@ async fn list_ordered_by_name() {
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
     let json = body_json(resp).await;
-    let names: Vec<&str> = json.as_array().unwrap().iter().map(|l| l["name"].as_str().unwrap()).collect();
+    let names: Vec<&str> = json
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|l| l["name"].as_str().unwrap())
+        .collect();
     assert_eq!(names, vec!["Attic", "Bedroom"]);
 }
 
@@ -200,7 +205,11 @@ async fn delete_location() {
     let id = created["id"].as_i64().unwrap();
 
     let resp = app
-        .oneshot(json_request("DELETE", &format!("/api/locations/{id}"), None))
+        .oneshot(json_request(
+            "DELETE",
+            &format!("/api/locations/{id}"),
+            None,
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::NO_CONTENT);
@@ -239,9 +248,7 @@ async fn delete_nullifies_plant_references() {
         .oneshot(json_request(
             "POST",
             "/api/plants",
-            Some(&format!(
-                r#"{{"name":"Fern","location_id":{loc_id}}}"#
-            )),
+            Some(&format!(r#"{{"name":"Fern","location_id":{loc_id}}}"#)),
         ))
         .await
         .unwrap();
