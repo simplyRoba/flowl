@@ -1,5 +1,17 @@
 # flowl
 
+![Under Heavy Development](https://img.shields.io/badge/under%20heavy%20development-orange)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
+![GitHub License](https://img.shields.io/github/license/simplyRoba/flowl?link=https%3A%2F%2Fgithub.com%2FsimplyRoba%2Fflowl%2Fblob%2Fmain%2FLICENSE)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/simplyRoba/flowl/ci.yml?link=https%3A%2F%2Fgithub.com%2FsimplyRoba%2Fflowl%2Factions%2Fworkflows%2Fci.yml%3Fquery%3Dbranch%253Amain)
+[![GitHub release](https://img.shields.io/github/v/release/simplyRoba/flowl?link=https%3A%2F%2Fgithub.com%2FsimplyRoba%2Fflowl%2Freleases)](https://github.com/simplyRoba/flowl/releases)
+[![GitHub issues](https://img.shields.io/github/issues/simplyRoba/flowl?link=https%3A%2F%2Fgithub.com%2FsimplyRoba%2Fflowl%2Fissues)](https://github.com/simplyRoba/flowl/issues)
+![GitHub Repo stars](https://img.shields.io/github/stars/simplyRoba/flowl)
+
+> **flowl** — short for **fl**ower **owl** — /flaʊl/ like "fowl" but with an *l*
+
+A small Rust service that exposes plant care data (watering schedules, care needs, etc.) for integration with Home Assistant and other automation platforms.
+
 ---
 
 **This project is developed spec-driven with AI assistance, reviewed by a critical human.**
