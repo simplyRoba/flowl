@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh api repos/simplyRoba/pixoo-bridge.rs/contents/.github/workflows --jq '.[].name')",
+      "Bash(gh api repos/simplyRoba/pixoo-bridge.rs/contents --jq '.[].name')",
+      "Bash(gh api repos/simplyRoba/pixoo-bridge.rs/contents/openspec --jq '.[].name')",
+      "Bash(gh api repos/simplyRoba/pixoo-bridge.rs/contents/.opencode --jq '.[].name')",
+      "Bash(gh api repos/simplyRoba/pixoo-bridge.rs/contents/AGENTS.md --jq '.content')"
+    ]
+  }
+}

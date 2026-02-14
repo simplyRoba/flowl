@@ -22,7 +22,8 @@
     "vscode": {
       "extensions": [
         "rust-lang.rust-analyzer",
-        "github.vscode-github-actions"
+        "github.vscode-github-actions",
+        "ritwickdey.LiveServer"
       ]
     }
   },
