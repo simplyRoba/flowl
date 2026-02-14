@@ -77,9 +77,7 @@ async fn get_plant_with_location() {
         .oneshot(json_request(
             "POST",
             "/api/plants",
-            Some(&format!(
-                r#"{{"name":"Cactus","location_id":{loc_id}}}"#
-            )),
+            Some(&format!(r#"{{"name":"Cactus","location_id":{loc_id}}}"#)),
         ))
         .await
         .unwrap();
