@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { Sprout, Leaf, BookOpen, Settings } from 'lucide-svelte';
+
 	let { children } = $props();
 </script>
 
@@ -8,10 +10,10 @@
 
 <div class="app">
 	<nav class="sidebar">
-		<div class="logo">🌱</div>
-		<a href="/" class="nav-item active">🪴</a>
-		<a href="/log" class="nav-item">📓</a>
-		<a href="/settings" class="nav-item bottom">⚙️</a>
+		<div class="logo"><Sprout size={20} /></div>
+		<a href="/" class="nav-item active"><Leaf size={20} /></a>
+		<a href="/log" class="nav-item"><BookOpen size={20} /></a>
+		<a href="/settings" class="nav-item bottom"><Settings size={20} /></a>
 	</nav>
 	<main class="content">
 		{@render children()}
@@ -40,11 +42,12 @@
 		align-items: center;
 		padding: 16px 0;
 		gap: 8px;
+		color: #2C2418;
 	}
 
 	.logo {
-		font-size: 20px;
 		margin-bottom: 16px;
+		color: #6B8F71;
 	}
 
 	.nav-item {
@@ -54,17 +57,19 @@
 		align-items: center;
 		justify-content: center;
 		border-radius: 10px;
-		font-size: 18px;
 		text-decoration: none;
-		transition: background 0.15s;
+		color: #8C7E6E;
+		transition: background 0.15s, color 0.15s;
 	}
 
 	.nav-item:hover {
 		background: #E5DDD3;
+		color: #2C2418;
 	}
 
 	.nav-item.active {
 		background: #6B8F71;
+		color: #FFFFFF;
 	}
 
 	.nav-item.bottom {

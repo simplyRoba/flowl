@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>flowl — UI Mockups</title>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
     --bg: #FAF6F1;
@@ -38,6 +39,36 @@
     --warning: #D4B054;
     --danger: #D47878;
   }
+
+  /* Noto emoji */
+  .noto { display: inline-block; vertical-align: middle; }
+  .noto-sm { width: 20px; height: 20px; }
+  .noto-md { width: 32px; height: 32px; }
+  .noto-lg { width: 48px; height: 48px; }
+  .noto-xl { width: 64px; height: 64px; }
+  .emoji-option .noto { width: 24px; height: 24px; }
+  .plant-card-photo .noto { width: 48px; height: 48px; }
+  .detail-photo .noto { width: 80px; height: 80px; }
+  .attention-card-icon .noto { width: 36px; height: 36px; }
+
+  /* Lucide icon defaults */
+  i[data-lucide] { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
+  .sidebar-item i[data-lucide], .sidebar-logo i[data-lucide] { width: 20px; height: 20px; }
+  .nav-icon i[data-lucide] { width: 20px; height: 20px; }
+  .top-bar-icon i[data-lucide] { width: 18px; height: 18px; }
+  .water-btn i[data-lucide] { width: 14px; height: 14px; }
+  .detail-water-btn i[data-lucide] { width: 18px; height: 18px; }
+  .section-title i[data-lucide] { width: 16px; height: 16px; }
+  .detail-header-left i[data-lucide] { width: 16px; height: 16px; }
+  .detail-location i[data-lucide] { width: 14px; height: 14px; }
+  .timeline-icon i[data-lucide] { width: 16px; height: 16px; }
+  .upload-icon i[data-lucide] { width: 24px; height: 24px; }
+  .log-entry-icon i[data-lucide] { width: 18px; height: 18px; }
+  .filter-chip i[data-lucide] { width: 14px; height: 14px; }
+  .preset-icon i[data-lucide] { width: 18px; height: 18px; }
+  .light-icon i[data-lucide] { width: 22px; height: 22px; }
+  .chip-icon { width: 14px; height: 14px; }
+  .bottom-nav-item i[data-lucide] { width: 20px; height: 20px; }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1279,37 +1310,37 @@
         <div class="screen themed">
           <div class="app-desktop">
             <div class="sidebar">
-              <div class="sidebar-logo">🌱</div>
-              <div class="sidebar-item active">🪴</div>
-              <div class="sidebar-item">📓</div>
-              <div class="sidebar-item" style="margin-top:auto">⚙️</div>
+              <div class="sidebar-logo"><i data-lucide="sprout"></i></div>
+              <div class="sidebar-item active"><i data-lucide="leaf"></i></div>
+              <div class="sidebar-item"><i data-lucide="book-open"></i></div>
+              <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i></div>
             </div>
             <div class="main-content">
               <div class="greeting">
-                <h2>Good morning! 🌱</h2>
+                <h2>Good morning!</h2>
                 <p>2 plants need water today</p>
               </div>
 
               <div class="attention-section">
-                <div class="section-title">⚠️ Needs Attention</div>
+                <div class="section-title"><i data-lucide="alert-triangle"></i> Needs Attention</div>
                 <div class="attention-cards">
                   <div class="attention-card">
-                    <div class="attention-card-icon">🪴</div>
+                    <div class="attention-card-icon"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
                     <div class="attention-card-info">
                       <div class="attention-card-name">Monstera</div>
                       <span class="status-badge status-overdue"><span class="status-dot"></span> 2d overdue</span>
                       <div class="attention-card-actions">
-                        <button class="water-btn">💧 Water</button>
+                        <button class="water-btn"><i data-lucide="droplet"></i> Water</button>
                       </div>
                     </div>
                   </div>
                   <div class="attention-card">
-                    <div class="attention-card-icon">🌿</div>
+                    <div class="attention-card-icon"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
                     <div class="attention-card-info">
                       <div class="attention-card-name">Ficus</div>
                       <span class="status-badge status-due"><span class="status-dot"></span> Due today</span>
                       <div class="attention-card-actions">
-                        <button class="water-btn">💧 Water</button>
+                        <button class="water-btn"><i data-lucide="droplet"></i> Water</button>
                       </div>
                     </div>
                   </div>
@@ -1323,7 +1354,7 @@
 
               <div class="plant-grid">
                 <div class="plant-card">
-                  <div class="plant-card-photo green-bg">🪴</div>
+                  <div class="plant-card-photo green-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
                   <div class="plant-card-body">
                     <div class="plant-card-name">Monstera</div>
                     <div class="plant-card-location">Living Room</div>
@@ -1334,7 +1365,7 @@
                   </div>
                 </div>
                 <div class="plant-card">
-                  <div class="plant-card-photo blue-bg">🌿</div>
+                  <div class="plant-card-photo blue-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
                   <div class="plant-card-body">
                     <div class="plant-card-name">Ficus Lyrata</div>
                     <div class="plant-card-location">Living Room</div>
@@ -1345,7 +1376,7 @@
                   </div>
                 </div>
                 <div class="plant-card">
-                  <div class="plant-card-photo yellow-bg">🌵</div>
+                  <div class="plant-card-photo yellow-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f335.svg" alt="Cactus"></div>
                   <div class="plant-card-body">
                     <div class="plant-card-name">Snake Plant</div>
                     <div class="plant-card-location">Bedroom</div>
@@ -1356,7 +1387,7 @@
                   </div>
                 </div>
                 <div class="plant-card">
-                  <div class="plant-card-photo pink-bg">🌸</div>
+                  <div class="plant-card-photo pink-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f338.svg" alt="Cherry Blossom"></div>
                   <div class="plant-card-body">
                     <div class="plant-card-name">Orchid</div>
                     <div class="plant-card-location">Kitchen</div>
@@ -1367,7 +1398,7 @@
                   </div>
                 </div>
                 <div class="plant-card">
-                  <div class="plant-card-photo purple-bg">🪻</div>
+                  <div class="plant-card-photo purple-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fabb.svg" alt="Hyacinth"></div>
                   <div class="plant-card-body">
                     <div class="plant-card-name">Lavender</div>
                     <div class="plant-card-location">Balcony</div>
@@ -1378,7 +1409,7 @@
                   </div>
                 </div>
                 <div class="plant-card">
-                  <div class="plant-card-photo teal-bg">🌱</div>
+                  <div class="plant-card-photo teal-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f331.svg" alt="Seedling"></div>
                   <div class="plant-card-body">
                     <div class="plant-card-name">Pothos</div>
                     <div class="plant-card-location">Office</div>
@@ -1403,32 +1434,32 @@
           <div class="device-notch"></div>
           <div class="top-bar">
             <div class="top-bar-title">Plants</div>
-            <div class="top-bar-icon">⚙️</div>
+            <div class="top-bar-icon"><i data-lucide="settings"></i></div>
           </div>
           <div class="mobile-content">
             <div class="greeting greeting-small">
-              <h2>Good morning! 🌱</h2>
+              <h2>Good morning!</h2>
               <p>2 plants need water today</p>
             </div>
 
             <div class="attention-section">
-              <div class="section-title">⚠️ Needs Attention</div>
+              <div class="section-title"><i data-lucide="alert-triangle"></i> Needs Attention</div>
               <div class="attention-cards" style="flex-direction:column">
                 <div class="attention-card">
-                  <div class="attention-card-icon">🪴</div>
+                  <div class="attention-card-icon"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
                   <div class="attention-card-info">
                     <div class="attention-card-name">Monstera</div>
                     <span class="status-badge status-overdue"><span class="status-dot"></span> 2d overdue</span>
                   </div>
-                  <button class="water-btn">💧</button>
+                  <button class="water-btn"><i data-lucide="droplet"></i></button>
                 </div>
                 <div class="attention-card">
-                  <div class="attention-card-icon">🌿</div>
+                  <div class="attention-card-icon"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
                   <div class="attention-card-info">
                     <div class="attention-card-name">Ficus</div>
                     <span class="status-badge status-due"><span class="status-dot"></span> Due today</span>
                   </div>
-                  <button class="water-btn">💧</button>
+                  <button class="water-btn"><i data-lucide="droplet"></i></button>
                 </div>
               </div>
             </div>
@@ -1439,7 +1470,7 @@
 
             <div class="plant-grid mobile-grid">
               <div class="plant-card">
-                <div class="plant-card-photo mobile-photo green-bg">🪴</div>
+                <div class="plant-card-photo mobile-photo green-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
                 <div class="plant-card-body">
                   <div class="plant-card-name">Monstera</div>
                   <div class="plant-card-location">Living Room</div>
@@ -1449,7 +1480,7 @@
                 </div>
               </div>
               <div class="plant-card">
-                <div class="plant-card-photo mobile-photo blue-bg">🌿</div>
+                <div class="plant-card-photo mobile-photo blue-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
                 <div class="plant-card-body">
                   <div class="plant-card-name">Ficus</div>
                   <div class="plant-card-location">Living Room</div>
@@ -1459,7 +1490,7 @@
                 </div>
               </div>
               <div class="plant-card">
-                <div class="plant-card-photo mobile-photo yellow-bg">🌵</div>
+                <div class="plant-card-photo mobile-photo yellow-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f335.svg" alt="Cactus"></div>
                 <div class="plant-card-body">
                   <div class="plant-card-name">Snake Plant</div>
                   <div class="plant-card-location">Bedroom</div>
@@ -1469,7 +1500,7 @@
                 </div>
               </div>
               <div class="plant-card">
-                <div class="plant-card-photo mobile-photo pink-bg">🌸</div>
+                <div class="plant-card-photo mobile-photo pink-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f338.svg" alt="Cherry Blossom"></div>
                 <div class="plant-card-body">
                   <div class="plant-card-name">Orchid</div>
                   <div class="plant-card-location">Kitchen</div>
@@ -1481,9 +1512,9 @@
             </div>
           </div>
           <div class="bottom-nav">
-            <div class="bottom-nav-item active"><span class="nav-icon">🪴</span>Plants</div>
-            <div class="bottom-nav-item"><span class="nav-icon">📓</span>Log</div>
-            <div class="bottom-nav-item"><span class="nav-icon">⚙️</span>Settings</div>
+            <div class="bottom-nav-item active"><span class="nav-icon"><i data-lucide="leaf"></i></span>Plants</div>
+            <div class="bottom-nav-item"><span class="nav-icon"><i data-lucide="book-open"></i></span>Log</div>
+            <div class="bottom-nav-item"><span class="nav-icon"><i data-lucide="settings"></i></span>Settings</div>
           </div>
         </div>
       </div>
@@ -1508,28 +1539,28 @@
         <div class="screen themed">
           <div class="app-desktop">
             <div class="sidebar">
-              <div class="sidebar-logo">🌱</div>
-              <div class="sidebar-item active">🪴</div>
-              <div class="sidebar-item">📓</div>
-              <div class="sidebar-item" style="margin-top:auto">⚙️</div>
+              <div class="sidebar-logo"><i data-lucide="sprout"></i></div>
+              <div class="sidebar-item active"><i data-lucide="leaf"></i></div>
+              <div class="sidebar-item"><i data-lucide="book-open"></i></div>
+              <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i></div>
             </div>
             <div class="main-content" style="padding:0">
               <div class="detail-header">
-                <div class="detail-header-left">← Back</div>
+                <div class="detail-header-left"><i data-lucide="arrow-left"></i> Back</div>
                 <div class="detail-header-right">
-                  <div class="top-bar-icon">✏️</div>
-                  <div class="top-bar-icon">🗑️</div>
+                  <div class="top-bar-icon"><i data-lucide="pencil"></i></div>
+                  <div class="top-bar-icon"><i data-lucide="trash-2"></i></div>
                 </div>
               </div>
               <div class="detail-hero">
-                <div class="detail-photo green-bg">🪴</div>
+                <div class="detail-photo green-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
                 <div class="detail-info">
                   <h2>Monstera Deliciosa</h2>
-                  <div class="detail-location">📍 Living Room · Window</div>
+                  <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
                   <div class="detail-status">
                     <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 4 days</span>
                   </div>
-                  <button class="detail-water-btn">💧 Water now</button>
+                  <button class="detail-water-btn"><i data-lucide="droplet"></i> Water now</button>
                 </div>
               </div>
               <div class="detail-sections">
@@ -1548,22 +1579,22 @@
                   <ul class="timeline">
                     <li class="timeline-item">
                       <span class="timeline-date">Feb 10</span>
-                      <span class="timeline-icon">💧</span>
+                      <span class="timeline-icon"><i data-lucide="droplet"></i></span>
                       <span class="timeline-text">Watered</span>
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Feb 3</span>
-                      <span class="timeline-icon">💧</span>
+                      <span class="timeline-icon"><i data-lucide="droplet"></i></span>
                       <span class="timeline-text">Watered</span>
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Jan 28</span>
-                      <span class="timeline-icon">🌱</span>
+                      <span class="timeline-icon"><i data-lucide="sprout"></i></span>
                       <div class="timeline-text">Repotted<div class="timeline-sub">Moved to bigger pot, added fresh soil</div></div>
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Jan 15</span>
-                      <span class="timeline-icon">📝</span>
+                      <span class="timeline-icon"><i data-lucide="file-text"></i></span>
                       <div class="timeline-text">Note<div class="timeline-sub">Yellowing leaf on lower branch, removed it</div></div>
                     </li>
                   </ul>
@@ -1583,22 +1614,22 @@
         <div class="screen themed">
           <div class="device-notch"></div>
           <div class="detail-header">
-            <div class="detail-header-left">← Back</div>
+            <div class="detail-header-left"><i data-lucide="arrow-left"></i> Back</div>
             <div class="detail-header-right">
-              <div class="top-bar-icon">✏️</div>
-              <div class="top-bar-icon">🗑️</div>
+              <div class="top-bar-icon"><i data-lucide="pencil"></i></div>
+              <div class="top-bar-icon"><i data-lucide="trash-2"></i></div>
             </div>
           </div>
           <div style="overflow-y:auto;height:calc(100% - 72px);padding-bottom:16px">
             <div class="detail-hero mobile-hero">
-              <div class="detail-photo mobile-detail-photo green-bg">🪴</div>
+              <div class="detail-photo mobile-detail-photo green-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
               <div class="detail-info" style="width:100%">
                 <h2 style="font-size:20px">Monstera Deliciosa</h2>
-                <div class="detail-location">📍 Living Room · Window</div>
+                <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
                 <div class="detail-status">
                   <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 4 days</span>
                 </div>
-                <button class="detail-water-btn" style="width:100%;justify-content:center">💧 Water now</button>
+                <button class="detail-water-btn" style="width:100%;justify-content:center"><i data-lucide="droplet"></i> Water now</button>
               </div>
             </div>
             <div class="detail-sections mobile-sections">
@@ -1617,17 +1648,17 @@
                 <ul class="timeline">
                   <li class="timeline-item">
                     <span class="timeline-date">Feb 10</span>
-                    <span class="timeline-icon">💧</span>
+                    <span class="timeline-icon"><i data-lucide="droplet"></i></span>
                     <span class="timeline-text">Watered</span>
                   </li>
                   <li class="timeline-item">
                     <span class="timeline-date">Feb 3</span>
-                    <span class="timeline-icon">💧</span>
+                    <span class="timeline-icon"><i data-lucide="droplet"></i></span>
                     <span class="timeline-text">Watered</span>
                   </li>
                   <li class="timeline-item">
                     <span class="timeline-date">Jan 28</span>
-                    <span class="timeline-icon">🌱</span>
+                    <span class="timeline-icon"><i data-lucide="sprout"></i></span>
                     <div class="timeline-text">Repotted<div class="timeline-sub">Bigger pot, fresh soil</div></div>
                   </li>
                 </ul>
@@ -1658,10 +1689,10 @@
         <div class="screen themed">
           <div class="app-desktop">
             <div class="sidebar">
-              <div class="sidebar-logo">🌱</div>
-              <div class="sidebar-item active">🪴</div>
-              <div class="sidebar-item">📓</div>
-              <div class="sidebar-item" style="margin-top:auto">⚙️</div>
+              <div class="sidebar-logo"><i data-lucide="sprout"></i></div>
+              <div class="sidebar-item active"><i data-lucide="leaf"></i></div>
+              <div class="sidebar-item"><i data-lucide="book-open"></i></div>
+              <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i></div>
             </div>
             <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
               <div class="form-header">
@@ -1673,7 +1704,7 @@
                 <div style="max-width:520px;margin:0 auto">
 
                   <div class="photo-upload-refined">
-                    <div class="upload-icon">📷</div>
+                    <div class="upload-icon"><i data-lucide="camera"></i></div>
                     <span>Add a photo</span>
                     <span class="upload-hint">Click to select or drag & drop</span>
                   </div>
@@ -1691,15 +1722,15 @@
                     <div class="form-group" style="margin-bottom:0">
                       <label class="form-label">Icon</label>
                       <div class="emoji-picker">
-                        <div class="emoji-option active">🪴</div>
-                        <div class="emoji-option">🌿</div>
-                        <div class="emoji-option">🌵</div>
-                        <div class="emoji-option">🌸</div>
-                        <div class="emoji-option">🪻</div>
-                        <div class="emoji-option">🌱</div>
-                        <div class="emoji-option">🌷</div>
-                        <div class="emoji-option">🌻</div>
-                        <div class="emoji-option">🍀</div>
+                        <div class="emoji-option active"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f335.svg" alt="Cactus"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f338.svg" alt="Cherry Blossom"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fabb.svg" alt="Hyacinth"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f331.svg" alt="Seedling"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f337.svg" alt="Tulip"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33b.svg" alt="Sunflower"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f340.svg" alt="Four Leaf Clover"></div>
                       </div>
                     </div>
                   </div>
@@ -1707,11 +1738,11 @@
                   <div class="form-section">
                     <div class="form-section-title">Location</div>
                     <div class="location-chips">
-                      <div class="location-chip active">📍 Living Room</div>
-                      <div class="location-chip">📍 Bedroom</div>
-                      <div class="location-chip">📍 Kitchen</div>
-                      <div class="location-chip">📍 Balcony</div>
-                      <div class="location-chip">📍 Office</div>
+                      <div class="location-chip active"><i data-lucide="map-pin" class="chip-icon"></i> Living Room</div>
+                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Bedroom</div>
+                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Kitchen</div>
+                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Balcony</div>
+                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Office</div>
                       <div class="location-chip add-location">+ New</div>
                     </div>
                   </div>
@@ -1720,22 +1751,22 @@
                     <div class="form-section-title">Watering</div>
                     <div class="interval-presets">
                       <div class="interval-preset">
-                        <span class="preset-icon">💧</span>
+                        <span class="preset-icon"><i data-lucide="droplet"></i></span>
                         <span>3 days</span>
                         <span class="preset-label">Thirsty</span>
                       </div>
                       <div class="interval-preset active">
-                        <span class="preset-icon">💧</span>
+                        <span class="preset-icon"><i data-lucide="droplet"></i></span>
                         <span>7 days</span>
                         <span class="preset-label">Weekly</span>
                       </div>
                       <div class="interval-preset">
-                        <span class="preset-icon">💧</span>
+                        <span class="preset-icon"><i data-lucide="droplet"></i></span>
                         <span>14 days</span>
                         <span class="preset-label">Biweekly</span>
                       </div>
                       <div class="interval-preset">
-                        <span class="preset-icon">💧</span>
+                        <span class="preset-icon"><i data-lucide="droplet"></i></span>
                         <span>30 days</span>
                         <span class="preset-label">Monthly</span>
                       </div>
@@ -1755,17 +1786,17 @@
                     <div class="form-section-title">Light needs</div>
                     <div class="light-selector">
                       <div class="light-option">
-                        <span class="light-icon">☀️</span>
+                        <span class="light-icon"><i data-lucide="sun"></i></span>
                         <span>Direct</span>
                         <span class="light-label">Full sun</span>
                       </div>
                       <div class="light-option active">
-                        <span class="light-icon">🌤️</span>
+                        <span class="light-icon"><i data-lucide="cloud-sun"></i></span>
                         <span>Indirect</span>
                         <span class="light-label">Bright, filtered</span>
                       </div>
                       <div class="light-option">
-                        <span class="light-icon">🌥️</span>
+                        <span class="light-icon"><i data-lucide="cloud"></i></span>
                         <span>Low</span>
                         <span class="light-label">Shade tolerant</span>
                       </div>
@@ -1800,7 +1831,7 @@
             <div class="form-body mobile-form">
 
               <div class="photo-upload-refined" style="height:120px">
-                <div class="upload-icon">📷</div>
+                <div class="upload-icon"><i data-lucide="camera"></i></div>
                 <span>Add a photo</span>
               </div>
 
@@ -1817,15 +1848,15 @@
                 <div class="form-group" style="margin-bottom:0">
                   <label class="form-label">Icon</label>
                   <div class="emoji-picker">
-                    <div class="emoji-option active">🪴</div>
-                    <div class="emoji-option">🌿</div>
-                    <div class="emoji-option">🌵</div>
-                    <div class="emoji-option">🌸</div>
-                    <div class="emoji-option">🪻</div>
-                    <div class="emoji-option">🌱</div>
-                    <div class="emoji-option">🌷</div>
-                    <div class="emoji-option">🌻</div>
-                    <div class="emoji-option">🍀</div>
+                    <div class="emoji-option active"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                    <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
+                    <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f335.svg" alt="Cactus"></div>
+                    <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f338.svg" alt="Cherry Blossom"></div>
+                    <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fabb.svg" alt="Hyacinth"></div>
+                    <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f331.svg" alt="Seedling"></div>
+                    <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f337.svg" alt="Tulip"></div>
+                    <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33b.svg" alt="Sunflower"></div>
+                    <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f340.svg" alt="Four Leaf Clover"></div>
                   </div>
                 </div>
               </div>
@@ -1833,10 +1864,10 @@
               <div class="form-section">
                 <div class="form-section-title">Location</div>
                 <div class="location-chips">
-                  <div class="location-chip active">📍 Living Room</div>
-                  <div class="location-chip">📍 Bedroom</div>
-                  <div class="location-chip">📍 Kitchen</div>
-                  <div class="location-chip">📍 Balcony</div>
+                  <div class="location-chip active"><i data-lucide="map-pin" class="chip-icon"></i> Living Room</div>
+                  <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Bedroom</div>
+                  <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Kitchen</div>
+                  <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Balcony</div>
                   <div class="location-chip add-location">+ New</div>
                 </div>
               </div>
@@ -1845,22 +1876,22 @@
                 <div class="form-section-title">Watering</div>
                 <div class="interval-presets">
                   <div class="interval-preset">
-                    <span class="preset-icon">💧</span>
+                    <span class="preset-icon"><i data-lucide="droplet"></i></span>
                     <span>3d</span>
                     <span class="preset-label">Thirsty</span>
                   </div>
                   <div class="interval-preset active">
-                    <span class="preset-icon">💧</span>
+                    <span class="preset-icon"><i data-lucide="droplet"></i></span>
                     <span>7d</span>
                     <span class="preset-label">Weekly</span>
                   </div>
                   <div class="interval-preset">
-                    <span class="preset-icon">💧</span>
+                    <span class="preset-icon"><i data-lucide="droplet"></i></span>
                     <span>14d</span>
                     <span class="preset-label">Biweekly</span>
                   </div>
                   <div class="interval-preset">
-                    <span class="preset-icon">💧</span>
+                    <span class="preset-icon"><i data-lucide="droplet"></i></span>
                     <span>30d</span>
                     <span class="preset-label">Monthly</span>
                   </div>
@@ -1880,15 +1911,15 @@
                 <div class="form-section-title">Light needs</div>
                 <div class="light-selector">
                   <div class="light-option">
-                    <span class="light-icon">☀️</span>
+                    <span class="light-icon"><i data-lucide="sun"></i></span>
                     <span style="font-size:12px">Direct</span>
                   </div>
                   <div class="light-option active">
-                    <span class="light-icon">🌤️</span>
+                    <span class="light-icon"><i data-lucide="cloud-sun"></i></span>
                     <span style="font-size:12px">Indirect</span>
                   </div>
                   <div class="light-option">
-                    <span class="light-icon">🌥️</span>
+                    <span class="light-icon"><i data-lucide="cloud"></i></span>
                     <span style="font-size:12px">Low</span>
                   </div>
                 </div>
@@ -1924,10 +1955,10 @@
         <div class="screen themed">
           <div class="app-desktop">
             <div class="sidebar">
-              <div class="sidebar-logo">🌱</div>
-              <div class="sidebar-item">🪴</div>
-              <div class="sidebar-item active">📓</div>
-              <div class="sidebar-item" style="margin-top:auto">⚙️</div>
+              <div class="sidebar-logo"><i data-lucide="sprout"></i></div>
+              <div class="sidebar-item"><i data-lucide="leaf"></i></div>
+              <div class="sidebar-item active"><i data-lucide="book-open"></i></div>
+              <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i></div>
             </div>
             <div class="main-content">
               <div class="section-header" style="margin-bottom:16px">
@@ -1936,17 +1967,17 @@
 
               <div class="log-filters">
                 <button class="filter-chip active">All</button>
-                <button class="filter-chip">💧 Watered</button>
-                <button class="filter-chip">🧪 Fertilized</button>
-                <button class="filter-chip">🌱 Repotted</button>
-                <button class="filter-chip">✂️ Pruned</button>
-                <button class="filter-chip">📝 Notes</button>
+                <button class="filter-chip"><i data-lucide="droplet"></i> Watered</button>
+                <button class="filter-chip"><i data-lucide="flask-conical"></i> Fertilized</button>
+                <button class="filter-chip"><i data-lucide="sprout"></i> Repotted</button>
+                <button class="filter-chip"><i data-lucide="scissors"></i> Pruned</button>
+                <button class="filter-chip"><i data-lucide="file-text"></i> Notes</button>
               </div>
 
               <div class="log-day-group">
                 <div class="log-day-header">Today — Feb 14, 2026</div>
                 <div class="log-entry">
-                  <div class="log-entry-icon water-icon">💧</div>
+                  <div class="log-entry-icon water-icon"><i data-lucide="droplet"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Monstera Deliciosa</span>
@@ -1956,7 +1987,7 @@
                   </div>
                 </div>
                 <div class="log-entry">
-                  <div class="log-entry-icon water-icon">💧</div>
+                  <div class="log-entry-icon water-icon"><i data-lucide="droplet"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Ficus Lyrata</span>
@@ -1966,7 +1997,7 @@
                   </div>
                 </div>
                 <div class="log-entry">
-                  <div class="log-entry-icon note-icon">📝</div>
+                  <div class="log-entry-icon note-icon"><i data-lucide="file-text"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Orchid</span>
@@ -1981,7 +2012,7 @@
               <div class="log-day-group">
                 <div class="log-day-header">Yesterday — Feb 13, 2026</div>
                 <div class="log-entry">
-                  <div class="log-entry-icon fertilize-icon">🧪</div>
+                  <div class="log-entry-icon fertilize-icon"><i data-lucide="flask-conical"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Snake Plant</span>
@@ -1992,7 +2023,7 @@
                   </div>
                 </div>
                 <div class="log-entry">
-                  <div class="log-entry-icon water-icon">💧</div>
+                  <div class="log-entry-icon water-icon"><i data-lucide="droplet"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Pothos</span>
@@ -2006,7 +2037,7 @@
               <div class="log-day-group">
                 <div class="log-day-header">Feb 11, 2026</div>
                 <div class="log-entry">
-                  <div class="log-entry-icon repot-icon">🌱</div>
+                  <div class="log-entry-icon repot-icon"><i data-lucide="sprout"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Lavender</span>
@@ -2017,7 +2048,7 @@
                   </div>
                 </div>
                 <div class="log-entry">
-                  <div class="log-entry-icon prune-icon">✂️</div>
+                  <div class="log-entry-icon prune-icon"><i data-lucide="scissors"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Monstera Deliciosa</span>
@@ -2028,7 +2059,7 @@
                   </div>
                 </div>
                 <div class="log-entry">
-                  <div class="log-entry-icon water-icon">💧</div>
+                  <div class="log-entry-icon water-icon"><i data-lucide="droplet"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Lavender</span>
@@ -2059,17 +2090,17 @@
 
             <div class="log-filters" style="margin-bottom:12px">
               <button class="filter-chip active">All</button>
-              <button class="filter-chip">💧</button>
-              <button class="filter-chip">🧪</button>
-              <button class="filter-chip">🌱</button>
-              <button class="filter-chip">✂️</button>
-              <button class="filter-chip">📝</button>
+              <button class="filter-chip"><i data-lucide="droplet"></i></button>
+              <button class="filter-chip"><i data-lucide="flask-conical"></i></button>
+              <button class="filter-chip"><i data-lucide="sprout"></i></button>
+              <button class="filter-chip"><i data-lucide="scissors"></i></button>
+              <button class="filter-chip"><i data-lucide="file-text"></i></button>
             </div>
 
             <div class="log-day-group">
               <div class="log-day-header">Today</div>
               <div class="log-entry">
-                <div class="log-entry-icon water-icon">💧</div>
+                <div class="log-entry-icon water-icon"><i data-lucide="droplet"></i></div>
                 <div class="log-entry-content">
                   <div class="log-entry-top">
                     <span class="log-entry-plant">Monstera</span>
@@ -2079,7 +2110,7 @@
                 </div>
               </div>
               <div class="log-entry">
-                <div class="log-entry-icon water-icon">💧</div>
+                <div class="log-entry-icon water-icon"><i data-lucide="droplet"></i></div>
                 <div class="log-entry-content">
                   <div class="log-entry-top">
                     <span class="log-entry-plant">Ficus</span>
@@ -2089,7 +2120,7 @@
                 </div>
               </div>
               <div class="log-entry">
-                <div class="log-entry-icon note-icon">📝</div>
+                <div class="log-entry-icon note-icon"><i data-lucide="file-text"></i></div>
                 <div class="log-entry-content">
                   <div class="log-entry-top">
                     <span class="log-entry-plant">Orchid</span>
@@ -2104,7 +2135,7 @@
             <div class="log-day-group">
               <div class="log-day-header">Yesterday</div>
               <div class="log-entry">
-                <div class="log-entry-icon fertilize-icon">🧪</div>
+                <div class="log-entry-icon fertilize-icon"><i data-lucide="flask-conical"></i></div>
                 <div class="log-entry-content">
                   <div class="log-entry-top">
                     <span class="log-entry-plant">Snake Plant</span>
@@ -2115,7 +2146,7 @@
                 </div>
               </div>
               <div class="log-entry">
-                <div class="log-entry-icon water-icon">💧</div>
+                <div class="log-entry-icon water-icon"><i data-lucide="droplet"></i></div>
                 <div class="log-entry-content">
                   <div class="log-entry-top">
                     <span class="log-entry-plant">Pothos</span>
@@ -2129,7 +2160,7 @@
             <div class="log-day-group">
               <div class="log-day-header">Feb 11</div>
               <div class="log-entry">
-                <div class="log-entry-icon repot-icon">🌱</div>
+                <div class="log-entry-icon repot-icon"><i data-lucide="sprout"></i></div>
                 <div class="log-entry-content">
                   <div class="log-entry-top">
                     <span class="log-entry-plant">Lavender</span>
@@ -2140,7 +2171,7 @@
                 </div>
               </div>
               <div class="log-entry">
-                <div class="log-entry-icon prune-icon">✂️</div>
+                <div class="log-entry-icon prune-icon"><i data-lucide="scissors"></i></div>
                 <div class="log-entry-content">
                   <div class="log-entry-top">
                     <span class="log-entry-plant">Monstera</span>
@@ -2153,9 +2184,9 @@
 
           </div>
           <div class="bottom-nav">
-            <div class="bottom-nav-item"><span class="nav-icon">🪴</span>Plants</div>
-            <div class="bottom-nav-item active"><span class="nav-icon">📓</span>Log</div>
-            <div class="bottom-nav-item"><span class="nav-icon">⚙️</span>Settings</div>
+            <div class="bottom-nav-item"><span class="nav-icon"><i data-lucide="leaf"></i></span>Plants</div>
+            <div class="bottom-nav-item active"><span class="nav-icon"><i data-lucide="book-open"></i></span>Log</div>
+            <div class="bottom-nav-item"><span class="nav-icon"><i data-lucide="settings"></i></span>Settings</div>
           </div>
         </div>
       </div>
@@ -2180,10 +2211,10 @@
         <div class="screen themed">
           <div class="app-desktop">
             <div class="sidebar">
-              <div class="sidebar-logo">🌱</div>
-              <div class="sidebar-item">🪴</div>
-              <div class="sidebar-item">📓</div>
-              <div class="sidebar-item active" style="margin-top:auto">⚙️</div>
+              <div class="sidebar-logo"><i data-lucide="sprout"></i></div>
+              <div class="sidebar-item"><i data-lucide="leaf"></i></div>
+              <div class="sidebar-item"><i data-lucide="book-open"></i></div>
+              <div class="sidebar-item active" style="margin-top:auto"><i data-lucide="settings"></i></div>
             </div>
             <div class="main-content">
               <h2 style="margin-bottom:20px">Settings</h2>
@@ -2312,9 +2343,9 @@
             </div>
           </div>
           <div class="bottom-nav">
-            <div class="bottom-nav-item"><span class="nav-icon">🪴</span>Plants</div>
-            <div class="bottom-nav-item"><span class="nav-icon">📓</span>Log</div>
-            <div class="bottom-nav-item active"><span class="nav-icon">⚙️</span>Settings</div>
+            <div class="bottom-nav-item"><span class="nav-icon"><i data-lucide="leaf"></i></span>Plants</div>
+            <div class="bottom-nav-item"><span class="nav-icon"><i data-lucide="book-open"></i></span>Log</div>
+            <div class="bottom-nav-item active"><span class="nav-icon"><i data-lucide="settings"></i></span>Settings</div>
           </div>
         </div>
       </div>
@@ -2324,6 +2355,8 @@
 </div>
 
 <script>
+lucide.createIcons();
+
 function showScreen(name) {
   document.querySelectorAll('.mockup-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.mockup-tab').forEach(t => t.classList.remove('active'));
