@@ -8,6 +8,14 @@ updates:
       timezone: "Europe/Berlin"
     commit-message:
       prefix: "fix(deps): "
+  - package-ecosystem: "npm"
+    directory: "/ui"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "Europe/Berlin"
+    commit-message:
+      prefix: "fix(deps): "
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
