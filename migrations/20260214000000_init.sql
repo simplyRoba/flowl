@@ -1,0 +1,2 @@
+-- Initial migration to bootstrap the migrations table.
+-- Intentionally empty; schema tables will be added in later phases.

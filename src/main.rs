@@ -1,3 +1,45 @@
-fn main() {
-    println!("Hello, world!");
+mod config;
+mod db;
+mod embedded;
+mod mqtt;
+mod server;
+
+use tracing::{error, info};
+use tracing_subscriber::EnvFilter;
+
+#[tokio::main]
+async fn main() {
+    let config = config::Config::from_env();
+
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_new(&config.log_level).unwrap_or_else(|_| EnvFilter::new("info")),
+        )
+        .init();
+
+    info!("Starting flowl");
+
+    let pool = db::create_pool(&config.db_path)
+        .await
+        .expect("Failed to create database pool");
+
+    db::run_migrations(&pool)
+        .await
+        .expect("Failed to run database migrations");
+    info!("Database ready at {}", config.db_path);
+
+    let mqtt_handle = mqtt::connect(&config);
+    info!(
+        "MQTT client connecting to {}:{}",
+        config.mqtt_host, config.mqtt_port
+    );
+
+    let router = server::router();
+
+    if let Err(e) = server::serve(router, config.port).await {
+        error!("Server error: {e}");
+    }
+
+    info!("Shutting down");
+    mqtt_handle.disconnect().await;
 }
