@@ -1,0 +1,22 @@
+[package]
+name = "flowl"
+version = "0.1.0"
+edition = "2024"
+description = "Plant care data service for Home Assistant"
+readme = "README.md"
+authors = ["simplyroba"]
+license = "AGPL-3.0-or-later"
+repository = "https://github.com/simplyRoba/flowl"
+
+[lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+# Style preferences
+must_use_candidate = "allow"
+module_name_repetitions = "allow"
+
+[dependencies]
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
