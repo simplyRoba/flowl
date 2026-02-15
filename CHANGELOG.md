@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.0](https://github.com/simplyRoba/flowl/compare/v0.2.4...v0.3.0) (2026-02-15)
+
+
+### Features
+
+* add plant photo upload and settings page ([141ca66](https://github.com/simplyRoba/flowl/commit/141ca667d29b3f76fe6a6d84b78d73aa49448993))
+* **mockups:** add plant photo examples and fix detail photo shape ([acd4967](https://github.com/simplyRoba/flowl/commit/acd49679bbb37c08467852361ea397c84503c160))
+* **ui:** add custom flowl owl logo ([c7f7363](https://github.com/simplyRoba/flowl/commit/c7f736374cff4831b01088260b79589406f91f26))
+* **ui:** add widescreen layout with expanded sidebar and overlay cards ([7475d95](https://github.com/simplyRoba/flowl/commit/7475d957ba5b1ad272d76b8cb0969759b0403b3b))
+
+
+### Bug Fixes
+
+* **ui:** highlight active nav item based on current route ([98cfaba](https://github.com/simplyRoba/flowl/commit/98cfabaee2ce228d022bad7d5eaacf8504c4fa58))
+* **ui:** make notes textarea full width in plant form ([9b0d2d9](https://github.com/simplyRoba/flowl/commit/9b0d2d927b920f9d9153a5e569f24257500ba6ec))
+* **ui:** match mobile bottom nav to mockup design ([a108997](https://github.com/simplyRoba/flowl/commit/a1089972018156fc1199ce94782859349d5a00f7))
+
 ## [0.2.4](https://github.com/simplyRoba/flowl/compare/v0.2.3...v0.2.4) (2026-02-15)
 
 
