@@ -137,12 +137,12 @@
 			width: 100%;
 			height: 56px;
 			flex-direction: row;
-			justify-content: center;
+			justify-content: space-around;
 			order: 1;
 			border-right: none;
 			border-top: 1px solid #E5DDD3;
-			padding: 0 16px;
-			gap: 16px;
+			padding: 0;
+			gap: 0;
 		}
 
 		.logo {
@@ -150,13 +150,33 @@
 		}
 
 		.nav-item {
-			width: 40px;
-			height: 40px;
+			width: auto;
+			height: auto;
+			flex-direction: column;
+			gap: 2px;
+			border-radius: 0;
+			background: none;
+			color: #8C7E6E;
+		}
+
+		.nav-item:hover {
+			background: none;
+		}
+
+		.nav-item.active {
+			background: none;
+			color: #6B8F71;
+		}
+
+		.nav-label {
+			display: inline;
+			font-size: 11px;
+			font-weight: 400;
 		}
 
 		.nav-item.bottom {
 			margin-top: 0;
-			margin-left: auto;
+			margin-left: 0;
 		}
 
 		.content {
