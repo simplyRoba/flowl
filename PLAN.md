@@ -124,7 +124,7 @@ All via environment variables:
 
 | Variable              | Default      | Description                  |
 |-----------------------|--------------|------------------------------|
-| `FLOWL_PORT`          | `8080`       | HTTP listen port             |
+| `FLOWL_PORT`          | `4100`       | HTTP listen port             |
 | `FLOWL_DB_PATH`       | `/data/flowl.db` | SQLite database path     |
 | `FLOWL_MQTT_HOST`     | `localhost`  | MQTT broker host             |
 | `FLOWL_MQTT_PORT`     | `1883`       | MQTT broker port             |

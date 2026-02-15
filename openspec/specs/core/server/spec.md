@@ -6,12 +6,12 @@ Axum HTTP server lifecycle, health endpoint, static file serving for the embedde
 
 ### Requirement: HTTP Server Startup
 
-The application SHALL start an Axum HTTP server listening on the port specified by `FLOWL_PORT` (default `8080`).
+The application SHALL start an Axum HTTP server listening on the port specified by `FLOWL_PORT` (default `4100`).
 
 #### Scenario: Server starts on default port
 
 - **WHEN** the application starts without `FLOWL_PORT` set
-- **THEN** the server listens on port `8080`
+- **THEN** the server listens on port `4100`
 
 #### Scenario: Server starts on custom port
 

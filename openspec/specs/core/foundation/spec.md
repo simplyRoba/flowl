@@ -98,12 +98,12 @@ A Dockerfile SHALL provide a minimal multi-arch container image based on `debian
 #### Scenario: Container starts
 
 - **WHEN** the container is started
-- **THEN** the `flowl` binary runs on port 8080 by default
+- **THEN** the `flowl` binary runs on port 4100 by default
 
 #### Scenario: Health check
 
 - **WHEN** the container is running
-- **THEN** the health check queries `http://localhost:${FLOWL_PORT:-8080}/health` every 30 seconds
+- **THEN** the health check queries `http://localhost:${FLOWL_PORT:-4100}/health` every 30 seconds
 - **AND** the `/health` endpoint returns HTTP 200 with `{"status": "ok"}`
 
 #### Scenario: Non-root execution

@@ -12,10 +12,10 @@ RUN chmod +x /usr/local/bin/flowl
 RUN mkdir -p /data && chown 1000:1000 /data
 VOLUME /data
 
-EXPOSE 8080
+EXPOSE 4100
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD curl -fsS http://localhost:${FLOWL_PORT:-8080}/health || exit 1
+  CMD curl -fsS http://localhost:${FLOWL_PORT:-4100}/health || exit 1
 
 USER 1000:1000
 

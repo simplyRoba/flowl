@@ -13,7 +13,7 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Self {
         Self {
-            port: parse_env("FLOWL_PORT", 8080),
+            port: parse_env("FLOWL_PORT", 4100),
             db_path: env::var("FLOWL_DB_PATH").unwrap_or_else(|_| "/data/flowl.db".to_string()),
             mqtt_host: env::var("FLOWL_MQTT_HOST").unwrap_or_else(|_| "localhost".to_string()),
             mqtt_port: parse_env("FLOWL_MQTT_PORT", 1883),
@@ -58,7 +58,7 @@ mod tests {
         unsafe { clear_flowl_env() };
 
         let config = Config::from_env();
-        assert_eq!(config.port, 8080);
+        assert_eq!(config.port, 4100);
         assert_eq!(config.db_path, "/data/flowl.db");
         assert_eq!(config.mqtt_host, "localhost");
         assert_eq!(config.mqtt_port, 1883);
@@ -95,7 +95,7 @@ mod tests {
         unsafe { clear_flowl_env() };
         unsafe { env::set_var("FLOWL_PORT", "not_a_number") };
         let config = Config::from_env();
-        assert_eq!(config.port, 8080);
+        assert_eq!(config.port, 4100);
         unsafe { env::remove_var("FLOWL_PORT") };
     }
 }
