@@ -232,6 +232,7 @@
 	}
 
 	.textarea {
+		width: 100%;
 		resize: vertical;
 		min-height: 80px;
 	}
