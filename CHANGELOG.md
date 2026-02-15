@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.1](https://github.com/simplyRoba/flowl/compare/v0.2.0...v0.2.1) (2026-02-15)
+
+
+### Bug Fixes
+
+* **ci:** add npm dependabot for ui dependencies ([c25fce0](https://github.com/simplyRoba/flowl/commit/c25fce06235a97763a1e9a0fde70380b47ca6521))
+* **ci:** remove cross-compiler from CI and isolate cache keys ([091523d](https://github.com/simplyRoba/flowl/commit/091523dcfa038613d07e6f18bb3272d069f68282))
+* **deps:** bump rumqttc from 0.24.0 to 0.25.1 ([#5](https://github.com/simplyRoba/flowl/issues/5)) ([dbe5972](https://github.com/simplyRoba/flowl/commit/dbe59724f5119fdd3b6b6a69b1e1a7f3c4df1f03))
+* **deps:** bump svelte from 5.51.0 to 5.51.1 in /ui ([#4](https://github.com/simplyRoba/flowl/issues/4)) ([1a1772f](https://github.com/simplyRoba/flowl/commit/1a1772fb1f4fa19623d67e0807e5b47e365575dc))
+* resolve double scrollbar on mobile in mockups and app ([7b8342e](https://github.com/simplyRoba/flowl/commit/7b8342e143142c8a8cca75e67da5d9f5f09d9584))
+
 ## [0.2.0](https://github.com/simplyRoba/flowl/compare/v0.1.0...v0.2.0) (2026-02-14)
 
 
