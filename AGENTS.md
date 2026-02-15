@@ -26,3 +26,9 @@
 - **Requirement**: a concrete, testable statement in a change's ADDED/MODIFIED/REMOVED sections. Requirements should use RFC 2119 keywords and Given/When/Then structure so they can be verified during testing.
 - **Capability**: the functional area covered by one or more requirements. Capabilities are represented by folders under `openspec/specs/{domain}/{capability}` and help teams scope work before implementation begins.
 - **Domain**: the broader grouping for related capabilities (for example `core`, `ui`, `api`). Every new capability must be placed in the correct domain folder.
+
+## Reference materials
+- **Design**: `DESIGN.md` — overall application design, architecture, and technical decisions. Read this first to understand the project.
+- **Plan**: `PLAN.md` — project roadmap and phased implementation plan. Check this to understand what has been done and what is next.
+- **Specs**: `openspec/` — OpenSpec-based specs and change proposals for all features. Check `openspec/specs/` for current capability specs and `openspec/changes/` for active/archived change sets with task checklists.
+- **UI Mockups**: `mockups/index.html` — HTML/CSS mockups for all UI screens (dashboard, detail, forms, settings). Open in a browser to view. Always match implemented UI to these mockups.

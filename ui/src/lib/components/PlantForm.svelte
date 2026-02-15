@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Sun, CloudSun, Cloud } from 'lucide-svelte';
+	import { Sun, CloudSun, Cloud, Camera, X } from 'lucide-svelte';
 	import type { Plant, CreatePlant, Location } from '$lib/api';
 	import { locations, loadLocations, createLocation } from '$lib/stores/locations';
 	import IconPicker from './IconPicker.svelte';
@@ -10,10 +10,12 @@
 	let {
 		initial = null,
 		onsave,
+		onremovephoto,
 		saving = false
 	}: {
 		initial?: Plant | null;
-		onsave: (data: CreatePlant) => void;
+		onsave: (data: CreatePlant, photo?: File) => void;
+		onremovephoto?: () => void;
 		saving?: boolean;
 	} = $props();
 
@@ -25,6 +27,11 @@
 	let lightNeeds = $state('indirect');
 	let notes = $state('');
 	let nameError = $state('');
+
+	let photoFile = $state<File | null>(null);
+	let photoPreview = $state<string | null>(null);
+
+	let hasPhoto = $derived(photoPreview !== null || (initial?.photo_url != null && photoFile === null));
 
 	// Initialize/re-initialize from initial prop (for edit form)
 	$effect(() => {
@@ -42,6 +49,28 @@
 	onMount(() => {
 		loadLocations();
 	});
+
+	function handlePhotoSelect(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		photoFile = file;
+		photoPreview = URL.createObjectURL(file);
+	}
+
+	function handleRemoveNewPhoto() {
+		if (photoPreview) {
+			URL.revokeObjectURL(photoPreview);
+		}
+		photoFile = null;
+		photoPreview = null;
+	}
+
+	function handleRemoveExistingPhoto() {
+		if (onremovephoto) {
+			onremovephoto();
+		}
+	}
 
 	function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -61,7 +90,7 @@
 		data.light_needs = lightNeeds;
 		if (notes.trim()) data.notes = notes.trim();
 
-		onsave(data);
+		onsave(data, photoFile ?? undefined);
 	}
 
 	async function handleCreateLocation(locationName: string): Promise<Location | null> {
@@ -70,6 +99,52 @@
 </script>
 
 <form class="plant-form" onsubmit={handleSubmit}>
+	<section class="form-section">
+		<h3>Photo</h3>
+		{#if photoPreview}
+			<div class="photo-preview">
+				<img src={photoPreview} alt="Preview" class="preview-img" />
+				<button type="button" class="photo-remove-btn" onclick={handleRemoveNewPhoto}>
+					<X size={16} />
+				</button>
+			</div>
+		{:else if initial?.photo_url}
+			<div class="photo-preview">
+				<img src={initial.photo_url} alt={initial.name} class="preview-img" />
+				{#if onremovephoto}
+					<button type="button" class="photo-remove-btn" onclick={handleRemoveExistingPhoto}>
+						<X size={16} />
+					</button>
+				{/if}
+			</div>
+		{:else}
+			<label class="photo-upload">
+				<Camera size={24} />
+				<span>Add a photo</span>
+				<input
+					type="file"
+					accept="image/jpeg,image/png,image/webp"
+					onchange={handlePhotoSelect}
+					class="file-input"
+				/>
+			</label>
+		{/if}
+		{#if !hasPhoto}
+			<!-- Show nothing extra, upload area is above -->
+		{:else if !photoPreview && initial?.photo_url}
+			<label class="photo-replace">
+				<Camera size={16} />
+				<span>Replace photo</span>
+				<input
+					type="file"
+					accept="image/jpeg,image/png,image/webp"
+					onchange={handlePhotoSelect}
+					class="file-input"
+				/>
+			</label>
+		{/if}
+	</section>
+
 	<section class="form-section">
 		<h3>Identity</h3>
 		<label class="field">
@@ -97,10 +172,12 @@
 			/>
 		</label>
 
-		<div class="field">
-			<span class="label">Icon</span>
-			<IconPicker value={icon} onchange={(v) => { icon = v; }} />
-		</div>
+		{#if !hasPhoto}
+			<div class="field">
+				<span class="label">Icon</span>
+				<IconPicker value={icon} onchange={(v) => { icon = v; }} />
+			</div>
+		{/if}
 	</section>
 
 	<section class="form-section">
@@ -235,11 +312,93 @@
 		width: 100%;
 		resize: vertical;
 		min-height: 80px;
+		box-sizing: border-box;
 	}
 
 	.field-error {
 		font-size: 13px;
 		color: #C45B5B;
+	}
+
+	.photo-upload {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
+		padding: 32px;
+		border: 2px dashed #E5DDD3;
+		border-radius: 12px;
+		cursor: pointer;
+		color: #8C7E6E;
+		transition: border-color 0.15s, color 0.15s;
+	}
+
+	.photo-upload:hover {
+		border-color: #6B8F71;
+		color: #6B8F71;
+	}
+
+	.photo-upload span {
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.file-input {
+		display: none;
+	}
+
+	.photo-preview {
+		position: relative;
+		display: inline-block;
+	}
+
+	.preview-img {
+		width: 120px;
+		height: 120px;
+		object-fit: cover;
+		border-radius: 12px;
+		border: 1px solid #E5DDD3;
+	}
+
+	.photo-remove-btn {
+		position: absolute;
+		top: -8px;
+		right: -8px;
+		width: 28px;
+		height: 28px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		border: 1px solid #E5DDD3;
+		background: #FFFFFF;
+		color: #C45B5B;
+		cursor: pointer;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	}
+
+	.photo-remove-btn:hover {
+		background: #fef2f2;
+	}
+
+	.photo-replace {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-top: 12px;
+		padding: 6px 12px;
+		border: 1px solid #E5DDD3;
+		border-radius: 8px;
+		cursor: pointer;
+		color: #8C7E6E;
+		font-size: 13px;
+		font-weight: 500;
+		transition: border-color 0.15s, color 0.15s;
+	}
+
+	.photo-replace:hover {
+		border-color: #6B8F71;
+		color: #6B8F71;
 	}
 
 	.light-options {

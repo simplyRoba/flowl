@@ -4,3 +4,4 @@ pub mod db;
 pub mod embedded;
 pub mod mqtt;
 pub mod server;
+pub mod state;

@@ -2,15 +2,18 @@
 	import { goto } from '$app/navigation';
 	import { ArrowLeft } from 'lucide-svelte';
 	import type { CreatePlant } from '$lib/api';
-	import { createPlant } from '$lib/stores/plants';
+	import { createPlant, uploadPhoto } from '$lib/stores/plants';
 	import PlantForm from '$lib/components/PlantForm.svelte';
 
 	let saving = $state(false);
 
-	async function handleSave(data: CreatePlant) {
+	async function handleSave(data: CreatePlant, photo?: File) {
 		saving = true;
 		const plant = await createPlant(data);
 		if (plant) {
+			if (photo) {
+				await uploadPhoto(plant.id, photo);
+			}
 			goto(`/plants/${plant.id}`);
 		}
 		saving = false;

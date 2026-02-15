@@ -62,11 +62,19 @@
 		</header>
 
 		<div class="plant-hero">
-			<img
-				src={emojiToSvgPath($currentPlant.icon)}
-				alt={$currentPlant.name}
-				class="hero-icon"
-			/>
+			{#if $currentPlant.photo_url}
+				<img
+					src={$currentPlant.photo_url}
+					alt={$currentPlant.name}
+					class="hero-photo"
+				/>
+			{:else}
+				<img
+					src={emojiToSvgPath($currentPlant.icon)}
+					alt={$currentPlant.name}
+					class="hero-icon"
+				/>
+			{/if}
 			<div>
 				<h1>{$currentPlant.name}</h1>
 				{#if $currentPlant.species}
@@ -176,6 +184,14 @@
 		flex-shrink: 0;
 	}
 
+	.hero-photo {
+		width: 80px;
+		height: 80px;
+		flex-shrink: 0;
+		border-radius: 50%;
+		object-fit: cover;
+	}
+
 	.plant-hero h1 {
 		font-size: 28px;
 		font-weight: 700;
@@ -269,6 +285,11 @@
 		}
 
 		.hero-icon {
+			width: 60px;
+			height: 60px;
+		}
+
+		.hero-photo {
 			width: 60px;
 			height: 60px;
 		}

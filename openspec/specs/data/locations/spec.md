@@ -1,6 +1,6 @@
 ## Purpose
 
-Location entity — database schema and queries for reusable room/location labels.
+Location entity — database schema, queries, and plant count for reusable room/location labels.
 
 ## Requirements
 
@@ -87,3 +87,22 @@ The API SHALL delete a location via `DELETE /api/locations/:id`. Plants referenc
 - **WHEN** a DELETE request is made to `/api/locations/999`
 - **AND** no location with id 999 exists
 - **THEN** the API responds with HTTP 404
+
+### Requirement: Plant Count in List Response
+
+The `GET /api/locations` response SHALL include a `plant_count` field for each location indicating how many plants reference that location.
+
+#### Scenario: Location with plants
+
+- **WHEN** a location has 3 plants assigned to it
+- **THEN** the list response includes `plant_count: 3` for that location
+
+#### Scenario: Location with no plants
+
+- **WHEN** a location has no plants assigned to it
+- **THEN** the list response includes `plant_count: 0` for that location
+
+#### Scenario: Newly created location
+
+- **WHEN** a location is created via `POST /api/locations`
+- **THEN** the response includes `plant_count: 0`

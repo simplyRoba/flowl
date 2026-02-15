@@ -1,8 +1,11 @@
 #![allow(dead_code)]
 
+use std::path::PathBuf;
+
 use axum::Router;
 use axum::body::Body;
 use axum::http::Request;
+use flowl::state::AppState;
 use sqlx::SqlitePool;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
@@ -27,7 +30,21 @@ pub async fn test_pool() -> SqlitePool {
 
 pub async fn test_app() -> Router {
     let pool = test_pool().await;
-    flowl::server::router(pool)
+    let upload_dir = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&upload_dir).expect("Failed to create test upload dir");
+    let state = AppState { pool, upload_dir };
+    flowl::server::router(state)
+}
+
+pub async fn test_app_with_uploads() -> (Router, PathBuf) {
+    let pool = test_pool().await;
+    let upload_dir = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&upload_dir).expect("Failed to create test upload dir");
+    let state = AppState {
+        pool,
+        upload_dir: upload_dir.clone(),
+    };
+    (flowl::server::router(state), upload_dir)
 }
 
 pub fn json_request(method: &str, uri: &str, body: Option<&str>) -> Request<Body> {

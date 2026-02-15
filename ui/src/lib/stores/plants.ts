@@ -66,3 +66,31 @@ export async function deletePlant(id: number): Promise<boolean> {
 		return false;
 	}
 }
+
+export async function uploadPhoto(plantId: number, file: File): Promise<Plant | null> {
+	plantsError.set(null);
+	try {
+		const plant = await api.uploadPlantPhoto(plantId, file);
+		plants.update((list) => list.map((p) => (p.id === plantId ? plant : p)));
+		currentPlant.set(plant);
+		return plant;
+	} catch (e) {
+		plantsError.set(e instanceof Error ? e.message : 'Failed to upload photo');
+		return null;
+	}
+}
+
+export async function deletePhoto(plantId: number): Promise<boolean> {
+	plantsError.set(null);
+	try {
+		await api.deletePlantPhoto(plantId);
+		const updater = (p: Plant) =>
+			p.id === plantId ? { ...p, photo_url: null } : p;
+		plants.update((list) => list.map(updater));
+		currentPlant.update((p) => (p && p.id === plantId ? { ...p, photo_url: null } : p));
+		return true;
+	} catch (e) {
+		plantsError.set(e instanceof Error ? e.message : 'Failed to delete photo');
+		return false;
+	}
+}

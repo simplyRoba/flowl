@@ -1,8 +1,21 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Plus, MapPin } from 'lucide-svelte';
+	import { Plus } from 'lucide-svelte';
 	import { plants, plantsError, loadPlants } from '$lib/stores/plants';
 	import { emojiToSvgPath } from '$lib/emoji';
+
+	const BG_GRADIENTS = [
+		'linear-gradient(135deg, #e8f5e9, #c8e6c9)',
+		'linear-gradient(135deg, #e3f2fd, #bbdefb)',
+		'linear-gradient(135deg, #fff8e1, #ffecb3)',
+		'linear-gradient(135deg, #fce4ec, #f8bbd0)',
+		'linear-gradient(135deg, #f3e5f5, #e1bee7)',
+		'linear-gradient(135deg, #e0f2f1, #b2dfdb)',
+	];
+
+	function cardBg(id: number): string {
+		return BG_GRADIENTS[id % BG_GRADIENTS.length];
+	}
 
 	onMount(() => {
 		loadPlants();
@@ -36,18 +49,19 @@
 		<div class="plant-grid">
 			{#each $plants as plant (plant.id)}
 				<a href="/plants/{plant.id}" class="plant-card">
-					<img
-						src={emojiToSvgPath(plant.icon)}
-						alt={plant.name}
-						class="plant-icon"
-					/>
-					<div class="plant-info">
-						<span class="plant-name">{plant.name}</span>
+					{#if plant.photo_url}
+						<div class="plant-card-photo">
+							<img src={plant.photo_url} alt={plant.name} class="photo-img" />
+						</div>
+					{:else}
+						<div class="plant-card-photo" style:background={cardBg(plant.id)}>
+							<img src={emojiToSvgPath(plant.icon)} alt={plant.name} class="plant-icon" />
+						</div>
+					{/if}
+					<div class="plant-card-body">
+						<div class="plant-card-name">{plant.name}</div>
 						{#if plant.location_name}
-							<span class="plant-location">
-								<MapPin size={13} />
-								{plant.location_name}
-							</span>
+							<div class="plant-card-location">{plant.location_name}</div>
 						{/if}
 					</div>
 				</a>
@@ -128,48 +142,53 @@
 	}
 
 	.plant-card {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		padding: 16px;
 		background: #FFFFFF;
 		border: 1px solid #E5DDD3;
 		border-radius: 12px;
+		overflow: hidden;
 		text-decoration: none;
 		color: inherit;
+		cursor: pointer;
 		transition: transform 0.15s, box-shadow 0.15s;
 	}
 
 	.plant-card:hover {
 		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+	}
+
+	.plant-card-photo {
+		height: 120px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.plant-icon {
-		width: 48px;
-		height: 48px;
-		flex-shrink: 0;
+		width: 56px;
+		height: 56px;
 	}
 
-	.plant-info {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		min-width: 0;
+	.photo-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 
-	.plant-name {
+	.plant-card-body {
+		padding: 12px 14px;
+	}
+
+	.plant-card-name {
 		font-size: 15px;
 		font-weight: 600;
+		margin-bottom: 2px;
+		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
-	.plant-location {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
+	.plant-card-location {
 		font-size: 13px;
 		color: #8C7E6E;
 	}
@@ -190,18 +209,12 @@
 		}
 
 		.plant-grid {
-			grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+			grid-template-columns: repeat(2, 1fr);
 			gap: 12px;
 		}
 
-		.plant-card {
-			padding: 12px;
-			gap: 10px;
-		}
-
-		.plant-icon {
-			width: 40px;
-			height: 40px;
+		.plant-card-photo {
+			height: 72px;
 		}
 	}
 </style>

@@ -2,18 +2,21 @@ use axum::Router;
 use axum::response::Json;
 use axum::routing::get;
 use serde_json::{Value, json};
-use sqlx::SqlitePool;
 use tokio::net::TcpListener;
 use tokio::signal;
+use tower_http::services::ServeDir;
 use tracing::info;
 
 use crate::api;
 use crate::embedded::static_handler;
+use crate::state::AppState;
 
-pub fn router(pool: SqlitePool) -> Router {
+pub fn router(state: AppState) -> Router {
+    let uploads = ServeDir::new(&state.upload_dir);
     Router::new()
         .route("/health", get(health))
-        .nest("/api", api::router(pool))
+        .nest("/api", api::router(state))
+        .nest_service("/uploads", uploads)
         .fallback(static_handler)
 }
 

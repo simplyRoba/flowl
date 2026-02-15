@@ -4,7 +4,11 @@ mod db;
 mod embedded;
 mod mqtt;
 mod server;
+mod state;
 
+use std::path::PathBuf;
+
+use state::AppState;
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
@@ -35,7 +39,17 @@ async fn main() {
         config.mqtt_host, config.mqtt_port
     );
 
-    let router = server::router(pool);
+    let upload_dir = PathBuf::from(&config.db_path)
+        .parent()
+        .map_or_else(|| PathBuf::from("uploads"), |p| p.join("uploads"));
+
+    tokio::fs::create_dir_all(&upload_dir)
+        .await
+        .expect("Failed to create upload directory");
+    info!("Upload directory at {}", upload_dir.display());
+
+    let state = AppState { pool, upload_dir };
+    let router = server::router(state);
 
     if let Err(e) = server::serve(router, config.port).await {
         error!("Server error: {e}");

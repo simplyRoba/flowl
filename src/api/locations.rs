@@ -8,10 +8,18 @@ use sqlx::SqlitePool;
 
 use super::error::{ApiError, JsonBody};
 
-#[derive(Serialize, sqlx::FromRow)]
+#[derive(Serialize)]
 pub struct Location {
     pub id: i64,
     pub name: String,
+    pub plant_count: i64,
+}
+
+#[derive(sqlx::FromRow)]
+struct LocationRow {
+    id: i64,
+    name: String,
+    plant_count: i64,
 }
 
 #[derive(Deserialize)]
@@ -27,12 +35,24 @@ pub struct UpdateLocation {
 pub async fn list_locations(
     State(pool): State<SqlitePool>,
 ) -> Result<Json<Vec<Location>>, ApiError> {
-    let locations = sqlx::query_as::<_, Location>("SELECT id, name FROM locations ORDER BY name")
-        .fetch_all(&pool)
-        .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    let rows = sqlx::query_as::<_, LocationRow>(
+        "SELECT l.id, l.name, COUNT(p.id) AS plant_count \
+         FROM locations l LEFT JOIN plants p ON p.location_id = l.id \
+         GROUP BY l.id, l.name ORDER BY l.name",
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
-    Ok(Json(locations))
+    Ok(Json(
+        rows.into_iter()
+            .map(|r| Location {
+                id: r.id,
+                name: r.name,
+                plant_count: r.plant_count,
+            })
+            .collect(),
+    ))
 }
 
 pub async fn create_location(
@@ -58,14 +78,22 @@ pub async fn create_location(
         )));
     }
 
-    let location =
-        sqlx::query_as::<_, Location>("INSERT INTO locations (name) VALUES (?) RETURNING id, name")
-            .bind(&name)
-            .fetch_one(&pool)
-            .await
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    let row = sqlx::query_as::<_, LocationRow>(
+        "INSERT INTO locations (name) VALUES (?) RETURNING id, name, 0 AS plant_count",
+    )
+    .bind(&name)
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
-    Ok((StatusCode::CREATED, Json(location)))
+    Ok((
+        StatusCode::CREATED,
+        Json(Location {
+            id: row.id,
+            name: row.name,
+            plant_count: row.plant_count,
+        }),
+    ))
 }
 
 pub async fn update_location(
@@ -105,16 +133,26 @@ pub async fn update_location(
         )));
     }
 
-    let location = sqlx::query_as::<_, Location>(
-        "UPDATE locations SET name = ? WHERE id = ? RETURNING id, name",
-    )
-    .bind(&name)
-    .bind(id)
-    .fetch_one(&pool)
-    .await
-    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    sqlx::query("UPDATE locations SET name = ? WHERE id = ?")
+        .bind(&name)
+        .bind(id)
+        .execute(&pool)
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
-    Ok(Json(location))
+    // Get plant count for response
+    let plant_count =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM plants WHERE location_id = ?")
+            .bind(id)
+            .fetch_one(&pool)
+            .await
+            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    Ok(Json(Location {
+        id,
+        name,
+        plant_count,
+    }))
 }
 
 pub async fn delete_location(

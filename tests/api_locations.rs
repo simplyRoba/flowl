@@ -35,6 +35,7 @@ async fn create_location() {
     let json = body_json(resp).await;
     assert_eq!(json["name"], "Living Room");
     assert!(json["id"].is_number());
+    assert_eq!(json["plant_count"], 0);
 }
 
 #[tokio::test]
@@ -107,6 +108,10 @@ async fn list_ordered_by_name() {
         .map(|l| l["name"].as_str().unwrap())
         .collect();
     assert_eq!(names, vec!["Attic", "Bedroom"]);
+    // Both should have plant_count 0
+    for loc in json.as_array().unwrap() {
+        assert_eq!(loc["plant_count"], 0);
+    }
 }
 
 #[tokio::test]
@@ -280,4 +285,46 @@ async fn delete_nullifies_plant_references() {
     let plant = body_json(resp).await;
     assert!(plant["location_id"].is_null());
     assert!(plant["location_name"].is_null());
+}
+
+#[tokio::test]
+async fn plant_count_reflects_assigned_plants() {
+    let app = app().await;
+
+    // Create location
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            "/api/locations",
+            Some(r#"{"name":"Office"}"#),
+        ))
+        .await
+        .unwrap();
+    let loc = body_json(resp).await;
+    let loc_id = loc["id"].as_i64().unwrap();
+
+    // Create plant with that location
+    app.clone()
+        .oneshot(json_request(
+            "POST",
+            "/api/plants",
+            Some(&format!(r#"{{"name":"Cactus","location_id":{loc_id}}}"#)),
+        ))
+        .await
+        .unwrap();
+
+    // List locations and verify plant_count
+    let resp = app
+        .oneshot(json_request("GET", "/api/locations", None))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    let office = json
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|l| l["name"] == "Office")
+        .unwrap();
+    assert_eq!(office["plant_count"], 1);
 }

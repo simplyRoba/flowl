@@ -1,6 +1,7 @@
 export interface Location {
 	id: number;
 	name: string;
+	plant_count: number;
 }
 
 export interface Plant {
@@ -8,6 +9,7 @@ export interface Plant {
 	name: string;
 	species: string | null;
 	icon: string;
+	photo_url: string | null;
 	location_id: number | null;
 	location_name: string | null;
 	watering_interval_days: number;
@@ -85,6 +87,32 @@ export function updatePlant(id: number, data: UpdatePlant): Promise<Plant> {
 
 export function deletePlant(id: number): Promise<void> {
 	return request('DELETE', `/api/plants/${id}`);
+}
+
+export async function uploadPlantPhoto(plantId: number, file: File): Promise<Plant> {
+	const formData = new FormData();
+	formData.append('file', file);
+
+	const resp = await fetch(`/api/plants/${plantId}/photo`, {
+		method: 'POST',
+		body: formData
+	});
+
+	if (!resp.ok) {
+		const data = await resp.json().catch(() => ({ message: resp.statusText }));
+		throw new ApiError(resp.status, data.message || resp.statusText);
+	}
+
+	return resp.json();
+}
+
+export async function deletePlantPhoto(plantId: number): Promise<void> {
+	const resp = await fetch(`/api/plants/${plantId}/photo`, { method: 'DELETE' });
+
+	if (!resp.ok) {
+		const data = await resp.json().catch(() => ({ message: resp.statusText }));
+		throw new ApiError(resp.status, data.message || resp.statusText);
+	}
 }
 
 export function fetchLocations(): Promise<Location[]> {

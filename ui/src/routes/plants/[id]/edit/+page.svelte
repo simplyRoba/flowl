@@ -4,7 +4,7 @@
 	import { page } from '$app/stores';
 	import { ArrowLeft } from 'lucide-svelte';
 	import type { CreatePlant } from '$lib/api';
-	import { currentPlant, plantsError, loadPlant, updatePlant } from '$lib/stores/plants';
+	import { currentPlant, plantsError, loadPlant, updatePlant, uploadPhoto, deletePhoto } from '$lib/stores/plants';
 	import PlantForm from '$lib/components/PlantForm.svelte';
 
 	let saving = $state(false);
@@ -16,14 +16,22 @@
 		loaded = true;
 	});
 
-	async function handleSave(data: CreatePlant) {
+	async function handleSave(data: CreatePlant, photo?: File) {
 		if (!$currentPlant) return;
 		saving = true;
 		const plant = await updatePlant($currentPlant.id, data);
 		if (plant) {
+			if (photo) {
+				await uploadPhoto(plant.id, photo);
+			}
 			goto(`/plants/${plant.id}`);
 		}
 		saving = false;
+	}
+
+	async function handleRemovePhoto() {
+		if (!$currentPlant) return;
+		await deletePhoto($currentPlant.id);
 	}
 </script>
 
@@ -38,7 +46,7 @@
 	{#if $plantsError}
 		<p class="error">{$plantsError}</p>
 	{:else if loaded && $currentPlant}
-		<PlantForm initial={$currentPlant} onsave={handleSave} {saving} />
+		<PlantForm initial={$currentPlant} onsave={handleSave} onremovephoto={handleRemovePhoto} {saving} />
 	{:else}
 		<p class="loading">Loading...</p>
 	{/if}

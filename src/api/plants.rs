@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
 use super::error::{ApiError, JsonBody};
+use crate::state::AppState;
 
 #[allow(clippy::option_option)]
 fn deserialize_nullable<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
@@ -24,6 +25,7 @@ pub struct Plant {
     pub name: String,
     pub species: Option<String>,
     pub icon: String,
+    pub photo_url: Option<String>,
     pub location_id: Option<i64>,
     pub location_name: Option<String>,
     pub watering_interval_days: i64,
@@ -34,18 +36,19 @@ pub struct Plant {
 }
 
 #[derive(sqlx::FromRow)]
-struct PlantRow {
-    id: i64,
-    name: String,
-    species: Option<String>,
-    icon: String,
-    location_id: Option<i64>,
-    location_name: Option<String>,
-    watering_interval_days: i64,
-    light_needs: String,
-    notes: Option<String>,
-    created_at: String,
-    updated_at: String,
+pub(crate) struct PlantRow {
+    pub(crate) id: i64,
+    pub(crate) name: String,
+    pub(crate) species: Option<String>,
+    pub(crate) icon: String,
+    pub(crate) photo_path: Option<String>,
+    pub(crate) location_id: Option<i64>,
+    pub(crate) location_name: Option<String>,
+    pub(crate) watering_interval_days: i64,
+    pub(crate) light_needs: String,
+    pub(crate) notes: Option<String>,
+    pub(crate) created_at: String,
+    pub(crate) updated_at: String,
 }
 
 impl From<PlantRow> for Plant {
@@ -55,6 +58,7 @@ impl From<PlantRow> for Plant {
             name: row.name,
             species: row.species,
             icon: row.icon,
+            photo_url: row.photo_path.map(|p| format!("/uploads/{p}")),
             location_id: row.location_id,
             location_name: row.location_name,
             watering_interval_days: row.watering_interval_days,
@@ -66,8 +70,8 @@ impl From<PlantRow> for Plant {
     }
 }
 
-const PLANT_SELECT: &str = "SELECT p.id, p.name, p.species, p.icon, p.location_id, \
-    l.name AS location_name, p.watering_interval_days, p.light_needs, \
+pub(crate) const PLANT_SELECT: &str = "SELECT p.id, p.name, p.species, p.icon, p.photo_path, \
+    p.location_id, l.name AS location_name, p.watering_interval_days, p.light_needs, \
     p.notes, p.created_at, p.updated_at \
     FROM plants p LEFT JOIN locations l ON p.location_id = l.id";
 
@@ -137,7 +141,7 @@ pub async fn create_plant(
     let icon = body
         .icon
         .filter(|i| !i.trim().is_empty())
-        .unwrap_or_else(|| "🪴".to_string());
+        .unwrap_or_else(|| "\u{1fab4}".to_string());
     let watering_interval_days = body.watering_interval_days.unwrap_or(7);
     let light_needs = body
         .light_needs
@@ -219,17 +223,32 @@ pub async fn update_plant(
 }
 
 pub async fn delete_plant(
-    State(pool): State<SqlitePool>,
+    State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, ApiError> {
+    // Check for photo to clean up
+    let photo_path =
+        sqlx::query_scalar::<_, Option<String>>("SELECT photo_path FROM plants WHERE id = ?")
+            .bind(id)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| ApiError::BadRequest(e.to_string()))?
+            .ok_or_else(|| ApiError::NotFound("Plant not found".to_string()))?;
+
     let result = sqlx::query("DELETE FROM plants WHERE id = ?")
         .bind(id)
-        .execute(&pool)
+        .execute(&state.pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     if result.rows_affected() == 0 {
         return Err(ApiError::NotFound("Plant not found".to_string()));
+    }
+
+    // Delete photo file if exists
+    if let Some(filename) = photo_path {
+        let file_path = state.upload_dir.join(&filename);
+        let _ = tokio::fs::remove_file(&file_path).await;
     }
 
     Ok(StatusCode::NO_CONTENT)
