@@ -9,6 +9,9 @@ ARG TARGETARCH
 COPY release-artifacts/linux-${TARGETARCH}/flowl /usr/local/bin/flowl
 RUN chmod +x /usr/local/bin/flowl
 
+RUN mkdir -p /data && chown 1000:1000 /data
+VOLUME /data
+
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
