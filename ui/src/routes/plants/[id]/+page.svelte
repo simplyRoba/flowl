@@ -188,7 +188,7 @@
 		width: 80px;
 		height: 80px;
 		flex-shrink: 0;
-		border-radius: 50%;
+		border-radius: 8px;
 		object-fit: cover;
 	}
 

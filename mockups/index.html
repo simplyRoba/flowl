@@ -48,8 +48,11 @@
   .noto-xl { width: 64px; height: 64px; }
   .emoji-option .noto { width: 24px; height: 24px; }
   .plant-card-photo .noto { width: 48px; height: 48px; }
+  .plant-card-photo .plant-photo { width: 100%; height: 100%; object-fit: cover; }
   .detail-photo .noto { width: 80px; height: 80px; }
-  .attention-card-icon .noto { width: 36px; height: 36px; }
+  .detail-photo .plant-photo { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-card); }
+  .attention-card-icon .noto { width: 48px; height: 48px; }
+  .mobile-content .attention-card-icon .noto { width: 32px; height: 32px; }
 
   /* Lucide icon defaults */
   svg[class~="lucide"] { vertical-align: middle; }
@@ -655,10 +658,46 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    overflow: hidden;
   }
 
   .attention-card-icon {
     font-size: 28px;
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-content .attention-card-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .attention-card.has-photo .attention-card-icon {
+    width: auto;
+    height: auto;
+    align-self: stretch;
+    max-height: 72px;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+
+  .attention-card-icon .attention-photo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .mobile-content .attention-card.has-photo .attention-card-icon {
+    align-self: center;
+    aspect-ratio: auto;
+    width: 44px;
+    height: 44px;
   }
 
   .attention-card-info {
@@ -1456,8 +1495,8 @@
               <div class="attention-section">
                 <div class="section-title"><i data-lucide="alert-triangle"></i> Needs Attention</div>
                 <div class="attention-cards">
-                  <div class="attention-card">
-                    <div class="attention-card-icon"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                  <div class="attention-card has-photo">
+                    <div class="attention-card-icon"><img class="attention-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=128&h=128&fit=crop" alt="Monstera"></div>
                     <div class="attention-card-info">
                       <div class="attention-card-name">Monstera</div>
                       <span class="status-badge status-overdue"><span class="status-dot"></span> 2d overdue</span>
@@ -1486,14 +1525,14 @@
 
               <div class="plant-grid widescreen-grid">
                 <div class="plant-card">
-                  <div class="plant-card-photo widescreen-photo green-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                  <div class="plant-card-photo widescreen-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&h=300&fit=crop" alt="Monstera"></div>
                   <div class="plant-card-body">
                     <div class="plant-card-name">Monstera</div>
                     <div class="plant-card-location">Living Room</div>
                   </div>
                 </div>
                 <div class="plant-card">
-                  <div class="plant-card-photo widescreen-photo blue-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
+                  <div class="plant-card-photo widescreen-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=300&fit=crop" alt="Ficus Lyrata"></div>
                   <div class="plant-card-body">
                     <div class="plant-card-name">Ficus Lyrata</div>
                     <div class="plant-card-location">Living Room</div>
@@ -1560,8 +1599,8 @@
               <div class="attention-section">
                 <div class="section-title"><i data-lucide="alert-triangle"></i> Needs Attention</div>
                 <div class="attention-cards">
-                  <div class="attention-card">
-                    <div class="attention-card-icon"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                  <div class="attention-card has-photo">
+                    <div class="attention-card-icon"><img class="attention-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=128&h=128&fit=crop" alt="Monstera"></div>
                     <div class="attention-card-info">
                       <div class="attention-card-name">Monstera</div>
                       <span class="status-badge status-overdue"><span class="status-dot"></span> 2d overdue</span>
@@ -1590,7 +1629,7 @@
 
               <div class="plant-grid">
                 <div class="plant-card">
-                  <div class="plant-card-photo green-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                  <div class="plant-card-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=300&h=200&fit=crop" alt="Monstera"></div>
                   <div class="plant-card-body">
                     <div class="plant-card-name">Monstera</div>
                     <div class="plant-card-location">Living Room</div>
@@ -1601,7 +1640,7 @@
                   </div>
                 </div>
                 <div class="plant-card">
-                  <div class="plant-card-photo blue-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
+                  <div class="plant-card-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=300&h=200&fit=crop" alt="Ficus Lyrata"></div>
                   <div class="plant-card-body">
                     <div class="plant-card-name">Ficus Lyrata</div>
                     <div class="plant-card-location">Living Room</div>
@@ -1681,8 +1720,8 @@
             <div class="attention-section">
               <div class="section-title"><i data-lucide="alert-triangle"></i> Needs Attention</div>
               <div class="attention-cards" style="flex-direction:column">
-                <div class="attention-card">
-                  <div class="attention-card-icon"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                <div class="attention-card has-photo">
+                  <div class="attention-card-icon"><img class="attention-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=128&h=128&fit=crop" alt="Monstera"></div>
                   <div class="attention-card-info">
                     <div class="attention-card-name">Monstera</div>
                     <span class="status-badge status-overdue"><span class="status-dot"></span> 2d overdue</span>
@@ -1706,7 +1745,7 @@
 
             <div class="plant-grid mobile-grid">
               <div class="plant-card">
-                <div class="plant-card-photo mobile-photo green-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                <div class="plant-card-photo mobile-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=200&h=150&fit=crop" alt="Monstera"></div>
                 <div class="plant-card-body">
                   <div class="plant-card-name">Monstera</div>
                   <div class="plant-card-location">Living Room</div>
@@ -1716,7 +1755,7 @@
                 </div>
               </div>
               <div class="plant-card">
-                <div class="plant-card-photo mobile-photo blue-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
+                <div class="plant-card-photo mobile-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=200&h=150&fit=crop" alt="Ficus Lyrata"></div>
                 <div class="plant-card-body">
                   <div class="plant-card-name">Ficus</div>
                   <div class="plant-card-location">Living Room</div>
@@ -1789,7 +1828,7 @@
                 </div>
               </div>
               <div class="detail-hero">
-                <div class="detail-photo green-bg" style="width:200px;height:200px"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant" style="width:100px;height:100px"></div>
+                <div class="detail-photo" style="width:200px;height:200px"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&h=400&fit=crop" alt="Monstera"></div>
                 <div class="detail-info">
                   <h2 style="font-size:26px">Monstera Deliciosa</h2>
                   <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
@@ -1876,7 +1915,7 @@
                 </div>
               </div>
               <div class="detail-hero">
-                <div class="detail-photo green-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                <div class="detail-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=360&h=360&fit=crop" alt="Monstera"></div>
                 <div class="detail-info">
                   <h2>Monstera Deliciosa</h2>
                   <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
@@ -1945,7 +1984,7 @@
           </div>
           <div style="overflow-y:auto;flex:1;min-height:0;padding-bottom:16px">
             <div class="detail-hero mobile-hero">
-              <div class="detail-photo mobile-detail-photo green-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+              <div class="detail-photo mobile-detail-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&h=300&fit=crop" alt="Monstera"></div>
               <div class="detail-info" style="width:100%">
                 <h2 style="font-size:20px">Monstera Deliciosa</h2>
                 <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
