@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/simplyRoba/flowl/compare/v0.2.1...v0.2.2) (2026-02-15)
+
+
+### Bug Fixes
+
+* **ci:** use target-specific CC for cross-compilation ([d25dfc3](https://github.com/simplyRoba/flowl/commit/d25dfc33dc5064379f4fb1858f242e727ac66906))
+
 ## [0.2.1](https://github.com/simplyRoba/flowl/compare/v0.2.0...v0.2.1) (2026-02-15)
 
 
