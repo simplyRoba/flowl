@@ -1,32 +1,4 @@
-## Purpose
-
-SvelteKit project scaffold with build pipeline, embedded in the Rust binary and served as the default route.
-
-## Requirements
-
-### Requirement: SvelteKit Project Structure
-
-A SvelteKit project SHALL exist at `ui/` with `@sveltejs/adapter-static` producing a fully static build output.
-
-#### Scenario: Static build output
-
-- **WHEN** `npm run build` is executed in the `ui/` directory
-- **THEN** a static build is produced at `ui/build/` containing `index.html` and all assets
-
-### Requirement: Build Integration
-
-The Rust build process SHALL compile the SvelteKit project before embedding its output via `rust-embed`.
-
-#### Scenario: Frontend built during cargo build
-
-- **WHEN** `cargo build` is executed
-- **THEN** `build.rs` runs `npm run build` in the `ui/` directory
-- **AND** the build output at `ui/build/` is embedded into the binary
-
-#### Scenario: Frontend build failure
-
-- **WHEN** `npm run build` fails during `cargo build`
-- **THEN** the Rust compilation fails with an error referencing the frontend build
+## MODIFIED Requirements
 
 ### Requirement: Empty Shell Layout
 

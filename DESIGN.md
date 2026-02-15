@@ -68,6 +68,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubun
 - Max content width: `1200px`
 - Card grid gap: `16px`
 - Mobile breakpoint: `768px`
+- Widescreen breakpoint: `1280px`
 
 ## Components
 
@@ -153,7 +154,7 @@ Desktop:                    Mobile:
 └──────┴───────────────┘
 ```
 
-- Sidebar width: `64px` (icon-only) or `220px` (expanded)
+- Sidebar width: `64px` (icon-only, 769px–1279px) or `200px` (expanded with labels, >= 1280px)
 - Active item: `Primary` background with rounded corners
 - Mobile bottom bar: `56px` height, `Surface` background, top border
 
@@ -198,7 +199,8 @@ The landing page. Overview of all plants with focus on what needs attention.
 - Greeting changes by time of day (morning/afternoon/evening)
 - "Needs Attention" section only visible when plants are due/overdue
 - Cards sorted: overdue first, then due, then by next watering date
-- Grid: 3 columns desktop, 2 tablet, 1 mobile
+- Grid: 4 columns widescreen (overlay cards), 3 columns desktop, 2 tablet, 1 mobile
+- Widescreen cards: full-bleed image (240px tall), name and location float over a bottom gradient overlay
 
 ### 2. Plant Detail
 

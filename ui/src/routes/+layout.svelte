@@ -10,10 +10,10 @@
 
 <div class="app">
 	<nav class="sidebar">
-		<div class="logo"><Sprout size={20} /></div>
-		<a href="/" class="nav-item active"><Leaf size={20} /></a>
-		<a href="/log" class="nav-item"><BookOpen size={20} /></a>
-		<a href="/settings" class="nav-item bottom"><Settings size={20} /></a>
+		<div class="logo"><Sprout size={20} /><span class="nav-label brand">flowl</span></div>
+		<a href="/" class="nav-item active"><Leaf size={20} /><span class="nav-label">Plants</span></a>
+		<a href="/log" class="nav-item"><BookOpen size={20} /><span class="nav-label">Log</span></a>
+		<a href="/settings" class="nav-item bottom"><Settings size={20} /><span class="nav-label">Settings</span></a>
 	</nav>
 	<main class="content">
 		{@render children()}
@@ -80,10 +80,52 @@
 		margin-top: auto;
 	}
 
+	.nav-label {
+		display: none;
+	}
+
 	.content {
 		flex: 1;
 		overflow-y: auto;
 		padding: 24px;
+	}
+
+	@media (min-width: 1280px) {
+		.sidebar {
+			width: 200px;
+			align-items: stretch;
+			padding: 16px 12px;
+		}
+
+		.logo {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding: 0 8px;
+		}
+
+		.nav-label {
+			display: inline;
+			font-size: 14px;
+			font-weight: 500;
+		}
+
+		.nav-label.brand {
+			font-size: 18px;
+			font-weight: 700;
+			color: #6B8F71;
+		}
+
+		.nav-item {
+			width: auto;
+			justify-content: flex-start;
+			gap: 10px;
+			padding: 0 12px;
+		}
+
+		.content {
+			padding: 32px;
+		}
 	}
 
 	@media (max-width: 768px) {

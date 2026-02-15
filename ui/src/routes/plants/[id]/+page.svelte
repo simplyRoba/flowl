@@ -279,6 +279,22 @@
 		padding: 16px;
 	}
 
+	@media (min-width: 1280px) {
+		.detail {
+			max-width: 960px;
+		}
+
+		.hero-icon {
+			width: 100px;
+			height: 100px;
+		}
+
+		.hero-photo {
+			width: 100px;
+			height: 100px;
+		}
+	}
+
 	@media (max-width: 768px) {
 		.plant-hero h1 {
 			font-size: 22px;

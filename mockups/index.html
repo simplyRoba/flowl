@@ -53,7 +53,7 @@
 
   /* Lucide icon defaults */
   svg[class~="lucide"] { vertical-align: middle; }
-  .sidebar-item svg, .sidebar-logo svg { width: 20px !important; height: 20px !important; }
+  .sidebar-item svg, .sidebar-logo svg, .sidebar-wide .sidebar-item svg, .sidebar-wide .sidebar-logo svg { width: 20px !important; height: 20px !important; }
   .nav-icon svg { width: 20px !important; height: 20px !important; }
   .top-bar-icon svg { width: 18px !important; height: 18px !important; }
   .water-btn svg { width: 16px !important; height: 16px !important; }
@@ -164,7 +164,7 @@
     justify-content: center;
     align-items: flex-start;
     flex-wrap: wrap;
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
   }
 
@@ -204,6 +204,81 @@
   .device-frame.desktop .dot.red { background: #ff5f57; }
   .device-frame.desktop .dot.yellow { background: #febc2e; }
   .device-frame.desktop .dot.green { background: #28c840; }
+
+  .device-frame.widescreen {
+    width: 1100px;
+    border-radius: 16px;
+    padding: 8px;
+  }
+
+  .device-frame.widescreen .device-chrome {
+    background: #2a2a2a;
+    border-radius: 10px 10px 0 0;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .device-frame.widescreen .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .device-frame.widescreen .dot.red { background: #ff5f57; }
+  .device-frame.widescreen .dot.yellow { background: #febc2e; }
+  .device-frame.widescreen .dot.green { background: #28c840; }
+
+  .widescreen .screen {
+    height: 600px;
+    border-radius: 0 0 10px 10px;
+  }
+
+  .app-widescreen {
+    display: flex;
+    height: 100%;
+  }
+
+  .sidebar-wide {
+    width: 200px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 12px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-wide .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 0 8px;
+  }
+
+  .sidebar-wide .sidebar-logo .brand-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  .sidebar-wide .sidebar-item {
+    width: auto;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: var(--text-muted);
+  }
+
+  .sidebar-wide .sidebar-item:hover { background: var(--border); }
+  .sidebar-wide .sidebar-item.active { background: var(--primary); color: #fff; }
+
+  .sidebar-wide .sidebar-item svg { flex-shrink: 0; }
 
   .device-frame.mobile {
     width: 340px;
@@ -425,6 +500,49 @@
 
   .plant-grid.mobile-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .plant-grid.widescreen-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+
+  .widescreen-grid .plant-card {
+    position: relative;
+    border: none;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+
+  .plant-card-photo.widescreen-photo {
+    height: 180px;
+  }
+
+  .plant-card-photo.widescreen-photo .noto {
+    width: 64px;
+    height: 64px;
+  }
+
+  .widescreen-grid .plant-card-body {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 28px 12px 10px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
+  }
+
+  .widescreen-grid .plant-card-name {
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .widescreen-grid .plant-card-location {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .widescreen-grid .plant-card-footer {
+    display: none;
   }
 
   .plant-card {
@@ -1312,6 +1430,110 @@
 <div id="screen-dashboard" class="mockup-section active">
   <div class="devices">
 
+    <!-- Widescreen -->
+    <div>
+      <div class="device-label">Widescreen</div>
+      <div class="device-frame widescreen">
+        <div class="device-chrome">
+          <div class="dot red"></div>
+          <div class="dot yellow"></div>
+          <div class="dot green"></div>
+        </div>
+        <div class="screen themed">
+          <div class="app-widescreen">
+            <div class="sidebar-wide">
+              <div class="sidebar-logo"><i data-lucide="sprout"></i><span class="brand-name">flowl</span></div>
+              <div class="sidebar-item active"><i data-lucide="leaf"></i> Plants</div>
+              <div class="sidebar-item"><i data-lucide="book-open"></i> Log</div>
+              <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i> Settings</div>
+            </div>
+            <div class="main-content" style="padding:32px">
+              <div class="greeting">
+                <h2>Good morning!</h2>
+                <p>2 plants need water today</p>
+              </div>
+
+              <div class="attention-section">
+                <div class="section-title"><i data-lucide="alert-triangle"></i> Needs Attention</div>
+                <div class="attention-cards">
+                  <div class="attention-card">
+                    <div class="attention-card-icon"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                    <div class="attention-card-info">
+                      <div class="attention-card-name">Monstera</div>
+                      <span class="status-badge status-overdue"><span class="status-dot"></span> 2d overdue</span>
+                      <div class="attention-card-actions">
+                        <button class="water-btn"><i data-lucide="droplet"></i> Water</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="attention-card">
+                    <div class="attention-card-icon"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
+                    <div class="attention-card-info">
+                      <div class="attention-card-name">Ficus</div>
+                      <span class="status-badge status-due"><span class="status-dot"></span> Due today</span>
+                      <div class="attention-card-actions">
+                        <button class="water-btn"><i data-lucide="droplet"></i> Water</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section-header">
+                <h3>All Plants (6)</h3>
+                <button class="add-btn">+ Add Plant</button>
+              </div>
+
+              <div class="plant-grid widescreen-grid">
+                <div class="plant-card">
+                  <div class="plant-card-photo widescreen-photo green-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                  <div class="plant-card-body">
+                    <div class="plant-card-name">Monstera</div>
+                    <div class="plant-card-location">Living Room</div>
+                  </div>
+                </div>
+                <div class="plant-card">
+                  <div class="plant-card-photo widescreen-photo blue-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
+                  <div class="plant-card-body">
+                    <div class="plant-card-name">Ficus Lyrata</div>
+                    <div class="plant-card-location">Living Room</div>
+                  </div>
+                </div>
+                <div class="plant-card">
+                  <div class="plant-card-photo widescreen-photo yellow-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f335.svg" alt="Cactus"></div>
+                  <div class="plant-card-body">
+                    <div class="plant-card-name">Snake Plant</div>
+                    <div class="plant-card-location">Bedroom</div>
+                  </div>
+                </div>
+                <div class="plant-card">
+                  <div class="plant-card-photo widescreen-photo pink-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f338.svg" alt="Cherry Blossom"></div>
+                  <div class="plant-card-body">
+                    <div class="plant-card-name">Orchid</div>
+                    <div class="plant-card-location">Kitchen</div>
+                  </div>
+                </div>
+                <div class="plant-card">
+                  <div class="plant-card-photo widescreen-photo purple-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fabb.svg" alt="Hyacinth"></div>
+                  <div class="plant-card-body">
+                    <div class="plant-card-name">Lavender</div>
+                    <div class="plant-card-location">Balcony</div>
+                  </div>
+                </div>
+                <div class="plant-card">
+                  <div class="plant-card-photo widescreen-photo teal-bg"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f331.svg" alt="Seedling"></div>
+                  <div class="plant-card-body">
+                    <div class="plant-card-name">Pothos</div>
+                    <div class="plant-card-location">Office</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Desktop -->
     <div>
       <div class="device-label">Desktop</div>
@@ -1541,6 +1763,93 @@
 <div id="screen-detail" class="mockup-section">
   <div class="devices">
 
+    <!-- Widescreen -->
+    <div>
+      <div class="device-label">Widescreen</div>
+      <div class="device-frame widescreen">
+        <div class="device-chrome">
+          <div class="dot red"></div>
+          <div class="dot yellow"></div>
+          <div class="dot green"></div>
+        </div>
+        <div class="screen themed">
+          <div class="app-widescreen">
+            <div class="sidebar-wide">
+              <div class="sidebar-logo"><i data-lucide="sprout"></i><span class="brand-name">flowl</span></div>
+              <div class="sidebar-item active"><i data-lucide="leaf"></i> Plants</div>
+              <div class="sidebar-item"><i data-lucide="book-open"></i> Log</div>
+              <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i> Settings</div>
+            </div>
+            <div class="main-content" style="padding:0">
+              <div class="detail-header">
+                <div class="detail-header-left"><i data-lucide="arrow-left"></i> Back</div>
+                <div class="detail-header-right">
+                  <div class="top-bar-icon"><i data-lucide="pencil"></i></div>
+                  <div class="top-bar-icon"><i data-lucide="trash-2"></i></div>
+                </div>
+              </div>
+              <div class="detail-hero">
+                <div class="detail-photo green-bg" style="width:200px;height:200px"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant" style="width:100px;height:100px"></div>
+                <div class="detail-info">
+                  <h2 style="font-size:26px">Monstera Deliciosa</h2>
+                  <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
+                  <div class="detail-status">
+                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 4 days</span>
+                  </div>
+                  <button class="detail-water-btn"><i data-lucide="droplet"></i> Water now</button>
+                </div>
+              </div>
+              <div class="detail-sections" style="padding:0 32px 32px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                  <div class="detail-card">
+                    <div class="detail-card-title">Watering</div>
+                    <div class="detail-row"><span class="detail-row-label">Interval</span><span>Every 7 days</span></div>
+                    <div class="detail-row"><span class="detail-row-label">Last watered</span><span>Feb 10, 2026</span></div>
+                    <div class="detail-row"><span class="detail-row-label">Next due</span><span>Feb 17, 2026</span></div>
+                  </div>
+                  <div class="detail-card">
+                    <div class="detail-card-title">Light</div>
+                    <div class="detail-row"><span class="detail-row-label">Needs</span><span>Indirect light</span></div>
+                    <div class="detail-row"><span class="detail-row-label">Placement</span><span>Near east window</span></div>
+                  </div>
+                </div>
+                <div class="detail-card">
+                  <div class="detail-card-title">Notes</div>
+                  <div class="detail-notes">Likes indirect light. Wipe leaves monthly with damp cloth. Sensitive to overwatering — let top inch of soil dry out.</div>
+                </div>
+                <div class="detail-card">
+                  <div class="detail-card-title">Care Log</div>
+                  <ul class="timeline">
+                    <li class="timeline-item">
+                      <span class="timeline-date">Feb 10</span>
+                      <span class="timeline-icon"><i data-lucide="droplet"></i></span>
+                      <span class="timeline-text">Watered</span>
+                    </li>
+                    <li class="timeline-item">
+                      <span class="timeline-date">Feb 3</span>
+                      <span class="timeline-icon"><i data-lucide="droplet"></i></span>
+                      <span class="timeline-text">Watered</span>
+                    </li>
+                    <li class="timeline-item">
+                      <span class="timeline-date">Jan 28</span>
+                      <span class="timeline-icon"><i data-lucide="sprout"></i></span>
+                      <div class="timeline-text">Repotted<div class="timeline-sub">Moved to bigger pot, added fresh soil</div></div>
+                    </li>
+                    <li class="timeline-item">
+                      <span class="timeline-date">Jan 15</span>
+                      <span class="timeline-icon"><i data-lucide="file-text"></i></span>
+                      <div class="timeline-text">Note<div class="timeline-sub">Yellowing leaf on lower branch, removed it</div></div>
+                    </li>
+                  </ul>
+                  <div class="add-log-link">+ Add log entry</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Desktop -->
     <div>
       <div class="device-label">Desktop</div>
@@ -1690,6 +1999,145 @@
 <!-- ==================== ADD PLANT ==================== -->
 <div id="screen-add" class="mockup-section">
   <div class="devices">
+
+    <!-- Widescreen -->
+    <div>
+      <div class="device-label">Widescreen</div>
+      <div class="device-frame widescreen">
+        <div class="device-chrome">
+          <div class="dot red"></div>
+          <div class="dot yellow"></div>
+          <div class="dot green"></div>
+        </div>
+        <div class="screen themed">
+          <div class="app-widescreen">
+            <div class="sidebar-wide">
+              <div class="sidebar-logo"><i data-lucide="sprout"></i><span class="brand-name">flowl</span></div>
+              <div class="sidebar-item active"><i data-lucide="leaf"></i> Plants</div>
+              <div class="sidebar-item"><i data-lucide="book-open"></i> Log</div>
+              <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i> Settings</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+              <div class="form-header">
+                <span class="form-cancel">Cancel</span>
+                <span style="font-weight:600;font-size:16px">Add Plant</span>
+                <button class="form-save">Save</button>
+              </div>
+              <div class="form-body" style="padding:32px">
+                <div style="max-width:640px;margin:0 auto">
+
+                  <div class="photo-upload-refined">
+                    <div class="upload-icon"><i data-lucide="camera"></i></div>
+                    <span>Add a photo</span>
+                    <span class="upload-hint">Click to select or drag & drop</span>
+                  </div>
+
+                  <div class="form-section" style="margin-top:16px">
+                    <div class="form-section-title">Identity</div>
+                    <div class="form-group">
+                      <label class="form-label">Name *</label>
+                      <input class="form-input" type="text" placeholder="e.g. Monstera Deliciosa" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Species (optional)</label>
+                      <input class="form-input" type="text" placeholder="e.g. Monstera" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                      <label class="form-label">Icon</label>
+                      <div class="emoji-picker">
+                        <div class="emoji-option active"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f335.svg" alt="Cactus"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f338.svg" alt="Cherry Blossom"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fabb.svg" alt="Hyacinth"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f331.svg" alt="Seedling"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f337.svg" alt="Tulip"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33b.svg" alt="Sunflower"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f340.svg" alt="Four Leaf Clover"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <div class="form-section-title">Location</div>
+                    <div class="location-chips">
+                      <div class="location-chip active"><i data-lucide="map-pin" class="chip-icon"></i> Living Room</div>
+                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Bedroom</div>
+                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Kitchen</div>
+                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Balcony</div>
+                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Office</div>
+                      <div class="location-chip add-location">+ New</div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <div class="form-section-title">Watering</div>
+                    <div class="interval-presets">
+                      <div class="interval-preset">
+                        <span class="preset-icon"><i data-lucide="droplet"></i></span>
+                        <span>3 days</span>
+                        <span class="preset-label">Thirsty</span>
+                      </div>
+                      <div class="interval-preset active">
+                        <span class="preset-icon"><i data-lucide="droplet"></i></span>
+                        <span>7 days</span>
+                        <span class="preset-label">Weekly</span>
+                      </div>
+                      <div class="interval-preset">
+                        <span class="preset-icon"><i data-lucide="droplet"></i></span>
+                        <span>14 days</span>
+                        <span class="preset-label">Biweekly</span>
+                      </div>
+                      <div class="interval-preset">
+                        <span class="preset-icon"><i data-lucide="droplet"></i></span>
+                        <span>30 days</span>
+                        <span class="preset-label">Monthly</span>
+                      </div>
+                    </div>
+                    <div class="interval-custom">
+                      <span class="stepper-label">Or set custom:</span>
+                      <div class="stepper">
+                        <button class="stepper-btn">−</button>
+                        <input class="stepper-value" type="text" value="7" />
+                        <button class="stepper-btn">+</button>
+                      </div>
+                      <span class="stepper-label">days</span>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <div class="form-section-title">Light needs</div>
+                    <div class="light-selector">
+                      <div class="light-option">
+                        <span class="light-icon"><i data-lucide="sun"></i></span>
+                        <span>Direct</span>
+                        <span class="light-label">Full sun</span>
+                      </div>
+                      <div class="light-option active">
+                        <span class="light-icon"><i data-lucide="cloud-sun"></i></span>
+                        <span>Indirect</span>
+                        <span class="light-label">Bright, filtered</span>
+                      </div>
+                      <div class="light-option">
+                        <span class="light-icon"><i data-lucide="cloud"></i></span>
+                        <span>Low</span>
+                        <span class="light-label">Shade tolerant</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <div class="form-section-title">Notes</div>
+                    <textarea class="form-input" placeholder="Care tips, observations, anything useful..." style="height:80px"></textarea>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Desktop -->
     <div>
@@ -1957,6 +2405,129 @@
 <div id="screen-log" class="mockup-section">
   <div class="devices">
 
+    <!-- Widescreen -->
+    <div>
+      <div class="device-label">Widescreen</div>
+      <div class="device-frame widescreen">
+        <div class="device-chrome">
+          <div class="dot red"></div>
+          <div class="dot yellow"></div>
+          <div class="dot green"></div>
+        </div>
+        <div class="screen themed">
+          <div class="app-widescreen">
+            <div class="sidebar-wide">
+              <div class="sidebar-logo"><i data-lucide="sprout"></i><span class="brand-name">flowl</span></div>
+              <div class="sidebar-item"><i data-lucide="leaf"></i> Plants</div>
+              <div class="sidebar-item active"><i data-lucide="book-open"></i> Log</div>
+              <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i> Settings</div>
+            </div>
+            <div class="main-content" style="padding:32px">
+              <div class="section-header" style="margin-bottom:16px">
+                <h2>Care Log</h2>
+              </div>
+
+              <div class="log-filters">
+                <button class="filter-chip active">All</button>
+                <button class="filter-chip"><i data-lucide="droplet"></i> Watered</button>
+                <button class="filter-chip"><i data-lucide="flask-conical"></i> Fertilized</button>
+                <button class="filter-chip"><i data-lucide="sprout"></i> Repotted</button>
+                <button class="filter-chip"><i data-lucide="scissors"></i> Pruned</button>
+                <button class="filter-chip"><i data-lucide="file-text"></i> Notes</button>
+              </div>
+
+              <div class="log-day-group">
+                <div class="log-day-header">Today — Feb 14, 2026</div>
+                <div class="log-entry">
+                  <div class="log-entry-icon water-icon"><i data-lucide="droplet"></i></div>
+                  <div class="log-entry-content">
+                    <div class="log-entry-top">
+                      <span class="log-entry-plant">Monstera Deliciosa</span>
+                      <span class="log-entry-time">10:30 AM</span>
+                    </div>
+                    <div class="log-entry-action">Watered</div>
+                  </div>
+                </div>
+                <div class="log-entry">
+                  <div class="log-entry-icon water-icon"><i data-lucide="droplet"></i></div>
+                  <div class="log-entry-content">
+                    <div class="log-entry-top">
+                      <span class="log-entry-plant">Ficus Lyrata</span>
+                      <span class="log-entry-time">10:28 AM</span>
+                    </div>
+                    <div class="log-entry-action">Watered</div>
+                  </div>
+                </div>
+                <div class="log-entry">
+                  <div class="log-entry-icon note-icon"><i data-lucide="file-text"></i></div>
+                  <div class="log-entry-content">
+                    <div class="log-entry-top">
+                      <span class="log-entry-plant">Orchid</span>
+                      <span class="log-entry-time">9:15 AM</span>
+                    </div>
+                    <div class="log-entry-action">Note added</div>
+                    <div class="log-entry-note">New flower spike emerging on the south-facing stem</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="log-day-group">
+                <div class="log-day-header">Yesterday — Feb 13, 2026</div>
+                <div class="log-entry">
+                  <div class="log-entry-icon fertilize-icon"><i data-lucide="flask-conical"></i></div>
+                  <div class="log-entry-content">
+                    <div class="log-entry-top">
+                      <span class="log-entry-plant">Snake Plant</span>
+                      <span class="log-entry-time">6:00 PM</span>
+                    </div>
+                    <div class="log-entry-action">Fertilized</div>
+                    <div class="log-entry-note">Half-strength liquid fertilizer</div>
+                  </div>
+                </div>
+                <div class="log-entry">
+                  <div class="log-entry-icon water-icon"><i data-lucide="droplet"></i></div>
+                  <div class="log-entry-content">
+                    <div class="log-entry-top">
+                      <span class="log-entry-plant">Pothos</span>
+                      <span class="log-entry-time">8:30 AM</span>
+                    </div>
+                    <div class="log-entry-action">Watered</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="log-day-group">
+                <div class="log-day-header">Feb 11, 2026</div>
+                <div class="log-entry">
+                  <div class="log-entry-icon repot-icon"><i data-lucide="sprout"></i></div>
+                  <div class="log-entry-content">
+                    <div class="log-entry-top">
+                      <span class="log-entry-plant">Lavender</span>
+                      <span class="log-entry-time">3:00 PM</span>
+                    </div>
+                    <div class="log-entry-action">Repotted</div>
+                    <div class="log-entry-note">Moved to terracotta pot with better drainage</div>
+                  </div>
+                </div>
+                <div class="log-entry">
+                  <div class="log-entry-icon prune-icon"><i data-lucide="scissors"></i></div>
+                  <div class="log-entry-content">
+                    <div class="log-entry-top">
+                      <span class="log-entry-plant">Monstera Deliciosa</span>
+                      <span class="log-entry-time">2:45 PM</span>
+                    </div>
+                    <div class="log-entry-action">Pruned</div>
+                    <div class="log-entry-note">Removed two yellowing lower leaves</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Desktop -->
     <div>
       <div class="device-label">Desktop</div>
@@ -2212,6 +2783,85 @@
 <!-- ==================== SETTINGS ==================== -->
 <div id="screen-settings" class="mockup-section">
   <div class="devices">
+
+    <!-- Widescreen -->
+    <div>
+      <div class="device-label">Widescreen</div>
+      <div class="device-frame widescreen">
+        <div class="device-chrome">
+          <div class="dot red"></div>
+          <div class="dot yellow"></div>
+          <div class="dot green"></div>
+        </div>
+        <div class="screen themed">
+          <div class="app-widescreen">
+            <div class="sidebar-wide">
+              <div class="sidebar-logo"><i data-lucide="sprout"></i><span class="brand-name">flowl</span></div>
+              <div class="sidebar-item"><i data-lucide="leaf"></i> Plants</div>
+              <div class="sidebar-item"><i data-lucide="book-open"></i> Log</div>
+              <div class="sidebar-item active" style="margin-top:auto"><i data-lucide="settings"></i> Settings</div>
+            </div>
+            <div class="main-content" style="padding:32px">
+              <h2 style="margin-bottom:20px">Settings</h2>
+              <div style="max-width:640px">
+                <div class="settings-group">
+                  <div class="settings-group-title">Appearance</div>
+                  <div class="settings-row">
+                    <span>Theme</span>
+                    <div class="theme-pills">
+                      <button class="theme-pill active">Light</button>
+                      <button class="theme-pill">Dark</button>
+                      <button class="theme-pill">System</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="settings-group">
+                  <div class="settings-group-title">MQTT</div>
+                  <div class="settings-row">
+                    <span>Status</span>
+                    <div class="mqtt-status"><span class="mqtt-dot"></span> Connected</div>
+                  </div>
+                  <div class="settings-row">
+                    <span>Broker</span>
+                    <span class="settings-value">192.168.1.10:1883</span>
+                  </div>
+                  <div class="settings-row">
+                    <span>Topic prefix</span>
+                    <span class="settings-value">flowl</span>
+                  </div>
+                </div>
+                <div class="settings-group">
+                  <div class="settings-group-title">Data</div>
+                  <div class="settings-row">
+                    <span>Export</span>
+                    <button class="settings-btn">Download JSON</button>
+                  </div>
+                  <div class="settings-row">
+                    <span>Import</span>
+                    <button class="settings-btn">Upload JSON</button>
+                  </div>
+                  <div class="settings-row">
+                    <span>Plants</span>
+                    <span class="settings-value">12 plants, 84 log entries</span>
+                  </div>
+                </div>
+                <div class="settings-group">
+                  <div class="settings-group-title">About</div>
+                  <div class="settings-row">
+                    <span>Version</span>
+                    <span class="settings-value">0.1.0</span>
+                  </div>
+                  <div class="settings-row">
+                    <span>Source</span>
+                    <span class="settings-value">github.com/simplyRoba/flowl</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Desktop -->
     <div>

@@ -25,6 +25,14 @@ The root route (`/`) SHALL display a grid of plant cards showing each plant's ic
 - **WHEN** the user clicks "Add Plant"
 - **THEN** the app navigates to `/plants/new`
 
+#### Scenario: Widescreen dashboard layout
+
+- **WHEN** the viewport width is >= 1280px
+- **THEN** the dashboard max-width SHALL be 1400px (increased from 1200px)
+- **AND** the plant cards SHALL use a full-bleed image layout (240px tall photo area)
+- **AND** the card name and location SHALL float over the image via a bottom gradient overlay
+- **AND** the grid gap SHALL be 20px
+
 ### Requirement: Plant Detail View
 
 The route `/plants/[id]` SHALL display full plant information with edit and delete actions.
@@ -51,6 +59,12 @@ The route `/plants/[id]` SHALL display full plant information with edit and dele
 - **WHEN** the user navigates to `/plants/999`
 - **AND** the API returns 404
 - **THEN** the page displays a "Plant not found" message
+
+#### Scenario: Widescreen detail layout
+
+- **WHEN** the viewport width is >= 1280px
+- **THEN** the detail page max-width SHALL be 960px (increased from 800px)
+- **AND** the hero photo/icon SHALL be 100px (increased from 80px)
 
 ### Requirement: Add Plant Form
 

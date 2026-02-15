@@ -198,6 +198,55 @@
 		padding: 16px;
 	}
 
+	@media (min-width: 1280px) {
+		.dashboard {
+			max-width: 1400px;
+		}
+
+		.plant-grid {
+			grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+			gap: 20px;
+		}
+
+		.plant-card {
+			position: relative;
+			border: none;
+		}
+
+		.plant-card-photo {
+			height: 240px;
+		}
+
+		.plant-card-body {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			padding: 32px 16px 14px;
+			background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
+			border-radius: 0 0 12px 12px;
+		}
+
+		.plant-card-name {
+			color: #fff;
+			font-size: 16px;
+			text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+		}
+
+		.plant-card-location {
+			color: rgba(255, 255, 255, 0.85);
+		}
+
+		.plant-card:hover {
+			box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+		}
+
+		.plant-icon {
+			width: 80px;
+			height: 80px;
+		}
+	}
+
 	@media (max-width: 768px) {
 		.page-header h1 {
 			font-size: 22px;
