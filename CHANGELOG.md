@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/simplyRoba/flowl/compare/v0.2.2...v0.2.3) (2026-02-15)
+
+
+### Bug Fixes
+
+* use debian trixie for glibc 2.38 compatibility ([03f1a5a](https://github.com/simplyRoba/flowl/commit/03f1a5ae0b334217ef1dc52f3f808e4a540710e2))
+
 ## [0.2.2](https://github.com/simplyRoba/flowl/compare/v0.2.1...v0.2.2) (2026-02-15)
 
 
