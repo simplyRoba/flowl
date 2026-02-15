@@ -35,13 +35,14 @@ The root route (`/`) SHALL display a grid of plant cards showing each plant's ic
 
 ### Requirement: Plant Detail View
 
-The route `/plants/[id]` SHALL display full plant information with edit and delete actions.
+The route `/plants/[id]` SHALL display full plant information with edit, delete, and care actions.
 
 #### Scenario: Plant displayed
 
 - **WHEN** the user navigates to `/plants/1`
 - **THEN** the page fetches the plant from `GET /api/plants/1`
 - **AND** displays icon, name, species, location, watering interval, light needs, and notes
+- **AND** displays the care journal section below the watering card
 
 #### Scenario: Edit action
 

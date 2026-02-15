@@ -122,6 +122,56 @@ export async function deletePlantPhoto(plantId: number): Promise<void> {
 	}
 }
 
+// --- Care Events ---
+
+export interface CareEvent {
+	id: number;
+	plant_id: number;
+	plant_name: string;
+	event_type: string;
+	notes: string | null;
+	occurred_at: string;
+	created_at: string;
+}
+
+export interface CreateCareEvent {
+	event_type: string;
+	notes?: string;
+	occurred_at?: string;
+}
+
+export interface CareEventsPage {
+	events: CareEvent[];
+	has_more: boolean;
+}
+
+export function fetchCareEvents(plantId: number): Promise<CareEvent[]> {
+	return request('GET', `/api/plants/${plantId}/care`);
+}
+
+export function fetchAllCareEvents(
+	limit?: number,
+	before?: number,
+	type?: string
+): Promise<CareEventsPage> {
+	const params = new URLSearchParams();
+	if (limit !== undefined) params.set('limit', String(limit));
+	if (before !== undefined) params.set('before', String(before));
+	if (type !== undefined) params.set('type', type);
+	const qs = params.toString();
+	return request('GET', `/api/care${qs ? `?${qs}` : ''}`);
+}
+
+export function createCareEvent(plantId: number, data: CreateCareEvent): Promise<CareEvent> {
+	return request('POST', `/api/plants/${plantId}/care`, data);
+}
+
+export function deleteCareEvent(plantId: number, eventId: number): Promise<void> {
+	return request('DELETE', `/api/plants/${plantId}/care/${eventId}`);
+}
+
+// --- Locations ---
+
 export function fetchLocations(): Promise<Location[]> {
 	return request('GET', '/api/locations');
 }

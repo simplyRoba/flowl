@@ -213,6 +213,7 @@ The API SHALL record a watering event via `POST /api/plants/:id/water`.
 - **THEN** the plant's `last_watered` is set to the current datetime
 - **AND** `updated_at` is refreshed
 - **AND** the API responds with HTTP 200 and the updated plant JSON with recomputed `watering_status`
+- **AND** a care event with `event_type` = `watered` and `occurred_at` = current datetime is automatically created
 
 #### Scenario: Plant not found
 

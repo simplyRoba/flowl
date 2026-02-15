@@ -1396,7 +1396,7 @@
 
   .log-entry-icon.water-icon { background: color-mix(in srgb, var(--water) 15%, transparent); }
   .log-entry-icon.repot-icon { background: color-mix(in srgb, var(--success) 15%, transparent); }
-  .log-entry-icon.note-icon { background: color-mix(in srgb, var(--warning) 15%, transparent); }
+  .log-entry-icon.custom-icon { background: color-mix(in srgb, var(--warning) 15%, transparent); }
   .log-entry-icon.fertilize-icon { background: color-mix(in srgb, var(--secondary) 15%, transparent); }
   .log-entry-icon.prune-icon { background: color-mix(in srgb, var(--text-muted) 15%, transparent); }
 
@@ -1457,7 +1457,7 @@
     <button class="mockup-tab active" onclick="showScreen('dashboard')">Dashboard</button>
     <button class="mockup-tab" onclick="showScreen('detail')">Plant Detail</button>
     <button class="mockup-tab" onclick="showScreen('add')">Add Plant</button>
-    <button class="mockup-tab" onclick="showScreen('log')">Care Log</button>
+    <button class="mockup-tab" onclick="showScreen('log')">Care Journal</button>
     <button class="mockup-tab" onclick="showScreen('settings')">Settings</button>
   </div>
   <div class="theme-toggle">
@@ -1858,7 +1858,7 @@
                   <div class="detail-notes">Likes indirect light. Wipe leaves monthly with damp cloth. Sensitive to overwatering — let top inch of soil dry out.</div>
                 </div>
                 <div class="detail-card">
-                  <div class="detail-card-title">Care Log</div>
+                  <div class="detail-card-title">Care Journal</div>
                   <ul class="timeline">
                     <li class="timeline-item">
                       <span class="timeline-date">Feb 10</span>
@@ -1872,13 +1872,13 @@
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Jan 28</span>
-                      <span class="timeline-icon"><i data-lucide="sprout"></i></span>
+                      <span class="timeline-icon"><i data-lucide="shovel"></i></span>
                       <div class="timeline-text">Repotted<div class="timeline-sub">Moved to bigger pot, added fresh soil</div></div>
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Jan 15</span>
-                      <span class="timeline-icon"><i data-lucide="file-text"></i></span>
-                      <div class="timeline-text">Note<div class="timeline-sub">Yellowing leaf on lower branch, removed it</div></div>
+                      <span class="timeline-icon"><i data-lucide="pencil"></i></span>
+                      <div class="timeline-text">Custom<div class="timeline-sub">Yellowing leaf on lower branch, removed it</div></div>
                     </li>
                   </ul>
                   <div class="add-log-link">+ Add log entry</div>
@@ -1938,7 +1938,7 @@
                   <div class="detail-notes">Likes indirect light. Wipe leaves monthly with damp cloth. Sensitive to overwatering — let top inch of soil dry out.</div>
                 </div>
                 <div class="detail-card">
-                  <div class="detail-card-title">Care Log</div>
+                  <div class="detail-card-title">Care Journal</div>
                   <ul class="timeline">
                     <li class="timeline-item">
                       <span class="timeline-date">Feb 10</span>
@@ -1952,13 +1952,13 @@
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Jan 28</span>
-                      <span class="timeline-icon"><i data-lucide="sprout"></i></span>
+                      <span class="timeline-icon"><i data-lucide="shovel"></i></span>
                       <div class="timeline-text">Repotted<div class="timeline-sub">Moved to bigger pot, added fresh soil</div></div>
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Jan 15</span>
-                      <span class="timeline-icon"><i data-lucide="file-text"></i></span>
-                      <div class="timeline-text">Note<div class="timeline-sub">Yellowing leaf on lower branch, removed it</div></div>
+                      <span class="timeline-icon"><i data-lucide="pencil"></i></span>
+                      <div class="timeline-text">Custom<div class="timeline-sub">Yellowing leaf on lower branch, removed it</div></div>
                     </li>
                   </ul>
                   <div class="add-log-link">+ Add log entry</div>
@@ -2007,7 +2007,7 @@
                 <div class="detail-notes">Likes indirect light. Wipe leaves monthly with damp cloth.</div>
               </div>
               <div class="detail-card">
-                <div class="detail-card-title">Care Log</div>
+                <div class="detail-card-title">Care Journal</div>
                 <ul class="timeline">
                   <li class="timeline-item">
                     <span class="timeline-date">Feb 10</span>
@@ -2021,7 +2021,7 @@
                   </li>
                   <li class="timeline-item">
                     <span class="timeline-date">Jan 28</span>
-                    <span class="timeline-icon"><i data-lucide="sprout"></i></span>
+                    <span class="timeline-icon"><i data-lucide="shovel"></i></span>
                     <div class="timeline-text">Repotted<div class="timeline-sub">Bigger pot, fresh soil</div></div>
                   </li>
                 </ul>
@@ -2464,16 +2464,16 @@
             </div>
             <div class="main-content" style="padding:32px">
               <div class="section-header" style="margin-bottom:16px">
-                <h2>Care Log</h2>
+                <h2>Care Journal</h2>
               </div>
 
               <div class="log-filters">
                 <button class="filter-chip active">All</button>
                 <button class="filter-chip"><i data-lucide="droplet"></i> Watered</button>
-                <button class="filter-chip"><i data-lucide="flask-conical"></i> Fertilized</button>
-                <button class="filter-chip"><i data-lucide="sprout"></i> Repotted</button>
+                <button class="filter-chip"><i data-lucide="leaf"></i> Fertilized</button>
+                <button class="filter-chip"><i data-lucide="shovel"></i> Repotted</button>
                 <button class="filter-chip"><i data-lucide="scissors"></i> Pruned</button>
-                <button class="filter-chip"><i data-lucide="file-text"></i> Notes</button>
+                <button class="filter-chip"><i data-lucide="pencil"></i> Custom</button>
               </div>
 
               <div class="log-day-group">
@@ -2499,13 +2499,13 @@
                   </div>
                 </div>
                 <div class="log-entry">
-                  <div class="log-entry-icon note-icon"><i data-lucide="file-text"></i></div>
+                  <div class="log-entry-icon custom-icon"><i data-lucide="pencil"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Orchid</span>
                       <span class="log-entry-time">9:15 AM</span>
                     </div>
-                    <div class="log-entry-action">Note added</div>
+                    <div class="log-entry-action">Custom</div>
                     <div class="log-entry-note">New flower spike emerging on the south-facing stem</div>
                   </div>
                 </div>
@@ -2514,7 +2514,7 @@
               <div class="log-day-group">
                 <div class="log-day-header">Yesterday — Feb 13, 2026</div>
                 <div class="log-entry">
-                  <div class="log-entry-icon fertilize-icon"><i data-lucide="flask-conical"></i></div>
+                  <div class="log-entry-icon fertilize-icon"><i data-lucide="leaf"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Snake Plant</span>
@@ -2539,7 +2539,7 @@
               <div class="log-day-group">
                 <div class="log-day-header">Feb 11, 2026</div>
                 <div class="log-entry">
-                  <div class="log-entry-icon repot-icon"><i data-lucide="sprout"></i></div>
+                  <div class="log-entry-icon repot-icon"><i data-lucide="shovel"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Lavender</span>
@@ -2587,16 +2587,16 @@
             </div>
             <div class="main-content">
               <div class="section-header" style="margin-bottom:16px">
-                <h2>Care Log</h2>
+                <h2>Care Journal</h2>
               </div>
 
               <div class="log-filters">
                 <button class="filter-chip active">All</button>
                 <button class="filter-chip"><i data-lucide="droplet"></i> Watered</button>
-                <button class="filter-chip"><i data-lucide="flask-conical"></i> Fertilized</button>
-                <button class="filter-chip"><i data-lucide="sprout"></i> Repotted</button>
+                <button class="filter-chip"><i data-lucide="leaf"></i> Fertilized</button>
+                <button class="filter-chip"><i data-lucide="shovel"></i> Repotted</button>
                 <button class="filter-chip"><i data-lucide="scissors"></i> Pruned</button>
-                <button class="filter-chip"><i data-lucide="file-text"></i> Notes</button>
+                <button class="filter-chip"><i data-lucide="pencil"></i> Custom</button>
               </div>
 
               <div class="log-day-group">
@@ -2622,13 +2622,13 @@
                   </div>
                 </div>
                 <div class="log-entry">
-                  <div class="log-entry-icon note-icon"><i data-lucide="file-text"></i></div>
+                  <div class="log-entry-icon custom-icon"><i data-lucide="pencil"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Orchid</span>
                       <span class="log-entry-time">9:15 AM</span>
                     </div>
-                    <div class="log-entry-action">Note added</div>
+                    <div class="log-entry-action">Custom</div>
                     <div class="log-entry-note">New flower spike emerging on the south-facing stem</div>
                   </div>
                 </div>
@@ -2637,7 +2637,7 @@
               <div class="log-day-group">
                 <div class="log-day-header">Yesterday — Feb 13, 2026</div>
                 <div class="log-entry">
-                  <div class="log-entry-icon fertilize-icon"><i data-lucide="flask-conical"></i></div>
+                  <div class="log-entry-icon fertilize-icon"><i data-lucide="leaf"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Snake Plant</span>
@@ -2662,7 +2662,7 @@
               <div class="log-day-group">
                 <div class="log-day-header">Feb 11, 2026</div>
                 <div class="log-entry">
-                  <div class="log-entry-icon repot-icon"><i data-lucide="sprout"></i></div>
+                  <div class="log-entry-icon repot-icon"><i data-lucide="shovel"></i></div>
                   <div class="log-entry-content">
                     <div class="log-entry-top">
                       <span class="log-entry-plant">Lavender</span>
@@ -2708,7 +2708,7 @@
         <div class="screen themed">
           <div class="device-notch"></div>
           <div class="top-bar">
-            <div class="top-bar-title">Care Log</div>
+            <div class="top-bar-title">Care Journal</div>
             <div></div>
           </div>
           <div class="mobile-content">
@@ -2716,10 +2716,10 @@
             <div class="log-filters" style="margin-bottom:12px">
               <button class="filter-chip active">All</button>
               <button class="filter-chip"><i data-lucide="droplet"></i></button>
-              <button class="filter-chip"><i data-lucide="flask-conical"></i></button>
-              <button class="filter-chip"><i data-lucide="sprout"></i></button>
+              <button class="filter-chip"><i data-lucide="leaf"></i></button>
+              <button class="filter-chip"><i data-lucide="shovel"></i></button>
               <button class="filter-chip"><i data-lucide="scissors"></i></button>
-              <button class="filter-chip"><i data-lucide="file-text"></i></button>
+              <button class="filter-chip"><i data-lucide="pencil"></i></button>
             </div>
 
             <div class="log-day-group">
@@ -2745,13 +2745,13 @@
                 </div>
               </div>
               <div class="log-entry">
-                <div class="log-entry-icon note-icon"><i data-lucide="file-text"></i></div>
+                <div class="log-entry-icon custom-icon"><i data-lucide="pencil"></i></div>
                 <div class="log-entry-content">
                   <div class="log-entry-top">
                     <span class="log-entry-plant">Orchid</span>
                     <span class="log-entry-time">9:15</span>
                   </div>
-                  <div class="log-entry-action">Note added</div>
+                  <div class="log-entry-action">Custom</div>
                   <div class="log-entry-note">New flower spike emerging</div>
                 </div>
               </div>
@@ -2760,7 +2760,7 @@
             <div class="log-day-group">
               <div class="log-day-header">Yesterday</div>
               <div class="log-entry">
-                <div class="log-entry-icon fertilize-icon"><i data-lucide="flask-conical"></i></div>
+                <div class="log-entry-icon fertilize-icon"><i data-lucide="leaf"></i></div>
                 <div class="log-entry-content">
                   <div class="log-entry-top">
                     <span class="log-entry-plant">Snake Plant</span>
@@ -2785,7 +2785,7 @@
             <div class="log-day-group">
               <div class="log-day-header">Feb 11</div>
               <div class="log-entry">
-                <div class="log-entry-icon repot-icon"><i data-lucide="sprout"></i></div>
+                <div class="log-entry-icon repot-icon"><i data-lucide="shovel"></i></div>
                 <div class="log-entry-content">
                   <div class="log-entry-top">
                     <span class="log-entry-plant">Lavender</span>

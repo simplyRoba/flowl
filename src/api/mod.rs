@@ -1,3 +1,4 @@
+pub mod care_events;
 pub mod error;
 pub mod locations;
 pub mod photos;
@@ -5,7 +6,7 @@ pub mod plants;
 
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
-use axum::routing::{get, post, put};
+use axum::routing::{delete, get, post, put};
 
 use crate::state::AppState;
 
@@ -22,6 +23,15 @@ pub fn router(state: AppState) -> Router {
                 .delete(plants::delete_plant),
         )
         .route("/plants/{id}/water", post(plants::water_plant))
+        .route(
+            "/plants/{id}/care",
+            get(care_events::list_care_events).post(care_events::create_care_event),
+        )
+        .route(
+            "/plants/{id}/care/{event_id}",
+            delete(care_events::delete_care_event),
+        )
+        .route("/care", get(care_events::list_all_care_events))
         .route(
             "/plants/{id}/photo",
             axum::routing::post(photos::upload_photo)

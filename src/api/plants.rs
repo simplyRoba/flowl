@@ -332,6 +332,17 @@ pub async fn water_plant(
         return Err(ApiError::NotFound("Plant not found".to_string()));
     }
 
+    // Auto-log a care event for the watering
+    if let Err(e) = sqlx::query(
+        "INSERT INTO care_events (plant_id, event_type, occurred_at) VALUES (?, 'watered', datetime('now'))",
+    )
+    .bind(id)
+    .execute(&state.pool)
+    .await
+    {
+        tracing::error!("Failed to log watered care event for plant {id}: {e}");
+    }
+
     let row = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
         .bind(id)
         .fetch_one(&state.pool)

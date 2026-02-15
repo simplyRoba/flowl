@@ -2,19 +2,30 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Sun, CloudSun, Cloud } from 'lucide-svelte';
+	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, X } from 'lucide-svelte';
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
+	import { careEvents, loadCareEvents, addCareEvent, removeCareEvent } from '$lib/stores/care';
 	import { emojiToSvgPath } from '$lib/emoji';
+	import type { CareEvent } from '$lib/api';
 
 	let notFound = $state(false);
 	let deleting = $state(false);
 	let watering = $state(false);
+	let showLogForm = $state(false);
+	let logEventType = $state('');
+	let logNotes = $state('');
+	let logSubmitting = $state(false);
+	let showAllEvents = $state(false);
+
+	const EVENT_LIMIT = 20;
 
 	onMount(async () => {
 		const id = Number($page.params.id);
 		const plant = await loadPlant(id);
 		if (!plant) {
 			notFound = true;
+		} else {
+			await loadCareEvents(id);
 		}
 	});
 
@@ -45,6 +56,7 @@
 		if (!$currentPlant || watering) return;
 		watering = true;
 		await waterPlant($currentPlant.id);
+		await loadCareEvents($currentPlant.id);
 		watering = false;
 	}
 
@@ -60,6 +72,83 @@
 		if (status === 'due') return 'Due';
 		return 'OK';
 	}
+
+	function eventTypeLabel(type: string): string {
+		if (type === 'watered') return 'Watered';
+		if (type === 'fertilized') return 'Fertilized';
+		if (type === 'repotted') return 'Repotted';
+		if (type === 'pruned') return 'Pruned';
+		return 'Custom';
+	}
+
+	function dayLabel(dateStr: string): string {
+		const date = new Date(dateStr);
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const yesterday = new Date(today);
+		yesterday.setDate(yesterday.getDate() - 1);
+		const eventDate = new Date(date);
+		eventDate.setHours(0, 0, 0, 0);
+		if (eventDate.getTime() === today.getTime()) return 'Today';
+		if (eventDate.getTime() === yesterday.getTime()) return 'Yesterday';
+		return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+	}
+
+	function formatTime(dateStr: string): string {
+		const date = new Date(dateStr);
+		if (isNaN(date.getTime())) return '';
+		return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+	}
+
+	async function handleLogSubmit() {
+		if (!$currentPlant || !logEventType || logSubmitting) return;
+		logSubmitting = true;
+		await addCareEvent($currentPlant.id, {
+			event_type: logEventType,
+			notes: logNotes.trim() || undefined
+		});
+		logEventType = '';
+		logNotes = '';
+		showLogForm = false;
+		logSubmitting = false;
+	}
+
+	function handleLogCancel() {
+		showLogForm = false;
+		logEventType = '';
+		logNotes = '';
+	}
+
+	async function handleDeleteEvent(eventId: number) {
+		if (!$currentPlant) return;
+		await removeCareEvent($currentPlant.id, eventId);
+	}
+
+	let displayEvents = $derived(
+		showAllEvents ? $careEvents : $careEvents.slice(0, EVENT_LIMIT)
+	);
+
+	let hasMoreEvents = $derived($careEvents.length > EVENT_LIMIT);
+
+	interface DayGroup {
+		label: string;
+		events: CareEvent[];
+	}
+
+	let groupedEvents: DayGroup[] = $derived.by(() => {
+		const groups: DayGroup[] = [];
+		let currentLabel = '';
+		for (const event of displayEvents) {
+			const label = dayLabel(event.occurred_at);
+			if (label !== currentLabel) {
+				groups.push({ label, events: [event] });
+				currentLabel = label;
+			} else {
+				groups[groups.length - 1].events.push(event);
+			}
+		}
+		return groups;
+	});
 </script>
 
 {#if notFound}
@@ -150,6 +239,91 @@
 				<p>{$currentPlant.notes}</p>
 			</div>
 		{/if}
+
+		<div class="care-journal info-card">
+			<h3><Leaf size={16} /> Care Journal</h3>
+
+			{#if $careEvents.length === 0}
+				<p class="journal-empty">No care events recorded yet.</p>
+			{:else}
+				<div class="timeline">
+					{#each groupedEvents as group}
+						<div class="day-group">
+							<div class="day-label">{group.label}</div>
+							{#each group.events as event}
+								<div class="timeline-event">
+									<div class="event-icon">
+										{#if event.event_type === 'watered'}
+											<Droplet size={14} />
+										{:else if event.event_type === 'fertilized'}
+											<Leaf size={14} />
+										{:else if event.event_type === 'repotted'}
+											<Shovel size={14} />
+										{:else if event.event_type === 'pruned'}
+											<Scissors size={14} />
+										{:else}
+											<Pencil size={14} />
+										{/if}
+									</div>
+									<div class="event-content">
+										<span class="event-label">{eventTypeLabel(event.event_type)}</span>
+										{#if event.notes}
+											<p class="event-notes">{event.notes}</p>
+										{/if}
+									</div>
+									<span class="event-time">{formatTime(event.occurred_at)}</span>
+									<button class="event-delete" onclick={() => handleDeleteEvent(event.id)} title="Delete event">
+										<X size={14} />
+									</button>
+								</div>
+							{/each}
+						</div>
+					{/each}
+				</div>
+				{#if hasMoreEvents && !showAllEvents}
+					<button class="show-more" onclick={() => showAllEvents = true}>
+						Show more events
+					</button>
+				{/if}
+			{/if}
+
+			{#if showLogForm}
+				<div class="log-form">
+					<div class="type-chips">
+						{#each [
+							{ value: 'fertilized', label: 'Fertilized' },
+							{ value: 'repotted', label: 'Repotted' },
+							{ value: 'pruned', label: 'Pruned' },
+							{ value: 'custom', label: 'Custom' }
+						] as chip}
+							<button
+								class="type-chip"
+								class:selected={logEventType === chip.value}
+								onclick={() => logEventType = chip.value}
+							>
+								{chip.label}
+							</button>
+						{/each}
+					</div>
+					<textarea
+						class="log-notes"
+						placeholder="Notes (optional)"
+						bind:value={logNotes}
+						rows="2"
+					></textarea>
+					<div class="log-actions">
+						<button class="log-save" onclick={handleLogSubmit} disabled={!logEventType || logSubmitting}>
+							{logSubmitting ? 'Saving...' : 'Save'}
+						</button>
+						<button class="log-cancel" onclick={handleLogCancel}>Cancel</button>
+					</div>
+				</div>
+			{:else}
+				<button class="add-log-btn" onclick={() => showLogForm = true}>
+					+ Add log entry
+				</button>
+			{/if}
+		</div>
 	</div>
 {:else if $plantsError}
 	<p class="error">{$plantsError}</p>
@@ -404,6 +578,237 @@
 		padding: 16px;
 	}
 
+	.care-journal {
+		margin-bottom: 16px;
+	}
+
+	.journal-empty {
+		color: #8C7E6E;
+		font-size: 14px;
+		margin: 8px 0 0;
+	}
+
+	.timeline {
+		margin-top: 12px;
+	}
+
+	.day-group {
+		margin-bottom: 16px;
+	}
+
+	.day-group:last-child {
+		margin-bottom: 0;
+	}
+
+	.day-label {
+		font-size: 12px;
+		font-weight: 600;
+		color: #8C7E6E;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		margin-bottom: 8px;
+	}
+
+	.timeline-event {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		padding: 8px 0;
+		border-bottom: 1px solid #F0EBE4;
+	}
+
+	.timeline-event:last-child {
+		border-bottom: none;
+	}
+
+	.event-icon {
+		width: 28px;
+		height: 28px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		background: #F5F0EA;
+		color: #8C7E6E;
+		flex-shrink: 0;
+	}
+
+	.event-content {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.event-label {
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.event-time {
+		font-size: 12px;
+		color: #8C7E6E;
+		flex-shrink: 0;
+		padding-top: 2px;
+	}
+
+	.event-notes {
+		font-size: 13px;
+		color: #8C7E6E;
+		margin: 2px 0 0;
+	}
+
+	.event-delete {
+		background: none;
+		border: none;
+		color: #C4B5A5;
+		cursor: pointer;
+		padding: 4px;
+		border-radius: 4px;
+		flex-shrink: 0;
+		opacity: 0;
+		transition: opacity 0.15s, color 0.15s;
+	}
+
+	.timeline-event:hover .event-delete {
+		opacity: 1;
+	}
+
+	.event-delete:hover {
+		color: #C45B5B;
+	}
+
+	.show-more {
+		display: block;
+		width: 100%;
+		padding: 8px;
+		background: none;
+		border: 1px solid #E5DDD3;
+		border-radius: 8px;
+		color: #6B8F71;
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		margin-top: 8px;
+		transition: background 0.15s;
+	}
+
+	.show-more:hover {
+		background: #FAF6F1;
+	}
+
+	.add-log-btn {
+		display: block;
+		width: 100%;
+		padding: 10px;
+		background: none;
+		border: 1px dashed #D5CCC2;
+		border-radius: 8px;
+		color: #6B8F71;
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		margin-top: 12px;
+		transition: background 0.15s, border-color 0.15s;
+	}
+
+	.add-log-btn:hover {
+		background: #FAF6F1;
+		border-color: #6B8F71;
+	}
+
+	.log-form {
+		margin-top: 12px;
+		padding-top: 12px;
+		border-top: 1px solid #F0EBE4;
+	}
+
+	.type-chips {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+		margin-bottom: 10px;
+	}
+
+	.type-chip {
+		padding: 6px 14px;
+		border: 1px solid #E5DDD3;
+		border-radius: 16px;
+		background: #FFFFFF;
+		color: #8C7E6E;
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 0.15s, border-color 0.15s, color 0.15s;
+	}
+
+	.type-chip:hover {
+		background: #FAF6F1;
+	}
+
+	.type-chip.selected {
+		background: #6B8F71;
+		border-color: #6B8F71;
+		color: #FFFFFF;
+	}
+
+	.log-notes {
+		width: 100%;
+		padding: 8px 10px;
+		border: 1px solid #E5DDD3;
+		border-radius: 8px;
+		font-size: 14px;
+		font-family: inherit;
+		resize: vertical;
+		margin-bottom: 10px;
+		box-sizing: border-box;
+	}
+
+	.log-notes:focus {
+		outline: none;
+		border-color: #6B8F71;
+	}
+
+	.log-actions {
+		display: flex;
+		gap: 8px;
+	}
+
+	.log-save {
+		padding: 8px 20px;
+		background: #6B8F71;
+		color: #FFFFFF;
+		border: none;
+		border-radius: 8px;
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 0.15s;
+	}
+
+	.log-save:hover:not(:disabled) {
+		background: #4A6B4F;
+	}
+
+	.log-save:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.log-cancel {
+		padding: 8px 20px;
+		background: none;
+		border: 1px solid #E5DDD3;
+		border-radius: 8px;
+		color: #8C7E6E;
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 0.15s;
+	}
+
+	.log-cancel:hover {
+		background: #FAF6F1;
+	}
+
 	@media (min-width: 1280px) {
 		.detail {
 			max-width: 960px;
@@ -444,6 +849,10 @@
 			text-align: center;
 			gap: 16px;
 			margin-bottom: 24px;
+		}
+
+		.event-delete {
+			opacity: 1;
 		}
 	}
 </style>
