@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { Sprout, Leaf, BookOpen, Settings } from 'lucide-svelte';
+	import { page } from '$app/state';
 
 	let { children } = $props();
+
+	function isActive(href: string): boolean {
+		if (href === '/') return page.url.pathname === '/' || page.url.pathname.startsWith('/plants');
+		return page.url.pathname.startsWith(href);
+	}
 </script>
 
 <svelte:head>
@@ -11,9 +17,9 @@
 <div class="app">
 	<nav class="sidebar">
 		<div class="logo"><Sprout size={20} /><span class="nav-label brand">flowl</span></div>
-		<a href="/" class="nav-item active"><Leaf size={20} /><span class="nav-label">Plants</span></a>
-		<a href="/log" class="nav-item"><BookOpen size={20} /><span class="nav-label">Log</span></a>
-		<a href="/settings" class="nav-item bottom"><Settings size={20} /><span class="nav-label">Settings</span></a>
+		<a href="/" class="nav-item" class:active={isActive('/')}><Leaf size={20} /><span class="nav-label">Plants</span></a>
+		<a href="/log" class="nav-item" class:active={isActive('/log')}><BookOpen size={20} /><span class="nav-label">Log</span></a>
+		<a href="/settings" class="nav-item bottom" class:active={isActive('/settings')}><Settings size={20} /><span class="nav-label">Settings</span></a>
 	</nav>
 	<main class="content">
 		{@render children()}
