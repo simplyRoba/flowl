@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/simplyRoba/flowl/compare/v0.2.3...v0.2.4) (2026-02-15)
+
+
+### Bug Fixes
+
+* create /data directory in container for SQLite database ([39b8434](https://github.com/simplyRoba/flowl/commit/39b843434387a0977d23d9e0105a843ac4ee95e8))
+
 ## [0.2.3](https://github.com/simplyRoba/flowl/compare/v0.2.2...v0.2.3) (2026-02-15)
 
 
