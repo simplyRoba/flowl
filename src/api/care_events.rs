@@ -173,7 +173,10 @@ pub async fn list_all_care_events(
         query.push_str(&conditions.join(" AND "));
     }
 
-    let _ = write!(query, " ORDER BY ce.occurred_at DESC, ce.id DESC LIMIT {fetch_count}");
+    let _ = write!(
+        query,
+        " ORDER BY ce.occurred_at DESC, ce.id DESC LIMIT {fetch_count}"
+    );
 
     let mut events = sqlx::query_as::<_, CareEvent>(&query)
         .fetch_all(&pool)
