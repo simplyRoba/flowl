@@ -63,6 +63,11 @@
 						{#if plant.location_name}
 							<div class="plant-card-location">{plant.location_name}</div>
 						{/if}
+						{#if plant.watering_status === 'overdue'}
+							<span class="status-badge status-overdue">Overdue</span>
+						{:else if plant.watering_status === 'due'}
+							<span class="status-badge status-due">Due</span>
+						{/if}
 					</div>
 				</a>
 			{/each}
@@ -191,6 +196,27 @@
 	.plant-card-location {
 		font-size: 13px;
 		color: #8C7E6E;
+	}
+
+	.status-badge {
+		display: inline-block;
+		font-size: 11px;
+		font-weight: 600;
+		padding: 2px 8px;
+		border-radius: 10px;
+		margin-top: 4px;
+		text-transform: uppercase;
+		letter-spacing: 0.3px;
+	}
+
+	.status-overdue {
+		background: #FDECEA;
+		color: #C45B5B;
+	}
+
+	.status-due {
+		background: #FFF4E5;
+		color: #C48B3B;
 	}
 
 	.error {

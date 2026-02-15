@@ -2,6 +2,7 @@ mod common;
 
 use axum::http::StatusCode;
 use common::{body_json, json_request};
+use flowl::api::plants::compute_watering_status;
 use tower::ServiceExt;
 
 async fn app() -> axum::Router {
@@ -258,4 +259,125 @@ async fn update_clears_location() {
     let json = body_json(resp).await;
     assert!(json["location_id"].is_null());
     assert!(json["location_name"].is_null());
+}
+
+#[tokio::test]
+async fn new_plant_has_due_status() {
+    let resp = app()
+        .await
+        .oneshot(json_request(
+            "POST",
+            "/api/plants",
+            Some(r#"{"name":"Aloe"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let json = body_json(resp).await;
+    assert_eq!(json["watering_status"], "due");
+    assert!(json["last_watered"].is_null());
+    assert!(json["next_due"].is_null());
+}
+
+#[tokio::test]
+async fn water_plant_sets_last_watered() {
+    let app = app().await;
+
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            "/api/plants",
+            Some(r#"{"name":"Rose"}"#),
+        ))
+        .await
+        .unwrap();
+    let plant = body_json(resp).await;
+    let id = plant["id"].as_i64().unwrap();
+    assert!(plant["last_watered"].is_null());
+
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{id}/water"),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    assert!(json["last_watered"].is_string());
+    assert_eq!(json["watering_status"], "ok");
+    assert!(json["next_due"].is_string());
+}
+
+#[tokio::test]
+async fn water_nonexistent_plant() {
+    let resp = app()
+        .await
+        .oneshot(json_request("POST", "/api/plants/999/water", None))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn get_plant_includes_watering_fields() {
+    let app = app().await;
+
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            "/api/plants",
+            Some(r#"{"name":"Basil"}"#),
+        ))
+        .await
+        .unwrap();
+    let plant = body_json(resp).await;
+    let id = plant["id"].as_i64().unwrap();
+
+    let resp = app
+        .oneshot(json_request("GET", &format!("/api/plants/{id}"), None))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    assert!(json.get("watering_status").is_some());
+    assert!(json.get("last_watered").is_some());
+    assert!(json.get("next_due").is_some());
+}
+
+#[test]
+fn status_never_watered() {
+    let (status, next_due) = compute_watering_status(None, 7);
+    assert_eq!(status, "due");
+    assert!(next_due.is_none());
+}
+
+#[test]
+fn status_ok() {
+    let today = chrono::Utc::now().date_naive();
+    let yesterday = (today - chrono::Days::new(1)).to_string();
+    let (status, next_due) = compute_watering_status(Some(&yesterday), 7);
+    assert_eq!(status, "ok");
+    assert!(next_due.is_some());
+}
+
+#[test]
+fn status_due_today() {
+    let today = chrono::Utc::now().date_naive();
+    let watered = (today - chrono::Days::new(7)).to_string();
+    let (status, next_due) = compute_watering_status(Some(&watered), 7);
+    assert_eq!(status, "due");
+    assert_eq!(next_due.as_deref(), Some(today.to_string().as_str()));
+}
+
+#[test]
+fn status_overdue() {
+    let today = chrono::Utc::now().date_naive();
+    let watered = (today - chrono::Days::new(10)).to_string();
+    let (status, next_due) = compute_watering_status(Some(&watered), 7);
+    assert_eq!(status, "overdue");
+    assert!(next_due.is_some());
 }

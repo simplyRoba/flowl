@@ -80,6 +80,19 @@ export async function uploadPhoto(plantId: number, file: File): Promise<Plant | 
 	}
 }
 
+export async function waterPlant(id: number): Promise<Plant | null> {
+	plantsError.set(null);
+	try {
+		const plant = await api.waterPlant(id);
+		plants.update((list) => list.map((p) => (p.id === id ? plant : p)));
+		currentPlant.set(plant);
+		return plant;
+	} catch (e) {
+		plantsError.set(e instanceof Error ? e.message : 'Failed to water plant');
+		return null;
+	}
+}
+
 export async function deletePhoto(plantId: number): Promise<boolean> {
 	plantsError.set(null);
 	try {

@@ -13,6 +13,9 @@ export interface Plant {
 	location_id: number | null;
 	location_name: string | null;
 	watering_interval_days: number;
+	watering_status: string;
+	last_watered: string | null;
+	next_due: string | null;
 	light_needs: string;
 	notes: string | null;
 	created_at: string;
@@ -87,6 +90,10 @@ export function updatePlant(id: number, data: UpdatePlant): Promise<Plant> {
 
 export function deletePlant(id: number): Promise<void> {
 	return request('DELETE', `/api/plants/${id}`);
+}
+
+export function waterPlant(id: number): Promise<Plant> {
+	return request('POST', `/api/plants/${id}/water`);
 }
 
 export async function uploadPlantPhoto(plantId: number, file: File): Promise<Plant> {

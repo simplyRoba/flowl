@@ -28,6 +28,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 mime_guess = "2"
 tower = "0.5"
 uuid = { version = "1", features = ["v4"] }
+chrono = "0.4"
 
 [profile.release]
 lto = true

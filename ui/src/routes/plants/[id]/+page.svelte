@@ -3,11 +3,12 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Sun, CloudSun, Cloud } from 'lucide-svelte';
-	import { currentPlant, plantsError, loadPlant, deletePlant } from '$lib/stores/plants';
+	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
 	import { emojiToSvgPath } from '$lib/emoji';
 
 	let notFound = $state(false);
 	let deleting = $state(false);
+	let watering = $state(false);
 
 	onMount(async () => {
 		const id = Number($page.params.id);
@@ -38,6 +39,26 @@
 		if (needs === 'direct') return 'Direct sunlight';
 		if (needs === 'low') return 'Low light';
 		return 'Indirect light';
+	}
+
+	async function handleWater() {
+		if (!$currentPlant || watering) return;
+		watering = true;
+		await waterPlant($currentPlant.id);
+		watering = false;
+	}
+
+	function formatDate(dateStr: string | null): string {
+		if (!dateStr) return 'Never';
+		const date = new Date(dateStr);
+		if (isNaN(date.getTime())) return dateStr;
+		return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+	}
+
+	function statusLabel(status: string): string {
+		if (status === 'overdue') return 'Overdue';
+		if (status === 'due') return 'Due';
+		return 'OK';
 	}
 </script>
 
@@ -86,12 +107,34 @@
 			</div>
 		</div>
 
-		<div class="info-cards">
-			<div class="info-card">
+		<div class="watering-card info-card">
+			<div class="watering-header">
 				<h3><Droplet size={16} /> Watering</h3>
-				<p>Every {$currentPlant.watering_interval_days} days</p>
+				<span class="watering-status watering-{$currentPlant.watering_status}">
+					{statusLabel($currentPlant.watering_status)}
+				</span>
 			</div>
+			<div class="watering-details">
+				<div class="watering-detail">
+					<span class="watering-label">Interval</span>
+					<span>Every {$currentPlant.watering_interval_days} days</span>
+				</div>
+				<div class="watering-detail">
+					<span class="watering-label">Last watered</span>
+					<span>{formatDate($currentPlant.last_watered)}</span>
+				</div>
+				<div class="watering-detail">
+					<span class="watering-label">Next due</span>
+					<span>{$currentPlant.next_due ? formatDate($currentPlant.next_due) : 'N/A'}</span>
+				</div>
+			</div>
+			<button class="water-btn" onclick={handleWater} disabled={watering}>
+				<Droplet size={16} />
+				{watering ? 'Watering...' : 'Water now'}
+			</button>
+		</div>
 
+		<div class="info-cards">
 			<div class="info-card">
 				<h3>
 					<LightIcon size={16} />
@@ -243,6 +286,88 @@
 	.info-card p {
 		font-size: 15px;
 		margin: 0;
+	}
+
+	.watering-card {
+		margin-bottom: 16px;
+	}
+
+	.watering-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 12px;
+	}
+
+	.watering-header h3 {
+		margin: 0;
+	}
+
+	.watering-status {
+		font-size: 12px;
+		font-weight: 600;
+		padding: 3px 10px;
+		border-radius: 10px;
+		text-transform: uppercase;
+		letter-spacing: 0.3px;
+	}
+
+	.watering-ok {
+		background: #E8F5E9;
+		color: #4A6B4F;
+	}
+
+	.watering-due {
+		background: #FFF4E5;
+		color: #C48B3B;
+	}
+
+	.watering-overdue {
+		background: #FDECEA;
+		color: #C45B5B;
+	}
+
+	.watering-details {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin-bottom: 16px;
+	}
+
+	.watering-detail {
+		display: flex;
+		justify-content: space-between;
+		font-size: 14px;
+	}
+
+	.watering-label {
+		color: #8C7E6E;
+	}
+
+	.water-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 10px 20px;
+		background: #4A90D9;
+		color: #fff;
+		border: none;
+		border-radius: 8px;
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 0.15s;
+		width: 100%;
+		justify-content: center;
+	}
+
+	.water-btn:hover:not(:disabled) {
+		background: #3A7BC8;
+	}
+
+	.water-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	.notes-card {

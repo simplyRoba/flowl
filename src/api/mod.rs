@@ -5,7 +5,7 @@ pub mod plants;
 
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
-use axum::routing::{get, put};
+use axum::routing::{get, post, put};
 
 use crate::state::AppState;
 
@@ -21,6 +21,7 @@ pub fn router(state: AppState) -> Router {
                 .put(plants::update_plant)
                 .delete(plants::delete_plant),
         )
+        .route("/plants/{id}/water", post(plants::water_plant))
         .route(
             "/plants/{id}/photo",
             axum::routing::post(photos::upload_photo)

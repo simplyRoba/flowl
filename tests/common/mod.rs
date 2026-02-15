@@ -32,7 +32,12 @@ pub async fn test_app() -> Router {
     let pool = test_pool().await;
     let upload_dir = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
     std::fs::create_dir_all(&upload_dir).expect("Failed to create test upload dir");
-    let state = AppState { pool, upload_dir };
+    let state = AppState {
+        pool,
+        upload_dir,
+        mqtt_client: None,
+        mqtt_prefix: "flowl".to_string(),
+    };
     flowl::server::router(state)
 }
 
@@ -43,6 +48,8 @@ pub async fn test_app_with_uploads() -> (Router, PathBuf) {
     let state = AppState {
         pool,
         upload_dir: upload_dir.clone(),
+        mqtt_client: None,
+        mqtt_prefix: "flowl".to_string(),
     };
     (flowl::server::router(state), upload_dir)
 }

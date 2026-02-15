@@ -3,10 +3,12 @@
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
 use super::error::{ApiError, JsonBody};
+use crate::mqtt;
 use crate::state::AppState;
 
 #[allow(clippy::option_option)]
@@ -29,6 +31,9 @@ pub struct Plant {
     pub location_id: Option<i64>,
     pub location_name: Option<String>,
     pub watering_interval_days: i64,
+    pub watering_status: String,
+    pub last_watered: Option<String>,
+    pub next_due: Option<String>,
     pub light_needs: String,
     pub notes: Option<String>,
     pub created_at: String,
@@ -45,14 +50,48 @@ pub(crate) struct PlantRow {
     pub(crate) location_id: Option<i64>,
     pub(crate) location_name: Option<String>,
     pub(crate) watering_interval_days: i64,
+    pub(crate) last_watered: Option<String>,
     pub(crate) light_needs: String,
     pub(crate) notes: Option<String>,
     pub(crate) created_at: String,
     pub(crate) updated_at: String,
 }
 
+/// Compute watering status and next-due date from `last_watered` and interval.
+///
+/// Returns `(status, next_due)`. Status is one of `"ok"`, `"due"`, `"overdue"`.
+pub fn compute_watering_status(
+    last_watered: Option<&str>,
+    interval_days: i64,
+) -> (String, Option<String>) {
+    let Some(lw) = last_watered else {
+        return ("due".to_string(), None);
+    };
+
+    // Parse the date portion of the ISO 8601 datetime
+    let Ok(lw_date) = lw.get(..10).unwrap_or(lw).parse::<NaiveDate>() else {
+        return ("due".to_string(), None);
+    };
+
+    let next_due = lw_date + chrono::Days::new(interval_days.max(0).cast_unsigned());
+    let today = chrono::Utc::now().date_naive();
+
+    let status = if today > next_due {
+        "overdue"
+    } else if today >= next_due {
+        "due"
+    } else {
+        "ok"
+    };
+
+    (status.to_string(), Some(next_due.to_string()))
+}
+
 impl From<PlantRow> for Plant {
     fn from(row: PlantRow) -> Self {
+        let (watering_status, next_due) =
+            compute_watering_status(row.last_watered.as_deref(), row.watering_interval_days);
+
         Self {
             id: row.id,
             name: row.name,
@@ -62,6 +101,9 @@ impl From<PlantRow> for Plant {
             location_id: row.location_id,
             location_name: row.location_name,
             watering_interval_days: row.watering_interval_days,
+            watering_status,
+            last_watered: row.last_watered,
+            next_due,
             light_needs: row.light_needs,
             notes: row.notes,
             created_at: row.created_at,
@@ -71,8 +113,8 @@ impl From<PlantRow> for Plant {
 }
 
 pub(crate) const PLANT_SELECT: &str = "SELECT p.id, p.name, p.species, p.icon, p.photo_path, \
-    p.location_id, l.name AS location_name, p.watering_interval_days, p.light_needs, \
-    p.notes, p.created_at, p.updated_at \
+    p.location_id, l.name AS location_name, p.watering_interval_days, p.last_watered, \
+    p.light_needs, p.notes, p.created_at, p.updated_at \
     FROM plants p LEFT JOIN locations l ON p.location_id = l.id";
 
 #[derive(Deserialize)]
@@ -129,7 +171,7 @@ pub async fn get_plant(
 }
 
 pub async fn create_plant(
-    State(pool): State<SqlitePool>,
+    State(state): State<AppState>,
     JsonBody(body): JsonBody<CreatePlant>,
 ) -> Result<(StatusCode, Json<Plant>), ApiError> {
     let name = body
@@ -159,29 +201,55 @@ pub async fn create_plant(
     .bind(watering_interval_days)
     .bind(&light_needs)
     .bind(&body.notes)
-    .fetch_one(&pool)
+    .fetch_one(&state.pool)
     .await
     .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     let query = format!("{PLANT_SELECT} WHERE p.id = ?");
     let row = sqlx::query_as::<_, PlantRow>(&query)
         .bind(id)
-        .fetch_one(&pool)
+        .fetch_one(&state.pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
-    Ok((StatusCode::CREATED, Json(Plant::from(row))))
+    let plant = Plant::from(row);
+
+    mqtt::publish_discovery(
+        state.mqtt_client.as_ref(),
+        &state.mqtt_prefix,
+        plant.id,
+        &plant.name,
+    )
+    .await;
+    mqtt::publish_state(
+        state.mqtt_client.as_ref(),
+        &state.mqtt_prefix,
+        plant.id,
+        &plant.watering_status,
+    )
+    .await;
+    mqtt::publish_attributes(
+        state.mqtt_client.as_ref(),
+        &state.mqtt_prefix,
+        plant.id,
+        plant.last_watered.as_deref(),
+        plant.next_due.as_deref(),
+        plant.watering_interval_days,
+    )
+    .await;
+
+    Ok((StatusCode::CREATED, Json(plant)))
 }
 
 pub async fn update_plant(
-    State(pool): State<SqlitePool>,
+    State(state): State<AppState>,
     Path(id): Path<i64>,
     JsonBody(body): JsonBody<UpdatePlant>,
 ) -> Result<Json<Plant>, ApiError> {
     // Fetch current plant
     let current = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
         .bind(id)
-        .fetch_optional(&pool)
+        .fetch_optional(&state.pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?
         .ok_or_else(|| ApiError::NotFound("Plant not found".to_string()))?;
@@ -209,17 +277,87 @@ pub async fn update_plant(
     .bind(&light_needs)
     .bind(&notes)
     .bind(id)
-    .execute(&pool)
+    .execute(&state.pool)
     .await
     .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     let row = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
         .bind(id)
-        .fetch_one(&pool)
+        .fetch_one(&state.pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
-    Ok(Json(Plant::from(row)))
+    let plant = Plant::from(row);
+
+    mqtt::publish_discovery(
+        state.mqtt_client.as_ref(),
+        &state.mqtt_prefix,
+        plant.id,
+        &plant.name,
+    )
+    .await;
+    mqtt::publish_state(
+        state.mqtt_client.as_ref(),
+        &state.mqtt_prefix,
+        plant.id,
+        &plant.watering_status,
+    )
+    .await;
+    mqtt::publish_attributes(
+        state.mqtt_client.as_ref(),
+        &state.mqtt_prefix,
+        plant.id,
+        plant.last_watered.as_deref(),
+        plant.next_due.as_deref(),
+        plant.watering_interval_days,
+    )
+    .await;
+
+    Ok(Json(plant))
+}
+
+pub async fn water_plant(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+) -> Result<Json<Plant>, ApiError> {
+    let result = sqlx::query(
+        "UPDATE plants SET last_watered = datetime('now'), updated_at = datetime('now') WHERE id = ?",
+    )
+    .bind(id)
+    .execute(&state.pool)
+    .await
+    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Plant not found".to_string()));
+    }
+
+    let row = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    let plant = Plant::from(row);
+
+    mqtt::publish_state(
+        state.mqtt_client.as_ref(),
+        &state.mqtt_prefix,
+        plant.id,
+        &plant.watering_status,
+    )
+    .await;
+    mqtt::publish_attributes(
+        state.mqtt_client.as_ref(),
+        &state.mqtt_prefix,
+        plant.id,
+        plant.last_watered.as_deref(),
+        plant.next_due.as_deref(),
+        plant.watering_interval_days,
+    )
+    .await;
+
+    Ok(Json(plant))
 }
 
 pub async fn delete_plant(
@@ -250,6 +388,8 @@ pub async fn delete_plant(
         let file_path = state.upload_dir.join(&filename);
         let _ = tokio::fs::remove_file(&file_path).await;
     }
+
+    mqtt::remove_plant(state.mqtt_client.as_ref(), &state.mqtt_prefix, id).await;
 
     Ok(StatusCode::NO_CONTENT)
 }
