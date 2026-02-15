@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/simplyRoba/flowl/compare/v0.3.0...v0.4.0) (2026-02-15)
+
+
+### Features
+
+* add watering lifecycle, MQTT state publishing, and UI indicators ([aad9124](https://github.com/simplyRoba/flowl/commit/aad9124ed61d025228b8113a0163b62c33691b88))
+
 ## [0.3.0](https://github.com/simplyRoba/flowl/compare/v0.2.4...v0.3.0) (2026-02-15)
 
 
