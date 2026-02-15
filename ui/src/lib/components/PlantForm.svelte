@@ -301,4 +301,27 @@
 		opacity: 0.6;
 		cursor: default;
 	}
+
+	@media (max-width: 768px) {
+		.plant-form {
+			gap: 16px;
+		}
+
+		.form-section {
+			padding: 16px;
+		}
+
+		.light-options {
+			gap: 6px;
+		}
+
+		.light-option {
+			padding: 12px 8px;
+		}
+
+		.save-btn {
+			align-self: stretch;
+			text-align: center;
+		}
+	}
 </style>

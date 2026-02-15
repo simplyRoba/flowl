@@ -56,4 +56,14 @@
 		font-weight: 700;
 		margin: 0;
 	}
+
+	@media (max-width: 768px) {
+		h1 {
+			font-size: 22px;
+		}
+
+		.page-header {
+			margin-bottom: 16px;
+		}
+	}
 </style>

@@ -180,8 +180,28 @@
 	}
 
 	@media (max-width: 768px) {
+		.page-header h1 {
+			font-size: 22px;
+		}
+
+		.add-btn {
+			padding: 8px 14px;
+			font-size: 14px;
+		}
+
 		.plant-grid {
 			grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+			gap: 12px;
+		}
+
+		.plant-card {
+			padding: 12px;
+			gap: 10px;
+		}
+
+		.plant-icon {
+			width: 40px;
+			height: 40px;
 		}
 	}
 </style>

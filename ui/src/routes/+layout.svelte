@@ -21,8 +21,10 @@
 </div>
 
 <style>
-	:global(body) {
+	:global(html, body) {
 		margin: 0;
+		height: 100%;
+		overflow: hidden;
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 		background: #FAF6F1;
 		color: #2C2418;
@@ -30,11 +32,13 @@
 
 	.app {
 		display: flex;
-		min-height: 100vh;
+		height: 100vh;
+		height: 100dvh;
 	}
 
 	.sidebar {
 		width: 64px;
+		flex-shrink: 0;
 		background: #FFFFFF;
 		border-right: 1px solid #E5DDD3;
 		display: flex;
@@ -78,6 +82,44 @@
 
 	.content {
 		flex: 1;
+		overflow-y: auto;
 		padding: 24px;
+	}
+
+	@media (max-width: 768px) {
+		.app {
+			flex-direction: column;
+		}
+
+		.sidebar {
+			width: 100%;
+			height: 56px;
+			flex-direction: row;
+			justify-content: center;
+			order: 1;
+			border-right: none;
+			border-top: 1px solid #E5DDD3;
+			padding: 0 16px;
+			gap: 16px;
+		}
+
+		.logo {
+			display: none;
+		}
+
+		.nav-item {
+			width: 40px;
+			height: 40px;
+		}
+
+		.nav-item.bottom {
+			margin-top: 0;
+			margin-left: auto;
+		}
+
+		.content {
+			order: 0;
+			padding: 16px;
+		}
 	}
 </style>

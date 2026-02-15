@@ -264,6 +264,15 @@
 	}
 
 	@media (max-width: 768px) {
+		.plant-hero h1 {
+			font-size: 22px;
+		}
+
+		.hero-icon {
+			width: 60px;
+			height: 60px;
+		}
+
 		.info-cards {
 			grid-template-columns: 1fr;
 		}
@@ -271,6 +280,8 @@
 		.plant-hero {
 			flex-direction: column;
 			text-align: center;
+			gap: 16px;
+			margin-bottom: 24px;
 		}
 	}
 </style>

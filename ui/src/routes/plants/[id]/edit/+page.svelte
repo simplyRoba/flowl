@@ -84,4 +84,14 @@
 		color: #8C7E6E;
 		padding: 16px;
 	}
+
+	@media (max-width: 768px) {
+		h1 {
+			font-size: 22px;
+		}
+
+		.page-header {
+			margin-bottom: 16px;
+		}
+	}
 </style>
