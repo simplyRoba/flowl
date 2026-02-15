@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Sprout, Leaf, BookOpen, Settings } from 'lucide-svelte';
+	import { Leaf, BookOpen, Settings } from 'lucide-svelte';
+	import Logo from '$lib/components/Logo.svelte';
 	import { page } from '$app/state';
 
 	let { children } = $props();
@@ -16,7 +17,7 @@
 
 <div class="app">
 	<nav class="sidebar">
-		<div class="logo"><Sprout size={20} /><span class="nav-label brand">flowl</span></div>
+		<div class="logo"><Logo size={28} /><span class="nav-label brand">flowl</span></div>
 		<a href="/" class="nav-item" class:active={isActive('/')}><Leaf size={20} /><span class="nav-label">Plants</span></a>
 		<a href="/log" class="nav-item" class:active={isActive('/log')}><BookOpen size={20} /><span class="nav-label">Log</span></a>
 		<a href="/settings" class="nav-item bottom" class:active={isActive('/settings')}><Settings size={20} /><span class="nav-label">Settings</span></a>
