@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.6.0](https://github.com/simplyRoba/flowl/compare/v0.5.0...v0.6.0) (2026-02-16)
+
+
+### Features
+
+* add dark mode theming and settings ([#15](https://github.com/simplyRoba/flowl/issues/15)) ([4945bfe](https://github.com/simplyRoba/flowl/commit/4945bfe689b0b792fc97e56e6e5e00288d84380b))
+* align plant detail layout with mockup ([6cd3e7a](https://github.com/simplyRoba/flowl/commit/6cd3e7a4a21931771a8e7f60242ea154b1b7fea9))
+* allow backdated care log entries ([59ac6e5](https://github.com/simplyRoba/flowl/commit/59ac6e55cb14e9fa0a012012724c4d9a9bf6f914))
+* enhance plant detail layout with improved styling and icons ([dc29d5b](https://github.com/simplyRoba/flowl/commit/dc29d5b957530a03df99b74bde8161f9d81ada0e))
+* enhance UI components and improve user experience ([fe144c0](https://github.com/simplyRoba/flowl/commit/fe144c0eb48e31bf7d9d70622485c81e363464ff))
+* improve care journal UI and enhance date formatting ([d5291a2](https://github.com/simplyRoba/flowl/commit/d5291a25827061a20729f151577db09a0eb50fc4))
+* introduce mqtt disabled flag ([4971fd2](https://github.com/simplyRoba/flowl/commit/4971fd2f26646c469b26ba0ef8d45e46a83fbe8a))
+* update date formatting for care events and improve date parsing in UI ([8ee9106](https://github.com/simplyRoba/flowl/commit/8ee91065780c6907e616656872707e95a0b94c77))
+
+
+### Bug Fixes
+
+* align media action buttons ([a2cec4e](https://github.com/simplyRoba/flowl/commit/a2cec4e09e38c5e60b2b3e75deee2cbe07fd97b8))
+* **db:** ensure parent directories are created for SQLite database path ([e89069a](https://github.com/simplyRoba/flowl/commit/e89069af260f8998ee5d87b693c20a8b18ae3605))
+* enable host option for development server in package.json ([013359e](https://github.com/simplyRoba/flowl/commit/013359e09d21d2ef3499c3497c3999839994d58b))
+
 ## [0.5.0](https://github.com/simplyRoba/flowl/compare/v0.4.0...v0.5.0) (2026-02-16)
 
 
