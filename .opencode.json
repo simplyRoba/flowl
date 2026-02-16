@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/opencode-ai/opencode/refs/heads/main/opencode-schema.json",
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp", "--headless"]
+    }
+  }
+}
