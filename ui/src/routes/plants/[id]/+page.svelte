@@ -14,6 +14,8 @@
 	let showLogForm = $state(false);
 	let logEventType = $state('');
 	let logNotes = $state('');
+	let logOccurredAt = $state('');
+	let showLogOccurredAt = $state(false);
 	let logSubmitting = $state(false);
 	let showAllEvents = $state(false);
 
@@ -95,12 +97,20 @@
 	async function handleLogSubmit() {
 		if (!$currentPlant || !logEventType || logSubmitting) return;
 		logSubmitting = true;
+		const occurredAt = showLogOccurredAt ? logOccurredAt.trim() : '';
+		const occurredAtDate = occurredAt ? new Date(occurredAt) : null;
+		const occurredAtIso = occurredAtDate && !isNaN(occurredAtDate.getTime())
+			? occurredAtDate.toISOString()
+			: undefined;
 		await addCareEvent($currentPlant.id, {
 			event_type: logEventType,
-			notes: logNotes.trim() || undefined
+			notes: logNotes.trim() || undefined,
+			occurred_at: occurredAtIso
 		});
 		logEventType = '';
 		logNotes = '';
+		logOccurredAt = '';
+		showLogOccurredAt = false;
 		showLogForm = false;
 		logSubmitting = false;
 	}
@@ -109,6 +119,14 @@
 		showLogForm = false;
 		logEventType = '';
 		logNotes = '';
+		logOccurredAt = '';
+		showLogOccurredAt = false;
+	}
+
+	function nowLocalInputValue(): string {
+		const now = new Date();
+		const pad = (n: number) => String(n).padStart(2, '0');
+		return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 	}
 
 	let displayEvents = $derived(
@@ -269,9 +287,34 @@
 						bind:value={logNotes}
 						rows="2"
 					></textarea>
+					<div class="log-when">
+						{#if showLogOccurredAt}
+							<label class="log-label">
+								When
+								<input
+									class="log-input"
+									type="datetime-local"
+									max={nowLocalInputValue()}
+									bind:value={logOccurredAt}
+								/>
+							</label>
+						{/if}
+					</div>
 					<div class="log-actions">
 						<button class="log-save" onclick={handleLogSubmit} disabled={!logEventType || logSubmitting}>
 							{logSubmitting ? 'Saving...' : 'Save'}
+						</button>
+						<button
+							type="button"
+							class="log-when-toggle"
+							onclick={() => {
+								showLogOccurredAt = !showLogOccurredAt;
+								if (showLogOccurredAt && !logOccurredAt) {
+									logOccurredAt = nowLocalInputValue();
+								}
+							}}
+						>
+							Backdate
 						</button>
 						<button class="log-cancel" onclick={handleLogCancel}>Cancel</button>
 					</div>
@@ -620,6 +663,52 @@
 		margin-top: 12px;
 		padding-top: 12px;
 		border-top: 1px solid #F0EBE4;
+	}
+
+	.log-when {
+		margin: 8px 0 10px;
+	}
+
+	.log-label {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		font-size: 13px;
+		font-weight: 600;
+		color: #8C7E6E;
+		margin-bottom: 10px;
+	}
+
+	.log-when-toggle {
+		padding: 8px 12px;
+		border: 1px solid #E5DDD3;
+		border-radius: 8px;
+		background: none;
+		color: #6B8F71;
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 0.15s, border-color 0.15s;
+	}
+
+	.log-when-toggle:hover {
+		background: #FAF6F1;
+		border-color: #6B8F71;
+	}
+
+	.log-input {
+		width: 100%;
+		padding: 8px 10px;
+		border: 1px solid #E5DDD3;
+		border-radius: 8px;
+		font-size: 14px;
+		font-family: inherit;
+		box-sizing: border-box;
+	}
+
+	.log-input:focus {
+		outline: none;
+		border-color: #6B8F71;
 	}
 
 	.type-chips {
