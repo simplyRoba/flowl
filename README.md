@@ -12,6 +12,19 @@
 
 A small Rust service that exposes plant care data (watering schedules, care needs, etc.) for integration with Home Assistant and other automation platforms.
 
+## Configuration
+### Project variables
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `FLOWL_PORT` | `4100` | HTTP server listen port. |
+| `FLOWL_DB_PATH` | `/data/flowl.db` | Filesystem path to the SQLite database. |
+| `FLOWL_LOG_LEVEL` | `info` | `tracing` level filter for logs. |
+| `FLOWL_MQTT_HOST` | `localhost` | MQTT broker hostname. |
+| `FLOWL_MQTT_PORT` | `1883` | MQTT broker port. |
+| `FLOWL_MQTT_TOPIC_PREFIX` | `flowl` | Topic prefix used for auto-discovery and plant topics. |
+| `FLOWL_MQTT_DISABLED` | `false` | Skip MQTT client, state checker, and publishes when set to `true`. |
+
 ---
 
 # Development
@@ -30,7 +43,7 @@ Run two terminals:
 cd ui && npm run dev
 
 # Terminal 2: Rust backend with auto-restart on code changes
-FLOWL_DB_PATH=/tmp/flowl.db SKIP_UI_BUILD=1 cargo watch -x run
+FLOWL_DB_PATH=/tmp/flowl.db FLOWL_MQTT_DISABLED=true SKIP_UI_BUILD=1 cargo watch -x run
 ```
 
 Open `http://localhost:5173`. Vite proxies `/api`, `/uploads`, and `/health` to the Rust backend on port 4100.
