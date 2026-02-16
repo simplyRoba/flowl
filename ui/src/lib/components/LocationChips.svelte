@@ -82,9 +82,9 @@
 
 	.location-chip {
 		padding: 8px 14px;
-		border: 1px solid #E5DDD3;
+		border: 1px solid var(--color-border);
 		border-radius: 999px;
-		background: #FFFFFF;
+		background: var(--color-surface);
 		font-size: 13px;
 		font-weight: 500;
 		cursor: pointer;
@@ -93,27 +93,27 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 5px;
-		color: #2C2418;
+		color: var(--color-text);
 	}
 
 	.location-chip:hover {
-		border-color: #6B8F71;
+		border-color: var(--color-primary);
 	}
 
 	.location-chip.active {
-		border-color: #6B8F71;
-		background: color-mix(in srgb, #6B8F71 10%, transparent);
-		color: #6B8F71;
+		border-color: var(--color-primary);
+		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		color: var(--color-primary);
 	}
 
 	.location-chip.add-location {
 		border-style: dashed;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 	}
 
 	.location-chip.add-location:hover {
-		border-color: #6B8F71;
-		color: #6B8F71;
+		border-color: var(--color-primary);
+		color: var(--color-primary);
 	}
 
 	.new-location {
@@ -124,7 +124,7 @@
 
 	.new-input {
 		padding: 8px 12px;
-		border: 1px solid #E5DDD3;
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		font-size: 13px;
 		outline: none;
@@ -132,7 +132,7 @@
 	}
 
 	.new-input:focus {
-		border-color: #6B8F71;
+		border-color: var(--color-primary);
 	}
 
 	.chip-icon {

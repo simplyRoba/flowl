@@ -364,8 +364,8 @@
 	}
 
 	.form-section {
-		background: #FFFFFF;
-		border: 1px solid #E5DDD3;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
 		border-radius: 12px;
 		padding: 16px;
 	}
@@ -416,7 +416,7 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 		font-size: 12px;
 		text-transform: uppercase;
 		letter-spacing: 0.6px;
@@ -426,17 +426,17 @@
 	.media-divider::after {
 		content: '';
 		height: 1px;
-		background: #E5DDD3;
+		background: var(--color-border);
 		flex: 1;
 	}
 
 	.media-switch {
 		margin: 0;
 		padding: 8px 12px;
-		border: 1px solid #E5DDD3;
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
-		background: #FFFFFF;
-		color: #8C7E6E;
+		background: var(--color-surface);
+		color: var(--color-text-muted);
 		font-size: 13px;
 		font-weight: 500;
 		cursor: pointer;
@@ -451,15 +451,15 @@
 	}
 
 	.media-switch:hover {
-		border-color: #6B8F71;
-		color: #6B8F71;
+		border-color: var(--color-primary);
+		color: var(--color-primary);
 	}
 
 
 	.form-section-title {
 		font-size: 13px;
 		font-weight: 600;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
 		margin: 0 0 16px;
@@ -479,31 +479,31 @@
 	.form-label {
 		font-size: 13px;
 		font-weight: 600;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 	}
 
 	.required {
-		color: #C45B5B;
+		color: var(--color-danger);
 	}
 
 	.form-input {
 		padding: 10px 12px;
-		border: 1px solid #E5DDD3;
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		font-size: 15px;
 		font-family: inherit;
 		outline: none;
 		transition: border-color 0.15s;
-		background: #FFFFFF;
-		color: #2C2418;
+		background: var(--color-surface);
+		color: var(--color-text);
 	}
 
 	.form-input:focus {
-		border-color: #6B8F71;
+		border-color: var(--color-primary);
 	}
 
 	.form-input.error {
-		border-color: #C45B5B;
+		border-color: var(--color-danger);
 	}
 
 	.textarea {
@@ -515,32 +515,32 @@
 
 	.field-error {
 		font-size: 13px;
-		color: #C45B5B;
+		color: var(--color-danger);
 	}
 
 	.photo-upload-refined {
 		width: 100%;
 		height: 160px;
-		border: 2px dashed #E5DDD3;
+		border: 2px dashed var(--color-border);
 		border-radius: 12px;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		gap: 8px;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 		font-size: 14px;
 		cursor: pointer;
 		transition: all 0.15s;
-		background: color-mix(in srgb, #6B8F71 3%, transparent);
+		background: color-mix(in srgb, var(--color-primary) 3%, transparent);
 		position: relative;
 		overflow: hidden;
 	}
 
 	.photo-upload-refined.dragging {
-		border-color: #6B8F71;
-		background: color-mix(in srgb, #6B8F71 10%, transparent);
-		color: #4A6B4F;
+		border-color: var(--color-primary);
+		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		color: var(--color-primary-dark);
 	}
 
 	.media-photo .photo-upload-refined {
@@ -548,15 +548,15 @@
 	}
 
 	.photo-upload-refined:hover {
-		border-color: #6B8F71;
-		background: color-mix(in srgb, #6B8F71 8%, transparent);
+		border-color: var(--color-primary);
+		background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 	}
 
 	.photo-upload-refined .upload-icon {
 		width: 48px;
 		height: 48px;
 		border-radius: 50%;
-		background: color-mix(in srgb, #6B8F71 12%, transparent);
+		background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -565,7 +565,7 @@
 
 	.photo-upload-refined .upload-hint {
 		font-size: 12px;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 	}
 
 	.file-input {
@@ -584,7 +584,7 @@
 		height: 180px;
 		object-fit: cover;
 		border-radius: 12px;
-		border: 1px solid #E5DDD3;
+		border: 1px solid var(--color-border);
 	}
 
 	.photo-remove-btn {
@@ -597,15 +597,15 @@
 		align-items: center;
 		justify-content: center;
 		border-radius: 50%;
-		border: 1px solid #E5DDD3;
-		background: #FFFFFF;
-		color: #C45B5B;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		color: var(--color-danger);
 		cursor: pointer;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	}
 
 	.photo-remove-btn:hover {
-		background: #fef2f2;
+		background: color-mix(in srgb, var(--color-danger) 10%, transparent);
 	}
 
 	.photo-replace {
@@ -613,10 +613,10 @@
 		align-items: center;
 		gap: 6px;
 		padding: 8px 12px;
-		border: 1px solid #E5DDD3;
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		cursor: pointer;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 		font-size: 13px;
 		font-weight: 500;
 		transition: border-color 0.15s, color 0.15s;
@@ -627,8 +627,8 @@
 	}
 
 	.photo-replace:hover {
-		border-color: #6B8F71;
-		color: #6B8F71;
+		border-color: var(--color-primary);
+		color: var(--color-primary);
 	}
 
 	.light-selector {
@@ -643,23 +643,23 @@
 		align-items: center;
 		gap: 4px;
 		padding: 10px 8px;
-		border: 1px solid #E5DDD3;
+		border: 1px solid var(--color-border);
 		border-radius: 10px;
-		background: #FFFFFF;
+		background: var(--color-surface);
 		cursor: pointer;
 		transition: all 0.15s;
-		color: #2C2418;
+		color: var(--color-text);
 		font-size: 13px;
 	}
 
 	.light-option:hover {
-		border-color: #6B8F71;
+		border-color: var(--color-primary);
 	}
 
 	.light-option.active {
-		border-color: #6B8F71;
-		background: color-mix(in srgb, #6B8F71 10%, transparent);
-		color: #6B8F71;
+		border-color: var(--color-primary);
+		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		color: var(--color-primary);
 	}
 
 	.light-option .light-icon {
@@ -668,17 +668,17 @@
 
 	.light-option .light-label {
 		font-size: 11px;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 	}
 
 	.light-option.active .light-label {
-		color: #6B8F71;
+		color: var(--color-primary);
 	}
 
 	.save-btn {
 		padding: 12px 24px;
-		background: #6B8F71;
-		color: #fff;
+		background: var(--color-primary);
+		color: var(--color-text-on-primary);
 		border: none;
 		border-radius: 8px;
 		font-size: 15px;
@@ -689,7 +689,7 @@
 	}
 
 	.save-btn:hover:not(:disabled) {
-		background: #4A6B4F;
+		background: var(--color-primary-dark);
 	}
 
 	.save-btn:disabled {

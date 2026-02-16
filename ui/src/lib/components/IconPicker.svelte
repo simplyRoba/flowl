@@ -33,21 +33,21 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border: 1px solid #E5DDD3;
+		border: 1px solid var(--color-border);
 		border-radius: 10px;
-		background: #FFFFFF;
+		background: var(--color-surface);
 		cursor: pointer;
 		transition: all 0.15s;
 	}
 
 	.emoji-option:hover {
-		border-color: #6B8F71;
+		border-color: var(--color-primary);
 		transform: scale(1.08);
 	}
 
 	.emoji-option.active {
-		border-color: #6B8F71;
-		background: color-mix(in srgb, #6B8F71 10%, transparent);
-		box-shadow: 0 0 0 2px color-mix(in srgb, #6B8F71 30%, transparent);
+		border-color: var(--color-primary);
+		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
 	}
 </style>

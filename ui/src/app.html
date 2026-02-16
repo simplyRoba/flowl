@@ -4,6 +4,23 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
+		<script>
+			(() => {
+				const storageKey = 'flowl.theme';
+				const valid = new Set(['light', 'dark', 'system']);
+				let preference = 'system';
+				try {
+					const stored = localStorage.getItem(storageKey);
+					if (valid.has(stored)) preference = stored;
+				} catch {
+					// Ignore storage failures.
+				}
+				const supportsMatchMedia = typeof window !== 'undefined' && typeof window.matchMedia === 'function';
+				const prefersDark = supportsMatchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+				const resolved = preference === 'system' ? (prefersDark ? 'dark' : 'light') : preference;
+				document.documentElement.dataset.theme = resolved;
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

@@ -43,7 +43,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		color: #6B8F71;
+		color: var(--color-primary);
 		text-decoration: none;
 		font-size: 15px;
 		font-weight: 500;
@@ -51,7 +51,7 @@
 	}
 
 	.back-link:hover {
-		color: #4A6B4F;
+		color: var(--color-primary-dark);
 	}
 
 	h1 {

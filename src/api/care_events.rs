@@ -103,9 +103,9 @@ pub async fn create_care_event(
 
     validate_event_type(&event_type)?;
 
-    let occurred_at = body.occurred_at.unwrap_or_else(|| {
-        chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-    });
+    let occurred_at = body
+        .occurred_at
+        .unwrap_or_else(|| chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
 
     let id = sqlx::query_scalar::<_, i64>(
         "INSERT INTO care_events (plant_id, event_type, notes, occurred_at) \
