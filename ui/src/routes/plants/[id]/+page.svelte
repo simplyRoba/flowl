@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, Pencil as PencilIcon } from 'lucide-svelte';
+	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Leaf, Shovel, Scissors, Pencil as PencilIcon } from 'lucide-svelte';
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
 	import { careEvents, loadCareEvents, addCareEvent } from '$lib/stores/care';
 	import { emojiToSvgPath } from '$lib/emoji';
@@ -42,12 +42,6 @@
 		deleting = false;
 	}
 
-	let LightIcon = $derived(
-		$currentPlant?.light_needs === 'direct' ? Sun :
-		$currentPlant?.light_needs === 'low' ? Cloud :
-		CloudSun
-	);
-
 	function lightLabel(needs: string) {
 		if (needs === 'direct') return 'Direct sunlight';
 		if (needs === 'low') return 'Low light';
@@ -72,7 +66,22 @@
 	function statusLabel(status: string): string {
 		if (status === 'overdue') return 'Overdue';
 		if (status === 'due') return 'Due';
-		return 'OK';
+		return 'Ok';
+	}
+
+	function statusSuffix(nextDue: string | null): string | null {
+		if (!nextDue) return null;
+		const due = new Date(nextDue);
+		if (isNaN(due.getTime())) return null;
+		const now = new Date();
+		const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+		const dueStart = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+		const diffDays = Math.round((dueStart.getTime() - start.getTime()) / 86400000);
+		if (diffDays === 0) return 'today';
+		if (diffDays === 1) return 'next in 1 day';
+		if (diffDays > 1) return `next in ${diffDays} days`;
+		const overdueDays = Math.abs(diffDays);
+		return overdueDays === 1 ? '1 day ago' : `${overdueDays} days ago`;
 	}
 
 	function eventTypeLabel(type: string): string {
@@ -135,6 +144,8 @@
 
 	let hasMoreEvents = $derived($careEvents.length > EVENT_LIMIT);
 
+	let statusDetail = $derived(statusSuffix($currentPlant?.next_due ?? null));
+
 </script>
 
 {#if notFound}
@@ -157,77 +168,66 @@
 			</div>
 		</header>
 
-		<div class="plant-hero">
-			{#if $currentPlant.photo_url}
-				<img
-					src={$currentPlant.photo_url}
-					alt={$currentPlant.name}
-					class="hero-photo"
-				/>
-			{:else}
-				<img
-					src={emojiToSvgPath($currentPlant.icon)}
-					alt={$currentPlant.name}
-					class="hero-icon"
-				/>
-			{/if}
-			<div>
-				<h1>{$currentPlant.name}</h1>
-				{#if $currentPlant.species}
-					<p class="species">{$currentPlant.species}</p>
+		<div class="detail-hero">
+			<div class="detail-photo">
+				{#if $currentPlant.photo_url}
+					<img
+						src={$currentPlant.photo_url}
+						alt={$currentPlant.name}
+						class="detail-photo-img"
+					/>
+				{:else}
+					<img
+						src={emojiToSvgPath($currentPlant.icon)}
+						alt={$currentPlant.name}
+						class="detail-photo-icon"
+					/>
 				{/if}
+			</div>
+			<div class="detail-info">
+				<h2>{$currentPlant.name}</h2>
 				{#if $currentPlant.location_name}
-					<p class="location"><MapPin size={14} /> {$currentPlant.location_name}</p>
+					<p class="detail-location"><MapPin size={14} /> {$currentPlant.location_name}</p>
 				{/if}
+				<div class="detail-status">
+					<span class="status-badge status-{$currentPlant.watering_status}">
+						<span class="status-dot"></span>
+						{statusLabel($currentPlant.watering_status)}
+						{#if statusDetail}
+							 — {statusDetail}
+						{/if}
+					</span>
+				</div>
+				<button class="detail-water-btn" onclick={handleWater} disabled={watering}>
+					<Droplet size={16} />
+					{watering ? 'Watering...' : 'Water now'}
+				</button>
 			</div>
 		</div>
 
-		<div class="watering-card info-card">
-			<div class="watering-header">
-				<h3><Droplet size={16} /> Watering</h3>
-				<span class="watering-status watering-{$currentPlant.watering_status}">
-					{statusLabel($currentPlant.watering_status)}
-				</span>
-			</div>
-			<div class="watering-details">
-				<div class="watering-detail">
-					<span class="watering-label">Interval</span>
-					<span>Every {$currentPlant.watering_interval_days} days</span>
+		<div class="detail-sections">
+			<div class="detail-grid">
+				<div class="detail-card">
+					<div class="detail-card-title">Watering</div>
+					<div class="detail-row"><span class="detail-row-label">Interval</span><span>Every {$currentPlant.watering_interval_days} days</span></div>
+					<div class="detail-row"><span class="detail-row-label">Last watered</span><span>{formatDate($currentPlant.last_watered)}</span></div>
+					<div class="detail-row"><span class="detail-row-label">Next due</span><span>{$currentPlant.next_due ? formatDate($currentPlant.next_due) : 'N/A'}</span></div>
 				</div>
-				<div class="watering-detail">
-					<span class="watering-label">Last watered</span>
-					<span>{formatDate($currentPlant.last_watered)}</span>
-				</div>
-				<div class="watering-detail">
-					<span class="watering-label">Next due</span>
-					<span>{$currentPlant.next_due ? formatDate($currentPlant.next_due) : 'N/A'}</span>
+				<div class="detail-card">
+					<div class="detail-card-title">Light</div>
+					<div class="detail-row"><span class="detail-row-label">Needs</span><span>{lightLabel($currentPlant.light_needs)}</span></div>
 				</div>
 			</div>
-			<button class="water-btn" onclick={handleWater} disabled={watering}>
-				<Droplet size={16} />
-				{watering ? 'Watering...' : 'Water now'}
-			</button>
-		</div>
 
-		<div class="info-cards">
-			<div class="info-card">
-				<h3>
-					<LightIcon size={16} />
-					Light
-				</h3>
-				<p>{lightLabel($currentPlant.light_needs)}</p>
-			</div>
-		</div>
+			{#if $currentPlant.notes}
+				<div class="detail-card">
+					<div class="detail-card-title">Notes</div>
+					<div class="detail-notes">{$currentPlant.notes}</div>
+				</div>
+			{/if}
 
-		{#if $currentPlant.notes}
-			<div class="info-card notes-card">
-				<h3>Notes</h3>
-				<p>{$currentPlant.notes}</p>
-			</div>
-		{/if}
-
-		<div class="detail-card care-journal">
-			<div class="detail-card-title">Care Journal</div>
+			<div class="detail-card care-journal">
+				<div class="detail-card-title">Care Journal</div>
 
 			{#if $careEvents.length === 0}
 				<p class="journal-empty">No care events recorded yet.</p>
@@ -324,6 +324,7 @@
 					+ Add log entry
 				</button>
 			{/if}
+			</div>
 		</div>
 	</div>
 {:else if $plantsError}
@@ -389,68 +390,100 @@
 		border-color: #C45B5B;
 	}
 
-	.plant-hero {
+	.detail-hero {
+		display: flex;
+		align-items: flex-start;
+		gap: 20px;
+		margin-bottom: 24px;
+	}
+
+	.detail-photo {
+		width: 180px;
+		height: 180px;
+		flex-shrink: 0;
+		border-radius: 12px;
+		overflow: hidden;
 		display: flex;
 		align-items: center;
-		gap: 24px;
-		margin-bottom: 32px;
+		justify-content: center;
 	}
 
-	.hero-icon {
-		width: 80px;
-		height: 80px;
-		flex-shrink: 0;
-	}
-
-	.hero-photo {
-		width: 80px;
-		height: 80px;
-		flex-shrink: 0;
-		border-radius: 8px;
+	.detail-photo-img {
+		width: 100%;
+		height: 100%;
 		object-fit: cover;
+		border-radius: 12px;
 	}
 
-	.plant-hero h1 {
-		font-size: 28px;
+	.detail-photo-icon {
+		width: 80px;
+		height: 80px;
+	}
+
+	.detail-info h2 {
+		font-size: 24px;
 		font-weight: 700;
-		margin: 0 0 4px;
+		margin: 0 0 6px;
 	}
 
-	.species {
-		color: #8C7E6E;
-		font-size: 15px;
-		margin: 0 0 4px;
-		font-style: italic;
+	.detail-info {
+		flex: 1;
 	}
 
-	.location {
+	.detail-location {
 		display: inline-flex;
 		align-items: center;
-		gap: 4px;
+		gap: 6px;
 		color: #8C7E6E;
-		font-size: 13px;
-		margin: 0;
+		font-size: 14px;
+		margin: 0 0 10px;
 	}
 
-	.info-cards {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 16px;
-		margin-bottom: 16px;
+	.detail-status {
+		margin-bottom: 14px;
 	}
 
-	.info-card {
-		background: #FFFFFF;
-		border: 1px solid #E5DDD3;
-		border-radius: 12px;
-		padding: 16px;
+	.status-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		font-weight: 600;
+		padding: 3px 10px;
+		border-radius: 999px;
 	}
 
-	.detail-card {
-		background: #FFFFFF;
-		border: 1px solid #E5DDD3;
-		border-radius: 12px;
-		padding: 16px;
+	.status-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+	}
+
+	.status-ok {
+		background: #E8F5E9;
+		color: #4A6B4F;
+	}
+
+	.status-ok .status-dot {
+		background: #4A6B4F;
+	}
+
+	.status-due {
+		background: #FFF4E5;
+		color: #C48B3B;
+	}
+
+	.status-due .status-dot {
+		background: #C48B3B;
+	}
+
+	.status-overdue {
+		background: #FDECEA;
+		color: #C45B5B;
+	}
+
+	.status-overdue .status-dot {
+		background: #C45B5B;
 	}
 
 	.detail-card-title {
@@ -461,86 +494,12 @@
 		letter-spacing: 0.5px;
 		margin-bottom: 12px;
 	}
-
-	.info-card h3 {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 13px;
-		font-weight: 600;
-		color: #8C7E6E;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		margin: 0 0 8px;
-	}
-
-	.info-card p {
-		font-size: 15px;
-		margin: 0;
-	}
-
-	.watering-card {
-		margin-bottom: 16px;
-	}
-
-	.watering-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 12px;
-	}
-
-	.watering-header h3 {
-		margin: 0;
-	}
-
-	.watering-status {
-		font-size: 12px;
-		font-weight: 600;
-		padding: 3px 10px;
-		border-radius: 10px;
-		text-transform: uppercase;
-		letter-spacing: 0.3px;
-	}
-
-	.watering-ok {
-		background: #E8F5E9;
-		color: #4A6B4F;
-	}
-
-	.watering-due {
-		background: #FFF4E5;
-		color: #C48B3B;
-	}
-
-	.watering-overdue {
-		background: #FDECEA;
-		color: #C45B5B;
-	}
-
-	.watering-details {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		margin-bottom: 16px;
-	}
-
-	.watering-detail {
-		display: flex;
-		justify-content: space-between;
-		font-size: 14px;
-	}
-
-	.watering-label {
-		color: #8C7E6E;
-	}
-
-	.water-btn {
+	.detail-water-btn {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 10px 20px;
-		background: #4A90D9;
+		padding: 10px 24px;
+		background: #5B9BC4;
 		color: #fff;
 		border: none;
 		border-radius: 8px;
@@ -548,24 +507,51 @@
 		font-weight: 500;
 		cursor: pointer;
 		transition: background 0.15s;
-		width: 100%;
-		justify-content: center;
 	}
 
-	.water-btn:hover:not(:disabled) {
-		background: #3A7BC8;
+	.detail-water-btn:hover:not(:disabled) {
+		background: #4C89B1;
 	}
 
-	.water-btn:disabled {
+	.detail-water-btn:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
 	}
 
-	.notes-card {
-		margin-bottom: 16px;
+	.detail-sections {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
 	}
 
-	.notes-card p {
+	.detail-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+	}
+
+	.detail-card {
+		background: #FFFFFF;
+		border: 1px solid #E5DDD3;
+		border-radius: 12px;
+		padding: 16px;
+	}
+
+	.detail-row {
+		display: flex;
+		justify-content: space-between;
+		padding: 6px 0;
+		font-size: 14px;
+	}
+
+	.detail-row-label {
+		color: #8C7E6E;
+	}
+
+	.detail-notes {
+		font-size: 14px;
+		line-height: 1.5;
+		color: #2C2418;
 		white-space: pre-wrap;
 	}
 
@@ -804,41 +790,34 @@
 			max-width: 960px;
 		}
 
-		.hero-icon {
-			width: 100px;
-			height: 100px;
-		}
-
-		.hero-photo {
-			width: 100px;
-			height: 100px;
+		.detail-photo {
+			width: 200px;
+			height: 200px;
 		}
 	}
 
 	@media (max-width: 768px) {
-		.plant-hero h1 {
-			font-size: 22px;
-		}
-
-		.hero-icon {
-			width: 60px;
-			height: 60px;
-		}
-
-		.hero-photo {
-			width: 60px;
-			height: 60px;
-		}
-
-		.info-cards {
-			grid-template-columns: 1fr;
-		}
-
-		.plant-hero {
+		.detail-hero {
 			flex-direction: column;
-			text-align: center;
 			gap: 16px;
-			margin-bottom: 24px;
+		}
+
+		.detail-photo {
+			width: 100%;
+			height: 160px;
+		}
+
+		.detail-info h2 {
+			font-size: 20px;
+		}
+
+		.detail-water-btn {
+			width: 100%;
+			justify-content: center;
+		}
+
+		.detail-grid {
+			grid-template-columns: 1fr;
 		}
 
 		.event-delete {
