@@ -63,6 +63,11 @@ The plant detail view SHALL provide an "+ Add log entry" action for manually rec
 
 The plant detail view SHALL allow deleting individual care events.
 
+#### Scenario: Delete control shown
+
+- **WHEN** the care journal timeline is displayed
+- **THEN** each care event shows a delete icon button aligned to the right
+
 #### Scenario: Care event deleted
 
 - **WHEN** the user clicks the delete button on a care event in the timeline

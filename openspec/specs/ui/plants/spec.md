@@ -44,6 +44,11 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 - **AND** displays icon, name, species, location, watering interval, light needs, and notes
 - **AND** displays the care journal section below the watering card
 
+#### Scenario: Care journal delete control
+
+- **WHEN** the plant detail view is rendered
+- **THEN** each care journal entry shows a delete control
+
 #### Scenario: Edit action
 
 - **WHEN** the user clicks the edit button on the detail view

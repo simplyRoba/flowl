@@ -901,6 +901,33 @@
 
   .timeline-text { flex: 1; }
   .timeline-sub { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+  .timeline-actions {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 1px;
+  }
+
+  .timeline-delete {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .timeline-delete:hover {
+    border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+    color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 10%, transparent);
+  }
+
+  .timeline-delete svg { width: 14px !important; height: 14px !important; }
 
   .add-log-link {
     color: var(--primary);
@@ -1920,21 +1947,25 @@
                       <span class="timeline-date">Feb 10</span>
                       <span class="timeline-icon"><i data-lucide="droplet"></i></span>
                       <span class="timeline-text">Watered</span>
+                      <span class="timeline-actions"><button class="timeline-delete" aria-label="Delete log entry"><i data-lucide="x"></i></button></span>
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Feb 3</span>
                       <span class="timeline-icon"><i data-lucide="droplet"></i></span>
                       <span class="timeline-text">Watered</span>
+                      <span class="timeline-actions"><button class="timeline-delete" aria-label="Delete log entry"><i data-lucide="x"></i></button></span>
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Jan 28</span>
                       <span class="timeline-icon"><i data-lucide="shovel"></i></span>
                       <div class="timeline-text">Repotted<div class="timeline-sub">Moved to bigger pot, added fresh soil</div></div>
+                      <span class="timeline-actions"><button class="timeline-delete" aria-label="Delete log entry"><i data-lucide="x"></i></button></span>
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Jan 15</span>
                       <span class="timeline-icon"><i data-lucide="pencil"></i></span>
                       <div class="timeline-text">Custom<div class="timeline-sub">Yellowing leaf on lower branch, removed it</div></div>
+                      <span class="timeline-actions"><button class="timeline-delete" aria-label="Delete log entry"><i data-lucide="x"></i></button></span>
                     </li>
                   </ul>
                   <div class="add-log-link">+ Add log entry</div>
@@ -2003,21 +2034,25 @@
                       <span class="timeline-date">Feb 10</span>
                       <span class="timeline-icon"><i data-lucide="droplet"></i></span>
                       <span class="timeline-text">Watered</span>
+                      <span class="timeline-actions"><button class="timeline-delete" aria-label="Delete log entry"><i data-lucide="x"></i></button></span>
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Feb 3</span>
                       <span class="timeline-icon"><i data-lucide="droplet"></i></span>
                       <span class="timeline-text">Watered</span>
+                      <span class="timeline-actions"><button class="timeline-delete" aria-label="Delete log entry"><i data-lucide="x"></i></button></span>
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Jan 28</span>
                       <span class="timeline-icon"><i data-lucide="shovel"></i></span>
                       <div class="timeline-text">Repotted<div class="timeline-sub">Moved to bigger pot, added fresh soil</div></div>
+                      <span class="timeline-actions"><button class="timeline-delete" aria-label="Delete log entry"><i data-lucide="x"></i></button></span>
                     </li>
                     <li class="timeline-item">
                       <span class="timeline-date">Jan 15</span>
                       <span class="timeline-icon"><i data-lucide="pencil"></i></span>
                       <div class="timeline-text">Custom<div class="timeline-sub">Yellowing leaf on lower branch, removed it</div></div>
+                      <span class="timeline-actions"><button class="timeline-delete" aria-label="Delete log entry"><i data-lucide="x"></i></button></span>
                     </li>
                   </ul>
                   <div class="add-log-link">+ Add log entry</div>
@@ -2075,16 +2110,19 @@
                     <span class="timeline-date">Feb 10</span>
                     <span class="timeline-icon"><i data-lucide="droplet"></i></span>
                     <span class="timeline-text">Watered</span>
+                    <span class="timeline-actions"><button class="timeline-delete" aria-label="Delete log entry"><i data-lucide="x"></i></button></span>
                   </li>
                   <li class="timeline-item">
                     <span class="timeline-date">Feb 3</span>
                     <span class="timeline-icon"><i data-lucide="droplet"></i></span>
                     <span class="timeline-text">Watered</span>
+                    <span class="timeline-actions"><button class="timeline-delete" aria-label="Delete log entry"><i data-lucide="x"></i></button></span>
                   </li>
                   <li class="timeline-item">
                     <span class="timeline-date">Jan 28</span>
                     <span class="timeline-icon"><i data-lucide="shovel"></i></span>
                     <div class="timeline-text">Repotted<div class="timeline-sub">Bigger pot, fresh soil</div></div>
+                    <span class="timeline-actions"><button class="timeline-delete" aria-label="Delete log entry"><i data-lucide="x"></i></button></span>
                   </li>
                 </ul>
                 <div class="add-log-link">+ Add log entry</div>

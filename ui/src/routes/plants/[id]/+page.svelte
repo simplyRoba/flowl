@@ -2,9 +2,9 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon } from 'lucide-svelte';
+	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, X } from 'lucide-svelte';
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
-	import { careEvents, loadCareEvents, addCareEvent } from '$lib/stores/care';
+	import { careEvents, loadCareEvents, addCareEvent, removeCareEvent } from '$lib/stores/care';
 	import { emojiToSvgPath } from '$lib/emoji';
 	import type { CareEvent } from '$lib/api';
 
@@ -18,6 +18,7 @@
 	let showLogOccurredAt = $state(false);
 	let logSubmitting = $state(false);
 	let showAllEvents = $state(false);
+	let deletingEventId = $state<number | null>(null);
 
 	const EVENT_LIMIT = 20;
 
@@ -128,6 +129,13 @@
 		showLogOccurredAt = false;
 		showLogForm = false;
 		logSubmitting = false;
+	}
+
+	async function handleEventDelete(event: CareEvent) {
+		if (!$currentPlant || deletingEventId === event.id) return;
+		deletingEventId = event.id;
+		await removeCareEvent($currentPlant.id, event.id);
+		deletingEventId = null;
 	}
 
 	function handleLogCancel() {
@@ -249,32 +257,42 @@
 			{#if $careEvents.length === 0}
 				<p class="journal-empty">No care events recorded yet.</p>
 			{:else}
-				<ul class="timeline">
-					{#each displayEvents as event}
-						<li class="timeline-item">
-							<span class="timeline-date">{formatShortDate(event.occurred_at)}</span>
-							<span class="timeline-icon">
-								{#if event.event_type === 'watered'}
-									<Droplet size={14} />
-								{:else if event.event_type === 'fertilized'}
-									<Leaf size={14} />
-								{:else if event.event_type === 'repotted'}
-									<Shovel size={14} />
-								{:else if event.event_type === 'pruned'}
-									<Scissors size={14} />
-								{:else}
-									<PencilIcon size={14} />
-								{/if}
-							</span>
-							<span class="timeline-text">
-								{eventTypeLabel(event.event_type)}
-								{#if event.notes}
-									<span class="timeline-sub">{event.notes}</span>
-								{/if}
-							</span>
-						</li>
-					{/each}
-				</ul>
+					<ul class="timeline">
+						{#each displayEvents as event}
+							<li class="timeline-item">
+								<span class="timeline-date">{formatShortDate(event.occurred_at)}</span>
+								<span class="timeline-icon">
+									{#if event.event_type === 'watered'}
+										<Droplet size={14} />
+									{:else if event.event_type === 'fertilized'}
+										<Leaf size={14} />
+									{:else if event.event_type === 'repotted'}
+										<Shovel size={14} />
+									{:else if event.event_type === 'pruned'}
+										<Scissors size={14} />
+									{:else}
+										<PencilIcon size={14} />
+									{/if}
+								</span>
+								<span class="timeline-text">
+									{eventTypeLabel(event.event_type)}
+									{#if event.notes}
+										<span class="timeline-sub">{event.notes}</span>
+									{/if}
+								</span>
+								<span class="timeline-actions">
+									<button
+										class="event-delete"
+										onclick={() => handleEventDelete(event)}
+										disabled={deletingEventId === event.id}
+										aria-label="Delete log entry"
+									>
+										<X size={14} />
+									</button>
+								</span>
+							</li>
+						{/each}
+					</ul>
 				{#if hasMoreEvents && !showAllEvents}
 					<button class="add-log-link" onclick={() => showAllEvents = true}>Show more events</button>
 				{/if}
@@ -666,6 +684,36 @@
 		min-width: 0;
 	}
 
+	.timeline-actions {
+		display: flex;
+		align-items: flex-start;
+	}
+
+	.event-delete {
+		width: 28px;
+		height: 28px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 8px;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		color: var(--color-text-muted);
+		cursor: pointer;
+		transition: background 0.15s, color 0.15s, border-color 0.15s;
+	}
+
+	.event-delete:hover:not(:disabled) {
+		background: var(--color-danger-soft);
+		border-color: var(--color-danger);
+		color: var(--color-danger);
+	}
+
+	.event-delete:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
 	.timeline-sub {
 		display: block;
 		color: var(--color-text-muted);
@@ -860,8 +908,5 @@
 			grid-template-columns: 1fr;
 		}
 
-		.event-delete {
-			opacity: 1;
-		}
 	}
 </style>
