@@ -26,7 +26,7 @@
 		<h1>Add Plant</h1>
 	</header>
 
-	<PlantForm onsave={handleSave} {saving} />
+	<PlantForm onsave={handleSave} {saving} showLocationNone={false} />
 </div>
 
 <style>

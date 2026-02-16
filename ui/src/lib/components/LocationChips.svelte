@@ -1,17 +1,19 @@
 <script lang="ts">
-	import { Plus } from 'lucide-svelte';
+	import { MapPin } from 'lucide-svelte';
 	import type { Location } from '$lib/api';
 
 	let {
 		locations,
 		value = null,
 		onchange,
-		oncreate
+		oncreate,
+		showNone = true
 	}: {
 		locations: Location[];
 		value: number | null;
 		onchange: (id: number | null) => void;
 		oncreate?: (name: string) => Promise<Location | null>;
+		showNone?: boolean;
 	} = $props();
 
 	let adding = $state(false);
@@ -29,21 +31,24 @@
 </script>
 
 <div class="location-chips">
-	<button
-		type="button"
-		class="chip"
-		class:selected={value === null}
-		onclick={() => onchange(null)}
-	>
-		None
-	</button>
+	{#if showNone}
+		<button
+			type="button"
+			class="location-chip"
+			class:active={value === null}
+			onclick={() => onchange(null)}
+		>
+			None
+		</button>
+	{/if}
 	{#each locations as loc (loc.id)}
 		<button
 			type="button"
-			class="chip"
-			class:selected={value === loc.id}
+			class="location-chip"
+			class:active={value === loc.id}
 			onclick={() => onchange(loc.id)}
 		>
+			<MapPin size={14} class="chip-icon" />
 			{loc.name}
 		</button>
 	{/each}
@@ -55,14 +60,14 @@
 				placeholder="Location name"
 				class="new-input"
 			/>
-			<button type="submit" class="chip new-chip">Add</button>
-			<button type="button" class="chip" onclick={() => { adding = false; newName = ''; }}>
+			<button type="submit" class="location-chip add-location">Add</button>
+			<button type="button" class="location-chip" onclick={() => { adding = false; newName = ''; }}>
 				Cancel
 			</button>
 		</form>
 	{:else}
-		<button type="button" class="chip new-chip" onclick={() => { adding = true; }}>
-			<Plus size={14} /> New
+		<button type="button" class="location-chip add-location" onclick={() => { adding = true; }}>
+			+ New
 		</button>
 	{/if}
 </div>
@@ -75,34 +80,40 @@
 		align-items: center;
 	}
 
-	.chip {
+	.location-chip {
 		padding: 8px 14px;
 		border: 1px solid #E5DDD3;
 		border-radius: 999px;
 		background: #FFFFFF;
-		font-size: 14px;
-		cursor: pointer;
-		transition: border-color 0.15s, background 0.15s;
-		white-space: nowrap;
-	}
-
-	.chip:hover {
-		border-color: #8C7E6E;
-	}
-
-	.chip.selected {
-		border-color: #6B8F71;
-		background: #f0f7f1;
-		color: #4A6B4F;
+		font-size: 13px;
 		font-weight: 500;
-	}
-
-	.new-chip {
+		cursor: pointer;
+		transition: all 0.15s;
+		white-space: nowrap;
 		display: inline-flex;
 		align-items: center;
-		gap: 4px;
+		gap: 5px;
+		color: #2C2418;
+	}
+
+	.location-chip:hover {
+		border-color: #6B8F71;
+	}
+
+	.location-chip.active {
+		border-color: #6B8F71;
+		background: color-mix(in srgb, #6B8F71 10%, transparent);
 		color: #6B8F71;
+	}
+
+	.location-chip.add-location {
 		border-style: dashed;
+		color: #8C7E6E;
+	}
+
+	.location-chip.add-location:hover {
+		border-color: #6B8F71;
+		color: #6B8F71;
 	}
 
 	.new-location {
@@ -115,12 +126,17 @@
 		padding: 8px 12px;
 		border: 1px solid #E5DDD3;
 		border-radius: 8px;
-		font-size: 14px;
+		font-size: 13px;
 		outline: none;
 		width: 140px;
 	}
 
 	.new-input:focus {
 		border-color: #6B8F71;
+	}
+
+	.chip-icon {
+		width: 14px;
+		height: 14px;
 	}
 </style>

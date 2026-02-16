@@ -11,17 +11,23 @@
 		initial = null,
 		onsave,
 		onremovephoto,
-		saving = false
+		saving = false,
+		formId = 'plant-form',
+		showFooterActions = true,
+		showLocationNone = true
 	}: {
 		initial?: Plant | null;
 		onsave: (data: CreatePlant, photo?: File) => void;
 		onremovephoto?: () => void;
 		saving?: boolean;
+		formId?: string;
+		showFooterActions?: boolean;
+		showLocationNone?: boolean;
 	} = $props();
 
 	let name = $state('');
 	let species = $state('');
-	let icon = $state('🪴');
+	let icon = $state('');
 	let locationId = $state<number | null>(null);
 	let wateringDays = $state(7);
 	let lightNeeds = $state('indirect');
@@ -30,15 +36,25 @@
 
 	let photoFile = $state<File | null>(null);
 	let photoPreview = $state<string | null>(null);
+	let isDraggingPhoto = $state(false);
+
+	let mediaMode = $state<'both' | 'icon' | 'photo'>('both');
+	let mediaTouched = $state(false);
 
 	let hasPhoto = $derived(photoPreview !== null || (initial?.photo_url != null && photoFile === null));
+
+	$effect(() => {
+		if (!mediaTouched) {
+			mediaMode = hasPhoto ? 'photo' : 'both';
+		}
+	});
 
 	// Initialize/re-initialize from initial prop (for edit form)
 	$effect(() => {
 		if (initial) {
 			name = initial.name;
 			species = initial.species ?? '';
-			icon = initial.icon;
+			icon = initial.icon ?? '';
 			locationId = initial.location_id;
 			wateringDays = initial.watering_interval_days;
 			lightNeeds = initial.light_needs;
@@ -54,8 +70,38 @@
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
+		setPhotoFile(file);
+		mediaMode = 'photo';
+		mediaTouched = true;
+	}
+
+	function setPhotoFile(file: File) {
+		if (photoPreview) {
+			URL.revokeObjectURL(photoPreview);
+		}
 		photoFile = file;
 		photoPreview = URL.createObjectURL(file);
+	}
+
+	function handlePhotoDrop(e: DragEvent) {
+		e.preventDefault();
+		isDraggingPhoto = false;
+		const file = e.dataTransfer?.files?.[0];
+		if (!file) return;
+		setPhotoFile(file);
+		mediaMode = 'photo';
+		mediaTouched = true;
+	}
+
+	function handleDragEnter(e: DragEvent) {
+		e.preventDefault();
+		isDraggingPhoto = true;
+	}
+
+	function handleDragLeave(e: DragEvent) {
+		if (e.currentTarget === e.target) {
+			isDraggingPhoto = false;
+		}
 	}
 
 	function handleRemoveNewPhoto() {
@@ -72,6 +118,32 @@
 		}
 	}
 
+	function handleIconSelect(nextIcon: string) {
+		icon = nextIcon;
+		mediaMode = 'icon';
+		mediaTouched = true;
+		if (photoPreview) {
+			URL.revokeObjectURL(photoPreview);
+		}
+		photoFile = null;
+		photoPreview = null;
+	}
+
+	function switchToIcon() {
+		mediaMode = 'icon';
+		mediaTouched = true;
+		if (photoPreview) {
+			URL.revokeObjectURL(photoPreview);
+		}
+		photoFile = null;
+		photoPreview = null;
+	}
+
+	function switchToPhoto() {
+		mediaMode = 'photo';
+		mediaTouched = true;
+	}
+
 	function handleSubmit(e: Event) {
 		e.preventDefault();
 		if (!name.trim()) {
@@ -81,9 +153,9 @@
 		nameError = '';
 
 		const data: CreatePlant = {
-			name: name.trim(),
-			icon
+			name: name.trim()
 		};
+		if (mediaMode !== 'photo' && icon.trim()) data.icon = icon;
 		if (species.trim()) data.species = species.trim();
 		data.location_id = locationId;
 		data.watering_interval_days = wateringDays;
@@ -98,170 +170,281 @@
 	}
 </script>
 
-<form class="plant-form" onsubmit={handleSubmit}>
-	<section class="form-section">
-		<h3>Photo</h3>
-		{#if photoPreview}
-			<div class="photo-preview">
-				<img src={photoPreview} alt="Preview" class="preview-img" />
-				<button type="button" class="photo-remove-btn" onclick={handleRemoveNewPhoto}>
-					<X size={16} />
+<form class="plant-form" id={formId} onsubmit={handleSubmit}>
+	<section class="form-section media-section">
+		<div class="media-header">
+			<div class="form-section-title">Media</div>
+			{#if mediaMode === 'icon'}
+				<button type="button" class="media-switch media-switch-desktop" onclick={switchToPhoto}>
+					Use photo instead
 				</button>
-			</div>
-		{:else if initial?.photo_url}
-			<div class="photo-preview">
-				<img src={initial.photo_url} alt={initial.name} class="preview-img" />
-				{#if onremovephoto}
-					<button type="button" class="photo-remove-btn" onclick={handleRemoveExistingPhoto}>
-						<X size={16} />
-					</button>
-				{/if}
-			</div>
-		{:else}
-			<label class="photo-upload">
-				<Camera size={24} />
-				<span>Add a photo</span>
-				<input
-					type="file"
-					accept="image/jpeg,image/png,image/webp"
-					onchange={handlePhotoSelect}
-					class="file-input"
-				/>
-			</label>
-		{/if}
-		{#if !hasPhoto}
-			<!-- Show nothing extra, upload area is above -->
-		{:else if !photoPreview && initial?.photo_url}
-			<label class="photo-replace">
-				<Camera size={16} />
-				<span>Replace photo</span>
-				<input
-					type="file"
-					accept="image/jpeg,image/png,image/webp"
-					onchange={handlePhotoSelect}
-					class="file-input"
-				/>
-			</label>
+			{:else if mediaMode === 'photo'}
+				<button type="button" class="media-switch media-switch-desktop" onclick={switchToIcon}>
+					Use icon instead
+				</button>
+			{/if}
+		</div>
+		<div class="media-stack">
+			{#if mediaMode !== 'icon'}
+				<div class="media-photo">
+					{#if photoPreview}
+						<div class="photo-preview">
+							<img src={photoPreview} alt="Preview" class="preview-img" />
+							<button type="button" class="photo-remove-btn" onclick={handleRemoveNewPhoto}>
+								<X size={16} />
+							</button>
+						</div>
+					{:else if initial?.photo_url}
+						<div class="photo-preview">
+							<img src={initial.photo_url} alt={initial.name} class="preview-img" />
+							{#if onremovephoto}
+								<button type="button" class="photo-remove-btn" onclick={handleRemoveExistingPhoto}>
+									<X size={16} />
+								</button>
+							{/if}
+						</div>
+					{:else}
+						<label
+							class="photo-upload-refined"
+							class:dragging={isDraggingPhoto}
+							ondragenter={handleDragEnter}
+							ondragover={handleDragEnter}
+							ondragleave={handleDragLeave}
+							ondrop={handlePhotoDrop}
+						>
+							<div class="upload-icon"><Camera size={24} /></div>
+							<span>Add a photo</span>
+							<span class="upload-hint">Click to select or drag & drop</span>
+							<input
+								type="file"
+								accept="image/jpeg,image/png,image/webp"
+								onchange={handlePhotoSelect}
+								class="file-input"
+							/>
+						</label>
+					{/if}
+					{#if !hasPhoto}
+						<!-- No replace link when empty -->
+					{:else if !photoPreview && initial?.photo_url}
+						<label class="photo-replace">
+							<Camera size={16} />
+							<span>Replace photo</span>
+							<input
+								type="file"
+								accept="image/jpeg,image/png,image/webp"
+								onchange={handlePhotoSelect}
+								class="file-input"
+							/>
+						</label>
+					{/if}
+				</div>
+			{/if}
+			{#if mediaMode === 'both'}
+				<div class="media-divider"><span>or</span></div>
+			{/if}
+			{#if mediaMode !== 'photo'}
+				<div class="media-icon">
+					<IconPicker value={icon} onchange={handleIconSelect} />
+				</div>
+			{/if}
+		</div>
+		{#if mediaMode === 'icon'}
+			<button type="button" class="media-switch media-switch-mobile" onclick={switchToPhoto}>Use photo instead</button>
+		{:else if mediaMode === 'photo'}
+			<button type="button" class="media-switch media-switch-mobile" onclick={switchToIcon}>Use icon instead</button>
 		{/if}
 	</section>
 
 	<section class="form-section">
-		<h3>Identity</h3>
-		<label class="field">
-			<span class="label">Name <span class="required">*</span></span>
+		<div class="form-section-title">Identity</div>
+		<div class="form-group">
+			<label class="form-label">Name *</label>
 			<input
 				type="text"
 				bind:value={name}
 				placeholder="e.g. Monstera Deliciosa"
-				class="input"
+				class="form-input"
 				class:error={nameError}
 				oninput={() => { nameError = ''; }}
 			/>
 			{#if nameError}
 				<span class="field-error">{nameError}</span>
 			{/if}
-		</label>
+		</div>
 
-		<label class="field">
-			<span class="label">Species</span>
+		<div class="form-group">
+			<label class="form-label">Species (optional)</label>
 			<input
 				type="text"
 				bind:value={species}
 				placeholder="e.g. Monstera"
-				class="input"
+				class="form-input"
 			/>
-		</label>
+		</div>
 
-		{#if !hasPhoto}
-			<div class="field">
-				<span class="label">Icon</span>
-				<IconPicker value={icon} onchange={(v) => { icon = v; }} />
-			</div>
-		{/if}
+		<!-- Icon picker moved to Media section -->
 	</section>
 
 	<section class="form-section">
-		<h3>Location</h3>
+		<div class="form-section-title">Location</div>
 		<LocationChips
 			locations={$locations}
 			value={locationId}
 			onchange={(v) => { locationId = v; }}
 			oncreate={handleCreateLocation}
+			showNone={showLocationNone}
 		/>
 	</section>
 
 	<section class="form-section">
-		<h3>Watering</h3>
+		<div class="form-section-title">Watering</div>
 		<WateringInterval value={wateringDays} onchange={(v) => { wateringDays = v; }} />
 	</section>
 
 	<section class="form-section">
-		<h3>Light Needs</h3>
-		<div class="light-options">
+		<div class="form-section-title">Light needs</div>
+		<div class="light-selector">
 			<button
 				type="button"
 				class="light-option"
-				class:selected={lightNeeds === 'direct'}
+				class:active={lightNeeds === 'direct'}
 				onclick={() => { lightNeeds = 'direct'; }}
 			>
-				<Sun size={20} />
-				<span class="light-label">Direct</span>
-				<span class="light-desc">Full sun</span>
+				<span class="light-icon"><Sun size={20} /></span>
+				<span>Direct</span>
+				<span class="light-label">Full sun</span>
 			</button>
 			<button
 				type="button"
 				class="light-option"
-				class:selected={lightNeeds === 'indirect'}
+				class:active={lightNeeds === 'indirect'}
 				onclick={() => { lightNeeds = 'indirect'; }}
 			>
-				<CloudSun size={20} />
-				<span class="light-label">Indirect</span>
-				<span class="light-desc">Filtered</span>
+				<span class="light-icon"><CloudSun size={20} /></span>
+				<span>Indirect</span>
+				<span class="light-label">Bright, filtered</span>
 			</button>
 			<button
 				type="button"
 				class="light-option"
-				class:selected={lightNeeds === 'low'}
+				class:active={lightNeeds === 'low'}
 				onclick={() => { lightNeeds = 'low'; }}
 			>
-				<Cloud size={20} />
-				<span class="light-label">Low</span>
-				<span class="light-desc">Shade</span>
+				<span class="light-icon"><Cloud size={20} /></span>
+				<span>Low</span>
+				<span class="light-label">Shade tolerant</span>
 			</button>
 		</div>
 	</section>
 
 	<section class="form-section">
-		<h3>Notes</h3>
+		<div class="form-section-title">Notes</div>
 		<textarea
 			bind:value={notes}
-			placeholder="Care tips, observations..."
-			class="input textarea"
+			placeholder="Care tips, observations, anything useful..."
+			class="form-input textarea"
 			rows="4"
 		></textarea>
 	</section>
 
-	<button type="submit" class="save-btn" disabled={saving}>
-		{saving ? 'Saving...' : 'Save'}
-	</button>
+	{#if showFooterActions}
+		<button type="submit" class="save-btn" disabled={saving}>
+			{saving ? 'Saving...' : 'Save'}
+		</button>
+	{/if}
 </form>
 
 <style>
 	.plant-form {
 		display: flex;
 		flex-direction: column;
-		gap: 24px;
+		gap: 16px;
 		max-width: 640px;
+		margin: 0 auto;
 	}
 
 	.form-section {
 		background: #FFFFFF;
 		border: 1px solid #E5DDD3;
 		border-radius: 12px;
-		padding: 20px;
+		padding: 16px;
 	}
 
-	.form-section h3 {
+	.media-section {
+		padding: 16px;
+	}
+
+	.media-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+
+	.media-stack {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.media-icon,
+	.media-photo {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.media-icon .form-label {
+		margin-bottom: 4px;
+	}
+
+	.media-divider {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		color: #8C7E6E;
+		font-size: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.6px;
+	}
+
+	.media-divider::before,
+	.media-divider::after {
+		content: '';
+		height: 1px;
+		background: #E5DDD3;
+		flex: 1;
+	}
+
+	.media-switch {
+		margin: 0;
+		padding: 6px 12px;
+		border: 1px solid #E5DDD3;
+		border-radius: 8px;
+		background: #FFFFFF;
+		color: #8C7E6E;
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s;
+		white-space: nowrap;
+	}
+
+	.media-switch-mobile {
+		display: none;
+		margin: 12px auto 0;
+		align-self: center;
+	}
+
+	.media-switch:hover {
+		border-color: #6B8F71;
+		color: #6B8F71;
+	}
+
+
+	.form-section-title {
 		font-size: 13px;
 		font-weight: 600;
 		color: #8C7E6E;
@@ -270,27 +453,28 @@
 		margin: 0 0 16px;
 	}
 
-	.field {
+	.form-group {
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
-		margin-bottom: 16px;
+		margin-bottom: 18px;
 	}
 
-	.field:last-child {
+	.form-group:last-child {
 		margin-bottom: 0;
 	}
 
-	.label {
-		font-size: 14px;
-		font-weight: 500;
+	.form-label {
+		font-size: 13px;
+		font-weight: 600;
+		color: #8C7E6E;
 	}
 
 	.required {
 		color: #C45B5B;
 	}
 
-	.input {
+	.form-input {
 		padding: 10px 12px;
 		border: 1px solid #E5DDD3;
 		border-radius: 8px;
@@ -298,13 +482,15 @@
 		font-family: inherit;
 		outline: none;
 		transition: border-color 0.15s;
+		background: #FFFFFF;
+		color: #2C2418;
 	}
 
-	.input:focus {
+	.form-input:focus {
 		border-color: #6B8F71;
 	}
 
-	.input.error {
+	.form-input.error {
 		border-color: #C45B5B;
 	}
 
@@ -320,27 +506,54 @@
 		color: #C45B5B;
 	}
 
-	.photo-upload {
+	.photo-upload-refined {
+		width: 100%;
+		height: 160px;
+		border: 2px dashed #E5DDD3;
+		border-radius: 12px;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		justify-content: center;
 		gap: 8px;
-		padding: 32px;
-		border: 2px dashed #E5DDD3;
-		border-radius: 12px;
-		cursor: pointer;
 		color: #8C7E6E;
-		transition: border-color 0.15s, color 0.15s;
-	}
-
-	.photo-upload:hover {
-		border-color: #6B8F71;
-		color: #6B8F71;
-	}
-
-	.photo-upload span {
 		font-size: 14px;
-		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s;
+		background: color-mix(in srgb, #6B8F71 3%, transparent);
+		position: relative;
+		overflow: hidden;
+	}
+
+	.photo-upload-refined.dragging {
+		border-color: #6B8F71;
+		background: color-mix(in srgb, #6B8F71 10%, transparent);
+		color: #4A6B4F;
+	}
+
+	.media-photo .photo-upload-refined {
+		max-width: 100%;
+	}
+
+	.photo-upload-refined:hover {
+		border-color: #6B8F71;
+		background: color-mix(in srgb, #6B8F71 8%, transparent);
+	}
+
+	.photo-upload-refined .upload-icon {
+		width: 48px;
+		height: 48px;
+		border-radius: 50%;
+		background: color-mix(in srgb, #6B8F71 12%, transparent);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 22px;
+	}
+
+	.photo-upload-refined .upload-hint {
+		font-size: 12px;
+		color: #8C7E6E;
 	}
 
 	.file-input {
@@ -349,12 +562,14 @@
 
 	.photo-preview {
 		position: relative;
-		display: inline-block;
+		display: inline-flex;
+		justify-content: center;
+		align-items: center;
 	}
 
 	.preview-img {
-		width: 120px;
-		height: 120px;
+		width: 180px;
+		height: 180px;
 		object-fit: cover;
 		border-radius: 12px;
 		border: 1px solid #E5DDD3;
@@ -385,7 +600,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		margin-top: 12px;
+		margin-top: 6px;
 		padding: 6px 12px;
 		border: 1px solid #E5DDD3;
 		border-radius: 8px;
@@ -401,7 +616,7 @@
 		color: #6B8F71;
 	}
 
-	.light-options {
+	.light-selector {
 		display: flex;
 		gap: 8px;
 	}
@@ -412,32 +627,37 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 4px;
-		padding: 16px 12px;
+		padding: 10px 8px;
 		border: 1px solid #E5DDD3;
 		border-radius: 10px;
 		background: #FFFFFF;
 		cursor: pointer;
-		transition: border-color 0.15s, background 0.15s;
+		transition: all 0.15s;
 		color: #2C2418;
+		font-size: 13px;
 	}
 
 	.light-option:hover {
-		border-color: #8C7E6E;
-	}
-
-	.light-option.selected {
 		border-color: #6B8F71;
-		background: #f0f7f1;
 	}
 
-	.light-label {
-		font-size: 14px;
-		font-weight: 600;
+	.light-option.active {
+		border-color: #6B8F71;
+		background: color-mix(in srgb, #6B8F71 10%, transparent);
+		color: #6B8F71;
 	}
 
-	.light-desc {
-		font-size: 12px;
+	.light-option .light-icon {
+		font-size: 20px;
+	}
+
+	.light-option .light-label {
+		font-size: 11px;
 		color: #8C7E6E;
+	}
+
+	.light-option.active .light-label {
+		color: #6B8F71;
 	}
 
 	.save-btn {
@@ -471,12 +691,51 @@
 			padding: 16px;
 		}
 
-		.light-options {
+		.photo-section {
+			margin-bottom: 8px;
+		}
+
+		.photo-upload-refined {
+			height: 120px;
+		}
+
+		.preview-img {
+			width: 150px;
+			height: 150px;
+		}
+
+		.media-divider {
+			font-size: 11px;
+			gap: 8px;
+		}
+
+		.media-switch-desktop {
+			display: none;
+		}
+
+		.media-switch-mobile {
+			display: inline-flex;
+			align-self: stretch;
+			justify-content: center;
+			padding: 10px 16px;
+			font-size: 14px;
+			width: 100%;
+		}
+
+		.photo-upload-refined .upload-hint {
+			display: none;
+		}
+
+		.light-selector {
 			gap: 6px;
 		}
 
 		.light-option {
-			padding: 12px 8px;
+			padding: 10px 8px;
+		}
+
+		.light-option .light-label {
+			display: none;
 		}
 
 		.save-btn {

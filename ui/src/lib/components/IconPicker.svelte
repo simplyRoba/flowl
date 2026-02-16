@@ -6,45 +6,48 @@
 	let { value = '🪴', onchange }: { value: string; onchange: (icon: string) => void } = $props();
 </script>
 
-<div class="icon-picker">
+<div class="emoji-picker">
 	{#each ICONS as icon}
 		<button
 			type="button"
-			class="icon-option"
-			class:selected={value === icon}
+			class="emoji-option"
+			class:active={value === icon}
 			onclick={() => onchange(icon)}
 		>
-			<img src={emojiToSvgPath(icon)} alt={icon} width="28" height="28" />
+			<img class="noto" src={emojiToSvgPath(icon)} alt={icon} width="24" height="24" />
 		</button>
 	{/each}
 </div>
 
 <style>
-	.icon-picker {
+	.emoji-picker {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
+		gap: 6px;
+		justify-content: center;
 	}
 
-	.icon-option {
-		width: 48px;
-		height: 48px;
+	.emoji-option {
+		width: 42px;
+		height: 42px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border: 2px solid #E5DDD3;
+		border: 1px solid #E5DDD3;
 		border-radius: 10px;
 		background: #FFFFFF;
 		cursor: pointer;
-		transition: border-color 0.15s, background 0.15s;
+		transition: all 0.15s;
 	}
 
-	.icon-option:hover {
-		border-color: #8C7E6E;
-	}
-
-	.icon-option.selected {
+	.emoji-option:hover {
 		border-color: #6B8F71;
-		background: #f0f7f1;
+		transform: scale(1.08);
+	}
+
+	.emoji-option.active {
+		border-color: #6B8F71;
+		background: color-mix(in srgb, #6B8F71 10%, transparent);
+		box-shadow: 0 0 0 2px color-mix(in srgb, #6B8F71 30%, transparent);
 	}
 </style>

@@ -1,16 +1,14 @@
 <script lang="ts">
-	import { Minus, Plus } from 'lucide-svelte';
+	import { Minus, Plus, Droplet } from 'lucide-svelte';
 
 	const PRESETS = [
-		{ days: 3, label: '3 days', desc: 'Thirsty' },
-		{ days: 7, label: '7 days', desc: 'Weekly' },
-		{ days: 14, label: '14 days', desc: 'Biweekly' },
-		{ days: 30, label: '30 days', desc: 'Monthly' }
+		{ days: 3, label: '3 days', shortLabel: '3d', desc: 'Thirsty' },
+		{ days: 7, label: '7 days', shortLabel: '7d', desc: 'Weekly' },
+		{ days: 14, label: '14 days', shortLabel: '14d', desc: 'Biweekly' },
+		{ days: 30, label: '30 days', shortLabel: '30d', desc: 'Monthly' }
 	];
 
 	let { value = 7, onchange }: { value: number; onchange: (days: number) => void } = $props();
-
-	let isPreset = $derived(PRESETS.some((p) => p.days === value));
 
 	function decrement() {
 		if (value > 1) onchange(value - 1);
@@ -22,30 +20,48 @@
 </script>
 
 <div class="watering-interval">
-	<div class="presets">
+	<div class="interval-presets">
 		{#each PRESETS as preset}
 			<button
 				type="button"
-				class="preset"
-				class:selected={value === preset.days}
+				class="interval-preset"
+				class:active={value === preset.days}
 				onclick={() => onchange(preset.days)}
 			>
-				<span class="preset-label">{preset.label}</span>
-				<span class="preset-desc">{preset.desc}</span>
+				<span class="preset-icon"><Droplet size={16} /></span>
+				<span class="preset-value">
+					<span class="preset-long">{preset.label}</span>
+					<span class="preset-short">{preset.shortLabel}</span>
+				</span>
+				<span class="preset-label">{preset.desc}</span>
 			</button>
 		{/each}
 	</div>
 
-	<div class="custom">
-		<span class="custom-label">Custom:</span>
-		<button type="button" class="stepper-btn" onclick={decrement} disabled={value <= 1}>
-			<Minus size={16} />
-		</button>
-		<span class="stepper-value" class:custom-active={!isPreset}>{value}</span>
-		<button type="button" class="stepper-btn" onclick={increment}>
-			<Plus size={16} />
-		</button>
-		<span class="stepper-unit">days</span>
+	<div class="interval-custom">
+		<span class="stepper-label">
+			<span class="stepper-long">Or set custom:</span>
+			<span class="stepper-short">Custom:</span>
+		</span>
+		<div class="stepper">
+			<button type="button" class="stepper-btn" onclick={decrement} disabled={value <= 1}>
+				<Minus size={16} />
+			</button>
+			<input
+				class="stepper-value"
+				type="number"
+				min="1"
+				value={value}
+				oninput={(e) => {
+					const next = Number((e.currentTarget as HTMLInputElement).value);
+					if (!Number.isNaN(next) && next > 0) onchange(next);
+				}}
+			/>
+			<button type="button" class="stepper-btn" onclick={increment}>
+				<Plus size={16} />
+			</button>
+		</div>
+		<span class="stepper-label">days</span>
 	</div>
 </div>
 
@@ -53,69 +69,94 @@
 	.watering-interval {
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: 12px;
 	}
 
-	.presets {
+	.interval-presets {
 		display: flex;
 		gap: 8px;
 		flex-wrap: wrap;
 	}
 
-	.preset {
+	.interval-preset {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 2px;
-		padding: 12px 16px;
+		gap: 4px;
+		padding: 10px 8px;
 		border: 1px solid #E5DDD3;
 		border-radius: 10px;
 		background: #FFFFFF;
 		cursor: pointer;
-		transition: border-color 0.15s, background 0.15s;
+		transition: all 0.15s;
 		flex: 1;
-		min-width: 80px;
+		min-width: 0;
 	}
 
-	.preset:hover {
-		border-color: #8C7E6E;
-	}
-
-	.preset.selected {
+	.interval-preset:hover {
 		border-color: #6B8F71;
-		background: #f0f7f1;
 	}
 
-	.preset-label {
-		font-size: 15px;
+	.interval-preset.active {
+		border-color: #6B8F71;
+		background: color-mix(in srgb, #6B8F71 10%, transparent);
+		color: #6B8F71;
+	}
+
+	.interval-preset .preset-icon {
+		font-size: 18px;
+	}
+
+	.preset-value {
+		font-size: 13px;
 		font-weight: 600;
 	}
 
-	.preset-desc {
+	.preset-short {
+		display: none;
+	}
+
+	.preset-label {
 		font-size: 12px;
 		color: #8C7E6E;
 	}
 
-	.custom {
-		display: flex;
-		align-items: center;
-		gap: 8px;
+	.interval-preset.active .preset-label {
+		color: #6B8F71;
 	}
 
-	.custom-label {
+	.interval-custom {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.stepper-label {
 		font-size: 14px;
 		color: #8C7E6E;
 	}
 
+	.stepper-short {
+		display: none;
+	}
+
+	.stepper {
+		display: flex;
+		align-items: center;
+		gap: 0;
+		border: 1px solid #E5DDD3;
+		border-radius: 8px;
+		overflow: hidden;
+	}
+
 	.stepper-btn {
-		width: 36px;
-		height: 36px;
+		width: 40px;
+		height: 40px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border: 1px solid #E5DDD3;
-		border-radius: 8px;
-		background: #FFFFFF;
+		background: #FAF6F1;
+		border: none;
 		cursor: pointer;
 		color: #2C2418;
 		transition: background 0.15s;
@@ -133,16 +174,41 @@
 	.stepper-value {
 		font-size: 18px;
 		font-weight: 600;
-		min-width: 32px;
+		width: 52px;
 		text-align: center;
+		background: #FFFFFF;
+		border: none;
+		border-left: 1px solid #E5DDD3;
+		border-right: 1px solid #E5DDD3;
+		height: 40px;
+		font-family: inherit;
 	}
 
-	.stepper-value.custom-active {
-		color: #6B8F71;
+	.stepper-value::-webkit-outer-spin-button,
+	.stepper-value::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
 	}
 
-	.stepper-unit {
-		font-size: 14px;
-		color: #8C7E6E;
+	.stepper-value[type='number'] {
+		-moz-appearance: textfield;
+	}
+
+	@media (max-width: 768px) {
+		.preset-long {
+			display: none;
+		}
+
+		.preset-short {
+			display: inline;
+		}
+
+		.stepper-long {
+			display: none;
+		}
+
+		.stepper-short {
+			display: inline;
+		}
 	}
 </style>

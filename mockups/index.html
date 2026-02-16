@@ -1307,6 +1307,26 @@
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .media-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin: 12px 0;
+  }
+
+  .media-divider::before,
+  .media-divider::after {
+    content: '';
+    height: 1px;
+    background: var(--border);
+    flex: 1;
   }
 
   .emoji-option {
@@ -2066,26 +2086,17 @@
               <div class="form-body" style="padding:32px">
                 <div style="max-width:640px;margin:0 auto">
 
-                  <div class="photo-upload-refined">
-                    <div class="upload-icon"><i data-lucide="camera"></i></div>
-                    <span>Add a photo</span>
-                    <span class="upload-hint">Click to select or drag & drop</span>
-                  </div>
-
                   <div class="form-section" style="margin-top:16px">
-                    <div class="form-section-title">Identity</div>
-                    <div class="form-group">
-                      <label class="form-label">Name *</label>
-                      <input class="form-input" type="text" placeholder="e.g. Monstera Deliciosa" />
+                    <div class="form-section-title">Media</div>
+                    <div class="photo-upload-refined">
+                      <div class="upload-icon"><i data-lucide="camera"></i></div>
+                      <span>Add a photo</span>
+                      <span class="upload-hint">Click to select or drag & drop</span>
                     </div>
-                    <div class="form-group">
-                      <label class="form-label">Species (optional)</label>
-                      <input class="form-input" type="text" placeholder="e.g. Monstera" />
-                    </div>
+                    <div class="media-divider"><span>or</span></div>
                     <div class="form-group" style="margin-bottom:0">
-                      <label class="form-label">Icon</label>
                       <div class="emoji-picker">
-                        <div class="emoji-option active"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
                         <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
                         <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f335.svg" alt="Cactus"></div>
                         <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f338.svg" alt="Cherry Blossom"></div>
@@ -2095,6 +2106,18 @@
                         <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33b.svg" alt="Sunflower"></div>
                         <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f340.svg" alt="Four Leaf Clover"></div>
                       </div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <div class="form-section-title">Identity</div>
+                    <div class="form-group">
+                      <label class="form-label">Name *</label>
+                      <input class="form-input" type="text" placeholder="e.g. Monstera Deliciosa" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                      <label class="form-label">Species (optional)</label>
+                      <input class="form-input" type="text" placeholder="e.g. Monstera" />
                     </div>
                   </div>
 
@@ -2205,26 +2228,17 @@
               <div class="form-body">
                 <div style="max-width:520px;margin:0 auto">
 
-                  <div class="photo-upload-refined">
-                    <div class="upload-icon"><i data-lucide="camera"></i></div>
-                    <span>Add a photo</span>
-                    <span class="upload-hint">Click to select or drag & drop</span>
-                  </div>
-
                   <div class="form-section" style="margin-top:16px">
-                    <div class="form-section-title">Identity</div>
-                    <div class="form-group">
-                      <label class="form-label">Name *</label>
-                      <input class="form-input" type="text" placeholder="e.g. Monstera Deliciosa" />
+                    <div class="form-section-title">Media</div>
+                    <div class="photo-upload-refined">
+                      <div class="upload-icon"><i data-lucide="camera"></i></div>
+                      <span>Add a photo</span>
+                      <span class="upload-hint">Click to select or drag & drop</span>
                     </div>
-                    <div class="form-group">
-                      <label class="form-label">Species (optional)</label>
-                      <input class="form-input" type="text" placeholder="e.g. Monstera" />
-                    </div>
+                    <div class="media-divider"><span>or</span></div>
                     <div class="form-group" style="margin-bottom:0">
-                      <label class="form-label">Icon</label>
                       <div class="emoji-picker">
-                        <div class="emoji-option active"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                        <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
                         <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
                         <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f335.svg" alt="Cactus"></div>
                         <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f338.svg" alt="Cherry Blossom"></div>
@@ -2234,6 +2248,18 @@
                         <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33b.svg" alt="Sunflower"></div>
                         <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f340.svg" alt="Four Leaf Clover"></div>
                       </div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <div class="form-section-title">Identity</div>
+                    <div class="form-group">
+                      <label class="form-label">Name *</label>
+                      <input class="form-input" type="text" placeholder="e.g. Monstera Deliciosa" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                      <label class="form-label">Species (optional)</label>
+                      <input class="form-input" type="text" placeholder="e.g. Monstera" />
                     </div>
                   </div>
 
@@ -2332,25 +2358,16 @@
             </div>
             <div class="form-body mobile-form">
 
-              <div class="photo-upload-refined" style="height:120px">
-                <div class="upload-icon"><i data-lucide="camera"></i></div>
-                <span>Add a photo</span>
-              </div>
-
               <div class="form-section" style="margin-top:12px">
-                <div class="form-section-title">Identity</div>
-                <div class="form-group">
-                  <label class="form-label">Name *</label>
-                  <input class="form-input" type="text" placeholder="e.g. Monstera" />
+                <div class="form-section-title">Media</div>
+                <div class="photo-upload-refined" style="height:120px">
+                  <div class="upload-icon"><i data-lucide="camera"></i></div>
+                  <span>Add a photo</span>
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Species</label>
-                  <input class="form-input" type="text" placeholder="optional" />
-                </div>
+                <div class="media-divider"><span>or</span></div>
                 <div class="form-group" style="margin-bottom:0">
-                  <label class="form-label">Icon</label>
                   <div class="emoji-picker">
-                    <div class="emoji-option active"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
+                    <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1fab4.svg" alt="Potted Plant"></div>
                     <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33f.svg" alt="Herb"></div>
                     <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f335.svg" alt="Cactus"></div>
                     <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f338.svg" alt="Cherry Blossom"></div>
@@ -2360,6 +2377,18 @@
                     <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f33b.svg" alt="Sunflower"></div>
                     <div class="emoji-option"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji/svg/emoji_u1f340.svg" alt="Four Leaf Clover"></div>
                   </div>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <div class="form-section-title">Identity</div>
+                <div class="form-group">
+                  <label class="form-label">Name *</label>
+                  <input class="form-input" type="text" placeholder="e.g. Monstera" />
+                </div>
+                <div class="form-group" style="margin-bottom:0">
+                  <label class="form-label">Species</label>
+                  <input class="form-input" type="text" placeholder="optional" />
                 </div>
               </div>
 
