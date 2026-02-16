@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Leaf, Shovel, Scissors, Pencil as PencilIcon } from 'lucide-svelte';
+	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon } from 'lucide-svelte';
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
 	import { careEvents, loadCareEvents, addCareEvent } from '$lib/stores/care';
 	import { emojiToSvgPath } from '$lib/emoji';
@@ -46,6 +46,12 @@
 		if (needs === 'direct') return 'Direct sunlight';
 		if (needs === 'low') return 'Low light';
 		return 'Indirect light';
+	}
+
+	function lightIcon(needs: string) {
+		if (needs === 'direct') return Sun;
+		if (needs === 'low') return Cloud;
+		return CloudSun;
 	}
 
 	async function handleWater() {
@@ -185,7 +191,12 @@
 				{/if}
 			</div>
 			<div class="detail-info">
-				<h2>{$currentPlant.name}</h2>
+				<div class="detail-name">
+					<h2>{$currentPlant.name}</h2>
+					{#if $currentPlant.species}
+						<span class="detail-species">{$currentPlant.species}</span>
+					{/if}
+				</div>
 				{#if $currentPlant.location_name}
 					<p class="detail-location"><MapPin size={14} /> {$currentPlant.location_name}</p>
 				{/if}
@@ -208,26 +219,32 @@
 		<div class="detail-sections">
 			<div class="detail-grid">
 				<div class="detail-card">
-					<div class="detail-card-title">Watering</div>
+					<div class="detail-card-title"><Droplet size={14} /> Watering</div>
 					<div class="detail-row"><span class="detail-row-label">Interval</span><span>Every {$currentPlant.watering_interval_days} days</span></div>
 					<div class="detail-row"><span class="detail-row-label">Last watered</span><span>{formatDate($currentPlant.last_watered)}</span></div>
 					<div class="detail-row"><span class="detail-row-label">Next due</span><span>{$currentPlant.next_due ? formatDate($currentPlant.next_due) : 'N/A'}</span></div>
 				</div>
 				<div class="detail-card">
-					<div class="detail-card-title">Light</div>
-					<div class="detail-row"><span class="detail-row-label">Needs</span><span>{lightLabel($currentPlant.light_needs)}</span></div>
+					<div class="detail-card-title"><Sun size={14} /> Light</div>
+					<div class="detail-row">
+						<span class="detail-row-label">Needs</span>
+						<span class="detail-row-value">
+							{lightLabel($currentPlant.light_needs)}
+							<svelte:component this={lightIcon($currentPlant.light_needs)} size={14} />
+						</span>
+					</div>
 				</div>
 			</div>
 
 			{#if $currentPlant.notes}
 				<div class="detail-card">
-					<div class="detail-card-title">Notes</div>
+					<div class="detail-card-title"><PencilIcon size={14} /> Notes</div>
 					<div class="detail-notes">{$currentPlant.notes}</div>
 				</div>
 			{/if}
 
 			<div class="detail-card care-journal">
-				<div class="detail-card-title">Care Journal</div>
+				<div class="detail-card-title"><BookOpen size={14} /> Care Journal</div>
 
 			{#if $careEvents.length === 0}
 				<p class="journal-empty">No care events recorded yet.</p>
@@ -398,8 +415,8 @@
 	}
 
 	.detail-photo {
-		width: 180px;
-		height: 180px;
+		width: 200px;
+		height: 200px;
 		flex-shrink: 0;
 		border-radius: 12px;
 		overflow: hidden;
@@ -420,10 +437,24 @@
 		height: 80px;
 	}
 
+	.detail-name {
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-bottom: 6px;
+	}
+
 	.detail-info h2 {
 		font-size: 24px;
 		font-weight: 700;
-		margin: 0 0 6px;
+		margin: 0;
+	}
+
+	.detail-species {
+		color: #8C7E6E;
+		font-size: 14px;
+		font-style: italic;
 	}
 
 	.detail-info {
@@ -487,6 +518,9 @@
 	}
 
 	.detail-card-title {
+		display: flex;
+		align-items: center;
+		gap: 6px;
 		font-size: 13px;
 		font-weight: 600;
 		color: #8C7E6E;
@@ -546,6 +580,12 @@
 
 	.detail-row-label {
 		color: #8C7E6E;
+	}
+
+	.detail-row-value {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 	}
 
 	.detail-notes {
@@ -791,8 +831,8 @@
 		}
 
 		.detail-photo {
-			width: 200px;
-			height: 200px;
+			width: 220px;
+			height: 220px;
 		}
 	}
 
@@ -804,7 +844,7 @@
 
 		.detail-photo {
 			width: 100%;
-			height: 160px;
+			height: 180px;
 		}
 
 		.detail-info h2 {

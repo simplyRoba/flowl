@@ -755,8 +755,8 @@
   }
 
   .detail-photo {
-    width: 180px;
-    height: 180px;
+    width: 200px;
+    height: 200px;
     border-radius: var(--radius-card);
     display: flex;
     align-items: center;
@@ -767,13 +767,27 @@
 
   .detail-photo.mobile-detail-photo {
     width: 100%;
-    height: 160px;
+    height: 180px;
+  }
+
+  .detail-name {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
   }
 
   .detail-info h2 {
     font-size: 22px;
     font-weight: 700;
-    margin-bottom: 4px;
+    margin: 0;
+  }
+
+  .detail-species {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-style: italic;
   }
 
   .detail-info .detail-location {
@@ -821,6 +835,9 @@
   }
 
   .detail-card-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
     font-weight: 600;
     color: var(--text-muted);
@@ -836,7 +853,23 @@
     font-size: 14px;
   }
 
-  .detail-row-label { color: var(--text-muted); }
+  .detail-row-label {
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .detail-row-value svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .detail-row-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
 
   .detail-notes {
     font-size: 14px;
@@ -1849,9 +1882,12 @@
                 </div>
               </div>
               <div class="detail-hero">
-                <div class="detail-photo" style="width:200px;height:200px"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&h=400&fit=crop" alt="Monstera"></div>
+                <div class="detail-photo" style="width:220px;height:220px"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&h=400&fit=crop" alt="Monstera"></div>
                 <div class="detail-info">
-                  <h2 style="font-size:26px">Monstera Deliciosa</h2>
+                  <div class="detail-name">
+                    <h2 style="font-size:26px">Monstera Deliciosa</h2>
+                    <span class="detail-species">Swiss cheese plant</span>
+                  </div>
                   <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
                   <div class="detail-status">
                     <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 4 days</span>
@@ -1862,23 +1898,23 @@
               <div class="detail-sections" style="padding:0 32px 32px">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
                   <div class="detail-card">
-                    <div class="detail-card-title">Watering</div>
+                    <div class="detail-card-title"><i data-lucide="droplet"></i> Watering</div>
                     <div class="detail-row"><span class="detail-row-label">Interval</span><span>Every 7 days</span></div>
                     <div class="detail-row"><span class="detail-row-label">Last watered</span><span>Feb 10, 2026</span></div>
                     <div class="detail-row"><span class="detail-row-label">Next due</span><span>Feb 17, 2026</span></div>
                   </div>
                   <div class="detail-card">
-                    <div class="detail-card-title">Light</div>
-                    <div class="detail-row"><span class="detail-row-label">Needs</span><span>Indirect light</span></div>
+                    <div class="detail-card-title"><i data-lucide="sun"></i> Light</div>
+                    <div class="detail-row"><span class="detail-row-label">Needs</span><span class="detail-row-value">Indirect light <i data-lucide="cloud-sun"></i></span></div>
                     <div class="detail-row"><span class="detail-row-label">Placement</span><span>Near east window</span></div>
                   </div>
                 </div>
                 <div class="detail-card">
-                  <div class="detail-card-title">Notes</div>
+                    <div class="detail-card-title"><i data-lucide="pencil"></i> Notes</div>
                   <div class="detail-notes">Likes indirect light. Wipe leaves monthly with damp cloth. Sensitive to overwatering — let top inch of soil dry out.</div>
                 </div>
                 <div class="detail-card">
-                  <div class="detail-card-title">Care Journal</div>
+                    <div class="detail-card-title"><i data-lucide="book-open"></i> Care Journal</div>
                   <ul class="timeline">
                     <li class="timeline-item">
                       <span class="timeline-date">Feb 10</span>
@@ -1938,7 +1974,10 @@
               <div class="detail-hero">
                 <div class="detail-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=360&h=360&fit=crop" alt="Monstera"></div>
                 <div class="detail-info">
-                  <h2>Monstera Deliciosa</h2>
+                  <div class="detail-name">
+                    <h2>Monstera Deliciosa</h2>
+                    <span class="detail-species">Swiss cheese plant</span>
+                  </div>
                   <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
                   <div class="detail-status">
                     <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 4 days</span>
@@ -1948,17 +1987,17 @@
               </div>
               <div class="detail-sections">
                 <div class="detail-card">
-                  <div class="detail-card-title">Watering</div>
+                  <div class="detail-card-title"><i data-lucide="droplet"></i> Watering</div>
                   <div class="detail-row"><span class="detail-row-label">Interval</span><span>Every 7 days</span></div>
                   <div class="detail-row"><span class="detail-row-label">Last watered</span><span>Feb 10, 2026</span></div>
                   <div class="detail-row"><span class="detail-row-label">Next due</span><span>Feb 17, 2026</span></div>
                 </div>
                 <div class="detail-card">
-                  <div class="detail-card-title">Notes</div>
+                  <div class="detail-card-title"><i data-lucide="pencil"></i> Notes</div>
                   <div class="detail-notes">Likes indirect light. Wipe leaves monthly with damp cloth. Sensitive to overwatering — let top inch of soil dry out.</div>
                 </div>
                 <div class="detail-card">
-                  <div class="detail-card-title">Care Journal</div>
+                  <div class="detail-card-title"><i data-lucide="book-open"></i> Care Journal</div>
                   <ul class="timeline">
                     <li class="timeline-item">
                       <span class="timeline-date">Feb 10</span>
@@ -2007,7 +2046,10 @@
             <div class="detail-hero mobile-hero">
               <div class="detail-photo mobile-detail-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&h=300&fit=crop" alt="Monstera"></div>
               <div class="detail-info" style="width:100%">
-                <h2 style="font-size:20px">Monstera Deliciosa</h2>
+                <div class="detail-name">
+                  <h2 style="font-size:20px">Monstera Deliciosa</h2>
+                  <span class="detail-species">Swiss cheese plant</span>
+                </div>
                 <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
                 <div class="detail-status">
                   <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 4 days</span>
@@ -2017,17 +2059,17 @@
             </div>
             <div class="detail-sections mobile-sections">
               <div class="detail-card">
-                <div class="detail-card-title">Watering</div>
+                <div class="detail-card-title"><i data-lucide="droplet"></i> Watering</div>
                 <div class="detail-row"><span class="detail-row-label">Interval</span><span>Every 7 days</span></div>
                 <div class="detail-row"><span class="detail-row-label">Last watered</span><span>Feb 10</span></div>
                 <div class="detail-row"><span class="detail-row-label">Next due</span><span>Feb 17</span></div>
               </div>
               <div class="detail-card">
-                <div class="detail-card-title">Notes</div>
+                <div class="detail-card-title"><i data-lucide="pencil"></i> Notes</div>
                 <div class="detail-notes">Likes indirect light. Wipe leaves monthly with damp cloth.</div>
               </div>
               <div class="detail-card">
-                <div class="detail-card-title">Care Journal</div>
+                <div class="detail-card-title"><i data-lucide="book-open"></i> Care Journal</div>
                 <ul class="timeline">
                   <li class="timeline-item">
                     <span class="timeline-date">Feb 10</span>
