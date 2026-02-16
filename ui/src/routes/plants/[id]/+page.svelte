@@ -81,8 +81,13 @@
 		return 'Custom';
 	}
 
+	function parseEventDate(dateStr: string): Date {
+		const hasTimezone = /Z|[+-]\d{2}:\d{2}$/.test(dateStr);
+		return new Date(hasTimezone ? dateStr : `${dateStr}Z`);
+	}
+
 	function formatShortDate(dateStr: string): string {
-		const date = new Date(dateStr);
+		const date = parseEventDate(dateStr);
 		if (isNaN(date.getTime())) return dateStr;
 		return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 	}

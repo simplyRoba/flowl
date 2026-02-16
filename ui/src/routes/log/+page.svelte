@@ -49,8 +49,13 @@
 		loadPage(true);
 	}
 
+	function parseEventDate(dateStr: string): Date {
+		const hasTimezone = /Z|[+-]\d{2}:\d{2}$/.test(dateStr);
+		return new Date(hasTimezone ? dateStr : `${dateStr}Z`);
+	}
+
 	function dayLabel(dateStr: string): string {
-		const date = new Date(dateStr);
+		const date = parseEventDate(dateStr);
 		if (isNaN(date.getTime())) return dateStr;
 		const fullDate = date.toLocaleDateString(undefined, {
 			year: 'numeric',
@@ -77,7 +82,7 @@
 	}
 
 	function formatTime(dateStr: string): string {
-		const date = new Date(dateStr);
+		const date = parseEventDate(dateStr);
 		if (isNaN(date.getTime())) return '';
 		return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 	}

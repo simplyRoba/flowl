@@ -334,7 +334,7 @@ pub async fn water_plant(
 
     // Auto-log a care event for the watering
     if let Err(e) = sqlx::query(
-        "INSERT INTO care_events (plant_id, event_type, occurred_at) VALUES (?, 'watered', datetime('now'))",
+        "INSERT INTO care_events (plant_id, event_type, occurred_at) VALUES (?, 'watered', strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))",
     )
     .bind(id)
     .execute(&state.pool)
