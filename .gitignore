@@ -24,3 +24,7 @@ target
 # Added by cargo
 
 /target
+
+# Ignore Mac system files
+
+.DS_Store
