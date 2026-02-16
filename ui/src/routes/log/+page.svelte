@@ -51,15 +51,21 @@
 
 	function dayLabel(dateStr: string): string {
 		const date = new Date(dateStr);
+		if (isNaN(date.getTime())) return dateStr;
+		const fullDate = date.toLocaleDateString(undefined, {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
+		});
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		const yesterday = new Date(today);
 		yesterday.setDate(yesterday.getDate() - 1);
 		const eventDate = new Date(date);
 		eventDate.setHours(0, 0, 0, 0);
-		if (eventDate.getTime() === today.getTime()) return 'Today';
-		if (eventDate.getTime() === yesterday.getTime()) return 'Yesterday';
-		return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+		if (eventDate.getTime() === today.getTime()) return `Today — ${fullDate}`;
+		if (eventDate.getTime() === yesterday.getTime()) return `Yesterday — ${fullDate}`;
+		return fullDate;
 	}
 
 	function eventTypeLabel(type: string): string {
@@ -120,13 +126,24 @@
 		<h1>Care Journal</h1>
 	</header>
 
-	<div class="filter-chips">
+	<div class="log-filters">
 		{#each FILTERS as filter}
 			<button
 				class="filter-chip"
 				class:active={activeFilter === filter.value}
 				onclick={() => setFilter(filter.value)}
 			>
+				{#if filter.value === 'watered'}
+					<Droplet size={14} />
+				{:else if filter.value === 'fertilized'}
+					<Leaf size={14} />
+				{:else if filter.value === 'repotted'}
+					<Shovel size={14} />
+				{:else if filter.value === 'pruned'}
+					<Scissors size={14} />
+				{:else if filter.value === 'custom'}
+					<Pencil size={14} />
+				{/if}
 				{filter.label}
 			</button>
 		{/each}
@@ -139,13 +156,20 @@
 			<p>No care events recorded yet.</p>
 		</div>
 	{:else}
-		<div class="timeline">
+		<div class="log-timeline">
 			{#each groupedEvents as group}
-				<div class="day-group">
-					<div class="day-label">{group.label}</div>
+				<div class="log-day-group">
+					<div class="log-day-header">{group.label}</div>
 					{#each group.events as event}
-						<div class="timeline-event">
-							<div class="event-icon">
+						<div class="log-entry">
+							<div
+								class="log-entry-icon
+									{event.event_type === 'watered' ? 'water-icon' : ''}
+									{event.event_type === 'fertilized' ? 'fertilize-icon' : ''}
+									{event.event_type === 'repotted' ? 'repot-icon' : ''}
+									{event.event_type === 'pruned' ? 'prune-icon' : ''}
+									{event.event_type === 'custom' ? 'custom-icon' : ''}"
+							>
 								{#if event.event_type === 'watered'}
 									<Droplet size={14} />
 								{:else if event.event_type === 'fertilized'}
@@ -158,14 +182,16 @@
 									<Pencil size={14} />
 								{/if}
 							</div>
-							<div class="event-content">
-								<a href="/plants/{event.plant_id}" class="event-plant">{event.plant_name}</a>
-								<span class="event-type">{eventTypeLabel(event.event_type)}</span>
+							<div class="log-entry-content">
+								<div class="log-entry-top">
+									<a href="/plants/{event.plant_id}" class="log-entry-plant">{event.plant_name}</a>
+									<span class="log-entry-time">{formatTime(event.occurred_at)}</span>
+								</div>
+								<div class="log-entry-action">{eventTypeLabel(event.event_type)}</div>
 								{#if event.notes}
-									<p class="event-notes">{event.notes}</p>
+									<div class="log-entry-note">{event.notes}</div>
 								{/if}
 							</div>
-							<span class="event-time">{formatTime(event.occurred_at)}</span>
 						</div>
 					{/each}
 				</div>
@@ -187,125 +213,145 @@
 	}
 
 	.page-header {
-		margin-bottom: 20px;
+		margin-bottom: 16px;
 	}
 
 	.page-header h1 {
-		font-size: 28px;
+		font-size: 22px;
 		font-weight: 700;
 		margin: 0;
 	}
 
-	.filter-chips {
+	.log-filters {
 		display: flex;
-		gap: 8px;
+		gap: 6px;
+		margin-bottom: 16px;
 		flex-wrap: wrap;
-		margin-bottom: 24px;
 	}
 
 	.filter-chip {
-		padding: 6px 16px;
+		padding: 5px 12px;
+		border-radius: 999px;
 		border: 1px solid #E5DDD3;
-		border-radius: 16px;
 		background: #FFFFFF;
 		color: #8C7E6E;
 		font-size: 13px;
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.15s, border-color 0.15s, color 0.15s;
+		transition: all 0.15s;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 	}
 
 	.filter-chip:hover {
-		background: #FAF6F1;
+		border-color: #6B8F71;
+		color: #2C2418;
 	}
 
 	.filter-chip.active {
 		background: #6B8F71;
+		color: #fff;
 		border-color: #6B8F71;
-		color: #FFFFFF;
 	}
 
-	.timeline {
-		background: #FFFFFF;
-		border: 1px solid #E5DDD3;
-		border-radius: 12px;
-		padding: 16px;
+	.log-timeline {
+		background: transparent;
+		border: none;
+		border-radius: 0;
+		padding: 0;
 	}
 
-	.day-group {
+	.log-day-group {
 		margin-bottom: 20px;
 	}
 
-	.day-group:last-child {
+	.log-day-group:last-child {
 		margin-bottom: 0;
 	}
 
-	.day-label {
-		font-size: 12px;
+	.log-day-header {
+		font-size: 13px;
 		font-weight: 600;
 		color: #8C7E6E;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
-		margin-bottom: 10px;
+		margin-bottom: 8px;
+		padding-bottom: 6px;
+		border-bottom: 1px solid #E5DDD3;
 	}
 
-	.timeline-event {
+	.log-entry {
 		display: flex;
-		align-items: flex-start;
-		gap: 10px;
+		gap: 12px;
 		padding: 10px 0;
-		border-bottom: 1px solid #F0EBE4;
+		border-bottom: 1px solid #E5DDD3;
+		align-items: flex-start;
 	}
 
-	.timeline-event:last-child {
+	.log-entry:last-child {
 		border-bottom: none;
 	}
 
-	.event-icon {
-		width: 28px;
-		height: 28px;
+	.log-entry-icon {
+		width: 36px;
+		height: 36px;
+		border-radius: 10px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 50%;
+		font-size: 16px;
+		flex-shrink: 0;
 		background: #F5F0EA;
 		color: #8C7E6E;
-		flex-shrink: 0;
 	}
 
-	.event-content {
+	.log-entry-icon.water-icon { background: color-mix(in srgb, #5B9BC4 15%, transparent); }
+	.log-entry-icon.fertilize-icon { background: color-mix(in srgb, #C4775B 15%, transparent); }
+	.log-entry-icon.repot-icon { background: color-mix(in srgb, #7AB87A 15%, transparent); }
+	.log-entry-icon.prune-icon { background: color-mix(in srgb, #8C7E6E 15%, transparent); }
+	.log-entry-icon.custom-icon { background: color-mix(in srgb, #D4A843 15%, transparent); }
+
+	.log-entry-content {
 		flex: 1;
 		min-width: 0;
 	}
 
-	.event-plant {
+	.log-entry-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2px;
+		gap: 8px;
+	}
+
+	.log-entry-plant {
 		font-size: 14px;
 		font-weight: 600;
-		color: #6B8F71;
+		color: #2C2418;
 		text-decoration: none;
 	}
 
-	.event-plant:hover {
+	.log-entry-plant:hover {
 		text-decoration: underline;
 	}
 
-	.event-type {
-		font-size: 13px;
-		color: #8C7E6E;
-		margin-left: 8px;
-	}
-
-	.event-time {
+	.log-entry-time {
 		font-size: 12px;
 		color: #8C7E6E;
 		flex-shrink: 0;
-		padding-top: 2px;
 	}
 
-	.event-notes {
+	.log-entry-action {
 		font-size: 13px;
 		color: #8C7E6E;
-		margin: 2px 0 0;
+	}
+
+	.log-entry-note {
+		font-size: 13px;
+		color: #2C2418;
+		margin-top: 4px;
+		line-height: 1.4;
 	}
 
 	.empty-state {
@@ -338,16 +384,7 @@
 
 	@media (max-width: 768px) {
 		.page-header h1 {
-			font-size: 22px;
-		}
-
-		.filter-chips {
-			gap: 6px;
-		}
-
-		.filter-chip {
-			padding: 5px 12px;
-			font-size: 12px;
+			font-size: 18px;
 		}
 	}
 </style>

@@ -2,9 +2,9 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, X } from 'lucide-svelte';
+	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, Pencil as PencilIcon } from 'lucide-svelte';
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
-	import { careEvents, loadCareEvents, addCareEvent, removeCareEvent } from '$lib/stores/care';
+	import { careEvents, loadCareEvents, addCareEvent } from '$lib/stores/care';
 	import { emojiToSvgPath } from '$lib/emoji';
 	import type { CareEvent } from '$lib/api';
 
@@ -81,23 +81,10 @@
 		return 'Custom';
 	}
 
-	function dayLabel(dateStr: string): string {
+	function formatShortDate(dateStr: string): string {
 		const date = new Date(dateStr);
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const yesterday = new Date(today);
-		yesterday.setDate(yesterday.getDate() - 1);
-		const eventDate = new Date(date);
-		eventDate.setHours(0, 0, 0, 0);
-		if (eventDate.getTime() === today.getTime()) return 'Today';
-		if (eventDate.getTime() === yesterday.getTime()) return 'Yesterday';
-		return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-	}
-
-	function formatTime(dateStr: string): string {
-		const date = new Date(dateStr);
-		if (isNaN(date.getTime())) return '';
-		return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+		if (isNaN(date.getTime())) return dateStr;
+		return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 	}
 
 	async function handleLogSubmit() {
@@ -119,36 +106,12 @@
 		logNotes = '';
 	}
 
-	async function handleDeleteEvent(eventId: number) {
-		if (!$currentPlant) return;
-		await removeCareEvent($currentPlant.id, eventId);
-	}
-
 	let displayEvents = $derived(
 		showAllEvents ? $careEvents : $careEvents.slice(0, EVENT_LIMIT)
 	);
 
 	let hasMoreEvents = $derived($careEvents.length > EVENT_LIMIT);
 
-	interface DayGroup {
-		label: string;
-		events: CareEvent[];
-	}
-
-	let groupedEvents: DayGroup[] = $derived.by(() => {
-		const groups: DayGroup[] = [];
-		let currentLabel = '';
-		for (const event of displayEvents) {
-			const label = dayLabel(event.occurred_at);
-			if (label !== currentLabel) {
-				groups.push({ label, events: [event] });
-				currentLabel = label;
-			} else {
-				groups[groups.length - 1].events.push(event);
-			}
-		}
-		return groups;
-	});
 </script>
 
 {#if notFound}
@@ -240,50 +203,40 @@
 			</div>
 		{/if}
 
-		<div class="care-journal info-card">
-			<h3><Leaf size={16} /> Care Journal</h3>
+		<div class="detail-card care-journal">
+			<div class="detail-card-title">Care Journal</div>
 
 			{#if $careEvents.length === 0}
 				<p class="journal-empty">No care events recorded yet.</p>
 			{:else}
-				<div class="timeline">
-					{#each groupedEvents as group}
-						<div class="day-group">
-							<div class="day-label">{group.label}</div>
-							{#each group.events as event}
-								<div class="timeline-event">
-									<div class="event-icon">
-										{#if event.event_type === 'watered'}
-											<Droplet size={14} />
-										{:else if event.event_type === 'fertilized'}
-											<Leaf size={14} />
-										{:else if event.event_type === 'repotted'}
-											<Shovel size={14} />
-										{:else if event.event_type === 'pruned'}
-											<Scissors size={14} />
-										{:else}
-											<Pencil size={14} />
-										{/if}
-									</div>
-									<div class="event-content">
-										<span class="event-label">{eventTypeLabel(event.event_type)}</span>
-										{#if event.notes}
-											<p class="event-notes">{event.notes}</p>
-										{/if}
-									</div>
-									<span class="event-time">{formatTime(event.occurred_at)}</span>
-									<button class="event-delete" onclick={() => handleDeleteEvent(event.id)} title="Delete event">
-										<X size={14} />
-									</button>
-								</div>
-							{/each}
-						</div>
+				<ul class="timeline">
+					{#each displayEvents as event}
+						<li class="timeline-item">
+							<span class="timeline-date">{formatShortDate(event.occurred_at)}</span>
+							<span class="timeline-icon">
+								{#if event.event_type === 'watered'}
+									<Droplet size={14} />
+								{:else if event.event_type === 'fertilized'}
+									<Leaf size={14} />
+								{:else if event.event_type === 'repotted'}
+									<Shovel size={14} />
+								{:else if event.event_type === 'pruned'}
+									<Scissors size={14} />
+								{:else}
+									<PencilIcon size={14} />
+								{/if}
+							</span>
+							<span class="timeline-text">
+								{eventTypeLabel(event.event_type)}
+								{#if event.notes}
+									<span class="timeline-sub">{event.notes}</span>
+								{/if}
+							</span>
+						</li>
 					{/each}
-				</div>
+				</ul>
 				{#if hasMoreEvents && !showAllEvents}
-					<button class="show-more" onclick={() => showAllEvents = true}>
-						Show more events
-					</button>
+					<button class="add-log-link" onclick={() => showAllEvents = true}>Show more events</button>
 				{/if}
 			{/if}
 
@@ -319,7 +272,7 @@
 					</div>
 				</div>
 			{:else}
-				<button class="add-log-btn" onclick={() => showLogForm = true}>
+				<button class="add-log-link" onclick={() => showLogForm = true}>
 					+ Add log entry
 				</button>
 			{/if}
@@ -443,6 +396,22 @@
 		border: 1px solid #E5DDD3;
 		border-radius: 12px;
 		padding: 16px;
+	}
+
+	.detail-card {
+		background: #FFFFFF;
+		border: 1px solid #E5DDD3;
+		border-radius: 12px;
+		padding: 16px;
+	}
+
+	.detail-card-title {
+		font-size: 13px;
+		font-weight: 600;
+		color: #8C7E6E;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		margin-bottom: 12px;
 	}
 
 	.info-card h3 {
@@ -589,130 +558,57 @@
 	}
 
 	.timeline {
-		margin-top: 12px;
+		list-style: none;
+		margin: 0;
+		padding: 0;
 	}
 
-	.day-group {
-		margin-bottom: 16px;
-	}
-
-	.day-group:last-child {
-		margin-bottom: 0;
-	}
-
-	.day-label {
-		font-size: 12px;
-		font-weight: 600;
-		color: #8C7E6E;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		margin-bottom: 8px;
-	}
-
-	.timeline-event {
+	.timeline-item {
 		display: flex;
-		align-items: flex-start;
-		gap: 10px;
+		gap: 12px;
 		padding: 8px 0;
-		border-bottom: 1px solid #F0EBE4;
+		font-size: 14px;
+		border-bottom: 1px solid #E5DDD3;
 	}
 
-	.timeline-event:last-child {
+	.timeline-item:last-child {
 		border-bottom: none;
 	}
 
-	.event-icon {
-		width: 28px;
-		height: 28px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		background: #F5F0EA;
+	.timeline-date {
 		color: #8C7E6E;
+		font-size: 13px;
+		min-width: 52px;
 		flex-shrink: 0;
 	}
 
-	.event-content {
+	.timeline-icon {
+		font-size: 16px;
+		flex-shrink: 0;
+	}
+
+	.timeline-text {
 		flex: 1;
 		min-width: 0;
 	}
 
-	.event-label {
+	.timeline-sub {
+		display: block;
+		color: #8C7E6E;
+		font-size: 13px;
+		margin-top: 2px;
+	}
+
+	.add-log-link {
+		color: #6B8F71;
 		font-size: 14px;
 		font-weight: 500;
-	}
-
-	.event-time {
-		font-size: 12px;
-		color: #8C7E6E;
-		flex-shrink: 0;
-		padding-top: 2px;
-	}
-
-	.event-notes {
-		font-size: 13px;
-		color: #8C7E6E;
-		margin: 2px 0 0;
-	}
-
-	.event-delete {
+		margin-top: 8px;
+		cursor: pointer;
+		display: inline-block;
 		background: none;
 		border: none;
-		color: #C4B5A5;
-		cursor: pointer;
-		padding: 4px;
-		border-radius: 4px;
-		flex-shrink: 0;
-		opacity: 0;
-		transition: opacity 0.15s, color 0.15s;
-	}
-
-	.timeline-event:hover .event-delete {
-		opacity: 1;
-	}
-
-	.event-delete:hover {
-		color: #C45B5B;
-	}
-
-	.show-more {
-		display: block;
-		width: 100%;
-		padding: 8px;
-		background: none;
-		border: 1px solid #E5DDD3;
-		border-radius: 8px;
-		color: #6B8F71;
-		font-size: 13px;
-		font-weight: 500;
-		cursor: pointer;
-		margin-top: 8px;
-		transition: background 0.15s;
-	}
-
-	.show-more:hover {
-		background: #FAF6F1;
-	}
-
-	.add-log-btn {
-		display: block;
-		width: 100%;
-		padding: 10px;
-		background: none;
-		border: 1px dashed #D5CCC2;
-		border-radius: 8px;
-		color: #6B8F71;
-		font-size: 14px;
-		font-weight: 500;
-		cursor: pointer;
-		margin-top: 12px;
-		transition: background 0.15s, border-color 0.15s;
-	}
-
-	.add-log-btn:hover {
-		background: #FAF6F1;
-		border-color: #6B8F71;
+		padding: 0;
 	}
 
 	.log-form {
