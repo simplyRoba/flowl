@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/simplyRoba/flowl/compare/v0.6.0...v0.7.0) (2026-02-16)
+
+
+### Features
+
+* add care journal delete controls ([dc8922c](https://github.com/simplyRoba/flowl/commit/dc8922c95d32e0be13ee92a019c90491f66e965f))
+
+
+### Bug Fixes
+
+* sort care events by occurred date ([8930104](https://github.com/simplyRoba/flowl/commit/89301045b663265dcd055d39f9f13f386676fd33))
+
 ## [0.6.0](https://github.com/simplyRoba/flowl/compare/v0.5.0...v0.6.0) (2026-02-16)
 
 
