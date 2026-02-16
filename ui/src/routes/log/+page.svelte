@@ -237,9 +237,9 @@
 	.filter-chip {
 		padding: 5px 12px;
 		border-radius: 999px;
-		border: 1px solid #E5DDD3;
-		background: #FFFFFF;
-		color: #8C7E6E;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		color: var(--color-text-muted);
 		font-size: 13px;
 		font-weight: 500;
 		cursor: pointer;
@@ -250,14 +250,14 @@
 	}
 
 	.filter-chip:hover {
-		border-color: #6B8F71;
-		color: #2C2418;
+		border-color: var(--color-primary);
+		color: var(--color-text);
 	}
 
 	.filter-chip.active {
-		background: #6B8F71;
-		color: #fff;
-		border-color: #6B8F71;
+		background: var(--color-primary);
+		color: var(--color-text-on-primary);
+		border-color: var(--color-primary);
 	}
 
 	.log-timeline {
@@ -278,19 +278,19 @@
 	.log-day-header {
 		font-size: 13px;
 		font-weight: 600;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
 		margin-bottom: 8px;
 		padding-bottom: 6px;
-		border-bottom: 1px solid #E5DDD3;
+		border-bottom: 1px solid var(--color-border);
 	}
 
 	.log-entry {
 		display: flex;
 		gap: 12px;
 		padding: 10px 0;
-		border-bottom: 1px solid #E5DDD3;
+		border-bottom: 1px solid var(--color-border);
 		align-items: flex-start;
 	}
 
@@ -307,15 +307,15 @@
 		justify-content: center;
 		font-size: 16px;
 		flex-shrink: 0;
-		background: #F5F0EA;
-		color: #8C7E6E;
+		background: var(--color-surface-muted);
+		color: var(--color-text-muted);
 	}
 
-	.log-entry-icon.water-icon { background: color-mix(in srgb, #5B9BC4 15%, transparent); }
-	.log-entry-icon.fertilize-icon { background: color-mix(in srgb, #C4775B 15%, transparent); }
-	.log-entry-icon.repot-icon { background: color-mix(in srgb, #7AB87A 15%, transparent); }
-	.log-entry-icon.prune-icon { background: color-mix(in srgb, #8C7E6E 15%, transparent); }
-	.log-entry-icon.custom-icon { background: color-mix(in srgb, #D4A843 15%, transparent); }
+	.log-entry-icon.water-icon { background: color-mix(in srgb, var(--color-water) 15%, transparent); }
+	.log-entry-icon.fertilize-icon { background: color-mix(in srgb, var(--color-secondary) 15%, transparent); }
+	.log-entry-icon.repot-icon { background: color-mix(in srgb, var(--color-success) 15%, transparent); }
+	.log-entry-icon.prune-icon { background: color-mix(in srgb, var(--color-text-muted) 15%, transparent); }
+	.log-entry-icon.custom-icon { background: color-mix(in srgb, var(--color-warning) 15%, transparent); }
 
 	.log-entry-content {
 		flex: 1;
@@ -333,7 +333,7 @@
 	.log-entry-plant {
 		font-size: 14px;
 		font-weight: 600;
-		color: #2C2418;
+		color: var(--color-text);
 		text-decoration: none;
 	}
 
@@ -343,18 +343,18 @@
 
 	.log-entry-time {
 		font-size: 12px;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 		flex-shrink: 0;
 	}
 
 	.log-entry-action {
 		font-size: 13px;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 	}
 
 	.log-entry-note {
 		font-size: 13px;
-		color: #2C2418;
+		color: var(--color-text);
 		margin-top: 4px;
 		line-height: 1.4;
 	}
@@ -362,17 +362,17 @@
 	.empty-state {
 		text-align: center;
 		padding: 64px 24px;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 	}
 
 	.error {
-		color: #C45B5B;
+		color: var(--color-danger);
 		padding: 16px;
 	}
 
 	.loading-text {
 		text-align: center;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 		padding: 16px;
 		font-size: 14px;
 	}

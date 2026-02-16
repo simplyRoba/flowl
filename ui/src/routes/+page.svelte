@@ -5,12 +5,12 @@
 	import { emojiToSvgPath } from '$lib/emoji';
 
 	const BG_GRADIENTS = [
-		'linear-gradient(135deg, #e8f5e9, #c8e6c9)',
-		'linear-gradient(135deg, #e3f2fd, #bbdefb)',
-		'linear-gradient(135deg, #fff8e1, #ffecb3)',
-		'linear-gradient(135deg, #fce4ec, #f8bbd0)',
-		'linear-gradient(135deg, #f3e5f5, #e1bee7)',
-		'linear-gradient(135deg, #e0f2f1, #b2dfdb)',
+		'linear-gradient(135deg, color-mix(in srgb, var(--color-success) 35%, transparent), color-mix(in srgb, var(--color-success) 15%, transparent))',
+		'linear-gradient(135deg, color-mix(in srgb, var(--color-water) 35%, transparent), color-mix(in srgb, var(--color-water) 15%, transparent))',
+		'linear-gradient(135deg, color-mix(in srgb, var(--color-warning) 35%, transparent), color-mix(in srgb, var(--color-warning) 15%, transparent))',
+		'linear-gradient(135deg, color-mix(in srgb, var(--color-secondary) 30%, transparent), color-mix(in srgb, var(--color-secondary) 12%, transparent))',
+		'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 35%, transparent), color-mix(in srgb, var(--color-primary) 15%, transparent))',
+		'linear-gradient(135deg, color-mix(in srgb, var(--color-text-muted) 25%, transparent), color-mix(in srgb, var(--color-text-muted) 10%, transparent))',
 	];
 
 	function cardBg(id: number): string {
@@ -99,8 +99,8 @@
 		align-items: center;
 		gap: 6px;
 		padding: 10px 18px;
-		background: #6B8F71;
-		color: #fff;
+		background: var(--color-primary);
+		color: var(--color-text-on-primary);
 		border: none;
 		border-radius: 8px;
 		font-size: 15px;
@@ -111,7 +111,7 @@
 	}
 
 	.add-btn:hover {
-		background: #4A6B4F;
+		background: var(--color-primary-dark);
 	}
 
 	.empty-state {
@@ -136,7 +136,7 @@
 	}
 
 	.empty-state p {
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 		margin: 0 0 24px;
 	}
 
@@ -147,8 +147,8 @@
 	}
 
 	.plant-card {
-		background: #FFFFFF;
-		border: 1px solid #E5DDD3;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
 		border-radius: 12px;
 		overflow: hidden;
 		text-decoration: none;
@@ -195,7 +195,7 @@
 
 	.plant-card-location {
 		font-size: 13px;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 	}
 
 	.status-badge {
@@ -210,17 +210,17 @@
 	}
 
 	.status-overdue {
-		background: #FDECEA;
-		color: #C45B5B;
+		background: var(--color-danger-soft);
+		color: var(--color-danger);
 	}
 
 	.status-due {
-		background: #FFF4E5;
-		color: #C48B3B;
+		background: var(--color-warning-soft);
+		color: var(--color-warning);
 	}
 
 	.error {
-		color: #C45B5B;
+		color: var(--color-danger);
 		padding: 16px;
 	}
 
@@ -254,7 +254,7 @@
 		}
 
 		.plant-card-name {
-			color: #fff;
+			color: var(--color-text-on-image);
 			font-size: 16px;
 			text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 		}

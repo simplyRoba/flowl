@@ -84,9 +84,9 @@
 		align-items: center;
 		gap: 4px;
 		padding: 10px 8px;
-		border: 1px solid #E5DDD3;
+		border: 1px solid var(--color-border);
 		border-radius: 10px;
-		background: #FFFFFF;
+		background: var(--color-surface);
 		cursor: pointer;
 		transition: all 0.15s;
 		flex: 1;
@@ -94,13 +94,13 @@
 	}
 
 	.interval-preset:hover {
-		border-color: #6B8F71;
+		border-color: var(--color-primary);
 	}
 
 	.interval-preset.active {
-		border-color: #6B8F71;
-		background: color-mix(in srgb, #6B8F71 10%, transparent);
-		color: #6B8F71;
+		border-color: var(--color-primary);
+		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		color: var(--color-primary);
 	}
 
 	.interval-preset .preset-icon {
@@ -118,11 +118,11 @@
 
 	.preset-label {
 		font-size: 12px;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 	}
 
 	.interval-preset.active .preset-label {
-		color: #6B8F71;
+		color: var(--color-primary);
 	}
 
 	.interval-custom {
@@ -133,7 +133,7 @@
 
 	.stepper-label {
 		font-size: 14px;
-		color: #8C7E6E;
+		color: var(--color-text-muted);
 	}
 
 	.stepper-short {
@@ -144,7 +144,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0;
-		border: 1px solid #E5DDD3;
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		overflow: hidden;
 	}
@@ -155,15 +155,15 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: #FAF6F1;
+		background: var(--color-surface-muted);
 		border: none;
 		cursor: pointer;
-		color: #2C2418;
+		color: var(--color-text);
 		transition: background 0.15s;
 	}
 
 	.stepper-btn:hover:not(:disabled) {
-		background: #FAF6F1;
+		background: var(--color-surface-muted);
 	}
 
 	.stepper-btn:disabled {
@@ -176,10 +176,10 @@
 		font-weight: 600;
 		width: 52px;
 		text-align: center;
-		background: #FFFFFF;
+		background: var(--color-surface);
 		border: none;
-		border-left: 1px solid #E5DDD3;
-		border-right: 1px solid #E5DDD3;
+		border-left: 1px solid var(--color-border);
+		border-right: 1px solid var(--color-border);
 		height: 40px;
 		font-family: inherit;
 	}
