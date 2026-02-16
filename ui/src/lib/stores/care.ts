@@ -15,11 +15,20 @@ export async function loadCareEvents(plantId: number) {
 	}
 }
 
+function eventTime(event: CareEvent): number {
+	const time = new Date(event.occurred_at).getTime();
+	return Number.isNaN(time) ? 0 : time;
+}
+
+function sortEvents(events: CareEvent[]): CareEvent[] {
+	return [...events].sort((a, b) => eventTime(b) - eventTime(a));
+}
+
 export async function addCareEvent(plantId: number, data: CreateCareEvent): Promise<CareEvent | null> {
 	careError.set(null);
 	try {
 		const event = await api.createCareEvent(plantId, data);
-		careEvents.update((list) => [event, ...list]);
+		careEvents.update((list) => sortEvents([event, ...list]));
 		return event;
 	} catch (e) {
 		careError.set(e instanceof Error ? e.message : 'Failed to add care event');
