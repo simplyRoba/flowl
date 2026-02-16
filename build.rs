@@ -6,6 +6,10 @@ fn main() {
     println!("cargo:rerun-if-changed=ui/svelte.config.js");
     println!("cargo:rerun-if-changed=ui/package.json");
 
+    if std::env::var("SKIP_UI_BUILD").is_ok() {
+        return;
+    }
+
     let ui_dir = std::path::Path::new("ui");
 
     // Install dependencies if node_modules is missing

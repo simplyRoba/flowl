@@ -14,4 +14,33 @@ A small Rust service that exposes plant care data (watering schedules, care need
 
 ---
 
+# Development
+## Architecture
+
+The Rust backend serves a SvelteKit SPA. The UI is built as static files (`ui/build/`) and embedded into the Rust binary at compile time via `rust-embed`. The result is a single self-contained binary with no external file dependencies. However for development, it is nice to have hot reloading so the UI can be updated independently for a faster feedback loop. Here is how to set that up:
+
+### Dev server with hot reloading
+
+Requires Node.js (LTS) and Rust (stable). A devcontainer config is included.
+
+Run two terminals:
+
+```bash
+# Terminal 1: UI with hot module reload
+cd ui && npm run dev
+
+# Terminal 2: Rust backend with auto-restart on code changes
+SKIP_UI_BUILD=1 cargo watch -x run
+```
+
+Open `http://localhost:5173`. Vite proxies `/api`, `/uploads`, and `/health` to the Rust backend on port 4100.
+
+`SKIP_UI_BUILD=1` tells `build.rs` to skip the SvelteKit build so Rust recompiles fast. `cargo-watch` is installed in the devcontainer automatically.
+
+### Build with embedded UI
+
+To compile a binary with the UI baked in (like production), run `cargo build` without `SKIP_UI_BUILD`. This triggers `build.rs` to build the SvelteKit frontend and embed it via `rust-embed`.
+
+---
+
 **This project is developed spec-driven with AI assistance, reviewed by a critical human.**

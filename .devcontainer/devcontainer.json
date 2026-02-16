@@ -33,8 +33,8 @@
     "OPENSPEC_TELEMETRY": "0",
     "DO_NOT_TRACK": "1"
   },
-  // Initialize starship and install Playwright browsers after container creation
-  "postCreateCommand": "echo 'eval \"$(starship init bash)\"' >> ~/.bashrc && npx playwright install --with-deps chromium",
+  // Initialize starship, install Playwright browsers and cargo-watch after container creation
+  "postCreateCommand": "echo 'eval \"$(starship init bash)\"' >> ~/.bashrc && npx playwright install --with-deps chromium && cargo install cargo-watch",
   // Update global npm tools every time the container starts
   "postStartCommand": "npm install -g npm opencode-ai @fission-ai/openspec @playwright/mcp"
 }
