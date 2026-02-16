@@ -174,15 +174,6 @@
 	<section class="form-section media-section">
 		<div class="media-header">
 			<div class="form-section-title">Media</div>
-			{#if mediaMode === 'icon'}
-				<button type="button" class="media-switch media-switch-desktop" onclick={switchToPhoto}>
-					Use photo instead
-				</button>
-			{:else if mediaMode === 'photo'}
-				<button type="button" class="media-switch media-switch-desktop" onclick={switchToIcon}>
-					Use icon instead
-				</button>
-			{/if}
 		</div>
 		<div class="media-stack">
 			{#if mediaMode !== 'icon'}
@@ -223,20 +214,27 @@
 							/>
 						</label>
 					{/if}
-					{#if !hasPhoto}
-						<!-- No replace link when empty -->
-					{:else if !photoPreview && initial?.photo_url}
-						<label class="photo-replace">
-							<Camera size={16} />
-							<span>Replace photo</span>
-							<input
-								type="file"
-								accept="image/jpeg,image/png,image/webp"
-								onchange={handlePhotoSelect}
-								class="file-input"
-							/>
-						</label>
-					{/if}
+					<div class="media-actions">
+						{#if !hasPhoto}
+							<!-- No replace link when empty -->
+						{:else if !photoPreview && initial?.photo_url}
+							<label class="photo-replace">
+								<Camera size={16} />
+								<span>Replace photo</span>
+								<input
+									type="file"
+									accept="image/jpeg,image/png,image/webp"
+									onchange={handlePhotoSelect}
+									class="file-input"
+								/>
+							</label>
+						{/if}
+						{#if mediaMode === 'photo'}
+							<button type="button" class="media-switch" onclick={switchToIcon}>
+								Use icon instead
+							</button>
+						{/if}
+					</div>
 				</div>
 			{/if}
 			{#if mediaMode === 'both'}
@@ -245,14 +243,16 @@
 			{#if mediaMode !== 'photo'}
 				<div class="media-icon">
 					<IconPicker value={icon} onchange={handleIconSelect} />
+					{#if mediaMode === 'icon'}
+						<div class="media-actions">
+							<button type="button" class="media-switch" onclick={switchToPhoto}>
+								Use photo instead
+							</button>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</div>
-		{#if mediaMode === 'icon'}
-			<button type="button" class="media-switch media-switch-mobile" onclick={switchToPhoto}>Use photo instead</button>
-		{:else if mediaMode === 'photo'}
-			<button type="button" class="media-switch media-switch-mobile" onclick={switchToIcon}>Use icon instead</button>
-		{/if}
 	</section>
 
 	<section class="form-section">
@@ -394,6 +394,18 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 10px;
+		width: 100%;
+	}
+
+	.media-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+		width: 100%;
+		max-width: 100%;
+		margin-top: 12px;
+		box-sizing: border-box;
+		align-self: stretch;
 	}
 
 	.media-icon .form-label {
@@ -420,7 +432,7 @@
 
 	.media-switch {
 		margin: 0;
-		padding: 6px 12px;
+		padding: 8px 12px;
 		border: 1px solid #E5DDD3;
 		border-radius: 8px;
 		background: #FFFFFF;
@@ -430,12 +442,12 @@
 		cursor: pointer;
 		transition: all 0.15s;
 		white-space: nowrap;
-	}
-
-	.media-switch-mobile {
-		display: none;
-		margin: 12px auto 0;
-		align-self: center;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: 1 1 0;
+		box-sizing: border-box;
+		line-height: 1.2;
 	}
 
 	.media-switch:hover {
@@ -600,8 +612,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		margin-top: 6px;
-		padding: 6px 12px;
+		padding: 8px 12px;
 		border: 1px solid #E5DDD3;
 		border-radius: 8px;
 		cursor: pointer;
@@ -609,6 +620,10 @@
 		font-size: 13px;
 		font-weight: 500;
 		transition: border-color 0.15s, color 0.15s;
+		justify-content: center;
+		flex: 1 1 0;
+		box-sizing: border-box;
+		line-height: 1.2;
 	}
 
 	.photo-replace:hover {
@@ -709,17 +724,19 @@
 			gap: 8px;
 		}
 
-		.media-switch-desktop {
-			display: none;
+		.media-actions {
+			max-width: 100%;
+			margin-top: 16px;
+			flex-direction: column;
 		}
 
-		.media-switch-mobile {
-			display: inline-flex;
-			align-self: stretch;
+		.media-switch,
+		.photo-replace {
+			width: 100%;
 			justify-content: center;
 			padding: 10px 16px;
 			font-size: 14px;
-			width: 100%;
+			flex: 1 1 auto;
 		}
 
 		.photo-upload-refined .upload-hint {
@@ -743,4 +760,5 @@
 			text-align: center;
 		}
 	}
+
 </style>
