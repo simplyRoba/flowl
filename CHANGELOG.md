@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.0](https://github.com/simplyRoba/flowl/compare/v0.4.0...v0.5.0) (2026-02-16)
+
+
+### Features
+
+* add care journal with event tracking, timeline UI, and global log ([79f9ece](https://github.com/simplyRoba/flowl/commit/79f9ece837c8201fb419f68f84fde3da3f6c8f86))
+* add dev server with hot reloading for UI and backend ([0b3bf80](https://github.com/simplyRoba/flowl/commit/0b3bf8059d8f8ee3e6b3e047c999f8adbc804414))
+* add Playwright MCP server for headless browser access ([3d513b4](https://github.com/simplyRoba/flowl/commit/3d513b45cfa4a7666c7aa98ab9f490de751f59dd))
+
+
+### Bug Fixes
+
+* add .DS_Store to .gitignore to ignore Mac system files ([b1e0929](https://github.com/simplyRoba/flowl/commit/b1e0929ddc39e92bd9c2707ab601c5ad9222ed5f))
+* **deps:** bump @sveltejs/kit from 2.51.0 to 2.52.0 in /ui ([a919869](https://github.com/simplyRoba/flowl/commit/a9198696e7c837a2d1d99e3e789bc9858f208021))
+* **deps:** bump svelte from 5.51.1 to 5.51.2 in /ui ([14b7407](https://github.com/simplyRoba/flowl/commit/14b74073478819bc4da286fa961d9b45c8ac5441))
+* format SQL query string for better readability ([45357ec](https://github.com/simplyRoba/flowl/commit/45357ec2ed11d03d386904109525b707ed3f3533))
+* opencode configuration for Playwright MCP server ([568a463](https://github.com/simplyRoba/flowl/commit/568a4632cbc624216feb2c047b58e44fbfcc44c8))
+* update npm initialization command in devcontainer configuration ([071d73b](https://github.com/simplyRoba/flowl/commit/071d73bca91fba45395705ddf87f5269916ef822))
+* update README for backend command and remove obsolete UI README ([fefb42a](https://github.com/simplyRoba/flowl/commit/fefb42a2883180f65b8fb0a407068e6cb16d83de))
+* update rust feature configuration and refine npm commands in devcontainer ([8282b89](https://github.com/simplyRoba/flowl/commit/8282b89060eefc784a1647f4871e83dfd00d8f40))
+
 ## [0.4.0](https://github.com/simplyRoba/flowl/compare/v0.3.0...v0.4.0) (2026-02-15)
 
 
