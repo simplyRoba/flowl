@@ -33,12 +33,21 @@ async fn main() {
         .expect("Failed to run database migrations");
     info!("Database ready at {}", config.db_path);
 
-    let mqtt_handle = mqtt::connect(&config);
-    let mqtt_client = Some(mqtt_handle.client.clone());
-    info!(
-        "MQTT client connecting to {}:{}",
-        config.mqtt_host, config.mqtt_port
-    );
+    let mqtt_prefix = config.mqtt_topic_prefix.clone();
+    let mqtt_handle = if config.mqtt_disabled {
+        info!("FLOWL_MQTT_DISABLED set, skipping MQTT initialization");
+        None
+    } else {
+        let handle = mqtt::connect(&config);
+        if handle.is_some() {
+            info!(
+                "MQTT client connecting to {}:{}",
+                config.mqtt_host, config.mqtt_port
+            );
+        }
+        handle
+    };
+    let mqtt_client = mqtt_handle.as_ref().map(|h| h.client.clone());
 
     let upload_dir = PathBuf::from(&config.db_path)
         .parent()
@@ -53,17 +62,21 @@ async fn main() {
         pool: pool.clone(),
         upload_dir,
         mqtt_client: mqtt_client.clone(),
-        mqtt_prefix: config.mqtt_topic_prefix.clone(),
+        mqtt_prefix: mqtt_prefix.clone(),
     };
     let router = server::router(state);
 
-    let checker_handle = mqtt::spawn_state_checker(pool, mqtt_client, config.mqtt_topic_prefix);
+    let checker_handle = mqtt::spawn_state_checker(pool, mqtt_client.clone(), mqtt_prefix);
 
     if let Err(e) = server::serve(router, config.port).await {
         error!("Server error: {e}");
     }
 
     info!("Shutting down");
-    checker_handle.abort();
-    mqtt_handle.disconnect().await;
+    if let Some(handle) = checker_handle {
+        handle.abort();
+    }
+    if let Some(handle) = mqtt_handle {
+        handle.disconnect().await;
+    }
 }

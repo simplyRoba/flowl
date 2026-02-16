@@ -14,6 +14,23 @@ pub struct MqttHandle {
     task: JoinHandle<()>,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    #[tokio::test]
+    async fn spawn_state_checker_skips_when_mqtt_disabled() {
+        let pool = SqlitePoolOptions::new()
+            .connect("sqlite::memory:")
+            .await
+            .expect("Failed to create in-memory pool");
+
+        let handle = spawn_state_checker(pool, None, "flowl".to_string());
+        assert!(handle.is_none());
+    }
+}
+
 impl MqttHandle {
     pub async fn disconnect(self) {
         if let Err(e) = self.client.disconnect().await {
@@ -23,7 +40,11 @@ impl MqttHandle {
     }
 }
 
-pub fn connect(config: &Config) -> MqttHandle {
+pub fn connect(config: &Config) -> Option<MqttHandle> {
+    if config.mqtt_disabled {
+        info!("FLOWL_MQTT_DISABLED=true, skipping MQTT client setup");
+        return None;
+    }
     let client_id = format!("{}-{}", config.mqtt_topic_prefix, std::process::id());
     let mut options = MqttOptions::new(&client_id, &config.mqtt_host, config.mqtt_port);
     options.set_keep_alive(std::time::Duration::from_secs(30));
@@ -45,7 +66,7 @@ pub fn connect(config: &Config) -> MqttHandle {
         }
     });
 
-    MqttHandle { client, task }
+    Some(MqttHandle { client, task })
 }
 
 /// Publish HA auto-discovery config for a plant sensor entity.
@@ -150,13 +171,19 @@ struct CheckerRow {
 }
 
 /// Spawn a background task that checks all plants every 60 seconds and publishes
-/// state transitions to MQTT. On first run, publishes discovery configs for all plants.
+/// state transitions to MQTT. On first run, publishes discovery configs for all plants
+/// when MQTT is enabled.
 pub fn spawn_state_checker(
     pool: SqlitePool,
     client: Option<AsyncClient>,
     prefix: String,
-) -> JoinHandle<()> {
-    tokio::spawn(async move {
+) -> Option<JoinHandle<()>> {
+    if client.is_none() {
+        info!("MQTT disabled, skipping background state checker");
+        return None;
+    }
+
+    Some(tokio::spawn(async move {
         let mut cache: HashMap<i64, String> = HashMap::new();
         let mut first_run = true;
 
@@ -205,5 +232,5 @@ pub fn spawn_state_checker(
             first_run = false;
             tokio::time::sleep(std::time::Duration::from_secs(60)).await;
         }
-    })
+    }))
 }

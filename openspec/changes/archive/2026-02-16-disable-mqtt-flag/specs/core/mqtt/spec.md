@@ -1,40 +1,34 @@
-## Purpose
-
-MQTT client connection to Mosquitto, graceful connect/disconnect, configuration via environment variables, Home Assistant auto-discovery, watering state publishing, and background state checking.
-
-## Requirements
+## ADDED Requirements
 
 ### Requirement: MQTT can be disabled via environment flag
 
 The application SHALL allow operators to skip MQTT setup by setting `FLOWL_MQTT_DISABLED=true`.
 
 #### Scenario: MQTT disabled by configuration
-
 - **WHEN** the application starts with `FLOWL_MQTT_DISABLED=true`
 - **THEN** the MQTT client is never created
 - **AND** the background state checker is not spawned
 - **AND** the HTTP server starts normally without attempting MQTT publishes
+
+## MODIFIED Requirements
 
 ### Requirement: MQTT Client Connection
 
 The application SHALL connect an MQTT client to the broker specified by `FLOWL_MQTT_HOST` (default `localhost`) and `FLOWL_MQTT_PORT` (default `1883`) on startup when `FLOWL_MQTT_DISABLED` is not true.
 
 #### Scenario: Successful connection
-
 - **WHEN** the application starts and the MQTT broker is reachable
 - **AND** `FLOWL_MQTT_DISABLED` is not `true`
 - **THEN** the MQTT client connects successfully
 - **AND** a log message confirms the connection
 
 #### Scenario: Broker unreachable at startup
-
 - **WHEN** the application starts, the MQTT broker is not reachable, and `FLOWL_MQTT_DISABLED` is not `true`
 - **THEN** the HTTP server starts normally
 - **AND** the MQTT client retries connection in the background
 - **AND** a warning is logged
 
 #### Scenario: MQTT disabled via flag
-
 - **WHEN** the application starts with `FLOWL_MQTT_DISABLED=true`
 - **THEN** no MQTT connection attempt is made
 - **AND** a log message notes that MQTT is disabled
@@ -44,7 +38,6 @@ The application SHALL connect an MQTT client to the broker specified by `FLOWL_M
 The MQTT client SHALL automatically reconnect when the connection to the broker is lost, provided MQTT is enabled (`FLOWL_MQTT_DISABLED` is not true).
 
 #### Scenario: Connection lost and recovered
-
 - **WHEN** the MQTT connection drops and `FLOWL_MQTT_DISABLED` is not `true`
 - **THEN** the client automatically attempts to reconnect
 - **AND** a warning is logged on disconnect
@@ -55,12 +48,10 @@ The MQTT client SHALL automatically reconnect when the connection to the broker 
 The MQTT client SHALL use `FLOWL_MQTT_TOPIC_PREFIX` (default `flowl`) as the base prefix for all topics when MQTT is enabled.
 
 #### Scenario: Default topic prefix
-
 - **WHEN** the application starts without `FLOWL_MQTT_TOPIC_PREFIX` set and `FLOWL_MQTT_DISABLED` is not `true`
 - **THEN** the MQTT client uses `flowl` as the topic prefix
 
 #### Scenario: Custom topic prefix
-
 - **WHEN** the application starts with `FLOWL_MQTT_TOPIC_PREFIX=myplants` and MQTT is enabled
 - **THEN** the MQTT client uses `myplants` as the topic prefix
 
@@ -69,7 +60,6 @@ The MQTT client SHALL use `FLOWL_MQTT_TOPIC_PREFIX` (default `flowl`) as the bas
 The MQTT client SHALL disconnect cleanly when the application shuts down, unless MQTT is disabled.
 
 #### Scenario: Application shutdown
-
 - **WHEN** the application receives a shutdown signal and `FLOWL_MQTT_DISABLED` is not `true`
 - **THEN** the MQTT client sends a disconnect packet to the broker
 
@@ -78,13 +68,11 @@ The MQTT client SHALL disconnect cleanly when the application shuts down, unless
 The MQTT `AsyncClient` SHALL be available in `AppState` as an optional field so API handlers can publish messages whenever MQTT is enabled.
 
 #### Scenario: MQTT client available
-
 - **WHEN** the MQTT client connects successfully and MQTT is enabled
 - **THEN** the `AsyncClient` is stored in `AppState`
 - **AND** API handlers can access it to publish messages
 
 #### Scenario: MQTT client unavailable
-
 - **WHEN** the MQTT client is not connected or MQTT is disabled
 - **THEN** `AppState` holds `None` for the MQTT client
 - **AND** API handlers skip MQTT publishing without error
@@ -94,7 +82,6 @@ The MQTT `AsyncClient` SHALL be available in `AppState` as an optional field so 
 The application SHALL publish retained MQTT auto-discovery configs for each plant, registering them as Home Assistant sensor entities with a `json_attributes_topic` whenever MQTT is enabled.
 
 #### Scenario: Discovery config published
-
 - **GIVEN** a plant with id 1 and name "Monstera"
 - **AND** the MQTT topic prefix is `flowl`
 - **AND** `FLOWL_MQTT_DISABLED` is not `true`
@@ -105,7 +92,6 @@ The application SHALL publish retained MQTT auto-discovery configs for each plan
 - **AND** `json_attributes_topic` is `flowl/plant/1/attributes`
 
 #### Scenario: Discovery config removed
-
 - **GIVEN** a plant with id 1 is deleted
 - **WHEN** the deletion triggers MQTT cleanup and MQTT is enabled
 - **THEN** an empty retained payload is published to `homeassistant/sensor/flowl_plant_1/config`
@@ -117,7 +103,6 @@ The application SHALL publish retained MQTT auto-discovery configs for each plan
 The application SHALL publish watering state to retained MQTT topics whenever MQTT is enabled.
 
 #### Scenario: State published
-
 - **GIVEN** a plant with id 1 and watering status `due`
 - **AND** the MQTT topic prefix is `flowl`
 - **AND** `FLOWL_MQTT_DISABLED` is not `true`
@@ -125,7 +110,6 @@ The application SHALL publish watering state to retained MQTT topics whenever MQ
 - **THEN** the string `due` is published as a retained message to `flowl/plant/1/state`
 
 #### Scenario: State values
-
 - **WHEN** watering state is published and MQTT is enabled
 - **THEN** the payload is one of: `ok`, `due`, `overdue`
 
@@ -134,7 +118,6 @@ The application SHALL publish watering state to retained MQTT topics whenever MQ
 The application SHALL publish plant watering attributes as a retained JSON object to a dedicated attributes topic whenever MQTT is enabled.
 
 #### Scenario: Attributes published
-
 - **GIVEN** a plant with id 1, `last_watered` = `2026-02-13T14:30:00`, `watering_interval_days` = 7, `next_due` = `2026-02-20`
 - **AND** the MQTT topic prefix is `flowl`
 - **AND** MQTT is enabled
@@ -143,7 +126,6 @@ The application SHALL publish plant watering attributes as a retained JSON objec
 - **AND** the payload contains `next_due`, `last_watered`, and `watering_interval_days`
 
 #### Scenario: Attributes for never-watered plant
-
 - **GIVEN** a plant with `last_watered` = NULL
 - **AND** MQTT is enabled
 - **WHEN** attributes are published
@@ -154,7 +136,6 @@ The application SHALL publish plant watering attributes as a retained JSON objec
 The application SHALL run a background task that periodically checks all plants for watering state transitions and publishes updates to MQTT whenever MQTT is enabled.
 
 #### Scenario: State transition detected
-
 - **GIVEN** a plant was previously `ok`
 - **AND** enough time has passed that it is now `due`
 - **AND** MQTT is enabled
@@ -163,18 +144,15 @@ The application SHALL run a background task that periodically checks all plants 
 - **AND** updated attributes are published to the plant's attributes topic
 
 #### Scenario: No state change
-
 - **GIVEN** a plant's watering status has not changed since last check
 - **AND** MQTT is enabled
 - **WHEN** the background checker runs
 - **THEN** no MQTT message is published for that plant
 
 #### Scenario: Checker interval
-
 - **WHEN** the application is running and MQTT is enabled
 - **THEN** the background state checker runs every 60 seconds
 
 #### Scenario: Full publish on startup
-
 - **WHEN** the application starts and MQTT is enabled
 - **THEN** the background checker publishes discovery configs, current state, and attributes for all existing plants

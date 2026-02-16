@@ -8,6 +8,7 @@ pub struct Config {
     pub mqtt_port: u16,
     pub mqtt_topic_prefix: String,
     pub log_level: String,
+    pub mqtt_disabled: bool,
 }
 
 impl Config {
@@ -20,6 +21,7 @@ impl Config {
             mqtt_topic_prefix: env::var("FLOWL_MQTT_TOPIC_PREFIX")
                 .unwrap_or_else(|_| "flowl".to_string()),
             log_level: env::var("FLOWL_LOG_LEVEL").unwrap_or_else(|_| "info".to_string()),
+            mqtt_disabled: parse_env("FLOWL_MQTT_DISABLED", false),
         }
     }
 }
@@ -47,6 +49,7 @@ mod tests {
             "FLOWL_MQTT_PORT",
             "FLOWL_MQTT_TOPIC_PREFIX",
             "FLOWL_LOG_LEVEL",
+            "FLOWL_MQTT_DISABLED",
         ] {
             unsafe { env::remove_var(key) };
         }
@@ -76,6 +79,7 @@ mod tests {
             env::set_var("FLOWL_MQTT_PORT", "1884");
             env::set_var("FLOWL_MQTT_TOPIC_PREFIX", "myplants");
             env::set_var("FLOWL_LOG_LEVEL", "debug");
+            env::set_var("FLOWL_MQTT_DISABLED", "true");
         }
 
         let config = Config::from_env();
@@ -85,6 +89,28 @@ mod tests {
         assert_eq!(config.mqtt_port, 1884);
         assert_eq!(config.mqtt_topic_prefix, "myplants");
         assert_eq!(config.log_level, "debug");
+        assert!(config.mqtt_disabled);
+
+        unsafe { clear_flowl_env() };
+    }
+
+    #[test]
+    fn mqtt_disabled_defaults_false() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        unsafe { clear_flowl_env() };
+
+        let config = Config::from_env();
+        assert!(!config.mqtt_disabled);
+    }
+
+    #[test]
+    fn invalid_mqtt_disabled_falls_back_to_default() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        unsafe { clear_flowl_env() };
+        unsafe { env::set_var("FLOWL_MQTT_DISABLED", "not_a_bool") };
+
+        let config = Config::from_env();
+        assert!(!config.mqtt_disabled);
 
         unsafe { clear_flowl_env() };
     }
