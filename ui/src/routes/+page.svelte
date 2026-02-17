@@ -3,6 +3,7 @@
 	import { Plus } from 'lucide-svelte';
 	import { plants, plantsError, loadPlants } from '$lib/stores/plants';
 	import { emojiToSvgPath } from '$lib/emoji';
+	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
 	const BG_GRADIENTS = [
 		'linear-gradient(135deg, color-mix(in srgb, var(--color-success) 35%, transparent), color-mix(in srgb, var(--color-success) 15%, transparent))',
@@ -63,11 +64,9 @@
 						{#if plant.location_name}
 							<div class="plant-card-location">{plant.location_name}</div>
 						{/if}
-						{#if plant.watering_status === 'overdue'}
-							<span class="status-badge status-overdue">Overdue</span>
-						{:else if plant.watering_status === 'due'}
-							<span class="status-badge status-due">Due</span>
-						{/if}
+						<div class="plant-card-footer">
+							<StatusBadge status={plant.watering_status} nextDue={plant.next_due ?? null} />
+						</div>
 					</div>
 				</a>
 			{/each}
@@ -147,8 +146,8 @@
 	}
 
 	.plant-card {
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
+		position: relative;
+		border: none;
 		border-radius: 12px;
 		overflow: hidden;
 		text-decoration: none;
@@ -159,19 +158,19 @@
 
 	.plant-card:hover {
 		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 	}
 
 	.plant-card-photo {
-		height: 120px;
+		height: 180px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
 
 	.plant-icon {
-		width: 56px;
-		height: 56px;
+		width: 64px;
+		height: 64px;
 	}
 
 	.photo-img {
@@ -181,42 +180,36 @@
 	}
 
 	.plant-card-body {
-		padding: 12px 14px;
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 28px 12px 10px;
+		background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
+		border-radius: 0 0 12px 12px;
 	}
 
 	.plant-card-name {
-		font-size: 15px;
+		font-size: 14px;
 		font-weight: 600;
 		margin-bottom: 2px;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		color: #fff;
+		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 	}
 
 	.plant-card-location {
-		font-size: 13px;
-		color: var(--color-text-muted);
+		font-size: 12px;
+		color: rgba(255, 255, 255, 0.85);
+		margin-bottom: 6px;
 	}
 
-	.status-badge {
-		display: inline-block;
-		font-size: 11px;
-		font-weight: 600;
-		padding: 2px 8px;
-		border-radius: 10px;
-		margin-top: 4px;
-		text-transform: uppercase;
-		letter-spacing: 0.3px;
-	}
-
-	.status-overdue {
-		background: var(--color-danger-soft);
-		color: var(--color-danger);
-	}
-
-	.status-due {
-		background: var(--color-warning-soft);
-		color: var(--color-warning);
+	.plant-card-footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 	}
 
 	.error {
@@ -234,37 +227,8 @@
 			gap: 20px;
 		}
 
-		.plant-card {
-			position: relative;
-			border: none;
-		}
-
 		.plant-card-photo {
 			height: 240px;
-		}
-
-		.plant-card-body {
-			position: absolute;
-			bottom: 0;
-			left: 0;
-			right: 0;
-			padding: 32px 16px 14px;
-			background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
-			border-radius: 0 0 12px 12px;
-		}
-
-		.plant-card-name {
-			color: var(--color-text-on-image);
-			font-size: 16px;
-			text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-		}
-
-		.plant-card-location {
-			color: rgba(255, 255, 255, 0.85);
-		}
-
-		.plant-card:hover {
-			box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 		}
 
 		.plant-icon {
@@ -286,10 +250,6 @@
 		.plant-grid {
 			grid-template-columns: repeat(2, 1fr);
 			gap: 12px;
-		}
-
-		.plant-card-photo {
-			height: 72px;
 		}
 	}
 </style>

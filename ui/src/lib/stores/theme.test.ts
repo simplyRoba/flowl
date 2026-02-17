@@ -63,8 +63,9 @@ describe('theme preference persistence', () => {
 describe('system preference listener', () => {
 	it('notifies on initial and change events', () => {
 		const listeners = new Set<(event: MediaQueryListEvent) => void>();
+		const state = { matches: false };
 		const media = {
-			matches: false,
+			get matches() { return state.matches; },
 			addEventListener: (_: 'change', listener: (event: MediaQueryListEvent) => void) => {
 				listeners.add(listener);
 			},
@@ -79,12 +80,12 @@ describe('system preference listener', () => {
 		});
 
 		expect(seen).toEqual([false]);
-		media.matches = true;
+		state.matches = true;
 		listeners.forEach((listener) => listener({ matches: true } as MediaQueryListEvent));
 		expect(seen).toEqual([false, true]);
 
 		stop();
-		media.matches = false;
+		state.matches = false;
 		listeners.forEach((listener) => listener({ matches: false } as MediaQueryListEvent));
 		expect(seen).toEqual([false, true]);
 	});

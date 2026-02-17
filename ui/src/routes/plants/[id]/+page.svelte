@@ -6,6 +6,7 @@
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
 	import { careEvents, loadCareEvents, addCareEvent, removeCareEvent } from '$lib/stores/care';
 	import { emojiToSvgPath } from '$lib/emoji';
+	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import type { CareEvent } from '$lib/api';
 
 	let notFound = $state(false);
@@ -68,27 +69,6 @@
 		const date = new Date(dateStr);
 		if (isNaN(date.getTime())) return dateStr;
 		return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-	}
-
-	function statusLabel(status: string): string {
-		if (status === 'overdue') return 'Overdue';
-		if (status === 'due') return 'Due';
-		return 'Ok';
-	}
-
-	function statusSuffix(nextDue: string | null): string | null {
-		if (!nextDue) return null;
-		const due = new Date(nextDue);
-		if (isNaN(due.getTime())) return null;
-		const now = new Date();
-		const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-		const dueStart = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-		const diffDays = Math.round((dueStart.getTime() - start.getTime()) / 86400000);
-		if (diffDays === 0) return 'today';
-		if (diffDays === 1) return 'next in 1 day';
-		if (diffDays > 1) return `next in ${diffDays} days`;
-		const overdueDays = Math.abs(diffDays);
-		return overdueDays === 1 ? '1 day ago' : `${overdueDays} days ago`;
 	}
 
 	function eventTypeLabel(type: string): string {
@@ -158,7 +138,9 @@
 
 	let hasMoreEvents = $derived($careEvents.length > EVENT_LIMIT);
 
-	let statusDetail = $derived(statusSuffix($currentPlant?.next_due ?? null));
+	let LightNeedsIcon = $derived(
+		$currentPlant ? lightIcon($currentPlant.light_needs) : Sun
+	);
 
 </script>
 
@@ -209,13 +191,7 @@
 					<p class="detail-location"><MapPin size={14} /> {$currentPlant.location_name}</p>
 				{/if}
 				<div class="detail-status">
-					<span class="status-badge status-{$currentPlant.watering_status}">
-						<span class="status-dot"></span>
-						{statusLabel($currentPlant.watering_status)}
-						{#if statusDetail}
-							 — {statusDetail}
-						{/if}
-					</span>
+					<StatusBadge status={$currentPlant.watering_status} nextDue={$currentPlant.next_due ?? null} />
 				</div>
 				<button class="detail-water-btn" onclick={handleWater} disabled={watering}>
 					<Droplet size={16} />
@@ -238,7 +214,7 @@
 						<span class="detail-row-label">Needs</span>
 						<span class="detail-row-value">
 							{lightLabel($currentPlant.light_needs)}
-							<svelte:component this={lightIcon($currentPlant.light_needs)} size={14} />
+							<LightNeedsIcon size={14} />
 						</span>
 					</div>
 				</div>
@@ -490,49 +466,6 @@
 
 	.detail-status {
 		margin-bottom: 14px;
-	}
-
-	.status-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 12px;
-		font-weight: 600;
-		padding: 3px 10px;
-		border-radius: 999px;
-	}
-
-	.status-dot {
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-	}
-
-	.status-ok {
-		background: var(--color-success-soft);
-		color: var(--color-success);
-	}
-
-	.status-ok .status-dot {
-		background: var(--color-success);
-	}
-
-	.status-due {
-		background: var(--color-warning-soft);
-		color: var(--color-warning);
-	}
-
-	.status-due .status-dot {
-		background: var(--color-warning);
-	}
-
-	.status-overdue {
-		background: var(--color-danger-soft);
-		color: var(--color-danger);
-	}
-
-	.status-overdue .status-dot {
-		background: var(--color-danger);
 	}
 
 	.detail-card-title {

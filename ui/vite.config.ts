@@ -1,8 +1,8 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
-export default defineConfig(() => {
-	const isTest = process.env.VITEST === 'true';
+export default defineConfig(({ mode }) => {
+	const isTest = mode === 'test';
 
 	return {
 		plugins: [sveltekit()],
