@@ -366,7 +366,7 @@
 	.form-section {
 		background: var(--color-surface);
 		border: 1px solid var(--color-border);
-		border-radius: 12px;
+		border-radius: var(--radius-card);
 		padding: 16px;
 	}
 
@@ -434,13 +434,13 @@
 		margin: 0;
 		padding: 8px 12px;
 		border: 1px solid var(--color-border);
-		border-radius: 8px;
+		border-radius: var(--radius-btn);
 		background: var(--color-surface);
 		color: var(--color-text-muted);
-		font-size: 13px;
+		font-size: var(--fs-chip);
 		font-weight: 500;
 		cursor: pointer;
-		transition: all 0.15s;
+		transition: all var(--transition-speed);
 		white-space: nowrap;
 		display: inline-flex;
 		align-items: center;
@@ -457,7 +457,7 @@
 
 
 	.form-section-title {
-		font-size: 13px;
+		font-size: var(--fs-section-label);
 		font-weight: 600;
 		color: var(--color-text-muted);
 		text-transform: uppercase;
@@ -477,7 +477,7 @@
 	}
 
 	.form-label {
-		font-size: 13px;
+		font-size: var(--fs-chip);
 		font-weight: 600;
 		color: var(--color-text-muted);
 	}
@@ -489,11 +489,11 @@
 	.form-input {
 		padding: 10px 12px;
 		border: 1px solid var(--color-border);
-		border-radius: 8px;
-		font-size: 15px;
+		border-radius: var(--radius-btn);
+		font-size: var(--fs-input);
 		font-family: inherit;
 		outline: none;
-		transition: border-color 0.15s;
+		transition: border-color var(--transition-speed);
 		background: var(--color-surface);
 		color: var(--color-text);
 	}
@@ -514,7 +514,7 @@
 	}
 
 	.field-error {
-		font-size: 13px;
+		font-size: var(--fs-chip);
 		color: var(--color-danger);
 	}
 
@@ -522,7 +522,7 @@
 		width: 100%;
 		height: 160px;
 		border: 2px dashed var(--color-border);
-		border-radius: 12px;
+		border-radius: var(--radius-card);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -531,7 +531,7 @@
 		color: var(--color-text-muted);
 		font-size: 14px;
 		cursor: pointer;
-		transition: all 0.15s;
+		transition: all var(--transition-speed);
 		background: color-mix(in srgb, var(--color-primary) 3%, transparent);
 		position: relative;
 		overflow: hidden;
@@ -583,7 +583,7 @@
 		width: 180px;
 		height: 180px;
 		object-fit: cover;
-		border-radius: 12px;
+		border-radius: var(--radius-card);
 		border: 1px solid var(--color-border);
 	}
 
@@ -614,12 +614,12 @@
 		gap: 6px;
 		padding: 8px 12px;
 		border: 1px solid var(--color-border);
-		border-radius: 8px;
+		border-radius: var(--radius-btn);
 		cursor: pointer;
 		color: var(--color-text-muted);
-		font-size: 13px;
+		font-size: var(--fs-chip);
 		font-weight: 500;
-		transition: border-color 0.15s, color 0.15s;
+		transition: border-color var(--transition-speed), color var(--transition-speed);
 		justify-content: center;
 		flex: 1 1 0;
 		box-sizing: border-box;
@@ -647,7 +647,7 @@
 		border-radius: 10px;
 		background: var(--color-surface);
 		cursor: pointer;
-		transition: all 0.15s;
+		transition: all var(--transition-speed);
 		color: var(--color-text);
 		font-size: 13px;
 	}
@@ -680,11 +680,11 @@
 		background: var(--color-primary);
 		color: var(--color-text-on-primary);
 		border: none;
-		border-radius: 8px;
-		font-size: 15px;
+		border-radius: var(--radius-btn);
+		font-size: var(--fs-input);
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.15s;
+		transition: background var(--transition-speed);
 		align-self: flex-start;
 	}
 

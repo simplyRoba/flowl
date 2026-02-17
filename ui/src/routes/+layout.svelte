@@ -58,6 +58,21 @@
 		--color-success-soft: color-mix(in srgb, var(--color-success) 20%, transparent);
 		--color-warning-soft: color-mix(in srgb, var(--color-warning) 18%, transparent);
 		--color-danger-soft: color-mix(in srgb, var(--color-danger) 16%, transparent);
+
+		/* Typography */
+		--fs-page-title: 22px;
+		--fs-section-label: 13px;
+		--fs-btn: 14px;
+		--fs-input: 15px;
+		--fs-chip: 13px;
+
+		/* Radii */
+		--radius-card: 12px;
+		--radius-btn: 8px;
+		--radius-pill: 999px;
+
+		/* Motion */
+		--transition-speed: 0.15s;
 	}
 
 	:global([data-theme='dark']) {

@@ -222,7 +222,7 @@
 	}
 
 	.page-header h1 {
-		font-size: 22px;
+		font-size: var(--fs-page-title);
 		font-weight: 700;
 		margin: 0;
 	}
@@ -236,14 +236,14 @@
 
 	.filter-chip {
 		padding: 5px 12px;
-		border-radius: 999px;
+		border-radius: var(--radius-pill);
 		border: 1px solid var(--color-border);
 		background: var(--color-surface);
 		color: var(--color-text-muted);
-		font-size: 13px;
+		font-size: var(--fs-chip);
 		font-weight: 500;
 		cursor: pointer;
-		transition: all 0.15s;
+		transition: all var(--transition-speed);
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;

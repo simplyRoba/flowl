@@ -39,7 +39,7 @@
 	}
 
 	h1 {
-		font-size: 22px;
+		font-size: var(--fs-page-title);
 		font-weight: 700;
 		margin: 0 0 24px;
 	}
@@ -49,11 +49,11 @@
 		background: var(--color-primary);
 		color: var(--color-text-on-primary);
 		border: none;
-		border-radius: 8px;
-		font-size: 14px;
+		border-radius: var(--radius-btn);
+		font-size: var(--fs-btn);
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.15s;
+		transition: background var(--transition-speed);
 	}
 
 	.save-btn:hover:not(:disabled) {

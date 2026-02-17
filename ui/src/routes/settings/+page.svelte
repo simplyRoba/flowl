@@ -96,7 +96,7 @@
 	}
 
 	.page-header h1 {
-		font-size: 22px;
+		font-size: var(--fs-page-title);
 		font-weight: 700;
 		margin: 0;
 	}
@@ -104,13 +104,13 @@
 	.settings-card {
 		background: var(--color-surface);
 		border: 1px solid var(--color-border);
-		border-radius: 12px;
+		border-radius: var(--radius-card);
 		padding: 20px;
 		margin-bottom: 20px;
 	}
 
 	.settings-card h2 {
-		font-size: 13px;
+		font-size: var(--fs-chip);
 		font-weight: 600;
 		color: var(--color-text-muted);
 		text-transform: uppercase;
@@ -140,7 +140,7 @@
 	.theme-selector {
 		display: inline-flex;
 		padding: 4px;
-		border-radius: 999px;
+		border-radius: var(--radius-pill);
 		border: 1px solid var(--color-border);
 		background: var(--color-surface-muted);
 		gap: 4px;
@@ -151,11 +151,11 @@
 		background: transparent;
 		color: var(--color-text-muted);
 		padding: 6px 14px;
-		border-radius: 999px;
-		font-size: 13px;
+		border-radius: var(--radius-pill);
+		font-size: var(--fs-chip);
 		font-weight: 600;
 		cursor: pointer;
-		transition: background 0.15s, color 0.15s;
+		transition: background var(--transition-speed), color var(--transition-speed);
 	}
 
 	.theme-option:hover {
@@ -229,12 +229,12 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 8px;
+		border-radius: var(--radius-btn);
 		border: 1px solid var(--color-border);
 		background: var(--color-surface);
 		color: var(--color-text-muted);
 		cursor: pointer;
-		transition: background 0.15s, color 0.15s, border-color 0.15s;
+		transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
 	}
 
 	.delete-btn:hover {

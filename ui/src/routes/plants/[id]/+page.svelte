@@ -354,13 +354,13 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 8px;
+		border-radius: var(--radius-btn);
 		border: 1px solid var(--color-border);
 		background: var(--color-surface);
 		color: var(--color-text-muted);
 		cursor: pointer;
 		text-decoration: none;
-		transition: background 0.15s, color 0.15s;
+		transition: background var(--transition-speed), color var(--transition-speed);
 	}
 
 	.action-btn:hover {
@@ -384,7 +384,7 @@
 		width: 200px;
 		height: 200px;
 		flex-shrink: 0;
-		border-radius: 12px;
+		border-radius: var(--radius-card);
 		overflow: hidden;
 		display: flex;
 		align-items: center;
@@ -395,7 +395,7 @@
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		border-radius: 12px;
+		border-radius: var(--radius-card);
 	}
 
 	.detail-photo-icon {
@@ -412,7 +412,7 @@
 	}
 
 	.detail-info h2 {
-		font-size: 22px;
+		font-size: var(--fs-page-title);
 		font-weight: 700;
 		margin: 0;
 	}
@@ -444,7 +444,7 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 13px;
+		font-size: var(--fs-section-label);
 		font-weight: 600;
 		color: var(--color-text-muted);
 		text-transform: uppercase;
@@ -459,11 +459,11 @@
 		background: var(--color-water);
 		color: var(--color-text-on-water);
 		border: none;
-		border-radius: 8px;
-		font-size: 14px;
+		border-radius: var(--radius-btn);
+		font-size: var(--fs-btn);
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.15s;
+		transition: background var(--transition-speed);
 	}
 
 	.detail-water-btn:hover:not(:disabled) {
@@ -490,7 +490,7 @@
 	.detail-card {
 		background: var(--color-surface);
 		border: 1px solid var(--color-border);
-		border-radius: 12px;
+		border-radius: var(--radius-card);
 		padding: 16px;
 	}
 
@@ -524,7 +524,7 @@
 	}
 
 	.not-found h2 {
-		font-size: 22px;
+		font-size: var(--fs-page-title);
 		font-weight: 600;
 		margin: 0 0 8px;
 	}
@@ -601,12 +601,12 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 8px;
+		border-radius: var(--radius-btn);
 		border: 1px solid var(--color-border);
 		background: var(--color-surface);
 		color: var(--color-text-muted);
 		cursor: pointer;
-		transition: background 0.15s, color 0.15s, border-color 0.15s;
+		transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
 	}
 
 	.event-delete:hover:not(:disabled) {
@@ -662,13 +662,13 @@
 	.log-when-toggle {
 		padding: 8px 12px;
 		border: 1px solid var(--color-border);
-		border-radius: 8px;
+		border-radius: var(--radius-btn);
 		background: none;
 		color: var(--color-primary);
-		font-size: 13px;
+		font-size: var(--fs-chip);
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.15s, border-color 0.15s;
+		transition: background var(--transition-speed), border-color var(--transition-speed);
 	}
 
 	.log-when-toggle:hover {
@@ -680,8 +680,8 @@
 		width: 100%;
 		padding: 8px 10px;
 		border: 1px solid var(--color-border);
-		border-radius: 8px;
-		font-size: 14px;
+		border-radius: var(--radius-btn);
+		font-size: var(--fs-btn);
 		font-family: inherit;
 		box-sizing: border-box;
 	}
@@ -724,8 +724,8 @@
 		width: 100%;
 		padding: 8px 10px;
 		border: 1px solid var(--color-border);
-		border-radius: 8px;
-		font-size: 14px;
+		border-radius: var(--radius-btn);
+		font-size: var(--fs-btn);
 		font-family: inherit;
 		resize: vertical;
 		margin-bottom: 10px;
@@ -747,11 +747,11 @@
 		background: var(--color-primary);
 		color: var(--color-text-on-primary);
 		border: none;
-		border-radius: 8px;
-		font-size: 14px;
+		border-radius: var(--radius-btn);
+		font-size: var(--fs-btn);
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.15s;
+		transition: background var(--transition-speed);
 	}
 
 	.log-save:hover:not(:disabled) {
@@ -767,12 +767,12 @@
 		padding: 8px 20px;
 		background: none;
 		border: 1px solid var(--color-border);
-		border-radius: 8px;
+		border-radius: var(--radius-btn);
 		color: var(--color-text-muted);
-		font-size: 14px;
+		font-size: var(--fs-btn);
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.15s;
+		transition: background var(--transition-speed);
 	}
 
 	.log-cancel:hover {
@@ -806,7 +806,7 @@
 		}
 
 		.detail-info h2 {
-			font-size: 22px;
+			font-size: var(--fs-page-title);
 		}
 
 		.detail-water-btn {

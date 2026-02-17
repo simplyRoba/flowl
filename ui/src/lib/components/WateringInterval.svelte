@@ -88,7 +88,7 @@
 		border-radius: 10px;
 		background: var(--color-surface);
 		cursor: pointer;
-		transition: all 0.15s;
+		transition: all var(--transition-speed);
 		flex: 1;
 		min-width: 0;
 	}
@@ -145,7 +145,7 @@
 		align-items: center;
 		gap: 0;
 		border: 1px solid var(--color-border);
-		border-radius: 8px;
+		border-radius: var(--radius-btn);
 		overflow: hidden;
 	}
 
@@ -159,7 +159,7 @@
 		border: none;
 		cursor: pointer;
 		color: var(--color-text);
-		transition: background 0.15s;
+		transition: background var(--transition-speed);
 	}
 
 	.stepper-btn:hover:not(:disabled) {

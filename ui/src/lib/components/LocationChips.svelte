@@ -83,12 +83,12 @@
 	.location-chip {
 		padding: 8px 14px;
 		border: 1px solid var(--color-border);
-		border-radius: 999px;
+		border-radius: var(--radius-pill);
 		background: var(--color-surface);
-		font-size: 13px;
+		font-size: var(--fs-chip);
 		font-weight: 500;
 		cursor: pointer;
-		transition: all 0.15s;
+		transition: all var(--transition-speed);
 		white-space: nowrap;
 		display: inline-flex;
 		align-items: center;
@@ -125,8 +125,8 @@
 	.new-input {
 		padding: 8px 12px;
 		border: 1px solid var(--color-border);
-		border-radius: 8px;
-		font-size: 13px;
+		border-radius: var(--radius-btn);
+		font-size: var(--fs-chip);
 		outline: none;
 		width: 140px;
 	}

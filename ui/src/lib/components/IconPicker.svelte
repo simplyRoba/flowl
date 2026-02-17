@@ -37,7 +37,7 @@
 		border-radius: 10px;
 		background: var(--color-surface);
 		cursor: pointer;
-		transition: all 0.15s;
+		transition: all var(--transition-speed);
 	}
 
 	.emoji-option:hover {

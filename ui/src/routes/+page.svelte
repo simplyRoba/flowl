@@ -164,7 +164,7 @@
 	}
 
 	.greeting h2 {
-		font-size: 22px;
+		font-size: var(--fs-page-title);
 		font-weight: 600;
 		margin: 0 0 4px;
 	}
@@ -183,7 +183,7 @@
 	}
 
 	.page-header h1 {
-		font-size: 22px;
+		font-size: var(--fs-page-title);
 		font-weight: 700;
 		margin: 0;
 	}
@@ -196,12 +196,12 @@
 		background: var(--color-primary);
 		color: var(--color-text-on-primary);
 		border: none;
-		border-radius: 8px;
-		font-size: 15px;
+		border-radius: var(--radius-btn);
+		font-size: var(--fs-btn);
 		font-weight: 500;
 		text-decoration: none;
 		cursor: pointer;
-		transition: background 0.15s;
+		transition: background var(--transition-speed);
 	}
 
 	.add-btn:hover {
@@ -224,7 +224,7 @@
 	}
 
 	.empty-state h2 {
-		font-size: 22px;
+		font-size: var(--fs-page-title);
 		font-weight: 600;
 		margin: 0 0 8px;
 	}
@@ -243,12 +243,12 @@
 	.plant-card {
 		position: relative;
 		border: none;
-		border-radius: 12px;
+		border-radius: var(--radius-card);
 		overflow: hidden;
 		text-decoration: none;
 		color: inherit;
 		cursor: pointer;
-		transition: transform 0.15s, box-shadow 0.15s;
+		transition: transform var(--transition-speed), box-shadow var(--transition-speed);
 	}
 
 	.plant-card:hover {
@@ -281,7 +281,7 @@
 		right: 0;
 		padding: 28px 12px 10px;
 		background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
-		border-radius: 0 0 12px 12px;
+		border-radius: 0 0 var(--radius-card) var(--radius-card);
 	}
 
 	.plant-card-name {
@@ -339,7 +339,6 @@
 
 		.add-btn {
 			padding: 8px 14px;
-			font-size: 14px;
 		}
 
 		.plant-grid {
