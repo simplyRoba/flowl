@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { ArrowLeft } from 'lucide-svelte';
 	import type { CreatePlant } from '$lib/api';
 	import { createPlant, uploadPhoto } from '$lib/stores/plants';
 	import PlantForm from '$lib/components/PlantForm.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 
 	let saving = $state(false);
 
@@ -21,12 +21,15 @@
 </script>
 
 <div class="page">
-	<header class="page-header">
-		<a href="/" class="back-link"><ArrowLeft size={18} /> Back</a>
-		<h1>Add Plant</h1>
-	</header>
+	<PageHeader backHref="/" backLabel="Back">
+		<button type="submit" form="plant-form" class="save-btn" disabled={saving}>
+			{saving ? 'Saving...' : 'Save'}
+		</button>
+	</PageHeader>
 
-	<PlantForm onsave={handleSave} {saving} showLocationNone={false} />
+	<h1>Add Plant</h1>
+
+	<PlantForm onsave={handleSave} {saving} showLocationNone={false} showFooterActions={false} />
 </div>
 
 <style>
@@ -35,37 +38,40 @@
 		margin: 0 auto;
 	}
 
-	.page-header {
-		margin-bottom: 24px;
-	}
-
-	.back-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		color: var(--color-primary);
-		text-decoration: none;
-		font-size: 15px;
-		font-weight: 500;
-		margin-bottom: 8px;
-	}
-
-	.back-link:hover {
-		color: var(--color-primary-dark);
-	}
-
 	h1 {
 		font-size: 28px;
 		font-weight: 700;
-		margin: 0;
+		margin: 0 0 24px;
+	}
+
+	.save-btn {
+		padding: 8px 20px;
+		background: var(--color-primary);
+		color: var(--color-text-on-primary);
+		border: none;
+		border-radius: 8px;
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 0.15s;
+	}
+
+	.save-btn:hover:not(:disabled) {
+		background: var(--color-primary-dark);
+	}
+
+	.save-btn:disabled {
+		opacity: 0.6;
+		cursor: default;
 	}
 
 	@media (max-width: 768px) {
-		h1 {
-			font-size: 22px;
+		.page {
+			padding-bottom: 64px;
 		}
 
-		.page-header {
+		h1 {
+			font-size: 22px;
 			margin-bottom: 16px;
 		}
 	}

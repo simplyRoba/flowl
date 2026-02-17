@@ -7,6 +7,7 @@
 	import { careEvents, loadCareEvents, addCareEvent, removeCareEvent } from '$lib/stores/care';
 	import { emojiToSvgPath } from '$lib/emoji';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import type { CareEvent } from '$lib/api';
 
 	let notFound = $state(false);
@@ -152,17 +153,14 @@
 	</div>
 {:else if $currentPlant}
 	<div class="detail">
-		<header class="detail-header">
-			<a href="/" class="back-link"><ArrowLeft size={18} /> Back</a>
-			<div class="actions">
-				<a href="/plants/{$currentPlant.id}/edit" class="action-btn edit-btn">
-					<Pencil size={16} />
-				</a>
-				<button class="action-btn delete-btn" onclick={handleDelete} disabled={deleting}>
-					<Trash2 size={16} />
-				</button>
-			</div>
-		</header>
+		<PageHeader backHref="/" backLabel="Back">
+			<a href="/plants/{$currentPlant.id}/edit" class="action-btn edit-btn">
+				<Pencil size={16} />
+			</a>
+			<button class="action-btn delete-btn" onclick={handleDelete} disabled={deleting}>
+				<Trash2 size={16} />
+			</button>
+		</PageHeader>
 
 		<div class="detail-hero">
 			<div class="detail-photo">
@@ -348,32 +346,6 @@
 	.detail {
 		max-width: 800px;
 		margin: 0 auto;
-	}
-
-	.detail-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 24px;
-	}
-
-	.back-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		color: var(--color-primary);
-		text-decoration: none;
-		font-size: 15px;
-		font-weight: 500;
-	}
-
-	.back-link:hover {
-		color: var(--color-primary-dark);
-	}
-
-	.actions {
-		display: flex;
-		gap: 8px;
 	}
 
 	.action-btn {
@@ -819,6 +791,10 @@
 	}
 
 	@media (max-width: 768px) {
+		.detail {
+			padding-bottom: 64px;
+		}
+
 		.detail-hero {
 			flex-direction: column;
 			gap: 16px;

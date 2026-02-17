@@ -424,6 +424,74 @@
 
   .top-bar-icon:hover { background: var(--border); }
 
+  /* Inline header (desktop/tablet — no bg, no border) */
+  .inline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    min-height: 68px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .inline-header-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--primary);
+    cursor: pointer;
+  }
+
+  .inline-header-left svg { width: 16px !important; height: 16px !important; }
+
+  .inline-header-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .inline-header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* Action bar (mobile bottom — above bottom-nav) */
+  .action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    min-height: 48px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .action-bar-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--primary);
+    cursor: pointer;
+  }
+
+  .action-bar-back svg { width: 16px !important; height: 16px !important; }
+
+  .action-bar-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
   /* Greeting */
   .greeting {
     margin-bottom: 20px;
@@ -698,7 +766,7 @@
   .detail-hero {
     display: flex;
     gap: 20px;
-    padding: 20px;
+    padding: 4px 24px 24px;
     align-items: flex-start;
   }
 
@@ -1755,10 +1823,6 @@
       <div class="device-frame mobile">
         <div class="screen themed">
           <div class="device-notch"></div>
-          <div class="top-bar">
-            <div class="top-bar-title">Plants</div>
-            <div></div>
-          </div>
           <div class="mobile-content">
             <div class="greeting greeting-small">
               <h2>Good morning!</h2>
@@ -1891,14 +1955,15 @@
               <div class="sidebar-item"><i data-lucide="book-open"></i> Log</div>
               <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i> Settings</div>
             </div>
-            <div class="main-content" style="padding:0">
-              <div class="detail-header">
-                <div class="detail-header-left"><i data-lucide="arrow-left"></i> Back</div>
-                <div class="detail-header-right">
+            <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+              <div class="inline-header">
+                <div class="inline-header-left"><i data-lucide="arrow-left"></i> Back</div>
+                <div class="inline-header-right">
                   <div class="top-bar-icon"><i data-lucide="pencil"></i></div>
                   <div class="top-bar-icon"><i data-lucide="trash-2"></i></div>
                 </div>
               </div>
+              <div class="main-content" style="padding:0">
               <div class="detail-hero">
                 <div class="detail-photo" style="width:220px;height:220px"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&h=400&fit=crop" alt="Monstera"></div>
                 <div class="detail-info">
@@ -1913,7 +1978,7 @@
                   <button class="detail-water-btn"><i data-lucide="droplet"></i> Water now</button>
                 </div>
               </div>
-              <div class="detail-sections" style="padding:0 32px 32px">
+              <div class="detail-sections" style="padding:0 24px 24px">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
                   <div class="detail-card">
                     <div class="detail-card-title"><i data-lucide="droplet"></i> Watering</div>
@@ -1962,6 +2027,7 @@
                   <div class="add-log-link">+ Add log entry</div>
                 </div>
               </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1985,14 +2051,15 @@
               <div class="sidebar-item"><i data-lucide="book-open"></i></div>
               <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i></div>
             </div>
-            <div class="main-content" style="padding:0">
-              <div class="detail-header">
-                <div class="detail-header-left"><i data-lucide="arrow-left"></i> Back</div>
-                <div class="detail-header-right">
+            <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+              <div class="inline-header">
+                <div class="inline-header-left"><i data-lucide="arrow-left"></i> Back</div>
+                <div class="inline-header-right">
                   <div class="top-bar-icon"><i data-lucide="pencil"></i></div>
                   <div class="top-bar-icon"><i data-lucide="trash-2"></i></div>
                 </div>
               </div>
+              <div class="main-content" style="padding:0">
               <div class="detail-hero">
                 <div class="detail-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=360&h=360&fit=crop" alt="Monstera"></div>
                 <div class="detail-info">
@@ -2049,6 +2116,7 @@
                   <div class="add-log-link">+ Add log entry</div>
                 </div>
               </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2061,13 +2129,6 @@
       <div class="device-frame mobile">
         <div class="screen themed">
           <div class="device-notch"></div>
-          <div class="detail-header">
-            <div class="detail-header-left"><i data-lucide="arrow-left"></i> Back</div>
-            <div class="detail-header-right">
-              <div class="top-bar-icon"><i data-lucide="pencil"></i></div>
-              <div class="top-bar-icon"><i data-lucide="trash-2"></i></div>
-            </div>
-          </div>
           <div style="overflow-y:auto;flex:1;min-height:0;padding-bottom:16px">
             <div class="detail-hero mobile-hero">
               <div class="detail-photo mobile-detail-photo"><img class="plant-photo" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&h=300&fit=crop" alt="Monstera"></div>
@@ -2120,6 +2181,18 @@
               </div>
             </div>
           </div>
+          <div class="action-bar">
+            <div class="action-bar-back"><i data-lucide="arrow-left"></i> Back</div>
+            <div class="action-bar-actions">
+              <div class="top-bar-icon"><i data-lucide="pencil"></i></div>
+              <div class="top-bar-icon"><i data-lucide="trash-2"></i></div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="bottom-nav-item active"><span class="nav-icon"><i data-lucide="leaf"></i></span>Plants</div>
+            <div class="bottom-nav-item"><span class="nav-icon"><i data-lucide="book-open"></i></span>Log</div>
+            <div class="bottom-nav-item"><span class="nav-icon"><i data-lucide="settings"></i></span>Settings</div>
+          </div>
         </div>
       </div>
     </div>
@@ -2149,12 +2222,14 @@
               <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i> Settings</div>
             </div>
             <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-              <div class="form-header">
-                <span class="form-cancel">Cancel</span>
-                <span style="font-weight:600;font-size:16px">Add Plant</span>
-                <button class="form-save">Save</button>
+              <div class="inline-header">
+                <div class="inline-header-left"><i data-lucide="arrow-left"></i> Cancel</div>
+                <div class="inline-header-title">Add Plant</div>
+                <div class="inline-header-right">
+                  <button class="form-save">Save</button>
+                </div>
               </div>
-              <div class="form-body" style="padding:32px">
+              <div class="form-body" style="padding:0 24px 24px">
                 <div style="max-width:640px;margin:0 auto">
 
                   <div class="form-section" style="margin-top:16px">
@@ -2291,10 +2366,12 @@
               <div class="sidebar-item" style="margin-top:auto"><i data-lucide="settings"></i></div>
             </div>
             <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-              <div class="form-header">
-                <span class="form-cancel">Cancel</span>
-                <span style="font-weight:600;font-size:16px">Add Plant</span>
-                <button class="form-save">Save</button>
+              <div class="inline-header">
+                <div class="inline-header-left"><i data-lucide="arrow-left"></i> Cancel</div>
+                <div class="inline-header-title">Add Plant</div>
+                <div class="inline-header-right">
+                  <button class="form-save">Save</button>
+                </div>
               </div>
               <div class="form-body">
                 <div style="max-width:520px;margin:0 auto">
@@ -2422,12 +2499,8 @@
         <div class="screen themed">
           <div class="device-notch"></div>
           <div class="form-screen">
-            <div class="form-header">
-              <span class="form-cancel">Cancel</span>
-              <span style="font-weight:600">Add Plant</span>
-              <button class="form-save">Save</button>
-            </div>
             <div class="form-body mobile-form">
+              <h2 style="font-size:18px;font-weight:600;margin-bottom:12px">Add Plant</h2>
 
               <div class="form-section" style="margin-top:12px">
                 <div class="form-section-title">Media</div>
@@ -2533,6 +2606,15 @@
               </div>
 
             </div>
+          </div>
+          <div class="action-bar">
+            <div class="action-bar-back"><i data-lucide="arrow-left"></i> Cancel</div>
+            <button class="form-save">Save</button>
+          </div>
+          <div class="bottom-nav">
+            <div class="bottom-nav-item active"><span class="nav-icon"><i data-lucide="leaf"></i></span>Plants</div>
+            <div class="bottom-nav-item"><span class="nav-icon"><i data-lucide="book-open"></i></span>Log</div>
+            <div class="bottom-nav-item"><span class="nav-icon"><i data-lucide="settings"></i></span>Settings</div>
           </div>
         </div>
       </div>
@@ -2807,11 +2889,8 @@
       <div class="device-frame mobile">
         <div class="screen themed">
           <div class="device-notch"></div>
-          <div class="top-bar">
-            <div class="top-bar-title">Care Journal</div>
-            <div></div>
-          </div>
           <div class="mobile-content">
+            <h2 style="font-size:18px;font-weight:600;margin-bottom:12px">Care Journal</h2>
 
             <div class="log-filters" style="margin-bottom:12px">
               <button class="filter-chip active">All</button>
@@ -3088,11 +3167,8 @@
       <div class="device-frame mobile">
         <div class="screen themed">
           <div class="device-notch"></div>
-          <div class="top-bar">
-            <div class="top-bar-title">Settings</div>
-            <div></div>
-          </div>
           <div class="mobile-content">
+            <h2 style="font-size:18px;font-weight:600;margin-bottom:12px">Settings</h2>
             <div class="settings-group">
               <div class="settings-group-title">Appearance</div>
               <div class="settings-row">
