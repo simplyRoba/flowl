@@ -88,7 +88,7 @@
 	}
 
 	.page-header h1 {
-		font-size: 28px;
+		font-size: 22px;
 		font-weight: 700;
 		margin: 0;
 	}
@@ -238,10 +238,6 @@
 	}
 
 	@media (max-width: 768px) {
-		.page-header h1 {
-			font-size: 22px;
-		}
-
 		.add-btn {
 			padding: 8px 14px;
 			font-size: 14px;

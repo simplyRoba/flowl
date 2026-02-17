@@ -412,7 +412,7 @@
 	}
 
 	.detail-info h2 {
-		font-size: 24px;
+		font-size: 22px;
 		font-weight: 700;
 		margin: 0;
 	}
@@ -806,7 +806,7 @@
 		}
 
 		.detail-info h2 {
-			font-size: 20px;
+			font-size: 22px;
 		}
 
 		.detail-water-btn {

@@ -39,7 +39,7 @@
 	}
 
 	h1 {
-		font-size: 28px;
+		font-size: 22px;
 		font-weight: 700;
 		margin: 0 0 24px;
 	}
@@ -71,7 +71,6 @@
 		}
 
 		h1 {
-			font-size: 22px;
 			margin-bottom: 16px;
 		}
 	}
