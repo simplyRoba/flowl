@@ -56,7 +56,7 @@
 	}
 
 	.status-ok {
-		background: #fff;
+		background: color-mix(in srgb, var(--color-success) 15%, var(--color-surface));
 		color: var(--color-success);
 	}
 
@@ -65,7 +65,7 @@
 	}
 
 	.status-due {
-		background: #fff;
+		background: color-mix(in srgb, var(--color-warning) 15%, var(--color-surface));
 		color: var(--color-warning);
 	}
 
@@ -74,7 +74,7 @@
 	}
 
 	.status-overdue {
-		background: #fff;
+		background: color-mix(in srgb, var(--color-danger) 15%, var(--color-surface));
 		color: var(--color-danger);
 	}
 

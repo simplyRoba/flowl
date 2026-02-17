@@ -658,11 +658,11 @@
     border-radius: 50%;
   }
 
-  .status-ok { background: #fff; color: var(--success); }
+  .status-ok { background: color-mix(in srgb, var(--success) 15%, var(--surface)); color: var(--success); }
   .status-ok .status-dot { background: var(--success); }
-  .status-due { background: #fff; color: var(--warning); }
+  .status-due { background: color-mix(in srgb, var(--warning) 15%, var(--surface)); color: var(--warning); }
   .status-due .status-dot { background: var(--warning); }
-  .status-overdue { background: #fff; color: var(--danger); }
+  .status-overdue { background: color-mix(in srgb, var(--danger) 15%, var(--surface)); color: var(--danger); }
   .status-overdue .status-dot { background: var(--danger); }
 
   .days-label {
