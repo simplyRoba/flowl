@@ -107,7 +107,7 @@
 	function formatShortDate(dateStr: string): string {
 		const date = parseEventDate(dateStr);
 		if (isNaN(date.getTime())) return dateStr;
-		return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+		return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
 	}
 
 	async function handleLogSubmit() {
@@ -670,8 +670,9 @@
 	.timeline-date {
 		color: var(--color-text-muted);
 		font-size: 13px;
-		min-width: 52px;
+		min-width: 72px;
 		flex-shrink: 0;
+		text-align: end;
 	}
 
 	.timeline-icon {
