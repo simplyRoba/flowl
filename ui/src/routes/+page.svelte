@@ -5,6 +5,80 @@
 	import { emojiToSvgPath } from '$lib/emoji';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
+	const GREETINGS: Record<string, string[]> = {
+		morning: [
+			'Good morning!',
+			'Rise and shine!',
+			'Morning, plant parent!',
+			'Wakey wakey, leaves and stems!',
+			'Top of the morning!',
+		],
+		afternoon: [
+			'Good afternoon!',
+			'Afternoon check-in!',
+			'Hope lunch was good!',
+			'Post-lunch plant patrol!',
+			'Sun\'s still up, so are your plants!',
+		],
+		evening: [
+			'Good evening!',
+			'Evening wind-down!',
+			'Golden hour for greens!',
+			'Almost bedtime for the ferns!',
+			'Night shift plant check!',
+		],
+		night: [
+			'Still up?',
+			'Burning the midnight oil?',
+			'The plants are sleeping, are you?',
+			'Late night leaf gazing!',
+			'Shh... the succulents are dreaming!',
+		],
+	};
+
+	const SUBTITLES: Record<string, string[]> = {
+		morning: [
+			'Your plants had their morning dew.',
+			'Time to check on the green crew.',
+			'Coffee first, then watering.',
+			'The early bird waters the plant.',
+		],
+		afternoon: [
+			'How\'s the garden doing?',
+			'Perfect time for a leaf inspection.',
+			'Your plants missed you since morning.',
+			'Sunshine report: looking leafy.',
+		],
+		evening: [
+			'One last look before the day ends.',
+			'Tuck your plants in for the night.',
+			'Sunset vibes and happy leaves.',
+			'The plants say goodnight soon.',
+		],
+		night: [
+			'Your plants are on autopilot.',
+			'Nothing to water at this hour... probably.',
+			'Even owls check on their plants.',
+			'Moonlight gardening, very cool.',
+		],
+	};
+
+	function getTimeOfDay(): string {
+		const hour = new Date().getHours();
+		if (hour >= 5 && hour < 12) return 'morning';
+		if (hour >= 12 && hour < 17) return 'afternoon';
+		if (hour >= 17 && hour < 22) return 'evening';
+		return 'night';
+	}
+
+	function pick<T>(arr: T[]): T {
+		return arr[Math.floor(Math.random() * arr.length)];
+	}
+
+	const timeOfDay = getTimeOfDay();
+	const greeting = pick(GREETINGS[timeOfDay]);
+	const subtitle = pick(SUBTITLES[timeOfDay]);
+
 	const BG_GRADIENTS = [
 		'linear-gradient(135deg, color-mix(in srgb, var(--color-success) 35%, transparent), color-mix(in srgb, var(--color-success) 15%, transparent))',
 		'linear-gradient(135deg, color-mix(in srgb, var(--color-water) 35%, transparent), color-mix(in srgb, var(--color-water) 15%, transparent))',
@@ -24,6 +98,11 @@
 </script>
 
 <div class="dashboard">
+	<div class="greeting">
+		<h2>{greeting}</h2>
+		<p>{subtitle}</p>
+	</div>
+
 	<header class="page-header">
 		<h1>My Plants</h1>
 		{#if $plants.length > 0}
@@ -78,6 +157,22 @@
 	.dashboard {
 		max-width: 1200px;
 		margin: 0 auto;
+	}
+
+	.greeting {
+		margin-bottom: 20px;
+	}
+
+	.greeting h2 {
+		font-size: 22px;
+		font-weight: 600;
+		margin: 0 0 4px;
+	}
+
+	.greeting p {
+		font-size: 14px;
+		color: var(--color-text-muted);
+		margin: 0;
 	}
 
 	.page-header {
@@ -238,6 +333,10 @@
 	}
 
 	@media (max-width: 768px) {
+		.greeting h2 {
+			font-size: 18px;
+		}
+
 		.add-btn {
 			padding: 8px 14px;
 			font-size: 14px;
