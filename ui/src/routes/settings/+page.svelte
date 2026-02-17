@@ -38,7 +38,6 @@
 		<div class="setting-row">
 			<div>
 				<div class="setting-label">Theme</div>
-				<div class="setting-hint">Light, Dark, or follow system</div>
 			</div>
 			<div class="theme-selector" role="radiogroup" aria-label="Theme">
 				{#each themeOptions as option}
