@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { Trash2 } from 'lucide-svelte';
-	import { locations, locationsError, loadLocations, deleteLocation } from '$lib/stores/locations';
+	import { onMount, tick } from 'svelte';
+	import { get } from 'svelte/store';
+	import { Check, Pencil, Trash2 } from 'lucide-svelte';
+	import { locations, locationsError, loadLocations, deleteLocation, updateLocation } from '$lib/stores/locations';
 	import {
 		themePreference,
 		setThemePreference,
@@ -14,9 +15,61 @@
 		{ value: 'system', label: 'System' }
 	];
 
+	let editingId: number | null = $state(null);
+	let editValue = $state('');
+	let editError = $state('');
+
 	onMount(() => {
 		loadLocations();
 	});
+
+	async function startEditing(id: number, name: string) {
+		editingId = id;
+		editValue = name;
+		editError = '';
+		await tick();
+		const input = document.querySelector<HTMLInputElement>('.edit-input');
+		input?.select();
+	}
+
+	let cancelled = false;
+
+	async function commitEdit(id: number, originalName: string) {
+		if (cancelled) {
+			cancelled = false;
+			return;
+		}
+		const trimmed = editValue.trim();
+		if (!trimmed || trimmed === originalName) {
+			editingId = null;
+			editError = '';
+			return;
+		}
+		const result = await updateLocation(id, trimmed);
+		if (result) {
+			editingId = null;
+			editError = '';
+		} else {
+			editError = get(locationsError) || 'Failed to rename location';
+			locationsError.set(null);
+		}
+	}
+
+	function cancelEdit(target: HTMLInputElement) {
+		cancelled = true;
+		editingId = null;
+		editError = '';
+		target.blur();
+	}
+
+	function handleEditKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			(e.target as HTMLInputElement).blur();
+		} else if (e.key === 'Escape') {
+			cancelEdit(e.target as HTMLInputElement);
+		}
+	}
 
 	async function handleDelete(id: number, name: string, plantCount: number) {
 		const message = plantCount > 0
@@ -66,18 +119,51 @@
 			<ul class="location-list">
 				{#each $locations as location (location.id)}
 					<li class="location-item">
-						<div class="location-info">
-							<span class="location-name">{location.name}</span>
-							{#if location.plant_count > 0}
-								<span class="plant-count">{location.plant_count} plant{location.plant_count === 1 ? '' : 's'}</span>
-							{/if}
-						</div>
-						<button
-							class="delete-btn"
-							onclick={() => handleDelete(location.id, location.name, location.plant_count)}
-						>
-							<Trash2 size={16} />
-						</button>
+						{#if editingId === location.id}
+							<div class="edit-group">
+								<div class="edit-row">
+									<input
+										class="edit-input"
+										class:error={editError}
+										type="text"
+										bind:value={editValue}
+										onblur={() => commitEdit(location.id, location.name)}
+										onkeydown={handleEditKeydown}
+										oninput={() => { editError = ''; }}
+									/>
+									<button
+										class="action-btn action-btn--confirm"
+										onmousedown={(e) => { e.preventDefault(); commitEdit(location.id, location.name); }}
+									>
+										<Check size={16} />
+									</button>
+								</div>
+								{#if editError}
+									<span class="field-error">{editError}</span>
+								{/if}
+							</div>
+						{:else}
+							<div class="location-info">
+								<span class="location-name">{location.name}</span>
+								{#if location.plant_count > 0}
+									<span class="plant-count">{location.plant_count} plant{location.plant_count === 1 ? '' : 's'}</span>
+								{/if}
+							</div>
+							<div class="location-actions">
+								<button
+									class="action-btn"
+									onclick={() => startEditing(location.id, location.name)}
+								>
+									<Pencil size={16} />
+								</button>
+								<button
+									class="action-btn action-btn--danger"
+									onclick={() => handleDelete(location.id, location.name, location.plant_count)}
+								>
+									<Trash2 size={16} />
+								</button>
+							</div>
+						{/if}
 					</li>
 				{/each}
 			</ul>
@@ -129,12 +215,6 @@
 	.setting-label {
 		font-size: 15px;
 		font-weight: 600;
-	}
-
-	.setting-hint {
-		font-size: 13px;
-		color: var(--color-text-muted);
-		margin-top: 4px;
 	}
 
 	.theme-selector {
@@ -190,6 +270,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		gap: 6px;
 		padding: 12px 0;
 		border-bottom: 1px solid var(--color-border);
 	}
@@ -223,7 +304,22 @@
 		border: 1px solid var(--color-border);
 	}
 
-	.delete-btn {
+	.location-actions {
+		display: flex;
+		gap: 6px;
+	}
+
+	.edit-group {
+		flex: 1;
+	}
+
+	.edit-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.action-btn {
 		width: 36px;
 		height: 36px;
 		display: flex;
@@ -237,10 +333,42 @@
 		transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
 	}
 
-	.delete-btn:hover {
+	.action-btn:hover {
+		color: var(--color-primary);
+		border-color: var(--color-primary);
+		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+	}
+
+	.action-btn--danger:hover {
 		color: var(--color-danger);
 		border-color: var(--color-danger);
 		background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+	}
+
+	.edit-input {
+		flex: 1;
+		padding: 10px 12px;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-btn);
+		font-size: var(--fs-input);
+		font-family: inherit;
+		outline: none;
+		transition: border-color var(--transition-speed);
+		background: var(--color-surface);
+		color: var(--color-text);
+	}
+
+	.edit-input:focus {
+		border-color: var(--color-primary);
+	}
+
+	.edit-input.error {
+		border-color: var(--color-danger);
+	}
+
+	.field-error {
+		font-size: var(--fs-chip);
+		color: var(--color-danger);
 	}
 
 	@media (max-width: 768px) {

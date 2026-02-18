@@ -1,17 +1,4 @@
-## Purpose
-
-Settings page with location management section.
-
-## Requirements
-
-### Requirement: Settings Page
-
-The route `/settings` SHALL display a settings page accessible from the sidebar navigation.
-
-#### Scenario: Page loads
-
-- **WHEN** the user navigates to `/settings`
-- **THEN** the page displays a "Settings" header
+## MODIFIED Requirements
 
 ### Requirement: Location Management
 
@@ -83,20 +70,3 @@ The settings page SHALL include a "Locations" section listing all locations with
 
 - **WHEN** no locations exist
 - **THEN** the section shows "No locations yet. Create locations when adding plants."
-
-### Requirement: Appearance theme selector
-
-The settings page SHALL include an Appearance section that lets the user choose Light, Dark, or System theme.
-
-#### Scenario: Settings page shows theme options
-
-- **WHEN** the user navigates to `/settings`
-- **THEN** the page displays an Appearance section
-- **AND** the theme selector shows Light, Dark, and System options
-
-#### Scenario: Theme option selection
-
-- **GIVEN** the settings page is visible
-- **WHEN** the user selects a theme option
-- **THEN** the selected option is visually indicated as active
-- **AND** the preference is saved for future sessions
