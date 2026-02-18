@@ -236,7 +236,7 @@
 
 	.plant-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 		gap: 16px;
 	}
 
@@ -287,7 +287,7 @@
 	.plant-card-name {
 		font-size: 14px;
 		font-weight: 600;
-		margin-bottom: 2px;
+		margin-bottom: 6px;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -314,12 +314,20 @@
 
 	@media (min-width: 1280px) {
 		.plant-grid {
-			grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 			gap: 20px;
 		}
 
 		.plant-card-photo {
 			height: 240px;
+		}
+
+		.plant-card-name {
+			font-size: 16px;
+		}
+
+		.plant-card-location {
+			font-size: 13px;
 		}
 
 		.plant-icon {
@@ -338,8 +346,16 @@
 		}
 
 		.plant-grid {
-			grid-template-columns: repeat(2, 1fr);
+			grid-template-columns: 1fr;
 			gap: 12px;
+		}
+
+		.plant-card-name {
+			font-size: 15px;
+		}
+
+		.plant-card-location {
+			font-size: 13px;
 		}
 	}
 </style>
