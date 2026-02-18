@@ -105,6 +105,7 @@
 
 	:global(html, body) {
 		margin: 0;
+		min-width: 320px;
 		height: 100%;
 		overflow: hidden;
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
