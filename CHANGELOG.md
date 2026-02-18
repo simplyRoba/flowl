@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.8.0](https://github.com/simplyRoba/flowl/compare/v0.7.0...v0.8.0) (2026-02-18)
+
+
+### Features
+
+* add inline location rename in settings ([69e7fba](https://github.com/simplyRoba/flowl/commit/69e7fba36bf41873dc64768cdd1268de9aeae7ec))
+* add reusable PageHeader with sticky desktop header and mobile action bar ([73f5259](https://github.com/simplyRoba/flowl/commit/73f5259336249cc55bfdf730848631465da674fa))
+* add short year to care journal dates ([1ef5a1a](https://github.com/simplyRoba/flowl/commit/1ef5a1a910173ed49e9d809598e340e1b6d97c32))
+* add time-based greeting with random variations to dashboard ([783f543](https://github.com/simplyRoba/flowl/commit/783f543415aa6e475d24c174ff5b8ac5547474ab))
+* extract StatusBadge component and apply overlay-style dashboard cards ([d837500](https://github.com/simplyRoba/flowl/commit/d8375007ea0e26ab52773439466dafc2b330fc50))
+* implement consistent content width tokens across application ([f35cb1e](https://github.com/simplyRoba/flowl/commit/f35cb1e6ff54118ff7ef78834d32fbda91299104))
+
+
+### Bug Fixes
+
+* add global min-width to prevent layout collapse at narrow viewports ([f7375c1](https://github.com/simplyRoba/flowl/commit/f7375c1bf409f86bfb4244aa6ee88a2aff203b97))
+* add vertical padding to PageHeader for top breathing room ([3d298b1](https://github.com/simplyRoba/flowl/commit/3d298b14e768a8628ad0a26f672e4dbe0ff0fc08))
+* **deps:** bump jsdom from 26.1.0 to 28.1.0 in /ui ([#17](https://github.com/simplyRoba/flowl/issues/17)) ([9f3ab14](https://github.com/simplyRoba/flowl/commit/9f3ab1489239ccfaa883bc50e460e77a4f405351))
+* **deps:** bump lucide-svelte from 0.564.0 to 0.568.0 in /ui ([#18](https://github.com/simplyRoba/flowl/issues/18)) ([42047b1](https://github.com/simplyRoba/flowl/commit/42047b1c85adad9575a6ad1faae469621f67c1b3))
+* **deps:** bump lucide-svelte from 0.569.0 to 0.574.0 in /ui ([0f1fc14](https://github.com/simplyRoba/flowl/commit/0f1fc14d7a6f9b7f7ab4c9019687722875ee1036))
+* **deps:** bump svelte from 5.51.2 to 5.51.3 in /ui ([fbc389a](https://github.com/simplyRoba/flowl/commit/fbc389abc682c36d6335c69fd09992e93a1b0090))
+* **deps:** bump vitest from 3.2.4 to 4.0.18 in /ui ([#19](https://github.com/simplyRoba/flowl/issues/19)) ([4ddbc4b](https://github.com/simplyRoba/flowl/commit/4ddbc4b1a7592809523dbb7f0dbd977dcdf48edd))
+* remove redundant theme hint from settings page ([f9eb090](https://github.com/simplyRoba/flowl/commit/f9eb0900b026f97fa6b3d2d5e3d1e1f1962c60cd))
+* responsive plant card text sizes, grid columns, and name-badge spacing ([bff659f](https://github.com/simplyRoba/flowl/commit/bff659f7aa755812476f65ab488ab1fbd0a2bf58))
+* unify page heading sizes to 22px across all pages ([752ef8d](https://github.com/simplyRoba/flowl/commit/752ef8db2a2a27f182ba1220667c269c0182f1d6))
+* use theme-aware backgrounds for StatusBadge in dark mode ([4919806](https://github.com/simplyRoba/flowl/commit/4919806472a646ae28331a4c69619cf07ef5b5d1))
+
 ## [0.7.0](https://github.com/simplyRoba/flowl/compare/v0.6.0...v0.7.0) (2026-02-16)
 
 
