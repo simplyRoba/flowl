@@ -73,6 +73,11 @@
 
 		/* Motion */
 		--transition-speed: 0.15s;
+
+		/* Content widths */
+		--content-width-narrow: 640px;
+		--content-width-default: 800px;
+		--content-width-wide: 1200px;
 	}
 
 	:global([data-theme='dark']) {
@@ -168,6 +173,12 @@
 	}
 
 	@media (min-width: 1280px) {
+		:global(:root) {
+			--content-width-narrow: 720px;
+			--content-width-default: 960px;
+			--content-width-wide: 1400px;
+		}
+
 		.sidebar {
 			width: 200px;
 			align-items: stretch;

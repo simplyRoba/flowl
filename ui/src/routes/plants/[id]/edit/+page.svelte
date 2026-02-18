@@ -55,7 +55,7 @@
 
 <style>
 	.page {
-		max-width: 800px;
+		max-width: var(--content-width-narrow);
 		margin: 0 auto;
 	}
 

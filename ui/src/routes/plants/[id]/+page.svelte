@@ -344,7 +344,7 @@
 
 <style>
 	.detail {
-		max-width: 800px;
+		max-width: var(--content-width-default);
 		margin: 0 auto;
 	}
 
@@ -780,10 +780,6 @@
 	}
 
 	@media (min-width: 1280px) {
-		.detail {
-			max-width: 960px;
-		}
-
 		.detail-photo {
 			width: 220px;
 			height: 220px;

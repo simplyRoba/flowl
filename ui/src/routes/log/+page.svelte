@@ -213,7 +213,7 @@
 
 <style>
 	.log-page {
-		max-width: 800px;
+		max-width: var(--content-width-default);
 		margin: 0 auto;
 	}
 
@@ -379,12 +379,6 @@
 
 	.sentinel {
 		height: 1px;
-	}
-
-	@media (min-width: 1280px) {
-		.log-page {
-			max-width: 960px;
-		}
 	}
 
 	@media (max-width: 768px) {

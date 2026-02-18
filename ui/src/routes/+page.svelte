@@ -155,7 +155,7 @@
 
 <style>
 	.dashboard {
-		max-width: 1200px;
+		max-width: var(--content-width-wide);
 		margin: 0 auto;
 	}
 
@@ -313,10 +313,6 @@
 	}
 
 	@media (min-width: 1280px) {
-		.dashboard {
-			max-width: 1400px;
-		}
-
 		.plant-grid {
 			grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 			gap: 20px;
