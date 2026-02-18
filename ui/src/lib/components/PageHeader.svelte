@@ -45,7 +45,7 @@
 		justify-content: space-between;
 		min-height: 52px;
 		margin: -24px -24px 16px;
-		padding: 0 24px;
+		padding: 12px 24px;
 		position: sticky;
 		top: -24px;
 		z-index: 10;
@@ -55,7 +55,7 @@
 	@media (min-width: 1280px) {
 		.page-header-inline {
 			margin: -32px -32px 16px;
-			padding: 0 32px;
+			padding: 12px 32px;
 			top: -32px;
 		}
 	}
