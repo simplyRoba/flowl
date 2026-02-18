@@ -95,6 +95,16 @@ The UI shell SHALL follow the system color scheme when the theme preference is `
 - **WHEN** the system color scheme changes
 - **THEN** the UI updates to the new theme tokens without a reload
 
+### Requirement: Minimum viewport width
+
+The UI shell SHALL enforce a global minimum width to prevent layout collapse at very narrow viewports.
+
+#### Scenario: Viewport narrower than minimum
+
+- **WHEN** the viewport width is less than 320px
+- **THEN** the `html` and `body` elements SHALL have `min-width: 320px`
+- **AND** the browser SHALL display a horizontal scrollbar rather than collapsing content
+
 ### Requirement: Content width tokens
 
 The UI shell SHALL define three content-width CSS custom properties as design tokens in `:root`, providing consistent width tiers for page content areas.
