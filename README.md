@@ -50,6 +50,34 @@ Open `http://localhost:5173`. Vite proxies `/api`, `/uploads`, and `/health` to 
 
 `SKIP_UI_BUILD=1` tells `build.rs` to skip the SvelteKit build so Rust recompiles fast. `cargo-watch` is installed in the devcontainer automatically.
 
+### Testing
+
+Run the full test suite (Rust + UI):
+
+```bash
+cargo test
+```
+
+The `ui_tests` integration test in `tests/ui.rs` shells out to `npm run test` in `ui/`, so vitest runs as part of `cargo test`. Node.js must be installed and `ui/node_modules` present (the test runs `npm install` automatically if missing).
+
+Run only Rust backend tests (faster, no Node.js needed):
+
+```bash
+cargo test -- --skip ui_tests
+```
+
+Run only UI tests:
+
+```bash
+cargo test --test ui
+```
+
+Or run vitest directly for watch mode during UI development:
+
+```bash
+cd ui && npx vitest
+```
+
 ### Build with embedded UI
 
 To compile a binary with the UI baked in (like production), run `cargo build` without `SKIP_UI_BUILD`. This triggers `build.rs` to build the SvelteKit frontend and embed it via `rust-embed`.
