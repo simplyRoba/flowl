@@ -42,6 +42,11 @@ const mockPlant: Plant = {
 	next_due: '2025-01-08',
 	light_needs: 'indirect',
 	notes: null,
+	difficulty: null,
+	pet_safety: null,
+	growth_speed: null,
+	soil_type: null,
+	soil_moisture: null,
 	created_at: '2025-01-01T00:00:00Z',
 	updated_at: '2025-01-01T00:00:00Z'
 };
