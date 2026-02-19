@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.9.0](https://github.com/simplyRoba/flowl/compare/v0.8.0...v0.9.0) (2026-02-19)
+
+
+### Features
+
+* add care info attributes to plants (difficulty, pet safety, growth speed, soil type, soil moisture) ([a847c93](https://github.com/simplyRoba/flowl/commit/a847c93e2d447f3c44a48f5086eec5cc28ffee41))
+* **ui:** add dashboard "Needs Attention" section with inline water action ([cd53d70](https://github.com/simplyRoba/flowl/commit/cd53d70f104f6cd0bfe5598fe1f983a264a66581))
+* **ui:** add icons to watering card interval, last watered, and next due fields ([118f535](https://github.com/simplyRoba/flowl/commit/118f535074e635106302fae50b6c805fe14d25a3))
+
+
+### Bug Fixes
+
+* **deps:** bump @sveltejs/kit from 2.52.0 to 2.52.2 in /ui ([ae1095c](https://github.com/simplyRoba/flowl/commit/ae1095c99c3970cce7bed4f9c9a4d71738b4bda2))
+* **deps:** bump svelte from 5.51.3 to 5.53.0 in /ui ([73314b7](https://github.com/simplyRoba/flowl/commit/73314b75128d467da10d93f2d62f826738c8c6ec))
+* **deps:** bump svelte-check from 4.4.0 to 4.4.1 in /ui ([1b3e035](https://github.com/simplyRoba/flowl/commit/1b3e035a30d031003e4fde0e2638a8280781eb4e))
+* **ui:** add missing care info fields to test mock plants ([70bb3f6](https://github.com/simplyRoba/flowl/commit/70bb3f6d204c8a923dc693f4fd8c0e180c1f450b))
+* **ui:** remove border from care journal delete button ([a1d9a3d](https://github.com/simplyRoba/flowl/commit/a1d9a3ddd9eb9fb45df2ad7793aaf26af3e1af57))
+
 ## [0.8.0](https://github.com/simplyRoba/flowl/compare/v0.7.0...v0.8.0) (2026-02-18)
 
 
