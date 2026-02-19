@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { ArrowLeft, Pencil, Trash2, Droplet, Droplets, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, X, Info, Gauge, PawPrint, TrendingUp, Layers } from 'lucide-svelte';
+	import { ArrowLeft, Pencil, Trash2, Droplet, Droplets, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, X, Info, Gauge, PawPrint, TrendingUp, Layers, Repeat, CalendarCheck, CalendarClock } from 'lucide-svelte';
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
 	import { careEvents, loadCareEvents, addCareEvent, removeCareEvent } from '$lib/stores/care';
 	import { emojiToSvgPath } from '$lib/emoji';
@@ -233,9 +233,9 @@
 			<div class="detail-grid">
 				<div class="detail-card">
 					<div class="detail-card-title"><Droplet size={14} /> Watering</div>
-					<div class="detail-row"><span class="detail-row-label">Interval</span><span>Every {$currentPlant.watering_interval_days} days</span></div>
-					<div class="detail-row"><span class="detail-row-label">Last watered</span><span>{formatDate($currentPlant.last_watered)}</span></div>
-					<div class="detail-row"><span class="detail-row-label">Next due</span><span>{$currentPlant.next_due ? formatDate($currentPlant.next_due) : 'N/A'}</span></div>
+					<div class="detail-row"><span class="detail-row-label">Interval</span><span class="detail-row-value">Every {$currentPlant.watering_interval_days} days <Repeat size={14} /></span></div>
+					<div class="detail-row"><span class="detail-row-label">Last watered</span><span class="detail-row-value">{formatDate($currentPlant.last_watered)} <CalendarCheck size={14} /></span></div>
+					<div class="detail-row"><span class="detail-row-label">Next due</span><span class="detail-row-value">{$currentPlant.next_due ? formatDate($currentPlant.next_due) : 'N/A'} <CalendarClock size={14} /></span></div>
 					{#if $currentPlant.soil_moisture}
 						<div class="detail-row">
 							<span class="detail-row-label">Soil moisture</span>
