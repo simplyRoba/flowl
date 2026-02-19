@@ -21,10 +21,10 @@
 		const dueStart = new Date(due.getFullYear(), due.getMonth(), due.getDate());
 		const diffDays = Math.round((dueStart.getTime() - start.getTime()) / 86400000);
 		if (diffDays === 0) return 'today';
-		if (diffDays === 1) return 'next in 1 day';
-		if (diffDays > 1) return `next in ${diffDays} days`;
+		if (diffDays === 1) return 'in 1 day';
+		if (diffDays > 1) return `in ${diffDays} days`;
 		const overdueDays = Math.abs(diffDays);
-		return overdueDays === 1 ? '1 day ago' : `${overdueDays} days ago`;
+		return overdueDays === 1 ? '1 day' : `${overdueDays} days`;
 	}
 
 	let suffix = $derived(statusSuffix(nextDue));

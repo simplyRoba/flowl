@@ -94,7 +94,7 @@ HA picks up the entities automatically. HA automations handle notifications (mob
 
 ### Phase 5 — Polish
 
-- [ ] Dashboard with "due today" / "overdue" overview
+- [x] Dashboard with "due today" / "overdue" overview
 - [ ] Care tags (low light, high humidity, toxic to pets)
 - [ ] Seasonal watering adjustments (less frequent in winter)
 - [ ] Import/export (JSON backup)

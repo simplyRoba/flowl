@@ -54,7 +54,7 @@
   .plant-card-photo .plant-photo { width: 100%; height: 100%; object-fit: cover; }
   .detail-photo .noto { width: 80px; height: 80px; }
   .detail-photo .plant-photo { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-card); }
-  .attention-card-photo .noto { width: 64px; height: 64px; }
+  .attention-card-photo .noto { width: 48px; height: 48px; }
 
   /* Lucide icon defaults */
   svg[class~="lucide"] { vertical-align: middle; }
@@ -544,6 +544,10 @@
     gap: 12px;
   }
 
+  .app-widescreen .attention-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   .mobile-content .attention-cards {
     grid-template-columns: 1fr;
   }
@@ -709,19 +713,31 @@
 
   .water-btn:hover { filter: brightness(0.9); }
 
-  /* Attention mini cards */
+  /* Attention cards — horizontal with accent stripe */
   .attention-card {
-    position: relative;
-    border: none;
+    display: flex;
+    align-items: stretch;
     border-radius: var(--radius-card);
     overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface);
   }
 
+  .attention-card-accent {
+    width: 4px;
+    flex-shrink: 0;
+  }
+
+  .attention-card-accent.accent-overdue { background: var(--danger); }
+  .attention-card-accent.accent-due { background: var(--warning); }
+
   .attention-card-photo {
-    height: 180px;
+    width: 120px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
   }
 
   .attention-card-photo img {
@@ -731,33 +747,41 @@
   }
 
   .attention-card-photo .noto {
-    width: 64px;
-    height: 64px;
+    width: 48px;
+    height: 48px;
   }
 
   .attention-card-body {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 28px 12px 10px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .attention-card-info {
     flex: 1;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
   }
 
   .attention-card-name {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
-    margin-bottom: 4px;
-    color: #fff;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .attention-card-location {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .attention-card-actions {
+    display: flex;
+    align-items: flex-end;
+    align-self: stretch;
+    justify-content: flex-end;
+    margin-top: auto;
   }
 
   /* ====== Detail screen ====== */
@@ -1616,30 +1640,40 @@
             <div class="main-content" style="padding:32px">
               <div class="greeting">
                 <h2>Good morning!</h2>
-                <p>2 plants need water today</p>
+                <p>3 plants are thirsty today.</p>
               </div>
 
               <div class="attention-section">
-                <div class="section-title"><i data-lucide="alert-triangle"></i> Needs Attention</div>
+                <div class="section-title"><i data-lucide="triangle-alert"></i> Needs Attention</div>
                 <div class="attention-cards">
                   <div class="attention-card">
+                    <div class="attention-card-accent accent-overdue"></div>
                     <div class="attention-card-photo"><img src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&h=300&fit=crop" alt="Monstera"></div>
                     <div class="attention-card-body">
-                      <div class="attention-card-info">
-                        <div class="attention-card-name">Monstera</div>
-                        <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days ago</span>
-                      </div>
-                      <button class="water-btn"><i data-lucide="droplet"></i> Water</button>
+                      <div class="attention-card-name">Monstera</div>
+                      <span class="attention-card-location">Living Room</span>
+                      <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days</span>
+                      <div class="attention-card-actions"><button class="water-btn"><i data-lucide="droplet"></i> Water</button></div>
                     </div>
                   </div>
                   <div class="attention-card">
+                    <div class="attention-card-accent accent-due"></div>
                     <div class="attention-card-photo"><img src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=300&fit=crop" alt="Ficus Lyrata"></div>
                     <div class="attention-card-body">
-                      <div class="attention-card-info">
-                        <div class="attention-card-name">Ficus Lyrata</div>
-                        <span class="status-badge status-due"><span class="status-dot"></span> Due — today</span>
-                      </div>
-                      <button class="water-btn"><i data-lucide="droplet"></i> Water</button>
+                      <div class="attention-card-name">Ficus Lyrata</div>
+                      <span class="attention-card-location">Living Room</span>
+                      <span class="status-badge status-due"><span class="status-dot"></span> Due — today</span>
+                      <div class="attention-card-actions"><button class="water-btn"><i data-lucide="droplet"></i> Water</button></div>
+                    </div>
+                  </div>
+                  <div class="attention-card">
+                    <div class="attention-card-accent accent-due"></div>
+                    <div class="attention-card-photo" style="background: linear-gradient(135deg, color-mix(in srgb, var(--success) 35%, transparent), color-mix(in srgb, var(--success) 15%, transparent))"><img class="noto" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/svg/emoji_u1f335.svg" alt="Cactus"></div>
+                    <div class="attention-card-body">
+                      <div class="attention-card-name">Desert Cactus</div>
+                      <span class="attention-card-location">Office</span>
+                      <span class="status-badge status-due"><span class="status-dot"></span> Due — today</span>
+                      <div class="attention-card-actions"><button class="water-btn"><i data-lucide="droplet"></i> Water</button></div>
                     </div>
                   </div>
                 </div>
@@ -1657,7 +1691,7 @@
                     <div class="plant-card-name">Monstera</div>
                     <div class="plant-card-location">Living Room</div>
                     <div class="plant-card-footer">
-                      <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days ago</span>
+                      <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days</span>
                     </div>
                   </div>
                 </div>
@@ -1677,7 +1711,7 @@
                     <div class="plant-card-name">Snake Plant</div>
                     <div class="plant-card-location">Bedroom</div>
                     <div class="plant-card-footer">
-                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 5 days</span>
+                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 5 days</span>
                     </div>
                   </div>
                 </div>
@@ -1687,7 +1721,7 @@
                     <div class="plant-card-name">Orchid</div>
                     <div class="plant-card-location">Kitchen</div>
                     <div class="plant-card-footer">
-                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 8 days</span>
+                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 8 days</span>
                     </div>
                   </div>
                 </div>
@@ -1697,7 +1731,7 @@
                     <div class="plant-card-name">Lavender</div>
                     <div class="plant-card-location">Balcony</div>
                     <div class="plant-card-footer">
-                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 3 days</span>
+                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 3 days</span>
                     </div>
                   </div>
                 </div>
@@ -1707,7 +1741,7 @@
                     <div class="plant-card-name">Pothos</div>
                     <div class="plant-card-location">Office</div>
                     <div class="plant-card-footer">
-                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 6 days</span>
+                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 6 days</span>
                     </div>
                   </div>
                 </div>
@@ -1738,30 +1772,30 @@
             <div class="main-content">
               <div class="greeting">
                 <h2>Good morning!</h2>
-                <p>2 plants need water today</p>
+                <p>2 plants could use a drink.</p>
               </div>
 
               <div class="attention-section">
-                <div class="section-title"><i data-lucide="alert-triangle"></i> Needs Attention</div>
+                <div class="section-title"><i data-lucide="triangle-alert"></i> Needs Attention</div>
                 <div class="attention-cards">
                   <div class="attention-card">
+                    <div class="attention-card-accent accent-overdue"></div>
                     <div class="attention-card-photo"><img src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&h=300&fit=crop" alt="Monstera"></div>
                     <div class="attention-card-body">
-                      <div class="attention-card-info">
-                        <div class="attention-card-name">Monstera</div>
-                        <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days ago</span>
-                      </div>
-                      <button class="water-btn"><i data-lucide="droplet"></i> Water</button>
+                      <div class="attention-card-name">Monstera</div>
+                      <span class="attention-card-location">Living Room</span>
+                      <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days</span>
+                      <div class="attention-card-actions"><button class="water-btn"><i data-lucide="droplet"></i> Water</button></div>
                     </div>
                   </div>
                   <div class="attention-card">
+                    <div class="attention-card-accent accent-due"></div>
                     <div class="attention-card-photo"><img src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=300&fit=crop" alt="Ficus Lyrata"></div>
                     <div class="attention-card-body">
-                      <div class="attention-card-info">
-                        <div class="attention-card-name">Ficus Lyrata</div>
-                        <span class="status-badge status-due"><span class="status-dot"></span> Due — today</span>
-                      </div>
-                      <button class="water-btn"><i data-lucide="droplet"></i> Water</button>
+                      <div class="attention-card-name">Ficus Lyrata</div>
+                      <span class="attention-card-location">Living Room</span>
+                      <span class="status-badge status-due"><span class="status-dot"></span> Due — today</span>
+                      <div class="attention-card-actions"><button class="water-btn"><i data-lucide="droplet"></i> Water</button></div>
                     </div>
                   </div>
                 </div>
@@ -1779,7 +1813,7 @@
                     <div class="plant-card-name">Monstera</div>
                     <div class="plant-card-location">Living Room</div>
                     <div class="plant-card-footer">
-                      <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days ago</span>
+                      <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days</span>
                     </div>
                   </div>
                 </div>
@@ -1799,7 +1833,7 @@
                     <div class="plant-card-name">Snake Plant</div>
                     <div class="plant-card-location">Bedroom</div>
                     <div class="plant-card-footer">
-                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 5 days</span>
+                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 5 days</span>
                     </div>
                   </div>
                 </div>
@@ -1809,7 +1843,7 @@
                     <div class="plant-card-name">Orchid</div>
                     <div class="plant-card-location">Kitchen</div>
                     <div class="plant-card-footer">
-                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 8 days</span>
+                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 8 days</span>
                     </div>
                   </div>
                 </div>
@@ -1819,7 +1853,7 @@
                     <div class="plant-card-name">Lavender</div>
                     <div class="plant-card-location">Balcony</div>
                     <div class="plant-card-footer">
-                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 3 days</span>
+                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 3 days</span>
                     </div>
                   </div>
                 </div>
@@ -1829,7 +1863,7 @@
                     <div class="plant-card-name">Pothos</div>
                     <div class="plant-card-location">Office</div>
                     <div class="plant-card-footer">
-                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 6 days</span>
+                      <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 6 days</span>
                     </div>
                   </div>
                 </div>
@@ -1849,30 +1883,34 @@
           <div class="mobile-content">
             <div class="greeting greeting-small">
               <h2>Good morning!</h2>
-              <p>2 plants need water today</p>
+              <p>2 plants could use a drink.</p>
             </div>
 
             <div class="attention-section">
-              <div class="section-title"><i data-lucide="alert-triangle"></i> Needs Attention</div>
+              <div class="section-title"><i data-lucide="triangle-alert"></i> Needs Attention</div>
               <div class="attention-cards">
                 <div class="attention-card">
+                  <div class="attention-card-accent accent-overdue"></div>
                   <div class="attention-card-photo"><img src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&h=300&fit=crop" alt="Monstera"></div>
                   <div class="attention-card-body">
-                    <div class="attention-card-info">
-                      <div class="attention-card-name">Monstera</div>
-                      <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days ago</span>
+                    <div class="attention-card-name">Monstera</div>
+                    <div class="attention-card-meta">
+                      <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days</span>
+                      <span class="attention-card-location">Living Room</span>
                     </div>
-                    <button class="water-btn"><i data-lucide="droplet"></i></button>
+                    <div class="attention-card-actions"><button class="water-btn"><i data-lucide="droplet"></i></button></div>
                   </div>
                 </div>
                 <div class="attention-card">
+                  <div class="attention-card-accent accent-due"></div>
                   <div class="attention-card-photo"><img src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=300&fit=crop" alt="Ficus Lyrata"></div>
                   <div class="attention-card-body">
-                    <div class="attention-card-info">
-                      <div class="attention-card-name">Ficus Lyrata</div>
+                    <div class="attention-card-name">Ficus Lyrata</div>
+                    <div class="attention-card-meta">
                       <span class="status-badge status-due"><span class="status-dot"></span> Due — today</span>
+                      <span class="attention-card-location">Living Room</span>
                     </div>
-                    <button class="water-btn"><i data-lucide="droplet"></i></button>
+                    <div class="attention-card-actions"><button class="water-btn"><i data-lucide="droplet"></i></button></div>
                   </div>
                 </div>
               </div>
@@ -1889,7 +1927,7 @@
                   <div class="plant-card-name">Monstera</div>
                   <div class="plant-card-location">Living Room</div>
                   <div class="plant-card-footer">
-                    <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days ago</span>
+                    <span class="status-badge status-overdue"><span class="status-dot"></span> Overdue — 2 days</span>
                   </div>
                 </div>
               </div>
@@ -1909,7 +1947,7 @@
                   <div class="plant-card-name">Snake Plant</div>
                   <div class="plant-card-location">Bedroom</div>
                   <div class="plant-card-footer">
-                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 5 days</span>
+                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 5 days</span>
                   </div>
                 </div>
               </div>
@@ -1919,7 +1957,7 @@
                   <div class="plant-card-name">Orchid</div>
                   <div class="plant-card-location">Kitchen</div>
                   <div class="plant-card-footer">
-                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 8 days</span>
+                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 8 days</span>
                   </div>
                 </div>
               </div>
@@ -1929,7 +1967,7 @@
                   <div class="plant-card-name">Lavender</div>
                   <div class="plant-card-location">Balcony</div>
                   <div class="plant-card-footer">
-                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 3 days</span>
+                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 3 days</span>
                   </div>
                 </div>
               </div>
@@ -1939,7 +1977,7 @@
                   <div class="plant-card-name">Pothos</div>
                   <div class="plant-card-location">Office</div>
                   <div class="plant-card-footer">
-                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 6 days</span>
+                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 6 days</span>
                   </div>
                 </div>
               </div>
@@ -1996,7 +2034,7 @@
                   </div>
                   <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
                   <div class="detail-status">
-                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 4 days</span>
+                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 4 days</span>
                   </div>
                   <button class="detail-water-btn"><i data-lucide="droplet"></i> Water now</button>
                 </div>
@@ -2092,7 +2130,7 @@
                   </div>
                   <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
                   <div class="detail-status">
-                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 4 days</span>
+                    <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 4 days</span>
                   </div>
                   <button class="detail-water-btn"><i data-lucide="droplet"></i> Water now</button>
                 </div>
@@ -2162,7 +2200,7 @@
                 </div>
                 <div class="detail-location"><i data-lucide="map-pin"></i> Living Room · Window</div>
                 <div class="detail-status">
-                  <span class="status-badge status-ok"><span class="status-dot"></span> Ok — next in 4 days</span>
+                  <span class="status-badge status-ok"><span class="status-dot"></span> Ok — in 4 days</span>
                 </div>
                 <button class="detail-water-btn" style="width:100%;justify-content:center"><i data-lucide="droplet"></i> Water now</button>
               </div>

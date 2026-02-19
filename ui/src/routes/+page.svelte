@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Plus } from 'lucide-svelte';
-	import { plants, plantsError, loadPlants } from '$lib/stores/plants';
+	import { Plus, TriangleAlert, Droplet } from 'lucide-svelte';
+	import { plants, plantsError, loadPlants, waterPlant } from '$lib/stores/plants';
 	import { emojiToSvgPath } from '$lib/emoji';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
@@ -63,6 +63,22 @@
 		],
 	};
 
+	const ATTENTION_SUBTITLES_PLURAL = [
+		(n: number) => `${n} plants are thirsty today.`,
+		(n: number) => `${n} plants could use a drink.`,
+		(n: number) => `${n} plants are waiting for water.`,
+		(n: number) => `Your plants are calling — ${n} need water.`,
+		(n: number) => `Time to hydrate! ${n} plants are due.`,
+	];
+
+	const ATTENTION_SUBTITLES_SINGULAR = [
+		'1 plant is thirsty today.',
+		'1 plant could use a drink.',
+		'1 plant is waiting for water.',
+		'Your plant is calling — it needs water.',
+		'Time to hydrate! 1 plant is due.',
+	];
+
 	function getTimeOfDay(): string {
 		const hour = new Date().getHours();
 		if (hour >= 5 && hour < 12) return 'morning';
@@ -77,7 +93,34 @@
 
 	const timeOfDay = getTimeOfDay();
 	const greeting = pick(GREETINGS[timeOfDay]);
-	const subtitle = pick(SUBTITLES[timeOfDay]);
+	const defaultSubtitle = pick(SUBTITLES[timeOfDay]);
+	const attentionMsgIndex = Math.floor(Math.random() * ATTENTION_SUBTITLES_PLURAL.length);
+
+	let attentionPlants = $derived(
+		$plants
+			.filter((p) => p.watering_status === 'overdue' || p.watering_status === 'due')
+			.sort((a, b) => {
+				if (a.watering_status === 'overdue' && b.watering_status !== 'overdue') return -1;
+				if (a.watering_status !== 'overdue' && b.watering_status === 'overdue') return 1;
+				return 0;
+			})
+	);
+
+	let subtitle = $derived(
+		attentionPlants.length === 0
+			? defaultSubtitle
+			: attentionPlants.length === 1
+				? ATTENTION_SUBTITLES_SINGULAR[attentionMsgIndex]
+				: ATTENTION_SUBTITLES_PLURAL[attentionMsgIndex](attentionPlants.length)
+	);
+
+	let wateringIds: Set<number> = $state(new Set());
+
+	async function handleWater(plantId: number) {
+		wateringIds = new Set([...wateringIds, plantId]);
+		await waterPlant(plantId);
+		wateringIds = new Set([...wateringIds].filter((id) => id !== plantId));
+	}
 
 	const BG_GRADIENTS = [
 		'linear-gradient(135deg, color-mix(in srgb, var(--color-success) 35%, transparent), color-mix(in srgb, var(--color-success) 15%, transparent))',
@@ -102,6 +145,50 @@
 		<h2>{greeting}</h2>
 		<p>{subtitle}</p>
 	</div>
+
+	{#if attentionPlants.length > 0}
+		<div class="attention-section">
+			<div class="attention-title">
+				<TriangleAlert size={16} />
+				Needs Attention
+			</div>
+			<div class="attention-cards">
+				{#each attentionPlants as plant (plant.id)}
+					<a href="/plants/{plant.id}" class="attention-card">
+						<div class="attention-card-accent" class:accent-overdue={plant.watering_status === 'overdue'} class:accent-due={plant.watering_status === 'due'}></div>
+						{#if plant.photo_url}
+							<div class="attention-card-photo">
+								<img src={plant.photo_url} alt={plant.name} class="attention-photo-img" />
+							</div>
+						{:else}
+							<div class="attention-card-photo attention-card-photo-emoji" style:background={cardBg(plant.id)}>
+								<img src={emojiToSvgPath(plant.icon)} alt={plant.name} class="attention-icon" />
+							</div>
+						{/if}
+						<div class="attention-card-body">
+							<div class="attention-card-name">{plant.name}</div>
+							{#if plant.location_name}
+								<span class="attention-card-location">{plant.location_name}</span>
+							{/if}
+							<StatusBadge status={plant.watering_status} nextDue={plant.next_due ?? null} />
+							<div class="attention-card-actions">
+								<button
+									class="water-btn"
+									disabled={wateringIds.has(plant.id)}
+									onclick={(e) => { e.preventDefault(); handleWater(plant.id); }}
+								>
+									<Droplet size={16} />
+									<span class="water-btn-label">
+										{wateringIds.has(plant.id) ? 'Watering...' : 'Water'}
+									</span>
+								</button>
+							</div>
+						</div>
+					</a>
+				{/each}
+			</div>
+		</div>
+	{/if}
 
 	<header class="page-header">
 		<h1>My Plants</h1>
@@ -312,7 +399,147 @@
 		padding: 16px;
 	}
 
+	/* Needs Attention section */
+	.attention-section {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-card);
+		padding: 16px;
+		margin-bottom: 24px;
+	}
+
+	.attention-title {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--color-secondary);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		margin-bottom: 12px;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.attention-cards {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		gap: 12px;
+	}
+
+	.attention-card {
+		display: flex;
+		align-items: stretch;
+		border-radius: var(--radius-card);
+		overflow: hidden;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		text-decoration: none;
+		color: inherit;
+		cursor: pointer;
+		transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+	}
+
+	.attention-card:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+	}
+
+	.attention-card-accent {
+		width: 4px;
+		flex-shrink: 0;
+	}
+
+	.accent-overdue {
+		background: var(--color-danger);
+	}
+
+	.accent-due {
+		background: var(--color-warning);
+	}
+
+	.attention-card-photo {
+		width: 120px;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	.attention-photo-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.attention-icon {
+		width: 48px;
+		height: 48px;
+	}
+
+	.attention-card-body {
+		flex: 1;
+		padding: 12px 14px;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: center;
+		gap: 4px;
+		min-width: 0;
+	}
+
+	.attention-card-name {
+		font-size: 15px;
+		font-weight: 600;
+		color: var(--color-text);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.attention-card-location {
+		font-size: 12px;
+		color: var(--color-text-muted);
+	}
+
+	.attention-card-actions {
+		display: flex;
+		align-items: flex-end;
+		align-self: stretch;
+		justify-content: flex-end;
+		margin-top: auto;
+	}
+
+	.water-btn {
+		padding: 6px 14px;
+		background: var(--color-water);
+		color: #fff;
+		border: none;
+		border-radius: var(--radius-btn);
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		flex-shrink: 0;
+		transition: filter var(--transition-speed);
+	}
+
+	.water-btn:hover {
+		filter: brightness(0.9);
+	}
+
+	.water-btn:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+
 	@media (min-width: 1280px) {
+		.attention-cards {
+			grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+		}
+
 		.plant-grid {
 			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 			gap: 20px;
@@ -343,6 +570,10 @@
 
 		.add-btn {
 			padding: 8px 14px;
+		}
+
+		.water-btn-label {
+			display: none;
 		}
 
 		.plant-grid {

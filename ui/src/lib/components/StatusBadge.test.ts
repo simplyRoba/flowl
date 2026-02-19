@@ -29,36 +29,36 @@ describe('StatusBadge', () => {
 		expect(screen.getByText(/today/)).toBeTruthy();
 	});
 
-	it('shows "next in N days" for future dates', () => {
+	it('shows "in N days" for future dates', () => {
 		const future = new Date();
 		future.setDate(future.getDate() + 3);
 		const iso = future.toISOString();
 		render(StatusBadge, { props: { status: 'ok', nextDue: iso } });
-		expect(screen.getByText(/next in 3 days/)).toBeTruthy();
+		expect(screen.getByText(/in 3 days/)).toBeTruthy();
 	});
 
-	it('shows "next in 1 day" for tomorrow', () => {
+	it('shows "in 1 day" for tomorrow', () => {
 		const tomorrow = new Date();
 		tomorrow.setDate(tomorrow.getDate() + 1);
 		const iso = tomorrow.toISOString();
 		render(StatusBadge, { props: { status: 'ok', nextDue: iso } });
-		expect(screen.getByText(/next in 1 day$/)).toBeTruthy();
+		expect(screen.getByText(/in 1 day$/)).toBeTruthy();
 	});
 
-	it('shows "N days ago" for past dates', () => {
+	it('shows "N days" for past dates', () => {
 		const past = new Date();
 		past.setDate(past.getDate() - 2);
 		const iso = past.toISOString();
 		render(StatusBadge, { props: { status: 'overdue', nextDue: iso } });
-		expect(screen.getByText(/2 days ago/)).toBeTruthy();
+		expect(screen.getByText(/2 days/)).toBeTruthy();
 	});
 
-	it('shows "1 day ago" for yesterday', () => {
+	it('shows "1 day" for yesterday', () => {
 		const yesterday = new Date();
 		yesterday.setDate(yesterday.getDate() - 1);
 		const iso = yesterday.toISOString();
 		render(StatusBadge, { props: { status: 'overdue', nextDue: iso } });
-		expect(screen.getByText(/1 day ago/)).toBeTruthy();
+		expect(screen.getByText(/1 day/)).toBeTruthy();
 	});
 
 	it('shows no suffix when nextDue is null', () => {
