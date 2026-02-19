@@ -663,7 +663,7 @@
 		align-items: center;
 		justify-content: center;
 		border-radius: var(--radius-btn);
-		border: 1px solid var(--color-border);
+		border: none;
 		background: var(--color-surface);
 		color: var(--color-text-muted);
 		cursor: pointer;
@@ -672,7 +672,6 @@
 
 	.event-delete:hover:not(:disabled) {
 		background: var(--color-danger-soft);
-		border-color: var(--color-danger);
 		color: var(--color-danger);
 	}
 
