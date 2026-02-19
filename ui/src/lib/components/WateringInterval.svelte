@@ -192,6 +192,7 @@
 
 	.stepper-value[type='number'] {
 		-moz-appearance: textfield;
+		appearance: textfield;
 	}
 
 	@media (max-width: 768px) {

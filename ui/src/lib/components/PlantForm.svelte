@@ -258,8 +258,9 @@
 	<section class="form-section">
 		<div class="form-section-title">Identity</div>
 		<div class="form-group">
-			<label class="form-label">Name *</label>
+			<label class="form-label" for="plant-name">Name *</label>
 			<input
+				id="plant-name"
 				type="text"
 				bind:value={name}
 				placeholder="e.g. Monstera Deliciosa"
@@ -273,8 +274,9 @@
 		</div>
 
 		<div class="form-group">
-			<label class="form-label">Species (optional)</label>
+			<label class="form-label" for="plant-species">Species (optional)</label>
 			<input
+				id="plant-species"
 				type="text"
 				bind:value={species}
 				placeholder="e.g. Monstera"
@@ -406,10 +408,6 @@
 		align-self: stretch;
 	}
 
-	.media-icon .form-label {
-		margin-bottom: 4px;
-	}
-
 	.media-divider {
 		display: flex;
 		align-items: center;
@@ -478,10 +476,6 @@
 		font-size: var(--fs-chip);
 		font-weight: 600;
 		color: var(--color-text-muted);
-	}
-
-	.required {
-		color: var(--color-danger);
 	}
 
 	.form-input {
@@ -702,10 +696,6 @@
 
 		.form-section {
 			padding: 16px;
-		}
-
-		.photo-section {
-			margin-bottom: 8px;
 		}
 
 		.photo-upload-refined {

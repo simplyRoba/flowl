@@ -9,13 +9,16 @@
 
 ## Review expectations
 - Treat every change as pending until a human explicitly reviews it; nothing merges without that approval.
-- Before requesting review, run `cargo fmt`, `cargo clippy`, and `cargo test` so artifacts and implementation stay in sync.
+- Before requesting review, run `cargo fmt`, `cargo clippy`, and `cargo test` (includes UI tests) so artifacts and implementation stay in sync.
 
 ## Clarifications
 - When requirements or intent are unclear, asking for information is mandatory and preferred over proceeding with assumptions. Use **AskUserQuestion tool** if feasable.
 
 ## Testing notes
 - Test names should describe the state under test, not the desired result; assertions already express expected outcomes.
+- `cargo test` runs both Rust and UI tests. The `tests/ui.rs` integration test shells out to `npm run test` in `ui/`. Use `cargo test -- --skip ui_tests` for Rust-only.
+- UI test files are co-located with their source: store/utility tests sit next to the source file (e.g. `plants.ts` / `plants.test.ts`), component tests next to the component (e.g. `StatusBadge.svelte` / `StatusBadge.test.ts`), and page tests live under `ui/src/tests/routes/` mirroring the route structure.
+- UI tests use vitest, `@testing-library/svelte`, and jsdom. Stores are tested by mocking `$lib/api`; components are rendered with `@testing-library/svelte`.
 
 ## Tooling constraints
 - Rust work stays on the latest stable toolchain via `rustup`; do not depend on nightly-only features or pin a custom channel in `AGENTS.md`.
