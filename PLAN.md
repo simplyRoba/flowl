@@ -64,40 +64,40 @@ HA picks up the entities automatically. HA automations handle notifications (mob
 
 ### Phase 1 — Foundation
 
-- Axum HTTP server with health endpoint
-- SQLite database with migrations (sqlx)
-- SvelteKit frontend scaffold, embedded in binary
-- MQTT client connecting to Mosquitto
-- Docker image with volume mount for DB
-- Basic project structure and error handling
+- [x] Axum HTTP server with health endpoint
+- [x] SQLite database with migrations (sqlx)
+- [x] SvelteKit frontend scaffold, embedded in binary
+- [x] MQTT client connecting to Mosquitto
+- [x] Docker image with volume mount for DB
+- [x] Basic project structure and error handling
 
 ### Phase 2 — Core Plant Management
 
-- CRUD API for plants (name, species, location, photo, notes)
-- Plant list and detail views in UI
-- Photo upload and storage
-- Room/location grouping
+- [x] CRUD API for plants (name, species, location, photo, notes)
+- [x] Plant list and detail views in UI
+- [x] Photo upload and storage
+- [x] Room/location grouping
 
 ### Phase 3 — Watering & Reminders
 
-- Watering schedule per plant (interval-based)
-- "Water now" action that resets the timer
-- MQTT auto-discovery: register plants as HA sensors
-- Publish watering state (`ok` / `due` / `overdue`) to MQTT
-- Due/overdue indicators in UI dashboard
+- [x] Watering schedule per plant (interval-based)
+- [x] "Water now" action that resets the timer
+- [x] MQTT auto-discovery: register plants as HA sensors
+- [x] Publish watering state (`ok` / `due` / `overdue`) to MQTT
+- [x] Due/overdue indicators in UI dashboard
 
 ### Phase 4 — Care Journal
 
-- Log care events (watered, fertilized, repotted, pruned, notes)
-- Timeline view per plant
-- Photo attachments on log entries
+- [x] Log care events (watered, fertilized, repotted, pruned, notes)
+- [x] Timeline view per plant
+- [ ] ~~Photo attachments on log entries~~ — postponed indefinitely; may be dropped entirely
 
 ### Phase 5 — Polish
 
-- Seasonal watering adjustments (less frequent in winter)
-- Care tags (low light, high humidity, toxic to pets)
-- Import/export (JSON backup)
-- Dashboard with "due today" / "overdue" overview
+- [ ] Dashboard with "due today" / "overdue" overview
+- [ ] Care tags (low light, high humidity, toxic to pets)
+- [ ] Seasonal watering adjustments (less frequent in winter)
+- [ ] Import/export (JSON backup)
 
 ### Phase 6 — AI Integration (future)
 
