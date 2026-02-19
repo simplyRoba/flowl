@@ -17,6 +17,11 @@ export interface Plant {
 	last_watered: string | null;
 	next_due: string | null;
 	light_needs: string;
+	difficulty: string | null;
+	pet_safety: string | null;
+	growth_speed: string | null;
+	soil_type: string | null;
+	soil_moisture: string | null;
 	notes: string | null;
 	created_at: string;
 	updated_at: string;
@@ -29,6 +34,11 @@ export interface CreatePlant {
 	location_id?: number | null;
 	watering_interval_days?: number;
 	light_needs?: string;
+	difficulty?: string | null;
+	pet_safety?: string | null;
+	growth_speed?: string | null;
+	soil_type?: string | null;
+	soil_moisture?: string | null;
 	notes?: string;
 }
 
@@ -39,6 +49,11 @@ export interface UpdatePlant {
 	location_id?: number | null;
 	watering_interval_days?: number;
 	light_needs?: string;
+	difficulty?: string | null;
+	pet_safety?: string | null;
+	growth_speed?: string | null;
+	soil_type?: string | null;
+	soil_moisture?: string | null;
 	notes?: string;
 }
 

@@ -1433,6 +1433,48 @@
   .light-option .light-label { font-size: 11px; color: var(--text-muted); }
   .light-option.active .light-label { color: var(--primary); }
 
+  .care-info-group { margin-bottom: 14px; }
+  .care-info-group:last-child { margin-bottom: 0; }
+  .care-info-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .care-info-label svg { width: 14px !important; height: 14px !important; }
+  .care-option {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--font);
+  }
+  .care-option:hover { border-color: var(--primary); }
+  .care-option.active {
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+  }
+  .section-optional {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
   .emoji-picker {
     display: flex;
     gap: 6px;
@@ -2046,11 +2088,15 @@
                     <div class="detail-row"><span class="detail-row-label">Interval</span><span>Every 7 days</span></div>
                     <div class="detail-row"><span class="detail-row-label">Last watered</span><span>Feb 10, 2026</span></div>
                     <div class="detail-row"><span class="detail-row-label">Next due</span><span>Feb 17, 2026</span></div>
+                    <div class="detail-row"><span class="detail-row-label">Soil moisture</span><span class="detail-row-value">Moderate <i data-lucide="droplets"></i></span></div>
                   </div>
                   <div class="detail-card">
-                    <div class="detail-card-title"><i data-lucide="sun"></i> Light</div>
-                    <div class="detail-row"><span class="detail-row-label">Needs</span><span class="detail-row-value">Indirect light <i data-lucide="cloud-sun"></i></span></div>
-                    <div class="detail-row"><span class="detail-row-label">Placement</span><span>Near east window</span></div>
+                    <div class="detail-card-title"><i data-lucide="info"></i> Care Info</div>
+                    <div class="detail-row"><span class="detail-row-label">Light</span><span class="detail-row-value">Indirect light <i data-lucide="cloud-sun"></i></span></div>
+                    <div class="detail-row"><span class="detail-row-label">Difficulty</span><span class="detail-row-value">Moderate <i data-lucide="gauge"></i></span></div>
+                    <div class="detail-row"><span class="detail-row-label">Pet safety</span><span class="detail-row-value">Toxic <i data-lucide="paw-print"></i></span></div>
+                    <div class="detail-row"><span class="detail-row-label">Growth</span><span class="detail-row-value">Moderate <i data-lucide="trending-up"></i></span></div>
+                    <div class="detail-row"><span class="detail-row-label">Soil</span><span class="detail-row-value">Standard <i data-lucide="layers"></i></span></div>
                   </div>
                 </div>
                 <div class="detail-card">
@@ -2141,6 +2187,15 @@
                   <div class="detail-row"><span class="detail-row-label">Interval</span><span>Every 7 days</span></div>
                   <div class="detail-row"><span class="detail-row-label">Last watered</span><span>Feb 10, 2026</span></div>
                   <div class="detail-row"><span class="detail-row-label">Next due</span><span>Feb 17, 2026</span></div>
+                  <div class="detail-row"><span class="detail-row-label">Soil moisture</span><span class="detail-row-value">Moderate <i data-lucide="droplets"></i></span></div>
+                </div>
+                <div class="detail-card">
+                  <div class="detail-card-title"><i data-lucide="info"></i> Care Info</div>
+                  <div class="detail-row"><span class="detail-row-label">Light</span><span class="detail-row-value">Indirect light <i data-lucide="cloud-sun"></i></span></div>
+                  <div class="detail-row"><span class="detail-row-label">Difficulty</span><span class="detail-row-value">Moderate <i data-lucide="gauge"></i></span></div>
+                  <div class="detail-row"><span class="detail-row-label">Pet safety</span><span class="detail-row-value">Toxic <i data-lucide="paw-print"></i></span></div>
+                  <div class="detail-row"><span class="detail-row-label">Growth</span><span class="detail-row-value">Moderate <i data-lucide="trending-up"></i></span></div>
+                  <div class="detail-row"><span class="detail-row-label">Soil</span><span class="detail-row-value">Standard <i data-lucide="layers"></i></span></div>
                 </div>
                 <div class="detail-card">
                   <div class="detail-card-title"><i data-lucide="pencil"></i> Notes</div>
@@ -2211,6 +2266,13 @@
                 <div class="detail-row"><span class="detail-row-label">Interval</span><span>Every 7 days</span></div>
                 <div class="detail-row"><span class="detail-row-label">Last watered</span><span>Feb 10</span></div>
                 <div class="detail-row"><span class="detail-row-label">Next due</span><span>Feb 17</span></div>
+                <div class="detail-row"><span class="detail-row-label">Soil moisture</span><span class="detail-row-value">Moderate <i data-lucide="droplets"></i></span></div>
+              </div>
+              <div class="detail-card">
+                <div class="detail-card-title"><i data-lucide="info"></i> Care Info</div>
+                <div class="detail-row"><span class="detail-row-label">Light</span><span class="detail-row-value">Indirect light <i data-lucide="cloud-sun"></i></span></div>
+                <div class="detail-row"><span class="detail-row-label">Difficulty</span><span class="detail-row-value">Moderate <i data-lucide="gauge"></i></span></div>
+                <div class="detail-row"><span class="detail-row-label">Pet safety</span><span class="detail-row-value">Toxic <i data-lucide="paw-print"></i></span></div>
               </div>
               <div class="detail-card">
                 <div class="detail-card-title"><i data-lucide="pencil"></i> Notes</div>
@@ -2397,6 +2459,51 @@
                   </div>
 
                   <div class="form-section">
+                    <div class="form-section-title">Care Info <span class="section-optional">(optional)</span></div>
+                    <div class="care-info-group">
+                      <span class="care-info-label"><i data-lucide="gauge"></i> Difficulty</span>
+                      <div class="light-selector">
+                        <div class="care-option">Easy</div>
+                        <div class="care-option active">Moderate</div>
+                        <div class="care-option">Demanding</div>
+                      </div>
+                    </div>
+                    <div class="care-info-group">
+                      <span class="care-info-label"><i data-lucide="paw-print"></i> Pet safety</span>
+                      <div class="light-selector">
+                        <div class="care-option">Safe</div>
+                        <div class="care-option">Caution</div>
+                        <div class="care-option active">Toxic</div>
+                      </div>
+                    </div>
+                    <div class="care-info-group">
+                      <span class="care-info-label"><i data-lucide="trending-up"></i> Growth speed</span>
+                      <div class="light-selector">
+                        <div class="care-option">Slow</div>
+                        <div class="care-option">Moderate</div>
+                        <div class="care-option">Fast</div>
+                      </div>
+                    </div>
+                    <div class="care-info-group">
+                      <span class="care-info-label"><i data-lucide="layers"></i> Soil type</span>
+                      <div class="light-selector">
+                        <div class="care-option">Standard</div>
+                        <div class="care-option">Cactus mix</div>
+                        <div class="care-option">Orchid bark</div>
+                        <div class="care-option">Peat moss</div>
+                      </div>
+                    </div>
+                    <div class="care-info-group">
+                      <span class="care-info-label"><i data-lucide="droplets"></i> Soil moisture</span>
+                      <div class="light-selector">
+                        <div class="care-option">Dry</div>
+                        <div class="care-option">Moderate</div>
+                        <div class="care-option">Moist</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
                     <div class="form-section-title">Notes</div>
                     <textarea class="form-input" placeholder="Care tips, observations, anything useful..." style="height:80px"></textarea>
                   </div>
@@ -2541,6 +2648,51 @@
                   </div>
 
                   <div class="form-section">
+                    <div class="form-section-title">Care Info <span class="section-optional">(optional)</span></div>
+                    <div class="care-info-group">
+                      <span class="care-info-label"><i data-lucide="gauge"></i> Difficulty</span>
+                      <div class="light-selector">
+                        <div class="care-option">Easy</div>
+                        <div class="care-option active">Moderate</div>
+                        <div class="care-option">Demanding</div>
+                      </div>
+                    </div>
+                    <div class="care-info-group">
+                      <span class="care-info-label"><i data-lucide="paw-print"></i> Pet safety</span>
+                      <div class="light-selector">
+                        <div class="care-option">Safe</div>
+                        <div class="care-option">Caution</div>
+                        <div class="care-option active">Toxic</div>
+                      </div>
+                    </div>
+                    <div class="care-info-group">
+                      <span class="care-info-label"><i data-lucide="trending-up"></i> Growth speed</span>
+                      <div class="light-selector">
+                        <div class="care-option">Slow</div>
+                        <div class="care-option">Moderate</div>
+                        <div class="care-option">Fast</div>
+                      </div>
+                    </div>
+                    <div class="care-info-group">
+                      <span class="care-info-label"><i data-lucide="layers"></i> Soil type</span>
+                      <div class="light-selector">
+                        <div class="care-option">Standard</div>
+                        <div class="care-option">Cactus mix</div>
+                        <div class="care-option">Orchid bark</div>
+                        <div class="care-option">Peat moss</div>
+                      </div>
+                    </div>
+                    <div class="care-info-group">
+                      <span class="care-info-label"><i data-lucide="droplets"></i> Soil moisture</span>
+                      <div class="light-selector">
+                        <div class="care-option">Dry</div>
+                        <div class="care-option">Moderate</div>
+                        <div class="care-option">Moist</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
                     <div class="form-section-title">Notes</div>
                     <textarea class="form-input" placeholder="Care tips, observations, anything useful..." style="height:80px"></textarea>
                   </div>
@@ -2657,6 +2809,51 @@
                   <div class="light-option">
                     <span class="light-icon"><i data-lucide="cloud"></i></span>
                     <span style="font-size:12px">Low</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <div class="form-section-title">Care Info <span class="section-optional">(optional)</span></div>
+                <div class="care-info-group">
+                  <span class="care-info-label"><i data-lucide="gauge"></i> Difficulty</span>
+                  <div class="light-selector">
+                    <div class="care-option">Easy</div>
+                    <div class="care-option active">Moderate</div>
+                    <div class="care-option">Demanding</div>
+                  </div>
+                </div>
+                <div class="care-info-group">
+                  <span class="care-info-label"><i data-lucide="paw-print"></i> Pet safety</span>
+                  <div class="light-selector">
+                    <div class="care-option">Safe</div>
+                    <div class="care-option">Caution</div>
+                    <div class="care-option active">Toxic</div>
+                  </div>
+                </div>
+                <div class="care-info-group">
+                  <span class="care-info-label"><i data-lucide="trending-up"></i> Growth speed</span>
+                  <div class="light-selector">
+                    <div class="care-option">Slow</div>
+                    <div class="care-option">Moderate</div>
+                    <div class="care-option">Fast</div>
+                  </div>
+                </div>
+                <div class="care-info-group">
+                  <span class="care-info-label"><i data-lucide="layers"></i> Soil type</span>
+                  <div class="light-selector">
+                    <div class="care-option">Standard</div>
+                    <div class="care-option">Cactus mix</div>
+                    <div class="care-option">Orchid bark</div>
+                    <div class="care-option">Peat moss</div>
+                  </div>
+                </div>
+                <div class="care-info-group">
+                  <span class="care-info-label"><i data-lucide="droplets"></i> Soil moisture</span>
+                  <div class="light-selector">
+                    <div class="care-option">Dry</div>
+                    <div class="care-option">Moderate</div>
+                    <div class="care-option">Moist</div>
                   </div>
                 </div>
               </div>

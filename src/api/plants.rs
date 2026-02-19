@@ -35,6 +35,11 @@ pub struct Plant {
     pub last_watered: Option<String>,
     pub next_due: Option<String>,
     pub light_needs: String,
+    pub difficulty: Option<String>,
+    pub pet_safety: Option<String>,
+    pub growth_speed: Option<String>,
+    pub soil_type: Option<String>,
+    pub soil_moisture: Option<String>,
     pub notes: Option<String>,
     pub created_at: String,
     pub updated_at: String,
@@ -52,6 +57,11 @@ pub(crate) struct PlantRow {
     pub(crate) watering_interval_days: i64,
     pub(crate) last_watered: Option<String>,
     pub(crate) light_needs: String,
+    pub(crate) difficulty: Option<String>,
+    pub(crate) pet_safety: Option<String>,
+    pub(crate) growth_speed: Option<String>,
+    pub(crate) soil_type: Option<String>,
+    pub(crate) soil_moisture: Option<String>,
     pub(crate) notes: Option<String>,
     pub(crate) created_at: String,
     pub(crate) updated_at: String,
@@ -87,6 +97,42 @@ pub fn compute_watering_status(
     (status.to_string(), Some(next_due.to_string()))
 }
 
+const VALID_DIFFICULTY: &[&str] = &["easy", "moderate", "demanding"];
+const VALID_PET_SAFETY: &[&str] = &["safe", "caution", "toxic"];
+const VALID_GROWTH_SPEED: &[&str] = &["slow", "moderate", "fast"];
+const VALID_SOIL_TYPE: &[&str] = &["standard", "cactus-mix", "orchid-bark", "peat-moss"];
+const VALID_SOIL_MOISTURE: &[&str] = &["dry", "moderate", "moist"];
+
+pub fn validate_care_info(
+    field: &str,
+    value: Option<&str>,
+    allowed: &[&str],
+) -> Result<(), ApiError> {
+    if let Some(v) = value
+        && !allowed.contains(&v)
+    {
+        return Err(ApiError::Validation(format!(
+            "Invalid value for {field}: \"{v}\""
+        )));
+    }
+    Ok(())
+}
+
+fn validate_all_care_info(
+    difficulty: Option<&str>,
+    pet_safety: Option<&str>,
+    growth_speed: Option<&str>,
+    soil_type: Option<&str>,
+    soil_moisture: Option<&str>,
+) -> Result<(), ApiError> {
+    validate_care_info("difficulty", difficulty, VALID_DIFFICULTY)?;
+    validate_care_info("pet_safety", pet_safety, VALID_PET_SAFETY)?;
+    validate_care_info("growth_speed", growth_speed, VALID_GROWTH_SPEED)?;
+    validate_care_info("soil_type", soil_type, VALID_SOIL_TYPE)?;
+    validate_care_info("soil_moisture", soil_moisture, VALID_SOIL_MOISTURE)?;
+    Ok(())
+}
+
 impl From<PlantRow> for Plant {
     fn from(row: PlantRow) -> Self {
         let (watering_status, next_due) =
@@ -105,6 +151,11 @@ impl From<PlantRow> for Plant {
             last_watered: row.last_watered,
             next_due,
             light_needs: row.light_needs,
+            difficulty: row.difficulty,
+            pet_safety: row.pet_safety,
+            growth_speed: row.growth_speed,
+            soil_type: row.soil_type,
+            soil_moisture: row.soil_moisture,
             notes: row.notes,
             created_at: row.created_at,
             updated_at: row.updated_at,
@@ -114,7 +165,8 @@ impl From<PlantRow> for Plant {
 
 pub(crate) const PLANT_SELECT: &str = "SELECT p.id, p.name, p.species, p.icon, p.photo_path, \
     p.location_id, l.name AS location_name, p.watering_interval_days, p.last_watered, \
-    p.light_needs, p.notes, p.created_at, p.updated_at \
+    p.light_needs, p.difficulty, p.pet_safety, p.growth_speed, p.soil_type, p.soil_moisture, \
+    p.notes, p.created_at, p.updated_at \
     FROM plants p LEFT JOIN locations l ON p.location_id = l.id";
 
 #[derive(Deserialize)]
@@ -125,6 +177,11 @@ pub struct CreatePlant {
     pub location_id: Option<i64>,
     pub watering_interval_days: Option<i64>,
     pub light_needs: Option<String>,
+    pub difficulty: Option<String>,
+    pub pet_safety: Option<String>,
+    pub growth_speed: Option<String>,
+    pub soil_type: Option<String>,
+    pub soil_moisture: Option<String>,
     pub notes: Option<String>,
 }
 
@@ -140,6 +197,21 @@ pub struct UpdatePlant {
     pub location_id: Option<Option<i64>>,
     pub watering_interval_days: Option<i64>,
     pub light_needs: Option<String>,
+    #[allow(clippy::option_option)]
+    #[serde(default, deserialize_with = "deserialize_nullable")]
+    pub difficulty: Option<Option<String>>,
+    #[allow(clippy::option_option)]
+    #[serde(default, deserialize_with = "deserialize_nullable")]
+    pub pet_safety: Option<Option<String>>,
+    #[allow(clippy::option_option)]
+    #[serde(default, deserialize_with = "deserialize_nullable")]
+    pub growth_speed: Option<Option<String>>,
+    #[allow(clippy::option_option)]
+    #[serde(default, deserialize_with = "deserialize_nullable")]
+    pub soil_type: Option<Option<String>>,
+    #[allow(clippy::option_option)]
+    #[serde(default, deserialize_with = "deserialize_nullable")]
+    pub soil_moisture: Option<Option<String>>,
     #[allow(clippy::option_option)]
     #[serde(default, deserialize_with = "deserialize_nullable")]
     pub notes: Option<Option<String>>,
@@ -190,9 +262,18 @@ pub async fn create_plant(
         .filter(|l| !l.trim().is_empty())
         .unwrap_or_else(|| "indirect".to_string());
 
+    validate_all_care_info(
+        body.difficulty.as_deref(),
+        body.pet_safety.as_deref(),
+        body.growth_speed.as_deref(),
+        body.soil_type.as_deref(),
+        body.soil_moisture.as_deref(),
+    )?;
+
     let id = sqlx::query_scalar::<_, i64>(
-        "INSERT INTO plants (name, species, icon, location_id, watering_interval_days, light_needs, notes) \
-         VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id",
+        "INSERT INTO plants (name, species, icon, location_id, watering_interval_days, light_needs, \
+         difficulty, pet_safety, growth_speed, soil_type, soil_moisture, notes) \
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
     )
     .bind(&name)
     .bind(&body.species)
@@ -200,6 +281,11 @@ pub async fn create_plant(
     .bind(body.location_id)
     .bind(watering_interval_days)
     .bind(&light_needs)
+    .bind(&body.difficulty)
+    .bind(&body.pet_safety)
+    .bind(&body.growth_speed)
+    .bind(&body.soil_type)
+    .bind(&body.soil_moisture)
     .bind(&body.notes)
     .fetch_one(&state.pool)
     .await
@@ -262,12 +348,26 @@ pub async fn update_plant(
         .watering_interval_days
         .unwrap_or(current.watering_interval_days);
     let light_needs = body.light_needs.unwrap_or(current.light_needs);
+    let difficulty = body.difficulty.unwrap_or(current.difficulty);
+    let pet_safety = body.pet_safety.unwrap_or(current.pet_safety);
+    let growth_speed = body.growth_speed.unwrap_or(current.growth_speed);
+    let soil_type = body.soil_type.unwrap_or(current.soil_type);
+    let soil_moisture = body.soil_moisture.unwrap_or(current.soil_moisture);
     let notes = body.notes.unwrap_or(current.notes);
+
+    validate_all_care_info(
+        difficulty.as_deref(),
+        pet_safety.as_deref(),
+        growth_speed.as_deref(),
+        soil_type.as_deref(),
+        soil_moisture.as_deref(),
+    )?;
 
     sqlx::query(
         "UPDATE plants SET name = ?, species = ?, icon = ?, location_id = ?, \
-         watering_interval_days = ?, light_needs = ?, notes = ?, \
-         updated_at = datetime('now') WHERE id = ?",
+         watering_interval_days = ?, light_needs = ?, \
+         difficulty = ?, pet_safety = ?, growth_speed = ?, soil_type = ?, \
+         soil_moisture = ?, notes = ?, updated_at = datetime('now') WHERE id = ?",
     )
     .bind(&name)
     .bind(&species)
@@ -275,6 +375,11 @@ pub async fn update_plant(
     .bind(location_id)
     .bind(watering_interval_days)
     .bind(&light_needs)
+    .bind(&difficulty)
+    .bind(&pet_safety)
+    .bind(&growth_speed)
+    .bind(&soil_type)
+    .bind(&soil_moisture)
     .bind(&notes)
     .bind(id)
     .execute(&state.pool)

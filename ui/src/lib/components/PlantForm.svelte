@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Sun, CloudSun, Cloud, Camera, X } from 'lucide-svelte';
+	import { Sun, CloudSun, Cloud, Camera, X, Gauge, PawPrint, TrendingUp, Layers, Droplets } from 'lucide-svelte';
 	import type { Plant, CreatePlant, Location } from '$lib/api';
 	import { locations, loadLocations, createLocation } from '$lib/stores/locations';
 	import IconPicker from './IconPicker.svelte';
@@ -31,6 +31,11 @@
 	let locationId = $state<number | null>(null);
 	let wateringDays = $state(7);
 	let lightNeeds = $state('indirect');
+	let difficulty = $state<string | null>(null);
+	let petSafety = $state<string | null>(null);
+	let growthSpeed = $state<string | null>(null);
+	let soilType = $state<string | null>(null);
+	let soilMoisture = $state<string | null>(null);
 	let notes = $state('');
 	let nameError = $state('');
 
@@ -58,6 +63,11 @@
 			locationId = initial.location_id;
 			wateringDays = initial.watering_interval_days;
 			lightNeeds = initial.light_needs;
+			difficulty = initial.difficulty;
+			petSafety = initial.pet_safety;
+			growthSpeed = initial.growth_speed;
+			soilType = initial.soil_type;
+			soilMoisture = initial.soil_moisture;
 			notes = initial.notes ?? '';
 		}
 	});
@@ -160,6 +170,11 @@
 		data.location_id = locationId;
 		data.watering_interval_days = wateringDays;
 		data.light_needs = lightNeeds;
+		data.difficulty = difficulty;
+		data.pet_safety = petSafety;
+		data.growth_speed = growthSpeed;
+		data.soil_type = soilType;
+		data.soil_moisture = soilMoisture;
 		if (notes.trim()) data.notes = notes.trim();
 
 		onsave(data, photoFile ?? undefined);
@@ -336,6 +351,111 @@
 				<span>Low</span>
 				<span class="light-label">Shade tolerant</span>
 			</button>
+		</div>
+	</section>
+
+	<section class="form-section">
+		<div class="form-section-title">Care Info <span class="section-optional">(optional)</span></div>
+
+		<div class="care-info-group">
+			<span class="care-info-label"><Gauge size={14} /> Difficulty</span>
+			<div class="light-selector">
+				{#each [
+					{ value: 'easy', label: 'Easy' },
+					{ value: 'moderate', label: 'Moderate' },
+					{ value: 'demanding', label: 'Demanding' }
+				] as opt}
+					<button
+						type="button"
+						class="care-option"
+						class:active={difficulty === opt.value}
+						onclick={() => { difficulty = difficulty === opt.value ? null : opt.value; }}
+					>
+						{opt.label}
+					</button>
+				{/each}
+			</div>
+		</div>
+
+		<div class="care-info-group">
+			<span class="care-info-label"><PawPrint size={14} /> Pet safety</span>
+			<div class="light-selector">
+				{#each [
+					{ value: 'safe', label: 'Safe' },
+					{ value: 'caution', label: 'Caution' },
+					{ value: 'toxic', label: 'Toxic' }
+				] as opt}
+					<button
+						type="button"
+						class="care-option"
+						class:active={petSafety === opt.value}
+						onclick={() => { petSafety = petSafety === opt.value ? null : opt.value; }}
+					>
+						{opt.label}
+					</button>
+				{/each}
+			</div>
+		</div>
+
+		<div class="care-info-group">
+			<span class="care-info-label"><TrendingUp size={14} /> Growth speed</span>
+			<div class="light-selector">
+				{#each [
+					{ value: 'slow', label: 'Slow' },
+					{ value: 'moderate', label: 'Moderate' },
+					{ value: 'fast', label: 'Fast' }
+				] as opt}
+					<button
+						type="button"
+						class="care-option"
+						class:active={growthSpeed === opt.value}
+						onclick={() => { growthSpeed = growthSpeed === opt.value ? null : opt.value; }}
+					>
+						{opt.label}
+					</button>
+				{/each}
+			</div>
+		</div>
+
+		<div class="care-info-group">
+			<span class="care-info-label"><Layers size={14} /> Soil type</span>
+			<div class="light-selector">
+				{#each [
+					{ value: 'standard', label: 'Standard' },
+					{ value: 'cactus-mix', label: 'Cactus mix' },
+					{ value: 'orchid-bark', label: 'Orchid bark' },
+					{ value: 'peat-moss', label: 'Peat moss' }
+				] as opt}
+					<button
+						type="button"
+						class="care-option"
+						class:active={soilType === opt.value}
+						onclick={() => { soilType = soilType === opt.value ? null : opt.value; }}
+					>
+						{opt.label}
+					</button>
+				{/each}
+			</div>
+		</div>
+
+		<div class="care-info-group">
+			<span class="care-info-label"><Droplets size={14} /> Soil moisture</span>
+			<div class="light-selector">
+				{#each [
+					{ value: 'dry', label: 'Dry' },
+					{ value: 'moderate', label: 'Moderate' },
+					{ value: 'moist', label: 'Moist' }
+				] as opt}
+					<button
+						type="button"
+						class="care-option"
+						class:active={soilMoisture === opt.value}
+						onclick={() => { soilMoisture = soilMoisture === opt.value ? null : opt.value; }}
+					>
+						{opt.label}
+					</button>
+				{/each}
+			</div>
 		</div>
 	</section>
 
@@ -623,9 +743,62 @@
 		color: var(--color-primary);
 	}
 
+	.section-optional {
+		font-weight: 400;
+		color: var(--color-text-muted);
+		font-size: 10px;
+		text-transform: none;
+		letter-spacing: 0;
+	}
+
+	.care-info-group {
+		margin-bottom: 16px;
+	}
+
+	.care-info-group:last-child {
+		margin-bottom: 0;
+	}
+
+	.care-info-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		font-size: var(--fs-chip);
+		font-weight: 600;
+		color: var(--color-text-muted);
+		margin-bottom: 8px;
+	}
+
+	.care-option {
+		flex: 1;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		padding: 8px 10px;
+		border: 1px solid var(--color-border);
+		border-radius: 10px;
+		background: var(--color-surface);
+		cursor: pointer;
+		transition: all var(--transition-speed);
+		color: var(--color-text);
+		font-size: 13px;
+	}
+
+	.care-option:hover {
+		border-color: var(--color-primary);
+	}
+
+	.care-option.active {
+		border-color: var(--color-primary);
+		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		color: var(--color-primary);
+	}
+
 	.light-selector {
 		display: flex;
 		gap: 8px;
+		flex-wrap: wrap;
 	}
 
 	.light-option {

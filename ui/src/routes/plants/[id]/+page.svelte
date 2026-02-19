@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { ArrowLeft, Pencil, Trash2, Droplet, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, X } from 'lucide-svelte';
+	import { ArrowLeft, Pencil, Trash2, Droplet, Droplets, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, X, Info, Gauge, PawPrint, TrendingUp, Layers } from 'lucide-svelte';
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
 	import { careEvents, loadCareEvents, addCareEvent, removeCareEvent } from '$lib/stores/care';
 	import { emojiToSvgPath } from '$lib/emoji';
@@ -143,6 +143,37 @@
 		$currentPlant ? lightIcon($currentPlant.light_needs) : Sun
 	);
 
+	function difficultyLabel(val: string): string {
+		if (val === 'easy') return 'Easy';
+		if (val === 'moderate') return 'Moderate';
+		return 'Demanding';
+	}
+
+	function petSafetyLabel(val: string): string {
+		if (val === 'safe') return 'Safe';
+		if (val === 'caution') return 'Caution';
+		return 'Toxic';
+	}
+
+	function growthSpeedLabel(val: string): string {
+		if (val === 'slow') return 'Slow';
+		if (val === 'moderate') return 'Moderate';
+		return 'Fast';
+	}
+
+	function soilMoistureLabel(val: string): string {
+		if (val === 'dry') return 'Prefers dry';
+		if (val === 'moderate') return 'Moderate';
+		return 'Keeps moist';
+	}
+
+	function soilTypeLabel(val: string): string {
+		if (val === 'standard') return 'Standard';
+		if (val === 'cactus-mix') return 'Cactus mix';
+		if (val === 'orchid-bark') return 'Orchid bark';
+		return 'Peat moss';
+	}
+
 </script>
 
 {#if notFound}
@@ -205,16 +236,46 @@
 					<div class="detail-row"><span class="detail-row-label">Interval</span><span>Every {$currentPlant.watering_interval_days} days</span></div>
 					<div class="detail-row"><span class="detail-row-label">Last watered</span><span>{formatDate($currentPlant.last_watered)}</span></div>
 					<div class="detail-row"><span class="detail-row-label">Next due</span><span>{$currentPlant.next_due ? formatDate($currentPlant.next_due) : 'N/A'}</span></div>
+					{#if $currentPlant.soil_moisture}
+						<div class="detail-row">
+							<span class="detail-row-label">Soil moisture</span>
+							<span class="detail-row-value">{soilMoistureLabel($currentPlant.soil_moisture)} <Droplets size={14} /></span>
+						</div>
+					{/if}
 				</div>
 				<div class="detail-card">
-					<div class="detail-card-title"><Sun size={14} /> Light</div>
+					<div class="detail-card-title"><Info size={14} /> Care Info</div>
 					<div class="detail-row">
-						<span class="detail-row-label">Needs</span>
+						<span class="detail-row-label">Light</span>
 						<span class="detail-row-value">
 							{lightLabel($currentPlant.light_needs)}
 							<LightNeedsIcon size={14} />
 						</span>
 					</div>
+					{#if $currentPlant.difficulty}
+						<div class="detail-row">
+							<span class="detail-row-label">Difficulty</span>
+							<span class="detail-row-value">{difficultyLabel($currentPlant.difficulty)} <Gauge size={14} /></span>
+						</div>
+					{/if}
+					{#if $currentPlant.pet_safety}
+						<div class="detail-row">
+							<span class="detail-row-label">Pet safety</span>
+							<span class="detail-row-value">{petSafetyLabel($currentPlant.pet_safety)} <PawPrint size={14} /></span>
+						</div>
+					{/if}
+					{#if $currentPlant.growth_speed}
+						<div class="detail-row">
+							<span class="detail-row-label">Growth</span>
+							<span class="detail-row-value">{growthSpeedLabel($currentPlant.growth_speed)} <TrendingUp size={14} /></span>
+						</div>
+					{/if}
+					{#if $currentPlant.soil_type}
+						<div class="detail-row">
+							<span class="detail-row-label">Soil</span>
+							<span class="detail-row-value">{soilTypeLabel($currentPlant.soil_type)} <Layers size={14} /></span>
+						</div>
+					{/if}
 				</div>
 			</div>
 

@@ -2,7 +2,7 @@ mod common;
 
 use axum::http::StatusCode;
 use common::{body_json, json_request};
-use flowl::api::plants::compute_watering_status;
+use flowl::api::plants::{compute_watering_status, validate_care_info};
 use tower::ServiceExt;
 
 async fn app() -> axum::Router {
@@ -380,4 +380,250 @@ fn status_overdue() {
     let (status, next_due) = compute_watering_status(Some(&watered), 7);
     assert_eq!(status, "overdue");
     assert!(next_due.is_some());
+}
+
+// --- Care info validation tests ---
+
+#[test]
+fn care_info_valid_values() {
+    assert!(
+        validate_care_info(
+            "difficulty",
+            Some("easy"),
+            &["easy", "moderate", "demanding"]
+        )
+        .is_ok()
+    );
+    assert!(
+        validate_care_info(
+            "difficulty",
+            Some("moderate"),
+            &["easy", "moderate", "demanding"]
+        )
+        .is_ok()
+    );
+    assert!(
+        validate_care_info(
+            "difficulty",
+            Some("demanding"),
+            &["easy", "moderate", "demanding"]
+        )
+        .is_ok()
+    );
+    assert!(validate_care_info("pet_safety", Some("safe"), &["safe", "caution", "toxic"]).is_ok());
+    assert!(
+        validate_care_info("growth_speed", Some("slow"), &["slow", "moderate", "fast"]).is_ok()
+    );
+    assert!(
+        validate_care_info(
+            "soil_type",
+            Some("cactus-mix"),
+            &["standard", "cactus-mix", "orchid-bark", "peat-moss"]
+        )
+        .is_ok()
+    );
+}
+
+#[test]
+fn care_info_null_allowed() {
+    assert!(validate_care_info("difficulty", None, &["easy", "moderate", "demanding"]).is_ok());
+}
+
+#[test]
+fn care_info_invalid_value() {
+    let result = validate_care_info(
+        "difficulty",
+        Some("impossible"),
+        &["easy", "moderate", "demanding"],
+    );
+    assert!(result.is_err());
+}
+
+// --- Care info integration tests ---
+
+#[tokio::test]
+async fn create_with_care_info() {
+    let resp = app()
+        .await
+        .oneshot(json_request(
+            "POST",
+            "/api/plants",
+            Some(r#"{"name":"Cactus","difficulty":"easy","pet_safety":"safe","soil_type":"cactus-mix","soil_moisture":"dry"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let json = body_json(resp).await;
+    assert_eq!(json["difficulty"], "easy");
+    assert_eq!(json["pet_safety"], "safe");
+    assert!(json["growth_speed"].is_null());
+    assert_eq!(json["soil_type"], "cactus-mix");
+    assert_eq!(json["soil_moisture"], "dry");
+}
+
+#[tokio::test]
+async fn create_defaults_care_info_null() {
+    let resp = app()
+        .await
+        .oneshot(json_request(
+            "POST",
+            "/api/plants",
+            Some(r#"{"name":"Fern"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let json = body_json(resp).await;
+    assert!(json["difficulty"].is_null());
+    assert!(json["pet_safety"].is_null());
+    assert!(json["growth_speed"].is_null());
+    assert!(json["soil_type"].is_null());
+    assert!(json["soil_moisture"].is_null());
+}
+
+#[tokio::test]
+async fn create_invalid_care_info() {
+    let resp = app()
+        .await
+        .oneshot(json_request(
+            "POST",
+            "/api/plants",
+            Some(r#"{"name":"Fern","difficulty":"impossible"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[tokio::test]
+async fn update_set_care_info() {
+    let app = app().await;
+
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            "/api/plants",
+            Some(r#"{"name":"Orchid"}"#),
+        ))
+        .await
+        .unwrap();
+    let plant = body_json(resp).await;
+    let id = plant["id"].as_i64().unwrap();
+    assert!(plant["difficulty"].is_null());
+
+    let resp = app
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{id}"),
+            Some(r#"{"difficulty":"demanding","pet_safety":"toxic"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    assert_eq!(json["difficulty"], "demanding");
+    assert_eq!(json["pet_safety"], "toxic");
+}
+
+#[tokio::test]
+async fn update_clear_care_info() {
+    let app = app().await;
+
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            "/api/plants",
+            Some(r#"{"name":"Rose","difficulty":"easy"}"#),
+        ))
+        .await
+        .unwrap();
+    let plant = body_json(resp).await;
+    let id = plant["id"].as_i64().unwrap();
+    assert_eq!(plant["difficulty"], "easy");
+
+    let resp = app
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{id}"),
+            Some(r#"{"difficulty":null}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    assert!(json["difficulty"].is_null());
+}
+
+#[tokio::test]
+async fn update_set_and_clear_soil_moisture() {
+    let app = app().await;
+
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            "/api/plants",
+            Some(r#"{"name":"Basil"}"#),
+        ))
+        .await
+        .unwrap();
+    let plant = body_json(resp).await;
+    let id = plant["id"].as_i64().unwrap();
+    assert!(plant["soil_moisture"].is_null());
+
+    // Set soil_moisture
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{id}"),
+            Some(r#"{"soil_moisture":"moist"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    assert_eq!(json["soil_moisture"], "moist");
+
+    // Clear soil_moisture
+    let resp = app
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{id}"),
+            Some(r#"{"soil_moisture":null}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    assert!(json["soil_moisture"].is_null());
+}
+
+#[tokio::test]
+async fn update_invalid_care_info() {
+    let app = app().await;
+
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            "/api/plants",
+            Some(r#"{"name":"Lily"}"#),
+        ))
+        .await
+        .unwrap();
+    let plant = body_json(resp).await;
+    let id = plant["id"].as_i64().unwrap();
+
+    let resp = app
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{id}"),
+            Some(r#"{"pet_safety":"unknown"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
 }
