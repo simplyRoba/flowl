@@ -240,7 +240,7 @@
 
 	.setting-label {
 		font-size: 15px;
-		font-weight: 600;
+		font-weight: 500;
 	}
 
 	.theme-selector {
