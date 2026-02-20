@@ -7,6 +7,7 @@
 	import '$lib/styles/buttons.css';
 	import '$lib/styles/chips.css';
 	import '$lib/styles/inputs.css';
+	import '$lib/styles/sections.css';
 
 	let { children } = $props();
 

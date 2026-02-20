@@ -231,8 +231,8 @@
 
 		<div class="detail-sections">
 			<div class="detail-grid">
-				<div class="detail-card">
-					<div class="detail-card-title"><Droplet size={14} /> Watering</div>
+				<div class="section">
+					<div class="section-title"><Droplet size={14} /> Watering</div>
 					<div class="detail-row"><span class="detail-row-label">Interval</span><span class="detail-row-value">Every {$currentPlant.watering_interval_days} days <Repeat size={14} /></span></div>
 					<div class="detail-row"><span class="detail-row-label">Last watered</span><span class="detail-row-value">{formatDate($currentPlant.last_watered)} <CalendarCheck size={14} /></span></div>
 					<div class="detail-row"><span class="detail-row-label">Next due</span><span class="detail-row-value">{$currentPlant.next_due ? formatDate($currentPlant.next_due) : 'N/A'} <CalendarClock size={14} /></span></div>
@@ -243,8 +243,8 @@
 						</div>
 					{/if}
 				</div>
-				<div class="detail-card">
-					<div class="detail-card-title"><Info size={14} /> Care Info</div>
+				<div class="section">
+					<div class="section-title"><Info size={14} /> Care Info</div>
 					<div class="detail-row">
 						<span class="detail-row-label">Light</span>
 						<span class="detail-row-value">
@@ -280,14 +280,14 @@
 			</div>
 
 			{#if $currentPlant.notes}
-				<div class="detail-card">
-					<div class="detail-card-title"><PencilIcon size={14} /> Notes</div>
+				<div class="section">
+					<div class="section-title"><PencilIcon size={14} /> Notes</div>
 					<div class="detail-notes">{$currentPlant.notes}</div>
 				</div>
 			{/if}
 
-			<div class="detail-card care-journal">
-				<div class="detail-card-title"><BookOpen size={14} /> Care Journal</div>
+			<div class="section care-journal">
+				<div class="section-title"><BookOpen size={14} /> Care Journal</div>
 
 			{#if $careEvents.length === 0}
 				<p class="journal-empty">No care events recorded yet.</p>
@@ -477,18 +477,6 @@
 		margin-bottom: 14px;
 	}
 
-	.detail-card-title {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		font-size: var(--fs-section-label);
-		font-weight: 600;
-		color: var(--color-text-muted);
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		margin-bottom: 12px;
-	}
-
 	.detail-sections {
 		display: flex;
 		flex-direction: column;
@@ -499,13 +487,6 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 16px;
-	}
-
-	.detail-card {
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-card);
-		padding: 16px;
 	}
 
 	.detail-row {

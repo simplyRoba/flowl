@@ -186,9 +186,9 @@
 </script>
 
 <form class="plant-form" id={formId} onsubmit={handleSubmit}>
-	<section class="form-section media-section">
+	<section class="section media-section">
 		<div class="media-header">
-			<div class="form-section-title">Media</div>
+			<div class="section-title">Media</div>
 		</div>
 		<div class="media-stack">
 			{#if mediaMode !== 'icon'}
@@ -270,8 +270,8 @@
 		</div>
 	</section>
 
-	<section class="form-section">
-		<div class="form-section-title">Identity</div>
+	<section class="section">
+		<div class="section-title">Identity</div>
 		<div class="form-group">
 			<label class="form-label" for="plant-name">Name *</label>
 			<input
@@ -302,8 +302,8 @@
 		<!-- Icon picker moved to Media section -->
 	</section>
 
-	<section class="form-section">
-		<div class="form-section-title">Location</div>
+	<section class="section">
+		<div class="section-title">Location</div>
 		<LocationChips
 			locations={$locations}
 			value={locationId}
@@ -313,13 +313,13 @@
 		/>
 	</section>
 
-	<section class="form-section">
-		<div class="form-section-title">Watering</div>
+	<section class="section">
+		<div class="section-title">Watering</div>
 		<WateringInterval value={wateringDays} onchange={(v) => { wateringDays = v; }} />
 	</section>
 
-	<section class="form-section">
-		<div class="form-section-title">Light needs</div>
+	<section class="section">
+		<div class="section-title">Light needs</div>
 		<div class="light-selector">
 			<button
 				type="button"
@@ -354,8 +354,8 @@
 		</div>
 	</section>
 
-	<section class="form-section">
-		<div class="form-section-title">Care Info <span class="section-optional">(optional)</span></div>
+	<section class="section">
+		<div class="section-title">Care Info <span class="section-optional">(optional)</span></div>
 
 		<div class="care-info-group">
 			<span class="care-info-label"><Gauge size={14} /> Difficulty</span>
@@ -459,8 +459,8 @@
 		</div>
 	</section>
 
-	<section class="form-section">
-		<div class="form-section-title">Notes</div>
+	<section class="section">
+		<div class="section-title">Notes</div>
 		<textarea
 			bind:value={notes}
 			placeholder="Care tips, observations, anything useful..."
@@ -481,13 +481,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
-	}
-
-	.form-section {
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-card);
-		padding: 16px;
 	}
 
 	.media-section {
@@ -551,15 +544,6 @@
 		white-space: nowrap;
 	}
 
-
-	.form-section-title {
-		font-size: var(--fs-section-label);
-		font-weight: 600;
-		color: var(--color-text-muted);
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		margin: 0 0 16px;
-	}
 
 	.form-group {
 		display: flex;
@@ -770,10 +754,6 @@
 	@media (max-width: 768px) {
 		.plant-form {
 			gap: 16px;
-		}
-
-		.form-section {
-			padding: 16px;
 		}
 
 		.photo-upload-refined {

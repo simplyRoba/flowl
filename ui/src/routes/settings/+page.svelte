@@ -95,8 +95,8 @@
 		<h1>Settings</h1>
 	</header>
 
-	<section class="settings-card">
-		<h2><Palette size={14} /> Appearance</h2>
+	<section class="section settings-section">
+		<h2 class="section-title"><Palette size={14} /> Appearance</h2>
 		<div class="setting-row">
 			<div>
 				<div class="setting-label">Theme</div>
@@ -117,8 +117,8 @@
 		</div>
 	</section>
 
-	<section class="settings-card">
-		<h2><MapPin size={14} /> Locations</h2>
+	<section class="section settings-section">
+		<h2 class="section-title"><MapPin size={14} /> Locations</h2>
 
 		{#if $locationsError}
 			<p class="error">{$locationsError}</p>
@@ -180,8 +180,8 @@
 	</section>
 
 	{#if stats}
-		<section class="settings-card">
-			<h2><Database size={14} /> Data</h2>
+		<section class="section settings-section">
+			<h2 class="section-title"><Database size={14} /> Data</h2>
 			<div class="about-row">
 				<span class="setting-label">Plants</span>
 				<span>{stats.plant_count} {stats.plant_count === 1 ? 'plant' : 'plants'}, {stats.care_event_count} {stats.care_event_count === 1 ? 'log entry' : 'log entries'}</span>
@@ -190,8 +190,8 @@
 	{/if}
 
 	{#if appInfo}
-		<section class="settings-card">
-			<h2><Info size={14} /> About</h2>
+		<section class="section settings-section">
+			<h2 class="section-title"><Info size={14} /> About</h2>
 			<div class="about-row">
 				<span class="setting-label">Version</span>
 				<span>{appInfo.version}</span>
@@ -226,24 +226,8 @@
 		margin: 0;
 	}
 
-	.settings-card {
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-card);
-		padding: 20px;
+	.settings-section {
 		margin-bottom: 20px;
-	}
-
-	.settings-card h2 {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		font-size: var(--fs-chip);
-		font-weight: 600;
-		color: var(--color-text-muted);
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		margin: 0 0 16px;
 	}
 
 	.setting-row {
@@ -403,7 +387,7 @@
 	}
 
 	@media (max-width: 768px) {
-		.settings-card {
+		.settings-section {
 			padding: 16px;
 		}
 	}

@@ -1,0 +1,31 @@
+/* ============================================================
+   Section System
+   ============================================================
+   Usage:
+     <section class="section">
+       <h2 class="section-title"><Icon size={14} /> Title</h2>
+       ...content...
+     </section>
+
+   A bordered surface container with an uppercase label header.
+   Used for settings groups, detail cards, and form sections.
+   ============================================================ */
+
+.section {
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-card);
+	padding: 16px;
+}
+
+.section-title {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--fs-section-label);
+	font-weight: 600;
+	color: var(--color-text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin: 0 0 14px;
+}
