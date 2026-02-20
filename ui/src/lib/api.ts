@@ -68,6 +68,12 @@ export interface Stats {
 	care_event_count: number;
 }
 
+export interface MqttStatus {
+	status: 'connected' | 'disconnected' | 'disabled';
+	broker: string | null;
+	topic_prefix: string | null;
+}
+
 class ApiError extends Error {
 	status: number;
 
@@ -104,6 +110,10 @@ export function fetchAppInfo(): Promise<AppInfo> {
 
 export function fetchStats(): Promise<Stats> {
 	return request('GET', '/api/stats');
+}
+
+export function fetchMqttStatus(): Promise<MqttStatus> {
+	return request('GET', '/api/mqtt/status');
 }
 
 export function fetchPlants(): Promise<Plant[]> {

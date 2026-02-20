@@ -7,6 +7,8 @@ mod server;
 mod state;
 
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 
 use state::AppState;
 use tracing::{error, info};
@@ -34,18 +36,19 @@ async fn main() {
     info!("Database ready at {}", config.db_path);
 
     let mqtt_prefix = config.mqtt_topic_prefix.clone();
-    let mqtt_handle = if config.mqtt_disabled {
+    let (mqtt_handle, mqtt_connected) = if config.mqtt_disabled {
         info!("FLOWL_MQTT_DISABLED set, skipping MQTT initialization");
-        None
+        (None, None)
     } else {
-        let handle = mqtt::connect(&config);
+        let connected = Arc::new(AtomicBool::new(false));
+        let handle = mqtt::connect(&config, connected.clone());
         if handle.is_some() {
             info!(
                 "MQTT client connecting to {}:{}",
                 config.mqtt_host, config.mqtt_port
             );
         }
-        handle
+        (handle, Some(connected))
     };
     let mqtt_client = mqtt_handle.as_ref().map(|h| h.client.clone());
 
@@ -63,6 +66,10 @@ async fn main() {
         upload_dir,
         mqtt_client: mqtt_client.clone(),
         mqtt_prefix: mqtt_prefix.clone(),
+        mqtt_connected,
+        mqtt_host: config.mqtt_host.clone(),
+        mqtt_port: config.mqtt_port,
+        mqtt_disabled: config.mqtt_disabled,
     };
     let router = server::router(state);
 

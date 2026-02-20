@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
 use serde_json::json;
@@ -40,7 +42,7 @@ impl MqttHandle {
     }
 }
 
-pub fn connect(config: &Config) -> Option<MqttHandle> {
+pub fn connect(config: &Config, connected: Arc<AtomicBool>) -> Option<MqttHandle> {
     if config.mqtt_disabled {
         info!("FLOWL_MQTT_DISABLED=true, skipping MQTT client setup");
         return None;
@@ -55,10 +57,12 @@ pub fn connect(config: &Config) -> Option<MqttHandle> {
         loop {
             match event_loop.poll().await {
                 Ok(Event::Incoming(Packet::ConnAck(_))) => {
+                    connected.store(true, Ordering::Relaxed);
                     info!("MQTT connected");
                 }
                 Ok(_) => {}
                 Err(e) => {
+                    connected.store(false, Ordering::Relaxed);
                     warn!("MQTT connection error: {e}");
                     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                 }

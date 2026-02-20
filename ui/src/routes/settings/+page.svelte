@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { get } from 'svelte/store';
-	import { Check, Pencil, Trash2, Palette, MapPin, Database, Info } from 'lucide-svelte';
+	import { Check, Pencil, Trash2, Palette, MapPin, Database, Info, Radio } from 'lucide-svelte';
 	import { locations, locationsError, loadLocations, deleteLocation, updateLocation } from '$lib/stores/locations';
 	import {
 		themePreference,
 		setThemePreference,
 		type ThemePreference
 	} from '$lib/stores/theme';
-	import { fetchAppInfo, fetchStats, type AppInfo, type Stats } from '$lib/api';
+	import { fetchAppInfo, fetchStats, fetchMqttStatus, type AppInfo, type Stats, type MqttStatus } from '$lib/api';
 
 	const themeOptions: { value: ThemePreference; label: string }[] = [
 		{ value: 'light', label: 'Light' },
@@ -21,6 +21,7 @@
 	let editError = $state('');
 	let appInfo: AppInfo | null = $state(null);
 	let stats: Stats | null = $state(null);
+	let mqttStatus: MqttStatus | null = $state(null);
 
 	onMount(() => {
 		loadLocations();
@@ -30,6 +31,9 @@
 		fetchStats()
 			.then((s) => { stats = s; })
 			.catch(() => { /* hide Data section on failure */ });
+		fetchMqttStatus()
+			.then((m) => { mqttStatus = m; })
+			.catch(() => { /* hide MQTT section on failure */ });
 	});
 
 	async function startEditing(id: number, name: string) {
@@ -178,6 +182,34 @@
 			</ul>
 		{/if}
 	</section>
+
+	{#if mqttStatus}
+		<section class="section settings-section">
+			<h2 class="section-title"><Radio size={14} /> MQTT</h2>
+			<div class="about-row">
+				<span class="setting-label">Status</span>
+				<span class="mqtt-status">
+					{#if mqttStatus.status === 'connected'}
+						<span class="status-dot status-connected"></span> Connected
+					{:else if mqttStatus.status === 'disconnected'}
+						<span class="status-dot status-disconnected"></span> Disconnected
+					{:else}
+						Disabled
+					{/if}
+				</span>
+			</div>
+			{#if mqttStatus.status !== 'disabled'}
+				<div class="about-row">
+					<span class="setting-label">Broker</span>
+					<span>{mqttStatus.broker}</span>
+				</div>
+				<div class="about-row">
+					<span class="setting-label">Topic prefix</span>
+					<span>{mqttStatus.topic_prefix}</span>
+				</div>
+			{/if}
+		</section>
+	{/if}
 
 	{#if stats}
 		<section class="section settings-section">
@@ -375,6 +407,27 @@
 
 	.about-row > span:not(.setting-label) {
 		color: var(--color-text-muted);
+	}
+
+	.mqtt-status {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.status-dot {
+		display: inline-block;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+	}
+
+	.status-connected {
+		background-color: var(--color-success);
+	}
+
+	.status-disconnected {
+		background-color: var(--color-text-muted);
 	}
 
 	.about-row a {

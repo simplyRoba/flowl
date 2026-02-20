@@ -37,6 +37,10 @@ pub async fn test_app() -> Router {
         upload_dir,
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
+        mqtt_connected: None,
+        mqtt_host: "localhost".to_string(),
+        mqtt_port: 1883,
+        mqtt_disabled: true,
     };
     flowl::server::router(state)
 }
@@ -50,6 +54,10 @@ pub async fn test_app_with_uploads() -> (Router, PathBuf) {
         upload_dir: upload_dir.clone(),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
+        mqtt_connected: None,
+        mqtt_host: "localhost".to_string(),
+        mqtt_port: 1883,
+        mqtt_disabled: true,
     };
     (flowl::server::router(state), upload_dir)
 }
