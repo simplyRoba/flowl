@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { ArrowLeft, Pencil, Trash2, Droplet, Droplets, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, X, Info, Gauge, PawPrint, TrendingUp, Layers, Repeat, CalendarCheck, CalendarClock } from 'lucide-svelte';
+	import { ArrowLeft, Pencil, Trash2, Droplet, Droplets, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, Info, Gauge, PawPrint, TrendingUp, Layers, Repeat, CalendarCheck, CalendarClock } from 'lucide-svelte';
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
 	import { careEvents, loadCareEvents, addCareEvent, removeCareEvent } from '$lib/stores/care';
 	import { emojiToSvgPath } from '$lib/emoji';
@@ -317,12 +317,12 @@
 								</span>
 								<span class="timeline-actions">
 									<button
-										class="event-delete"
+										class="btn btn-ghost event-delete"
 										onclick={() => handleEventDelete(event)}
 										disabled={deletingEventId === event.id}
 										aria-label="Delete log entry"
 									>
-										<X size={14} />
+										<Trash2 size={16} />
 									</button>
 								</span>
 							</li>
@@ -607,30 +607,13 @@
 	.timeline-actions {
 		display: flex;
 		align-items: flex-start;
-	}
-
-	.event-delete {
-		width: 28px;
-		height: 28px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-btn);
-		border: none;
-		background: var(--color-surface);
+	}	.event-delete {
 		color: var(--color-text-muted);
-		cursor: pointer;
-		transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
 	}
 
 	.event-delete:hover:not(:disabled) {
-		background: var(--color-danger-soft);
 		color: var(--color-danger);
-	}
-
-	.event-delete:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
+		opacity: 1;
 	}
 
 	.timeline-sub {
