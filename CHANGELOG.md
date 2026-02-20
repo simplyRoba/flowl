@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.10.0](https://github.com/simplyRoba/flowl/compare/v0.9.0...v0.10.0) (2026-02-20)
+
+
+### Features
+
+* add About section to settings page with app info endpoint ([0b9722b](https://github.com/simplyRoba/flowl/commit/0b9722baa576ae0ea8c961d7b8083e548e2daa7f))
+* add Data section to settings page with plant and care entry counts ([e060b57](https://github.com/simplyRoba/flowl/commit/e060b57afc8af376af81670f68d84ca5a0726e71))
+* add MQTT status section to settings page ([15abd88](https://github.com/simplyRoba/flowl/commit/15abd885c37780d0e289ab76eb312db1bd999436))
+
+
+### Bug Fixes
+
+* **ci:** bump actions/setup-node from 4 to 6 ([887dc1a](https://github.com/simplyRoba/flowl/commit/887dc1a6cc72101a18c50c44eb93ad37694352ee))
+* **deps:** bump lucide-svelte from 0.574.0 to 0.575.0 in /ui ([7085f38](https://github.com/simplyRoba/flowl/commit/7085f38a68a7c2e3ca5d054a2e5b68c048af6256))
+
 ## [0.9.0](https://github.com/simplyRoba/flowl/compare/v0.8.0...v0.9.0) (2026-02-19)
 
 
