@@ -279,8 +279,8 @@
 				type="text"
 				bind:value={name}
 				placeholder="e.g. Monstera Deliciosa"
-				class="form-input"
-				class:error={nameError}
+				class="input"
+				class:input-error={nameError}
 				oninput={() => { nameError = ''; }}
 			/>
 			{#if nameError}
@@ -295,7 +295,7 @@
 				type="text"
 				bind:value={species}
 				placeholder="e.g. Monstera"
-				class="form-input"
+				class="input"
 			/>
 		</div>
 
@@ -464,7 +464,7 @@
 		<textarea
 			bind:value={notes}
 			placeholder="Care tips, observations, anything useful..."
-			class="form-input textarea"
+			class="input textarea"
 			rows="4"
 		></textarea>
 	</section>
@@ -576,26 +576,6 @@
 		font-size: var(--fs-chip);
 		font-weight: 600;
 		color: var(--color-text-muted);
-	}
-
-	.form-input {
-		padding: 10px 12px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-btn);
-		font-size: var(--fs-input);
-		font-family: inherit;
-		outline: none;
-		transition: border-color var(--transition-speed);
-		background: var(--color-surface);
-		color: var(--color-text);
-	}
-
-	.form-input:focus {
-		border-color: var(--color-primary);
-	}
-
-	.form-input.error {
-		border-color: var(--color-danger);
 	}
 
 	.textarea {

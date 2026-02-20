@@ -58,9 +58,9 @@
 				type="text"
 				bind:value={newName}
 				placeholder="Location name"
-				class="new-input"
+				class="input new-input"
 			/>
-			<button type="submit" class="chip chip-dashed">Add</button>
+			<button type="submit" class="chip add-btn">Add</button>
 			<button type="button" class="chip" onclick={() => { adding = false; newName = ''; }}>
 				Cancel
 			</button>
@@ -90,17 +90,22 @@
 		align-items: center;
 	}
 
-	.new-input {
-		padding: 8px 12px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-btn);
-		font-size: var(--fs-chip);
-		outline: none;
-		width: 140px;
+	.add-btn {
+		background: var(--color-primary);
+		color: var(--color-text-on-primary);
+		border-color: var(--color-primary);
 	}
 
-	.new-input:focus {
-		border-color: var(--color-primary);
+	.add-btn:hover {
+		background: var(--color-primary-dark);
+		border-color: var(--color-primary-dark);
+	}
+
+	.new-input {
+		width: 140px;
+		padding: 8px 14px;
+		font-size: var(--fs-chip);
+		border-radius: var(--radius-pill);
 	}
 
 </style>

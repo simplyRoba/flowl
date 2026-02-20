@@ -44,7 +44,7 @@
 			<span class="stepper-short">Custom:</span>
 		</span>
 		<div class="stepper">
-			<button type="button" class="stepper-btn" onclick={decrement} disabled={value <= 1}>
+			<button type="button" class="btn btn-icon stepper-btn" onclick={decrement} disabled={value <= 1}>
 				<Minus size={16} />
 			</button>
 			<input
@@ -57,7 +57,7 @@
 					if (!Number.isNaN(next) && next > 0) onchange(next);
 				}}
 			/>
-			<button type="button" class="stepper-btn" onclick={increment}>
+			<button type="button" class="btn btn-icon stepper-btn" onclick={increment}>
 				<Plus size={16} />
 			</button>
 		</div>
@@ -144,31 +144,37 @@
 		display: flex;
 		align-items: center;
 		gap: 0;
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-btn);
 		overflow: hidden;
 	}
 
 	.stepper-btn {
-		width: 40px;
-		height: 40px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+		border-radius: 0;
 		background: var(--color-surface-muted);
-		border: none;
-		cursor: pointer;
-		color: var(--color-text);
-		transition: background var(--transition-speed);
+	}
+
+	.stepper-btn:first-child {
+		border-right: none;
+		border-radius: var(--radius-btn) 0 0 var(--radius-btn);
+	}
+
+	.stepper-btn:last-child {
+		border-left: none;
+		border-radius: 0 var(--radius-btn) var(--radius-btn) 0;
 	}
 
 	.stepper-btn:hover:not(:disabled) {
-		background: var(--color-surface-muted);
+		background: var(--color-primary-tint);
+		color: var(--color-primary);
+		border-color: var(--color-primary);
 	}
 
-	.stepper-btn:disabled {
-		opacity: 0.4;
-		cursor: default;
+	.stepper-btn:first-child:hover:not(:disabled) + .stepper-value {
+		border-left-color: var(--color-primary);
+	}
+
+	.stepper:has(.stepper-btn:last-child:hover:not(:disabled)) .stepper-value {
+		border-right-color: var(--color-primary);
 	}
 
 	.stepper-value {
@@ -177,11 +183,16 @@
 		width: 52px;
 		text-align: center;
 		background: var(--color-surface);
-		border: none;
-		border-left: 1px solid var(--color-border);
-		border-right: 1px solid var(--color-border);
+		border: 1px solid var(--color-border);
 		height: 40px;
 		font-family: inherit;
+		color: var(--color-text);
+		outline: none;
+		box-sizing: border-box;
+	}
+
+	.stepper-value:focus {
+		border-color: var(--color-primary);
 	}
 
 	.stepper-value::-webkit-outer-spin-button,

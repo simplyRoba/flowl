@@ -352,7 +352,7 @@
 						{/each}
 					</div>
 					<textarea
-						class="log-notes"
+						class="input log-notes"
 						placeholder="Notes (optional)"
 						bind:value={logNotes}
 						rows="2"
@@ -362,7 +362,7 @@
 							<label class="log-label">
 								When
 								<input
-									class="log-input"
+									class="input log-input"
 									type="datetime-local"
 									max={nowLocalInputValue()}
 									bind:value={logOccurredAt}
@@ -667,17 +667,6 @@
 
 	.log-input {
 		width: 100%;
-		padding: 8px 10px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-btn);
-		font-size: var(--fs-btn);
-		font-family: inherit;
-		box-sizing: border-box;
-	}
-
-	.log-input:focus {
-		outline: none;
-		border-color: var(--color-primary);
 	}
 
 	.type-chips {
@@ -690,19 +679,8 @@
 
 	.log-notes {
 		width: 100%;
-		padding: 8px 10px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-btn);
-		font-size: var(--fs-btn);
-		font-family: inherit;
 		resize: vertical;
 		margin-bottom: 10px;
-		box-sizing: border-box;
-	}
-
-	.log-notes:focus {
-		outline: none;
-		border-color: var(--color-primary);
 	}
 
 	.log-actions {

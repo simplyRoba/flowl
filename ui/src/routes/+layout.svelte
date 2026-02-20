@@ -6,6 +6,7 @@
 	import { initTheme } from '$lib/stores/theme';
 	import '$lib/styles/buttons.css';
 	import '$lib/styles/chips.css';
+	import '$lib/styles/inputs.css';
 
 	let { children } = $props();
 

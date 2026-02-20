@@ -123,8 +123,8 @@
 							<div class="edit-group">
 								<div class="edit-row">
 									<input
-										class="edit-input"
-										class:error={editError}
+										class="input edit-input"
+										class:input-error={editError}
 										type="text"
 										bind:value={editValue}
 										onblur={() => commitEdit(location.id, location.name)}
@@ -322,23 +322,6 @@
 
 	.edit-input {
 		flex: 1;
-		padding: 10px 12px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-btn);
-		font-size: var(--fs-input);
-		font-family: inherit;
-		outline: none;
-		transition: border-color var(--transition-speed);
-		background: var(--color-surface);
-		color: var(--color-text);
-	}
-
-	.edit-input:focus {
-		border-color: var(--color-primary);
-	}
-
-	.edit-input.error {
-		border-color: var(--color-danger);
 	}
 
 	.field-error {
