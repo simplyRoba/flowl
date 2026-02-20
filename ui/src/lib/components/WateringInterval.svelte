@@ -99,7 +99,7 @@
 
 	.interval-preset.active {
 		border-color: var(--color-primary);
-		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		background: var(--color-primary-tint);
 		color: var(--color-primary);
 	}
 

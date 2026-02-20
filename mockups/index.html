@@ -72,9 +72,9 @@
   .timeline-icon svg { width: 16px !important; height: 16px !important; }
   .upload-icon svg { width: 24px !important; height: 24px !important; }
   .log-entry-icon svg { width: 18px !important; height: 18px !important; }
-  .filter-chip svg { width: 14px !important; height: 14px !important; }
-  .mobile-content .filter-chip { padding: 8px 10px; min-width: 40px; min-height: 40px; justify-content: center; }
-  .mobile-content .filter-chip svg { width: 18px !important; height: 18px !important; }
+  .chip svg { width: 14px !important; height: 14px !important; }
+  .mobile-content .chip { padding: 8px 10px; min-width: 40px; min-height: 40px; justify-content: center; }
+  .mobile-content .chip svg { width: 18px !important; height: 18px !important; }
   .mobile-content .top-bar-icon { width: 44px; height: 44px; }
   .mobile-content .settings-btn { padding: 10px 16px; }
   .mobile-content .theme-pill { padding: 8px 14px; }
@@ -1295,36 +1295,6 @@
     flex-wrap: wrap;
   }
 
-  .location-chip {
-    padding: 8px 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
-    background: var(--surface);
-    color: var(--text);
-    font-size: 13px;
-    font-weight: 500;
-    font-family: var(--font);
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .location-chip:hover { border-color: var(--primary); }
-
-  .location-chip.active {
-    border-color: var(--primary);
-    background: color-mix(in srgb, var(--primary) 10%, transparent);
-    color: var(--primary);
-  }
-
-  .location-chip.add-location {
-    border-style: dashed;
-    color: var(--text-muted);
-  }
-
-  .location-chip.add-location:hover { color: var(--primary); border-color: var(--primary); }
 
   .light-selector {
     display: flex;
@@ -1459,24 +1429,6 @@
     flex-wrap: wrap;
   }
 
-  .filter-chip {
-    padding: 5px 12px;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 500;
-    font-family: var(--font);
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .filter-chip:hover { border-color: var(--primary); color: var(--text); }
-  .filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
   .log-day-group {
     margin-bottom: 20px;
@@ -1606,6 +1558,7 @@
   /* Outline */
   .btn-outline { background: none; border: 1px solid var(--border); color: var(--text-muted); }
   .btn-outline:hover:not(:disabled) { background: color-mix(in srgb, var(--primary) 5%, transparent); border-color: var(--primary); color: var(--primary); }
+  .btn-outline.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
 
   /* Ghost */
   .btn-ghost { background: none; padding: 0; color: var(--primary); }
@@ -1624,7 +1577,34 @@
     .btn-sm { min-height: 40px; }
     .btn-icon { width: 44px; height: 44px; }
     .btn-ghost { min-height: 0; }
+    .chip { min-height: 40px; }
   }
+
+  /* ====== Unified chip system ====== */
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .chip:hover { border-color: var(--primary); }
+  .chip.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
+  .chip-solid.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .chip-dashed { border-style: dashed; color: var(--text-muted); }
+  .chip-dashed:hover { color: var(--primary); }
 </style>
 </head>
 <body>
@@ -2380,12 +2360,12 @@
                   <div class="form-section">
                     <div class="form-section-title">Location</div>
                     <div class="location-chips">
-                      <div class="location-chip active"><i data-lucide="map-pin" class="chip-icon"></i> Living Room</div>
-                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Bedroom</div>
-                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Kitchen</div>
-                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Balcony</div>
-                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Office</div>
-                      <div class="location-chip add-location">+ New</div>
+                      <div class="chip active"><i data-lucide="map-pin" class="chip-icon"></i> Living Room</div>
+                      <div class="chip"><i data-lucide="map-pin" class="chip-icon"></i> Bedroom</div>
+                      <div class="chip"><i data-lucide="map-pin" class="chip-icon"></i> Kitchen</div>
+                      <div class="chip"><i data-lucide="map-pin" class="chip-icon"></i> Balcony</div>
+                      <div class="chip"><i data-lucide="map-pin" class="chip-icon"></i> Office</div>
+                      <div class="chip chip-dashed">+ New</div>
                     </div>
                   </div>
 
@@ -2569,12 +2549,12 @@
                   <div class="form-section">
                     <div class="form-section-title">Location</div>
                     <div class="location-chips">
-                      <div class="location-chip active"><i data-lucide="map-pin" class="chip-icon"></i> Living Room</div>
-                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Bedroom</div>
-                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Kitchen</div>
-                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Balcony</div>
-                      <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Office</div>
-                      <div class="location-chip add-location">+ New</div>
+                      <div class="chip active"><i data-lucide="map-pin" class="chip-icon"></i> Living Room</div>
+                      <div class="chip"><i data-lucide="map-pin" class="chip-icon"></i> Bedroom</div>
+                      <div class="chip"><i data-lucide="map-pin" class="chip-icon"></i> Kitchen</div>
+                      <div class="chip"><i data-lucide="map-pin" class="chip-icon"></i> Balcony</div>
+                      <div class="chip"><i data-lucide="map-pin" class="chip-icon"></i> Office</div>
+                      <div class="chip chip-dashed">+ New</div>
                     </div>
                   </div>
 
@@ -2739,11 +2719,11 @@
               <div class="form-section">
                 <div class="form-section-title">Location</div>
                 <div class="location-chips">
-                  <div class="location-chip active"><i data-lucide="map-pin" class="chip-icon"></i> Living Room</div>
-                  <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Bedroom</div>
-                  <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Kitchen</div>
-                  <div class="location-chip"><i data-lucide="map-pin" class="chip-icon"></i> Balcony</div>
-                  <div class="location-chip add-location">+ New</div>
+                  <div class="chip active"><i data-lucide="map-pin" class="chip-icon"></i> Living Room</div>
+                  <div class="chip"><i data-lucide="map-pin" class="chip-icon"></i> Bedroom</div>
+                  <div class="chip"><i data-lucide="map-pin" class="chip-icon"></i> Kitchen</div>
+                  <div class="chip"><i data-lucide="map-pin" class="chip-icon"></i> Balcony</div>
+                  <div class="chip chip-dashed">+ New</div>
                 </div>
               </div>
 
@@ -2895,12 +2875,12 @@
               </div>
 
               <div class="log-filters">
-                <button class="filter-chip active">All</button>
-                <button class="filter-chip"><i data-lucide="droplet"></i> Watered</button>
-                <button class="filter-chip"><i data-lucide="leaf"></i> Fertilized</button>
-                <button class="filter-chip"><i data-lucide="shovel"></i> Repotted</button>
-                <button class="filter-chip"><i data-lucide="scissors"></i> Pruned</button>
-                <button class="filter-chip"><i data-lucide="pencil"></i> Custom</button>
+                <button class="chip chip-solid active">All</button>
+                <button class="chip chip-solid"><i data-lucide="droplet"></i> Watered</button>
+                <button class="chip chip-solid"><i data-lucide="leaf"></i> Fertilized</button>
+                <button class="chip chip-solid"><i data-lucide="shovel"></i> Repotted</button>
+                <button class="chip chip-solid"><i data-lucide="scissors"></i> Pruned</button>
+                <button class="chip chip-solid"><i data-lucide="pencil"></i> Custom</button>
               </div>
 
               <div class="log-day-group">
@@ -3018,12 +2998,12 @@
               </div>
 
               <div class="log-filters">
-                <button class="filter-chip active">All</button>
-                <button class="filter-chip"><i data-lucide="droplet"></i> Watered</button>
-                <button class="filter-chip"><i data-lucide="leaf"></i> Fertilized</button>
-                <button class="filter-chip"><i data-lucide="shovel"></i> Repotted</button>
-                <button class="filter-chip"><i data-lucide="scissors"></i> Pruned</button>
-                <button class="filter-chip"><i data-lucide="pencil"></i> Custom</button>
+                <button class="chip chip-solid active">All</button>
+                <button class="chip chip-solid"><i data-lucide="droplet"></i> Watered</button>
+                <button class="chip chip-solid"><i data-lucide="leaf"></i> Fertilized</button>
+                <button class="chip chip-solid"><i data-lucide="shovel"></i> Repotted</button>
+                <button class="chip chip-solid"><i data-lucide="scissors"></i> Pruned</button>
+                <button class="chip chip-solid"><i data-lucide="pencil"></i> Custom</button>
               </div>
 
               <div class="log-day-group">
@@ -3138,12 +3118,12 @@
             <h2 style="font-size:18px;font-weight:600;margin-bottom:12px">Care Journal</h2>
 
             <div class="log-filters" style="margin-bottom:12px">
-              <button class="filter-chip active">All</button>
-              <button class="filter-chip"><i data-lucide="droplet"></i></button>
-              <button class="filter-chip"><i data-lucide="leaf"></i></button>
-              <button class="filter-chip"><i data-lucide="shovel"></i></button>
-              <button class="filter-chip"><i data-lucide="scissors"></i></button>
-              <button class="filter-chip"><i data-lucide="pencil"></i></button>
+              <button class="chip chip-solid active">All</button>
+              <button class="chip chip-solid"><i data-lucide="droplet"></i></button>
+              <button class="chip chip-solid"><i data-lucide="leaf"></i></button>
+              <button class="chip chip-solid"><i data-lucide="shovel"></i></button>
+              <button class="chip chip-solid"><i data-lucide="scissors"></i></button>
+              <button class="chip chip-solid"><i data-lucide="pencil"></i></button>
             </div>
 
             <div class="log-day-group">

@@ -34,7 +34,7 @@
 	{#if showNone}
 		<button
 			type="button"
-			class="location-chip"
+			class="chip"
 			class:active={value === null}
 			onclick={() => onchange(null)}
 		>
@@ -44,7 +44,7 @@
 	{#each locations as loc (loc.id)}
 		<button
 			type="button"
-			class="location-chip"
+			class="chip"
 			class:active={value === loc.id}
 			onclick={() => onchange(loc.id)}
 		>
@@ -60,13 +60,13 @@
 				placeholder="Location name"
 				class="new-input"
 			/>
-			<button type="submit" class="location-chip add-location">Add</button>
-			<button type="button" class="location-chip" onclick={() => { adding = false; newName = ''; }}>
+			<button type="submit" class="chip chip-dashed">Add</button>
+			<button type="button" class="chip" onclick={() => { adding = false; newName = ''; }}>
 				Cancel
 			</button>
 		</form>
 	{:else}
-		<button type="button" class="location-chip add-location" onclick={() => { adding = true; }}>
+		<button type="button" class="chip chip-dashed" onclick={() => { adding = true; }}>
 			+ New
 		</button>
 	{/if}
@@ -80,40 +80,8 @@
 		align-items: center;
 	}
 
-	.location-chip {
+	.chip {
 		padding: 8px 14px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-pill);
-		background: var(--color-surface);
-		font-size: var(--fs-chip);
-		font-weight: 500;
-		cursor: pointer;
-		transition: all var(--transition-speed);
-		white-space: nowrap;
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-		color: var(--color-text);
-	}
-
-	.location-chip:hover {
-		border-color: var(--color-primary);
-	}
-
-	.location-chip.active {
-		border-color: var(--color-primary);
-		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-		color: var(--color-primary);
-	}
-
-	.location-chip.add-location {
-		border-style: dashed;
-		color: var(--color-text-muted);
-	}
-
-	.location-chip.add-location:hover {
-		border-color: var(--color-primary);
-		color: var(--color-primary);
 	}
 
 	.new-location {

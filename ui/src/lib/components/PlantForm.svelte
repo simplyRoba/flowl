@@ -367,7 +367,7 @@
 				] as opt}
 					<button
 						type="button"
-						class="care-option"
+						class="btn btn-outline care-option"
 						class:active={difficulty === opt.value}
 						onclick={() => { difficulty = difficulty === opt.value ? null : opt.value; }}
 					>
@@ -387,7 +387,7 @@
 				] as opt}
 					<button
 						type="button"
-						class="care-option"
+						class="btn btn-outline care-option"
 						class:active={petSafety === opt.value}
 						onclick={() => { petSafety = petSafety === opt.value ? null : opt.value; }}
 					>
@@ -407,7 +407,7 @@
 				] as opt}
 					<button
 						type="button"
-						class="care-option"
+						class="btn btn-outline care-option"
 						class:active={growthSpeed === opt.value}
 						onclick={() => { growthSpeed = growthSpeed === opt.value ? null : opt.value; }}
 					>
@@ -428,7 +428,7 @@
 				] as opt}
 					<button
 						type="button"
-						class="care-option"
+						class="btn btn-outline care-option"
 						class:active={soilType === opt.value}
 						onclick={() => { soilType = soilType === opt.value ? null : opt.value; }}
 					>
@@ -448,7 +448,7 @@
 				] as opt}
 					<button
 						type="button"
-						class="care-option"
+						class="btn btn-outline care-option"
 						class:active={soilMoisture === opt.value}
 						onclick={() => { soilMoisture = soilMoisture === opt.value ? null : opt.value; }}
 					>
@@ -631,7 +631,7 @@
 
 	.photo-upload-refined.dragging {
 		border-color: var(--color-primary);
-		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		background: var(--color-primary-tint);
 		color: var(--color-primary-dark);
 	}
 
@@ -733,28 +733,9 @@
 
 	.care-option {
 		flex: 1;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 4px;
 		padding: 8px 10px;
-		border: 1px solid var(--color-border);
 		border-radius: 10px;
-		background: var(--color-surface);
-		cursor: pointer;
-		transition: all var(--transition-speed);
-		color: var(--color-text);
-		font-size: 13px;
-	}
-
-	.care-option:hover {
-		border-color: var(--color-primary);
-	}
-
-	.care-option.active {
-		border-color: var(--color-primary);
-		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-		color: var(--color-primary);
+		font-size: var(--fs-chip);
 	}
 
 	.light-selector {
@@ -785,7 +766,7 @@
 
 	.light-option.active {
 		border-color: var(--color-primary);
-		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		background: var(--color-primary-tint);
 		color: var(--color-primary);
 	}
 

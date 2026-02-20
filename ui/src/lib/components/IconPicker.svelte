@@ -47,7 +47,7 @@
 
 	.emoji-option.active {
 		border-color: var(--color-primary);
-		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		background: var(--color-primary-tint);
 		box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
 	}
 </style>

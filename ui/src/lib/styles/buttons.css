@@ -1,10 +1,11 @@
 /* ============================================================
-   Unified Button System
+   Button System
    ============================================================
    Usage:
      <button class="btn btn-primary">Save</button>
      <button class="btn btn-water btn-sm">Water</button>
      <button class="btn btn-outline">Cancel</button>
+     <button class="btn btn-outline active">Active toggle</button>
      <button class="btn btn-ghost">+ Add entry</button>
      <button class="btn btn-icon"><Pencil /></button>
      <button class="btn btn-icon btn-danger"><Trash2 /></button>
@@ -89,6 +90,12 @@
 	color: var(--color-primary);
 }
 
+.btn-outline.active {
+	border-color: var(--color-primary);
+	background: var(--color-primary-tint);
+	color: var(--color-primary);
+}
+
 /* ---- Ghost (no border, no bg, text-colored) ---- */
 .btn-ghost {
 	background: none;
@@ -111,7 +118,7 @@
 }
 
 .btn-icon:hover:not(:disabled) {
-	background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+	background: var(--color-primary-tint);
 	border-color: var(--color-primary);
 	color: var(--color-primary);
 }

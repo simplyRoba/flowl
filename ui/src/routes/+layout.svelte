@@ -4,7 +4,8 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import { page } from '$app/state';
 	import { initTheme } from '$lib/stores/theme';
-	import '$lib/styles/components.css';
+	import '$lib/styles/buttons.css';
+	import '$lib/styles/chips.css';
 
 	let { children } = $props();
 
@@ -45,6 +46,7 @@
 		--color-text: #2C2418;
 		--color-text-muted: #8C7E6E;
 		--color-primary: #6B8F71;
+		--color-primary-tint: color-mix(in srgb, var(--color-primary) 10%, transparent);
 		--color-primary-dark: #4A6B4F;
 		--color-secondary: #C4775B;
 		--color-water: #5B9BC4;
@@ -91,6 +93,7 @@
 		--color-text: #EDE6DB;
 		--color-text-muted: #9C8E7E;
 		--color-primary: #8BB592;
+		--color-primary-tint: color-mix(in srgb, var(--color-primary) 10%, transparent);
 		--color-primary-dark: #A3CDA9;
 		--color-secondary: #D49478;
 		--color-water: #78B4D8;

@@ -240,7 +240,7 @@
 
 	.theme-option:hover {
 		color: var(--color-text);
-		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+		background: var(--color-primary-tint);
 	}
 
 	.theme-option.active {

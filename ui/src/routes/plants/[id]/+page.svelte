@@ -343,8 +343,8 @@
 							{ value: 'custom', label: 'Custom' }
 						] as chip}
 							<button
-								class="type-chip"
-								class:selected={logEventType === chip.value}
+								class="chip chip-solid"
+								class:active={logEventType === chip.value}
 								onclick={() => logEventType = chip.value}
 							>
 								{chip.label}
@@ -687,27 +687,6 @@
 		margin-bottom: 10px;
 	}
 
-	.type-chip {
-		padding: 6px 14px;
-		border: 1px solid var(--color-border);
-		border-radius: 16px;
-		background: var(--color-surface);
-		color: var(--color-text-muted);
-		font-size: 13px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: background 0.15s, border-color 0.15s, color 0.15s;
-	}
-
-	.type-chip:hover {
-		background: var(--color-surface-muted);
-	}
-
-	.type-chip.selected {
-		background: var(--color-primary);
-		border-color: var(--color-primary);
-		color: var(--color-text-on-primary);
-	}
 
 	.log-notes {
 		width: 100%;

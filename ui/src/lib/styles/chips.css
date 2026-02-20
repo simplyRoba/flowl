@@ -1,0 +1,67 @@
+/* ============================================================
+   Chip System
+   ============================================================
+   Usage:
+     <button class="chip">Label</button>
+     <button class="chip active">Selected (tint)</button>
+     <button class="chip chip-solid active">Selected (solid)</button>
+     <button class="chip chip-dashed">+ New</button>
+   ============================================================ */
+
+/* ---- Base ---- */
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 6px 14px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-pill);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-size: var(--fs-chip);
+	font-weight: 500;
+	font-family: inherit;
+	line-height: 1.2;
+	white-space: nowrap;
+	cursor: pointer;
+	box-sizing: border-box;
+	transition:
+		background var(--transition-speed),
+		border-color var(--transition-speed),
+		color var(--transition-speed);
+}
+
+.chip:hover {
+	border-color: var(--color-primary);
+}
+
+/* ---- Default active: tint ---- */
+.chip.active {
+	border-color: var(--color-primary);
+	background: var(--color-primary-tint);
+	color: var(--color-primary);
+}
+
+/* ---- Solid active: filled ---- */
+.chip-solid.active {
+	background: var(--color-primary);
+	color: var(--color-text-on-primary);
+	border-color: var(--color-primary);
+}
+
+/* ---- Dashed: add/create actions ---- */
+.chip-dashed {
+	border-style: dashed;
+	color: var(--color-text-muted);
+}
+
+.chip-dashed:hover {
+	color: var(--color-primary);
+}
+
+/* ---- Mobile: larger touch targets ---- */
+@media (max-width: 768px) {
+	.chip {
+		min-height: 40px;
+	}
+}

@@ -134,7 +134,7 @@
 	<div class="log-filters">
 		{#each FILTERS as filter}
 			<button
-				class="filter-chip"
+				class="chip chip-solid"
 				class:active={activeFilter === filter.value}
 				onclick={() => setFilter(filter.value)}
 			>
@@ -234,31 +234,6 @@
 		flex-wrap: wrap;
 	}
 
-	.filter-chip {
-		padding: 5px 12px;
-		border-radius: var(--radius-pill);
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
-		color: var(--color-text-muted);
-		font-size: var(--fs-chip);
-		font-weight: 500;
-		cursor: pointer;
-		transition: all var(--transition-speed);
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-	}
-
-	.filter-chip:hover {
-		border-color: var(--color-primary);
-		color: var(--color-text);
-	}
-
-	.filter-chip.active {
-		background: var(--color-primary);
-		color: var(--color-text-on-primary);
-		border-color: var(--color-primary);
-	}
 
 	.log-timeline {
 		background: transparent;
