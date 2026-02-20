@@ -15,6 +15,7 @@ pub fn router(state: AppState) -> Router {
     let uploads = ServeDir::new(&state.upload_dir);
     Router::new()
         .route("/health", get(health))
+        .route("/api/info", get(info))
         .nest("/api", api::router(state))
         .nest_service("/uploads", uploads)
         .fallback(static_handler)
@@ -22,6 +23,14 @@ pub fn router(state: AppState) -> Router {
 
 async fn health() -> Json<Value> {
     Json(json!({"status": "ok"}))
+}
+
+async fn info() -> Json<Value> {
+    Json(json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "repository": env!("CARGO_PKG_REPOSITORY"),
+        "license": env!("CARGO_PKG_LICENSE"),
+    }))
 }
 
 /// # Errors

@@ -57,6 +57,12 @@ export interface UpdatePlant {
 	notes?: string;
 }
 
+export interface AppInfo {
+	version: string;
+	repository: string;
+	license: string;
+}
+
 class ApiError extends Error {
 	status: number;
 
@@ -85,6 +91,10 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 	}
 
 	return resp.json();
+}
+
+export function fetchAppInfo(): Promise<AppInfo> {
+	return request('GET', '/api/info');
 }
 
 export function fetchPlants(): Promise<Plant[]> {

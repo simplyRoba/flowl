@@ -8,6 +8,7 @@
 		setThemePreference,
 		type ThemePreference
 	} from '$lib/stores/theme';
+	import { fetchAppInfo, type AppInfo } from '$lib/api';
 
 	const themeOptions: { value: ThemePreference; label: string }[] = [
 		{ value: 'light', label: 'Light' },
@@ -18,9 +19,13 @@
 	let editingId: number | null = $state(null);
 	let editValue = $state('');
 	let editError = $state('');
+	let appInfo: AppInfo | null = $state(null);
 
 	onMount(() => {
 		loadLocations();
+		fetchAppInfo()
+			.then((info) => { appInfo = info; })
+			.catch(() => { /* hide About section on failure */ });
 	});
 
 	async function startEditing(id: number, name: string) {
@@ -169,6 +174,26 @@
 			</ul>
 		{/if}
 	</section>
+
+	{#if appInfo}
+		<section class="settings-card">
+			<h2>About</h2>
+			<div class="about-row">
+				<span class="setting-label">Version</span>
+				<span>{appInfo.version}</span>
+			</div>
+			<div class="about-row">
+				<span class="setting-label">Source</span>
+				<a href={appInfo.repository} target="_blank" rel="noopener noreferrer">
+					{appInfo.repository.replace('https://', '')}
+				</a>
+			</div>
+			<div class="about-row">
+				<span class="setting-label">License</span>
+				<span>{appInfo.license}</span>
+			</div>
+		</section>
+	{/if}
 </div>
 
 <style>
@@ -327,6 +352,33 @@
 	.field-error {
 		font-size: var(--fs-chip);
 		color: var(--color-danger);
+	}
+
+	.about-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 0;
+		border-bottom: 1px solid var(--color-border);
+		font-size: 15px;
+	}
+
+	.about-row:last-child {
+		border-bottom: none;
+		padding-bottom: 0;
+	}
+
+	.about-row:first-of-type {
+		padding-top: 0;
+	}
+
+	.about-row a {
+		color: var(--color-primary);
+		text-decoration: none;
+	}
+
+	.about-row a:hover {
+		text-decoration: underline;
 	}
 
 	@media (max-width: 768px) {
