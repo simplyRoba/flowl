@@ -63,6 +63,11 @@ export interface AppInfo {
 	license: string;
 }
 
+export interface Stats {
+	plant_count: number;
+	care_event_count: number;
+}
+
 class ApiError extends Error {
 	status: number;
 
@@ -95,6 +100,10 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 
 export function fetchAppInfo(): Promise<AppInfo> {
 	return request('GET', '/api/info');
+}
+
+export function fetchStats(): Promise<Stats> {
+	return request('GET', '/api/stats');
 }
 
 export function fetchPlants(): Promise<Plant[]> {

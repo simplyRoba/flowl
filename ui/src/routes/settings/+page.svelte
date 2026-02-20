@@ -8,7 +8,7 @@
 		setThemePreference,
 		type ThemePreference
 	} from '$lib/stores/theme';
-	import { fetchAppInfo, type AppInfo } from '$lib/api';
+	import { fetchAppInfo, fetchStats, type AppInfo, type Stats } from '$lib/api';
 
 	const themeOptions: { value: ThemePreference; label: string }[] = [
 		{ value: 'light', label: 'Light' },
@@ -20,12 +20,16 @@
 	let editValue = $state('');
 	let editError = $state('');
 	let appInfo: AppInfo | null = $state(null);
+	let stats: Stats | null = $state(null);
 
 	onMount(() => {
 		loadLocations();
 		fetchAppInfo()
 			.then((info) => { appInfo = info; })
 			.catch(() => { /* hide About section on failure */ });
+		fetchStats()
+			.then((s) => { stats = s; })
+			.catch(() => { /* hide Data section on failure */ });
 	});
 
 	async function startEditing(id: number, name: string) {
@@ -174,6 +178,16 @@
 			</ul>
 		{/if}
 	</section>
+
+	{#if stats}
+		<section class="settings-card">
+			<h2>Data</h2>
+			<div class="about-row">
+				<span class="setting-label">Plants</span>
+				<span>{stats.plant_count} {stats.plant_count === 1 ? 'plant' : 'plants'}, {stats.care_event_count} {stats.care_event_count === 1 ? 'log entry' : 'log entries'}</span>
+			</div>
+		</section>
+	{/if}
 
 	{#if appInfo}
 		<section class="settings-card">

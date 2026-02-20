@@ -3,6 +3,7 @@ pub mod error;
 pub mod locations;
 pub mod photos;
 pub mod plants;
+pub mod stats;
 
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
@@ -32,6 +33,7 @@ pub fn router(state: AppState) -> Router {
             delete(care_events::delete_care_event),
         )
         .route("/care", get(care_events::list_all_care_events))
+        .route("/stats", get(stats::get_stats))
         .route(
             "/plants/{id}/photo",
             axum::routing::post(photos::upload_photo)
