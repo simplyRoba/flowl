@@ -386,6 +386,10 @@
 		padding-top: 0;
 	}
 
+	.about-row > span:not(.setting-label) {
+		color: var(--color-text-muted);
+	}
+
 	.about-row a {
 		color: var(--color-primary);
 		text-decoration: none;
