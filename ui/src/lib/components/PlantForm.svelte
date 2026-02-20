@@ -233,7 +233,7 @@
 						{#if !hasPhoto}
 							<!-- No replace link when empty -->
 						{:else if !photoPreview && initial?.photo_url}
-							<label class="photo-replace">
+							<label class="btn btn-outline photo-replace">
 								<Camera size={16} />
 								<span>Replace photo</span>
 								<input
@@ -245,7 +245,7 @@
 							</label>
 						{/if}
 						{#if mediaMode === 'photo'}
-							<button type="button" class="media-switch" onclick={switchToIcon}>
+							<button type="button" class="btn btn-outline media-switch" onclick={switchToIcon}>
 								Use icon instead
 							</button>
 						{/if}
@@ -260,7 +260,7 @@
 					<IconPicker value={icon} onchange={handleIconSelect} />
 					{#if mediaMode === 'icon'}
 						<div class="media-actions">
-							<button type="button" class="media-switch" onclick={switchToPhoto}>
+							<button type="button" class="btn btn-outline media-switch" onclick={switchToPhoto}>
 								Use photo instead
 							</button>
 						</div>
@@ -470,7 +470,7 @@
 	</section>
 
 	{#if showFooterActions}
-		<button type="submit" class="save-btn" disabled={saving}>
+		<button type="submit" class="btn btn-primary save-btn" disabled={saving}>
 			{saving ? 'Saving...' : 'Save'}
 		</button>
 	{/if}
@@ -547,28 +547,8 @@
 	}
 
 	.media-switch {
-		margin: 0;
-		padding: 8px 12px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-btn);
-		background: var(--color-surface);
-		color: var(--color-text-muted);
-		font-size: var(--fs-chip);
-		font-weight: 500;
-		cursor: pointer;
-		transition: all var(--transition-speed);
-		white-space: nowrap;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
 		flex: 1 1 0;
-		box-sizing: border-box;
-		line-height: 1.2;
-	}
-
-	.media-switch:hover {
-		border-color: var(--color-primary);
-		color: var(--color-primary);
+		white-space: nowrap;
 	}
 
 
@@ -721,26 +701,8 @@
 	}
 
 	.photo-replace {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 8px 12px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-btn);
-		cursor: pointer;
-		color: var(--color-text-muted);
-		font-size: var(--fs-chip);
-		font-weight: 500;
-		transition: border-color var(--transition-speed), color var(--transition-speed);
-		justify-content: center;
 		flex: 1 1 0;
-		box-sizing: border-box;
-		line-height: 1.2;
-	}
-
-	.photo-replace:hover {
-		border-color: var(--color-primary);
-		color: var(--color-primary);
+		white-space: nowrap;
 	}
 
 	.section-optional {
@@ -841,25 +803,7 @@
 	}
 
 	.save-btn {
-		padding: 12px 24px;
-		background: var(--color-primary);
-		color: var(--color-text-on-primary);
-		border: none;
-		border-radius: var(--radius-btn);
-		font-size: var(--fs-input);
-		font-weight: 500;
-		cursor: pointer;
-		transition: background var(--transition-speed);
 		align-self: flex-start;
-	}
-
-	.save-btn:hover:not(:disabled) {
-		background: var(--color-primary-dark);
-	}
-
-	.save-btn:disabled {
-		opacity: 0.6;
-		cursor: default;
 	}
 
 	@media (max-width: 768px) {
@@ -893,10 +837,6 @@
 
 		.media-switch,
 		.photo-replace {
-			width: 100%;
-			justify-content: center;
-			padding: 10px 16px;
-			font-size: 14px;
 			flex: 1 1 auto;
 		}
 
@@ -918,7 +858,6 @@
 
 		.save-btn {
 			align-self: stretch;
-			text-align: center;
 		}
 	}
 

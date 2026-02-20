@@ -4,6 +4,7 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import { page } from '$app/state';
 	import { initTheme } from '$lib/stores/theme';
+	import '$lib/styles/components.css';
 
 	let { children } = $props();
 

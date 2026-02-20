@@ -22,7 +22,7 @@
 
 <div class="page">
 	<PageHeader backHref="/" backLabel="Back">
-		<button type="submit" form="plant-form" class="save-btn" disabled={saving}>
+		<button type="submit" form="plant-form" class="btn btn-primary" disabled={saving}>
 			{saving ? 'Saving...' : 'Save'}
 		</button>
 	</PageHeader>
@@ -42,27 +42,6 @@
 		font-size: var(--fs-page-title);
 		font-weight: 700;
 		margin: 0 0 24px;
-	}
-
-	.save-btn {
-		padding: 8px 20px;
-		background: var(--color-primary);
-		color: var(--color-text-on-primary);
-		border: none;
-		border-radius: var(--radius-btn);
-		font-size: var(--fs-btn);
-		font-weight: 500;
-		cursor: pointer;
-		transition: background var(--transition-speed);
-	}
-
-	.save-btn:hover:not(:disabled) {
-		background: var(--color-primary-dark);
-	}
-
-	.save-btn:disabled {
-		opacity: 0.6;
-		cursor: default;
 	}
 
 	@media (max-width: 768px) {

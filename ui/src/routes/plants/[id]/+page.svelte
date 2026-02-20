@@ -185,10 +185,10 @@
 {:else if $currentPlant}
 	<div class="detail">
 		<PageHeader backHref="/" backLabel="Back">
-			<a href="/plants/{$currentPlant.id}/edit" class="action-btn edit-btn">
+			<a href="/plants/{$currentPlant.id}/edit" class="btn btn-icon">
 				<Pencil size={16} />
 			</a>
-			<button class="action-btn delete-btn" onclick={handleDelete} disabled={deleting}>
+			<button class="btn btn-icon btn-danger" onclick={handleDelete} disabled={deleting}>
 				<Trash2 size={16} />
 			</button>
 		</PageHeader>
@@ -222,7 +222,7 @@
 				<div class="detail-status">
 					<StatusBadge status={$currentPlant.watering_status} nextDue={$currentPlant.next_due ?? null} />
 				</div>
-				<button class="detail-water-btn" onclick={handleWater} disabled={watering}>
+				<button class="btn btn-water btn-lg" onclick={handleWater} disabled={watering}>
 					<Droplet size={16} />
 					{watering ? 'Watering...' : 'Water now'}
 				</button>
@@ -329,7 +329,7 @@
 						{/each}
 					</ul>
 				{#if hasMoreEvents && !showAllEvents}
-					<button class="add-log-link" onclick={() => showAllEvents = true}>Show more events</button>
+					<button class="btn btn-ghost" onclick={() => showAllEvents = true}>Show more events</button>
 				{/if}
 			{/if}
 
@@ -371,12 +371,12 @@
 						{/if}
 					</div>
 					<div class="log-actions">
-						<button class="log-save" onclick={handleLogSubmit} disabled={!logEventType || logSubmitting}>
+						<button class="btn btn-primary" onclick={handleLogSubmit} disabled={!logEventType || logSubmitting}>
 							{logSubmitting ? 'Saving...' : 'Save'}
 						</button>
 						<button
 							type="button"
-							class="log-when-toggle"
+							class="btn btn-outline btn-sm"
 							onclick={() => {
 								showLogOccurredAt = !showLogOccurredAt;
 								if (showLogOccurredAt && !logOccurredAt) {
@@ -386,11 +386,11 @@
 						>
 							Backdate
 						</button>
-						<button class="log-cancel" onclick={handleLogCancel}>Cancel</button>
+						<button class="btn btn-outline" onclick={handleLogCancel}>Cancel</button>
 					</div>
 				</div>
 			{:else}
-				<button class="add-log-link" onclick={() => showLogForm = true}>
+				<button class="btn btn-ghost" onclick={() => showLogForm = true}>
 					+ Add log entry
 				</button>
 			{/if}
@@ -409,30 +409,6 @@
 		margin: 0 auto;
 	}
 
-	.action-btn {
-		width: 40px;
-		height: 40px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-btn);
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
-		color: var(--color-text-muted);
-		cursor: pointer;
-		text-decoration: none;
-		transition: background var(--transition-speed), color var(--transition-speed);
-	}
-
-	.action-btn:hover {
-		background: var(--color-surface-muted);
-		color: var(--color-text);
-	}
-
-	.delete-btn:hover {
-		color: var(--color-danger);
-		border-color: var(--color-danger);
-	}
 
 	.detail-hero {
 		display: flex;
@@ -511,29 +487,6 @@
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
 		margin-bottom: 12px;
-	}
-	.detail-water-btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 10px 24px;
-		background: var(--color-water);
-		color: var(--color-text-on-water);
-		border: none;
-		border-radius: var(--radius-btn);
-		font-size: var(--fs-btn);
-		font-weight: 500;
-		cursor: pointer;
-		transition: background var(--transition-speed);
-	}
-
-	.detail-water-btn:hover:not(:disabled) {
-		background: var(--color-water-strong);
-	}
-
-	.detail-water-btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
 	}
 
 	.detail-sections {
@@ -687,16 +640,8 @@
 		margin-top: 2px;
 	}
 
-	.add-log-link {
-		color: var(--color-primary);
-		font-size: 14px;
-		font-weight: 500;
+	.btn-ghost {
 		margin-top: 8px;
-		cursor: pointer;
-		display: inline-block;
-		background: none;
-		border: none;
-		padding: 0;
 	}
 
 	.log-form {
@@ -719,22 +664,6 @@
 		margin-bottom: 10px;
 	}
 
-	.log-when-toggle {
-		padding: 8px 12px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-btn);
-		background: none;
-		color: var(--color-primary);
-		font-size: var(--fs-chip);
-		font-weight: 500;
-		cursor: pointer;
-		transition: background var(--transition-speed), border-color var(--transition-speed);
-	}
-
-	.log-when-toggle:hover {
-		background: var(--color-surface-muted);
-		border-color: var(--color-primary);
-	}
 
 	.log-input {
 		width: 100%;
@@ -802,42 +731,6 @@
 		gap: 8px;
 	}
 
-	.log-save {
-		padding: 8px 20px;
-		background: var(--color-primary);
-		color: var(--color-text-on-primary);
-		border: none;
-		border-radius: var(--radius-btn);
-		font-size: var(--fs-btn);
-		font-weight: 500;
-		cursor: pointer;
-		transition: background var(--transition-speed);
-	}
-
-	.log-save:hover:not(:disabled) {
-		background: var(--color-primary-dark);
-	}
-
-	.log-save:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.log-cancel {
-		padding: 8px 20px;
-		background: none;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-btn);
-		color: var(--color-text-muted);
-		font-size: var(--fs-btn);
-		font-weight: 500;
-		cursor: pointer;
-		transition: background var(--transition-speed);
-	}
-
-	.log-cancel:hover {
-		background: var(--color-surface-muted);
-	}
 
 	@media (min-width: 1280px) {
 		.detail-photo {
@@ -865,9 +758,8 @@
 			font-size: var(--fs-page-title);
 		}
 
-		.detail-water-btn {
+		.btn-water {
 			width: 100%;
-			justify-content: center;
 		}
 
 		.detail-grid {

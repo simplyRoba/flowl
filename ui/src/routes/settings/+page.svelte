@@ -132,7 +132,7 @@
 										oninput={() => { editError = ''; }}
 									/>
 									<button
-										class="action-btn action-btn--confirm"
+										class="btn btn-icon"
 										onmousedown={(e) => { e.preventDefault(); commitEdit(location.id, location.name); }}
 									>
 										<Check size={16} />
@@ -151,13 +151,13 @@
 							</div>
 							<div class="location-actions">
 								<button
-									class="action-btn"
+									class="btn btn-icon"
 									onclick={() => startEditing(location.id, location.name)}
 								>
 									<Pencil size={16} />
 								</button>
 								<button
-									class="action-btn action-btn--danger"
+									class="btn btn-icon btn-danger"
 									onclick={() => handleDelete(location.id, location.name, location.plant_count)}
 								>
 									<Trash2 size={16} />
@@ -319,31 +319,6 @@
 		gap: 6px;
 	}
 
-	.action-btn {
-		width: 36px;
-		height: 36px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-btn);
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
-		color: var(--color-text-muted);
-		cursor: pointer;
-		transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
-	}
-
-	.action-btn:hover {
-		color: var(--color-primary);
-		border-color: var(--color-primary);
-		background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-	}
-
-	.action-btn--danger:hover {
-		color: var(--color-danger);
-		border-color: var(--color-danger);
-		background: color-mix(in srgb, var(--color-danger) 10%, transparent);
-	}
 
 	.edit-input {
 		flex: 1;

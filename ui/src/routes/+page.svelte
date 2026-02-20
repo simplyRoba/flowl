@@ -173,7 +173,7 @@
 							<StatusBadge status={plant.watering_status} nextDue={plant.next_due ?? null} />
 							<div class="attention-card-actions">
 								<button
-									class="water-btn"
+									class="btn btn-water btn-sm"
 									disabled={wateringIds.has(plant.id)}
 									onclick={(e) => { e.preventDefault(); handleWater(plant.id); }}
 								>
@@ -193,7 +193,7 @@
 	<header class="page-header">
 		<h1>My Plants</h1>
 		{#if $plants.length > 0}
-			<a href="/plants/new" class="add-btn">
+			<a href="/plants/new" class="btn btn-primary btn-sm">
 				<Plus size={18} />
 				Add Plant
 			</a>
@@ -207,7 +207,7 @@
 			<img src={emojiToSvgPath('🪴')} alt="Plant" class="empty-icon" />
 			<h2>No plants yet</h2>
 			<p>Add your first plant to get started.</p>
-			<a href="/plants/new" class="add-btn">
+			<a href="/plants/new" class="btn btn-primary btn-sm">
 				<Plus size={18} />
 				Add Plant
 			</a>
@@ -275,25 +275,6 @@
 		margin: 0;
 	}
 
-	.add-btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 10px 18px;
-		background: var(--color-primary);
-		color: var(--color-text-on-primary);
-		border: none;
-		border-radius: var(--radius-btn);
-		font-size: var(--fs-btn);
-		font-weight: 500;
-		text-decoration: none;
-		cursor: pointer;
-		transition: background var(--transition-speed);
-	}
-
-	.add-btn:hover {
-		background: var(--color-primary-dark);
-	}
 
 	.empty-state {
 		display: flex;
@@ -510,30 +491,6 @@
 		margin-top: auto;
 	}
 
-	.water-btn {
-		padding: 6px 14px;
-		background: var(--color-water);
-		color: #fff;
-		border: none;
-		border-radius: var(--radius-btn);
-		font-size: 13px;
-		font-weight: 500;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		gap: 5px;
-		flex-shrink: 0;
-		transition: filter var(--transition-speed);
-	}
-
-	.water-btn:hover {
-		filter: brightness(0.9);
-	}
-
-	.water-btn:disabled {
-		opacity: 0.7;
-		cursor: not-allowed;
-	}
 
 	@media (min-width: 1280px) {
 		.attention-cards {
@@ -566,10 +523,6 @@
 	@media (max-width: 768px) {
 		.greeting h2 {
 			font-size: 18px;
-		}
-
-		.add-btn {
-			padding: 8px 14px;
 		}
 
 		.water-btn-label {
