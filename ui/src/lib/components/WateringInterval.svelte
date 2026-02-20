@@ -105,6 +105,7 @@
 
 	.interval-preset .preset-icon {
 		font-size: 18px;
+		color: var(--color-water);
 	}
 
 	.preset-value {
