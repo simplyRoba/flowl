@@ -66,14 +66,15 @@ async fn main() {
         upload_dir,
         mqtt_client: mqtt_client.clone(),
         mqtt_prefix: mqtt_prefix.clone(),
-        mqtt_connected,
+        mqtt_connected: mqtt_connected.clone(),
         mqtt_host: config.mqtt_host.clone(),
         mqtt_port: config.mqtt_port,
         mqtt_disabled: config.mqtt_disabled,
     };
     let router = server::router(state);
 
-    let checker_handle = mqtt::spawn_state_checker(pool, mqtt_client.clone(), mqtt_prefix);
+    let checker_handle =
+        mqtt::spawn_state_checker(pool, mqtt_client.clone(), mqtt_prefix, mqtt_connected);
 
     if let Err(e) = server::serve(router, config.port).await {
         error!("Server error: {e}");

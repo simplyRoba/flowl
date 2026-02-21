@@ -1,6 +1,7 @@
 pub mod care_events;
 pub mod error;
 pub mod locations;
+pub mod mqtt_repair;
 pub mod mqtt_status;
 pub mod photos;
 pub mod plants;
@@ -36,6 +37,7 @@ pub fn router(state: AppState) -> Router {
         .route("/care", get(care_events::list_all_care_events))
         .route("/stats", get(stats::get_stats))
         .route("/mqtt/status", get(mqtt_status::get_mqtt_status))
+        .route("/mqtt/repair", post(mqtt_repair::post_mqtt_repair))
         .route(
             "/plants/{id}/photo",
             axum::routing::post(photos::upload_photo)

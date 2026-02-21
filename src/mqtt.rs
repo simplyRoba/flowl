@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
+use serde::Serialize;
 use serde_json::json;
 use sqlx::SqlitePool;
 use tokio::task::JoinHandle;
@@ -28,8 +29,66 @@ mod tests {
             .await
             .expect("Failed to create in-memory pool");
 
-        let handle = spawn_state_checker(pool, None, "flowl".to_string());
+        let handle = spawn_state_checker(pool, None, "flowl".to_string(), None);
         assert!(handle.is_none());
+    }
+
+    #[test]
+    fn extract_plant_id_from_discovery_topic() {
+        assert_eq!(
+            extract_plant_id("homeassistant/sensor/flowl_plant_1/config", "flowl"),
+            Some(1)
+        );
+        assert_eq!(
+            extract_plant_id("homeassistant/sensor/flowl_plant_42/config", "flowl"),
+            Some(42)
+        );
+        assert_eq!(
+            extract_plant_id("homeassistant/sensor/myplants_plant_7/config", "myplants"),
+            Some(7)
+        );
+    }
+
+    #[test]
+    fn extract_plant_id_from_state_topic() {
+        assert_eq!(extract_plant_id("flowl/plant/1/state", "flowl"), Some(1));
+        assert_eq!(extract_plant_id("flowl/plant/99/state", "flowl"), Some(99));
+        assert_eq!(
+            extract_plant_id("myplants/plant/3/state", "myplants"),
+            Some(3)
+        );
+    }
+
+    #[test]
+    fn extract_plant_id_from_attributes_topic() {
+        assert_eq!(
+            extract_plant_id("flowl/plant/1/attributes", "flowl"),
+            Some(1)
+        );
+        assert_eq!(
+            extract_plant_id("flowl/plant/55/attributes", "flowl"),
+            Some(55)
+        );
+    }
+
+    #[test]
+    fn extract_plant_id_returns_none_for_unrelated_topics() {
+        assert_eq!(extract_plant_id("some/other/topic", "flowl"), None);
+        assert_eq!(
+            extract_plant_id("homeassistant/sensor/other_sensor/config", "flowl"),
+            None
+        );
+        assert_eq!(extract_plant_id("flowl/plant/abc/state", "flowl"), None);
+        assert_eq!(extract_plant_id("flowl/plant/1/unknown", "flowl"), None);
+    }
+
+    #[test]
+    fn extract_plant_id_wrong_prefix() {
+        assert_eq!(extract_plant_id("flowl/plant/1/state", "otherprefix"), None);
+        assert_eq!(
+            extract_plant_id("homeassistant/sensor/flowl_plant_1/config", "otherprefix"),
+            None
+        );
     }
 }
 
@@ -166,6 +225,187 @@ pub async fn remove_plant(client: Option<&AsyncClient>, prefix: &str, plant_id: 
     }
 }
 
+/// Extract a plant ID from an MQTT topic name matching known patterns.
+fn extract_plant_id(topic: &str, prefix: &str) -> Option<i64> {
+    // homeassistant/sensor/{prefix}_plant_{id}/config
+    if let Some(rest) = topic.strip_prefix("homeassistant/sensor/") {
+        let expected_prefix = format!("{prefix}_plant_");
+        if let Some(rest) = rest.strip_prefix(&expected_prefix)
+            && let Some(id_str) = rest.strip_suffix("/config")
+        {
+            return id_str.parse().ok();
+        }
+    }
+
+    // {prefix}/plant/{id}/state or {prefix}/plant/{id}/attributes
+    let plant_prefix = format!("{prefix}/plant/");
+    if let Some(rest) = topic.strip_prefix(&plant_prefix)
+        && let Some(id_str) = rest
+            .strip_suffix("/state")
+            .or_else(|| rest.strip_suffix("/attributes"))
+    {
+        return id_str.parse().ok();
+    }
+
+    None
+}
+
+/// Create a temporary MQTT client, subscribe to wildcard topic patterns, collect
+/// retained messages, and return the set of plant IDs found on the broker.
+async fn discover_broker_plant_ids(host: &str, port: u16, prefix: &str) -> HashSet<i64> {
+    let client_id = format!("{prefix}-repair-{}", std::process::id());
+    let mut options = MqttOptions::new(&client_id, host, port);
+    options.set_keep_alive(std::time::Duration::from_secs(10));
+
+    let (client, mut event_loop) = AsyncClient::new(options, 50);
+    let mut ids: HashSet<i64> = HashSet::new();
+    let mut connected = false;
+    let mut subscribed = false;
+
+    let topics = [
+        format!("homeassistant/sensor/{prefix}_plant_+/config"),
+        format!("{prefix}/plant/+/state"),
+        format!("{prefix}/plant/+/attributes"),
+    ];
+
+    let timeout_duration = std::time::Duration::from_secs(2);
+    let mut last_message = tokio::time::Instant::now();
+
+    loop {
+        let poll_result = tokio::time::timeout(timeout_duration, event_loop.poll()).await;
+
+        match poll_result {
+            Ok(Ok(Event::Incoming(Packet::ConnAck(_)))) => {
+                connected = true;
+                for topic in &topics {
+                    if let Err(e) = client.subscribe(topic, QoS::AtMostOnce).await {
+                        warn!("MQTT repair subscribe error for {topic}: {e}");
+                    }
+                }
+                subscribed = true;
+                last_message = tokio::time::Instant::now();
+            }
+            Ok(Ok(Event::Incoming(Packet::Publish(publish)))) => {
+                if let Some(id) = extract_plant_id(&publish.topic, prefix) {
+                    ids.insert(id);
+                }
+                last_message = tokio::time::Instant::now();
+            }
+            Ok(Ok(_)) => {}
+            Ok(Err(e)) => {
+                warn!("MQTT repair connection error: {e}");
+                break;
+            }
+            Err(_) => {
+                // Timeout elapsed
+                if connected && subscribed {
+                    // Silence timeout reached after subscribing — we've collected all retained messages
+                    break;
+                }
+                if !connected {
+                    warn!("MQTT repair: timed out waiting for broker connection");
+                    break;
+                }
+            }
+        }
+
+        // Safety: if we've been subscribed and had no new messages for the timeout, stop
+        if subscribed && last_message.elapsed() >= timeout_duration {
+            break;
+        }
+    }
+
+    // Clean up
+    let _ = client.disconnect().await;
+
+    ids
+}
+
+#[derive(Serialize)]
+pub struct RepairResult {
+    pub cleared: usize,
+    pub published: usize,
+}
+
+/// Repair MQTT broker state: discover orphaned topics, clear them, then republish
+/// fresh state for all current plants.
+pub async fn repair(
+    pool: &SqlitePool,
+    client: &AsyncClient,
+    host: &str,
+    port: u16,
+    prefix: &str,
+) -> RepairResult {
+    // Discover what's on the broker
+    let broker_ids = discover_broker_plant_ids(host, port, prefix).await;
+
+    // Get current plant IDs from DB
+    let db_ids: HashSet<i64> = match sqlx::query_scalar::<_, i64>("SELECT id FROM plants")
+        .fetch_all(pool)
+        .await
+    {
+        Ok(ids) => ids.into_iter().collect(),
+        Err(e) => {
+            warn!("MQTT repair query error: {e}");
+            return RepairResult {
+                cleared: 0,
+                published: 0,
+            };
+        }
+    };
+
+    // Diff: orphans are IDs on the broker but not in the DB
+    let orphans: Vec<i64> = broker_ids.difference(&db_ids).copied().collect();
+    let cleared = orphans.len();
+
+    for id in &orphans {
+        remove_plant(Some(client), prefix, *id).await;
+    }
+
+    // Republish fresh state for all current plants
+    republish_all(pool, client, prefix).await;
+    let published = db_ids.len();
+
+    info!("MQTT repair complete: cleared {cleared} orphans, published {published} plants");
+
+    RepairResult { cleared, published }
+}
+
+/// Republish discovery, state, and attributes for all current plants.
+pub async fn republish_all(pool: &SqlitePool, client: &AsyncClient, prefix: &str) {
+    let rows = match sqlx::query_as::<_, CheckerRow>(
+        "SELECT id, name, watering_interval_days, last_watered FROM plants",
+    )
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            warn!("MQTT republish_all query error: {e}");
+            return;
+        }
+    };
+
+    for row in &rows {
+        let (status, next_due) =
+            compute_watering_status(row.last_watered.as_deref(), row.watering_interval_days);
+
+        publish_discovery(Some(client), prefix, row.id, &row.name).await;
+        publish_state(Some(client), prefix, row.id, &status).await;
+        publish_attributes(
+            Some(client),
+            prefix,
+            row.id,
+            row.last_watered.as_deref(),
+            next_due.as_deref(),
+            row.watering_interval_days,
+        )
+        .await;
+    }
+
+    info!("MQTT republish_all complete: {} plants", rows.len());
+}
+
 #[derive(sqlx::FromRow)]
 struct CheckerRow {
     id: i64,
@@ -175,23 +415,39 @@ struct CheckerRow {
 }
 
 /// Spawn a background task that checks all plants every 60 seconds and publishes
-/// state transitions to MQTT. On first run, publishes discovery configs for all plants
-/// when MQTT is enabled.
+/// state transitions to MQTT. On first run or after reconnect, publishes discovery
+/// configs for all plants when MQTT is enabled.
 pub fn spawn_state_checker(
     pool: SqlitePool,
     client: Option<AsyncClient>,
     prefix: String,
+    connected: Option<Arc<AtomicBool>>,
 ) -> Option<JoinHandle<()>> {
-    if client.is_none() {
-        info!("MQTT disabled, skipping background state checker");
-        return None;
-    }
+    let client = client?;
+
+    info!("Starting MQTT background state checker");
 
     Some(tokio::spawn(async move {
         let mut cache: HashMap<i64, String> = HashMap::new();
         let mut first_run = true;
+        let mut was_connected = false;
 
         loop {
+            // Detect reconnect: false → true transition
+            let is_connected = connected
+                .as_ref()
+                .is_some_and(|b| b.load(Ordering::Relaxed));
+
+            if !first_run && !was_connected && is_connected {
+                info!("MQTT reconnected, triggering full republish");
+                republish_all(&pool, &client, &prefix).await;
+                cache.clear();
+                was_connected = is_connected;
+                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                continue;
+            }
+            was_connected = is_connected;
+
             match sqlx::query_as::<_, CheckerRow>(
                 "SELECT id, name, watering_interval_days, last_watered FROM plants",
             )
@@ -206,14 +462,14 @@ pub fn spawn_state_checker(
                         );
 
                         if first_run {
-                            publish_discovery(client.as_ref(), &prefix, row.id, &row.name).await;
+                            publish_discovery(Some(&client), &prefix, row.id, &row.name).await;
                         }
 
                         let changed = cache.get(&row.id).is_none_or(|prev| *prev != status);
                         if changed || first_run {
-                            publish_state(client.as_ref(), &prefix, row.id, &status).await;
+                            publish_state(Some(&client), &prefix, row.id, &status).await;
                             publish_attributes(
-                                client.as_ref(),
+                                Some(&client),
                                 &prefix,
                                 row.id,
                                 row.last_watered.as_deref(),

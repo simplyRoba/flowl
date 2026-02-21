@@ -8,7 +8,7 @@
 		setThemePreference,
 		type ThemePreference
 	} from '$lib/stores/theme';
-	import { fetchAppInfo, fetchStats, fetchMqttStatus, type AppInfo, type Stats, type MqttStatus } from '$lib/api';
+	import { fetchAppInfo, fetchStats, fetchMqttStatus, repairMqtt, type AppInfo, type Stats, type MqttStatus } from '$lib/api';
 
 	const themeOptions: { value: ThemePreference; label: string }[] = [
 		{ value: 'light', label: 'Light' },
@@ -22,6 +22,9 @@
 	let appInfo: AppInfo | null = $state(null);
 	let stats: Stats | null = $state(null);
 	let mqttStatus: MqttStatus | null = $state(null);
+	let repairLoading = $state(false);
+	let repairMessage = $state('');
+	let repairError = $state('');
 
 	onMount(() => {
 		loadLocations();
@@ -81,6 +84,20 @@
 			(e.target as HTMLInputElement).blur();
 		} else if (e.key === 'Escape') {
 			cancelEdit(e.target as HTMLInputElement);
+		}
+	}
+
+	async function handleRepair() {
+		repairLoading = true;
+		repairMessage = '';
+		repairError = '';
+		try {
+			const result = await repairMqtt();
+			repairMessage = `Cleared ${result.cleared}, published ${result.published}`;
+		} catch (e: unknown) {
+			repairError = e instanceof Error ? e.message : 'Repair failed';
+		} finally {
+			repairLoading = false;
 		}
 	}
 
@@ -206,6 +223,25 @@
 				<div class="about-row">
 					<span class="setting-label">Topic prefix</span>
 					<span>{mqttStatus.topic_prefix}</span>
+				</div>
+				<div class="about-row">
+					<span class="setting-label">Repair</span>
+					<span class="repair-actions">
+						<button
+							class="btn btn-sm"
+							disabled={mqttStatus.status !== 'connected' || repairLoading}
+							title={mqttStatus.status !== 'connected' ? 'MQTT must be connected' : undefined}
+							onclick={handleRepair}
+						>
+							{repairLoading ? 'Repairing...' : 'Repair'}
+						</button>
+						{#if repairMessage}
+							<span class="repair-success">{repairMessage}</span>
+						{/if}
+						{#if repairError}
+							<span class="repair-error">{repairError}</span>
+						{/if}
+					</span>
 				</div>
 			{/if}
 		</section>
@@ -428,6 +464,43 @@
 
 	.status-disconnected {
 		background-color: var(--color-text-muted);
+	}
+
+	.repair-actions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.btn-sm {
+		padding: 4px 12px;
+		font-size: var(--fs-chip);
+		border-radius: var(--radius-pill);
+		border: 1px solid var(--color-border);
+		background: var(--color-surface-muted);
+		color: var(--color-text);
+		font-weight: 600;
+		cursor: pointer;
+		transition: background var(--transition-speed), color var(--transition-speed);
+	}
+
+	.btn-sm:hover:not(:disabled) {
+		background: var(--color-primary-tint);
+	}
+
+	.btn-sm:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.repair-success {
+		font-size: var(--fs-chip);
+		color: var(--color-success);
+	}
+
+	.repair-error {
+		font-size: var(--fs-chip);
+		color: var(--color-danger);
 	}
 
 	.about-row a {

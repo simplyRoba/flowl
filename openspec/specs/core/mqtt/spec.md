@@ -172,7 +172,7 @@ The application SHALL publish plant watering attributes as a retained JSON objec
 
 ### Requirement: Background State Checker
 
-The application SHALL run a background task that periodically checks all plants for watering state transitions and publishes updates to MQTT whenever MQTT is enabled.
+The application SHALL run a background task that periodically checks all plants for watering state transitions and publishes updates to MQTT whenever MQTT is enabled. The checker SHALL also detect MQTT reconnection and trigger a full republish of all plant state.
 
 #### Scenario: State transition detected
 
@@ -199,3 +199,10 @@ The application SHALL run a background task that periodically checks all plants 
 
 - **WHEN** the application starts and MQTT is enabled
 - **THEN** the background checker publishes discovery configs, current state, and attributes for all existing plants
+
+#### Scenario: Full republish on reconnect
+
+- **GIVEN** the MQTT connection was lost (AtomicBool is `false`)
+- **AND** the connection is recovered (AtomicBool transitions to `true`)
+- **WHEN** the background checker runs its next tick
+- **THEN** the checker SHALL republish discovery configs, current state, and attributes for all existing plants

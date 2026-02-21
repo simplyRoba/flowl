@@ -116,6 +116,15 @@ export function fetchMqttStatus(): Promise<MqttStatus> {
 	return request('GET', '/api/mqtt/status');
 }
 
+export interface MqttRepairResult {
+	cleared: number;
+	published: number;
+}
+
+export function repairMqtt(): Promise<MqttRepairResult> {
+	return request('POST', '/api/mqtt/repair');
+}
+
 export function fetchPlants(): Promise<Plant[]> {
 	return request('GET', '/api/plants');
 }
