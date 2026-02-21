@@ -82,6 +82,72 @@ cd ui && npx vitest
 
 To compile a binary with the UI baked in (like production), run `cargo build` without `SKIP_UI_BUILD`. This triggers `build.rs` to build the SvelteKit frontend and embed it via `rust-embed`.
 
+## Design
+
+Warm, organic, calm. The UI should feel like a plant journal — not a corporate dashboard. Rounded shapes, soft colors, generous whitespace.
+
+### Color Palette
+
+#### Light Mode (default)
+
+| Role        | Name         | Hex       | Usage                              |
+|-------------|--------------|-----------|-------------------------------------|
+| Background  | Linen        | `#FAF6F1` | Page background                     |
+| Surface     | White        | `#FFFFFF` | Cards, modals, inputs               |
+| Primary     | Sage         | `#6B8F71` | Buttons, active states, links       |
+| Primary Dark| Forest       | `#4A6B4F` | Hover, pressed states               |
+| Secondary   | Terracotta   | `#C4775B` | Accents, highlights, overdue badges |
+| Water       | Stream       | `#5B9BC4` | Watering indicators, water actions  |
+| Text        | Bark         | `#2C2418` | Primary text                        |
+| Text Muted  | Driftwood    | `#8C7E6E` | Secondary text, captions            |
+| Border      | Sand         | `#E5DDD3` | Dividers, card borders              |
+| Success     | Sprout       | `#7AB87A` | Healthy, watered, ok states         |
+| Warning     | Amber        | `#D4A843` | Due soon                            |
+| Danger      | Dry          | `#C45B5B` | Overdue, errors                     |
+
+#### Dark Mode
+
+| Role        | Name         | Hex       | Usage                              |
+|-------------|--------------|-----------|-------------------------------------|
+| Background  | Soil         | `#1A1612` | Page background                     |
+| Surface     | Loam         | `#252019` | Cards, modals, inputs               |
+| Primary     | Sage         | `#8BB592` | Buttons, active states, links       |
+| Primary Dark| Mint         | `#A3CDA9` | Hover, pressed states               |
+| Secondary   | Clay         | `#D49478` | Accents, highlights                 |
+| Water       | Sky          | `#78B4D8` | Watering indicators                 |
+| Text        | Parchment    | `#EDE6DB` | Primary text                        |
+| Text Muted  | Sandstone    | `#9C8E7E` | Secondary text                      |
+| Border      | Root         | `#3A3228` | Dividers, card borders              |
+| Success     | Leaf         | `#8BC48B` | Healthy states                      |
+| Warning     | Honey        | `#D4B054` | Due soon                            |
+| Danger      | Wilt         | `#D47878` | Overdue, errors                     |
+
+### Typography
+
+| Element     | Font           | Size   | Weight  |
+|-------------|----------------|--------|---------|
+| H1          | System sans    | 28px   | 700     |
+| H2          | System sans    | 22px   | 600     |
+| H3          | System sans    | 18px   | 600     |
+| Body        | System sans    | 15px   | 400     |
+| Caption     | System sans    | 13px   | 400     |
+| Button      | System sans    | 14px   | 500     |
+| Badge       | System sans    | 12px   | 600     |
+
+System font stack: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif`
+
+### Spacing & Layout
+
+- Base unit: `4px`
+- Standard spacing: `8px`, `12px`, `16px`, `24px`, `32px`
+- Card padding: `16px`
+- Card border-radius: `12px`
+- Button border-radius: `8px`
+- Max content width: `1200px`
+- Card grid gap: `16px`
+- Mobile breakpoint: `768px`
+- Widescreen breakpoint: `1280px`
+
 ---
 
 **This project is developed spec-driven with AI assistance, reviewed by a critical human.**
