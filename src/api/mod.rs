@@ -2,8 +2,7 @@ pub mod backup;
 pub mod care_events;
 pub mod error;
 pub mod locations;
-pub mod mqtt_repair;
-pub mod mqtt_status;
+pub mod mqtt;
 pub mod photos;
 pub mod plants;
 pub mod restore;
@@ -38,8 +37,8 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/care", get(care_events::list_all_care_events))
         .route("/stats", get(stats::get_stats))
-        .route("/mqtt/status", get(mqtt_status::get_mqtt_status))
-        .route("/mqtt/repair", post(mqtt_repair::post_mqtt_repair))
+        .route("/mqtt/status", get(mqtt::get_mqtt_status))
+        .route("/mqtt/repair", post(mqtt::post_mqtt_repair))
         .route("/data/export", get(backup::export_data))
         .route(
             "/data/import",
