@@ -1,9 +1,10 @@
-import { cleanup, render, screen } from '@testing-library/svelte';
+import { cleanup, render, screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Page from '../../../routes/settings/+page.svelte';
 import { setThemePreference, THEME_STORAGE_KEY } from '$lib/stores/theme';
 import { locations, locationsError } from '$lib/stores/locations';
+import * as api from '$lib/api';
 
 const mockDeleteLocation = vi.fn();
 const mockUpdateLocation = vi.fn();
@@ -95,5 +96,119 @@ describe('settings locations section', () => {
 		locationsError.set('Failed to load');
 		render(Page);
 		expect(screen.getByText('Failed to load')).toBeTruthy();
+	});
+});
+
+describe('settings data section export/import', () => {
+	beforeEach(() => {
+		vi.spyOn(api, 'fetchStats').mockResolvedValue({ plant_count: 5, care_event_count: 10 });
+		vi.spyOn(api, 'fetchAppInfo').mockRejectedValue(new Error('skip'));
+		vi.spyOn(api, 'fetchMqttStatus').mockRejectedValue(new Error('skip'));
+	});
+
+	it('shows Export and Import buttons on same row when stats load', async () => {
+		render(Page);
+		await waitFor(() => {
+			expect(screen.getByText('Data')).toBeTruthy();
+		});
+		expect(screen.getByText('Backup')).toBeTruthy();
+		expect(screen.getByRole('button', { name: /Export/ })).toBeTruthy();
+		expect(screen.getByRole('button', { name: /Import/ })).toBeTruthy();
+	});
+
+	it('export button navigates to export URL', async () => {
+		// Mock window.location.href setter
+		const hrefSpy = vi.fn();
+		Object.defineProperty(window, 'location', {
+			value: { ...window.location, href: '' },
+			writable: true,
+			configurable: true
+		});
+		Object.defineProperty(window.location, 'href', {
+			set: hrefSpy,
+			configurable: true
+		});
+
+		render(Page);
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: /Export/ })).toBeTruthy();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: /Export/ }));
+		expect(hrefSpy).toHaveBeenCalledWith('/api/data/export');
+	});
+
+	it('import button opens file picker', async () => {
+		render(Page);
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: /Import/ })).toBeTruthy();
+		});
+
+		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		expect(fileInput).toBeTruthy();
+		expect(fileInput.accept).toBe('.zip');
+	});
+
+	it('shows import error on failure', async () => {
+		vi.spyOn(api, 'importData').mockRejectedValue(new Error('Version mismatch'));
+		vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+		render(Page);
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: /Import/ })).toBeTruthy();
+		});
+
+		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		const file = new File(['zip'], 'test.zip', { type: 'application/zip' });
+		Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+		fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+		await waitFor(() => {
+			expect(screen.getByText('Version mismatch')).toBeTruthy();
+		});
+	});
+
+	it('shows success message after import', async () => {
+		vi.spyOn(api, 'importData').mockResolvedValue({
+			locations: 1,
+			plants: 3,
+			care_events: 5,
+			photos: 2
+		});
+		vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+		render(Page);
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: /Import/ })).toBeTruthy();
+		});
+
+		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		const file = new File(['zip'], 'test.zip', { type: 'application/zip' });
+		Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+		fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+		await waitFor(() => {
+			expect(screen.getByText(/Imported 3 plants/)).toBeTruthy();
+		});
+	});
+
+	it('does not import when confirm is cancelled', async () => {
+		const importSpy = vi.spyOn(api, 'importData');
+		vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+		render(Page);
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: /Import/ })).toBeTruthy();
+		});
+
+		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		const file = new File(['zip'], 'test.zip', { type: 'application/zip' });
+		Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+		fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+		// Wait a tick, then verify importData was never called
+		await new Promise((r) => setTimeout(r, 50));
+		expect(importSpy).not.toHaveBeenCalled();
 	});
 });

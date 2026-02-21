@@ -36,7 +36,7 @@ flowl stores all data in a single SQLite database (locations, plants, care_event
 
 - Validate-before-modify: the import handler fully validates the ZIP (structure, JSON parsing, version check, filename sanitization) before touching any existing data. This avoids partial state if validation fails late.
 
-- After a successful import, re-trigger MQTT auto-discovery to publish the new plant set and remove stale topics from deleted plants.
+- After a successful import, call MQTT repair to clear orphaned retained topics left by pre-import plants and republish fresh discovery configs, state, and attributes for all imported plants.
 
 - Add `zip` crate (with `deflate` feature) as a dependency for archive creation and extraction. This is a pure-Rust implementation with no system dependencies.
 

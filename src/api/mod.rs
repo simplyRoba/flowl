@@ -1,3 +1,4 @@
+pub mod backup;
 pub mod care_events;
 pub mod error;
 pub mod locations;
@@ -5,6 +6,7 @@ pub mod mqtt_repair;
 pub mod mqtt_status;
 pub mod photos;
 pub mod plants;
+pub mod restore;
 pub mod stats;
 
 use axum::Router;
@@ -38,6 +40,11 @@ pub fn router(state: AppState) -> Router {
         .route("/stats", get(stats::get_stats))
         .route("/mqtt/status", get(mqtt_status::get_mqtt_status))
         .route("/mqtt/repair", post(mqtt_repair::post_mqtt_repair))
+        .route("/data/export", get(backup::export_data))
+        .route(
+            "/data/import",
+            post(restore::import_data).layer(DefaultBodyLimit::max(100 * 1024 * 1024)),
+        )
         .route(
             "/plants/{id}/photo",
             axum::routing::post(photos::upload_photo)

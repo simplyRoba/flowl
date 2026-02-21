@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { get } from 'svelte/store';
-	import { Check, Pencil, Trash2, Palette, MapPin, Database, Info, Radio } from 'lucide-svelte';
+	import { Check, Pencil, Trash2, Palette, MapPin, Database, Info, Radio, Download, Upload, Wrench } from 'lucide-svelte';
 	import { locations, locationsError, loadLocations, deleteLocation, updateLocation } from '$lib/stores/locations';
 	import {
 		themePreference,
 		setThemePreference,
 		type ThemePreference
 	} from '$lib/stores/theme';
-	import { fetchAppInfo, fetchStats, fetchMqttStatus, repairMqtt, type AppInfo, type Stats, type MqttStatus } from '$lib/api';
+	import { fetchAppInfo, fetchStats, fetchMqttStatus, repairMqtt, importData, type AppInfo, type Stats, type MqttStatus } from '$lib/api';
 
 	const themeOptions: { value: ThemePreference; label: string }[] = [
 		{ value: 'light', label: 'Light' },
@@ -25,6 +25,10 @@
 	let repairLoading = $state(false);
 	let repairMessage = $state('');
 	let repairError = $state('');
+	let importLoading = $state(false);
+	let importMessage = $state('');
+	let importError = $state('');
+	let fileInput: HTMLInputElement;
 
 	onMount(() => {
 		loadLocations();
@@ -98,6 +102,44 @@
 			repairError = e instanceof Error ? e.message : 'Repair failed';
 		} finally {
 			repairLoading = false;
+		}
+	}
+
+	function handleExport() {
+		window.location.href = '/api/data/export';
+	}
+
+	function handleImportClick() {
+		fileInput.click();
+	}
+
+	async function handleFileSelected(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		// Reset for next use
+		input.value = '';
+
+		if (!confirm(`Import "${file.name}"?\n\nAll existing data and photos will be replaced.`)) {
+			return;
+		}
+
+		importLoading = true;
+		importMessage = '';
+		importError = '';
+		try {
+			const result = await importData(file);
+			importMessage = `Imported ${result.plants} plants, ${result.care_events} log entries, ${result.photos} photos`;
+			// Reload stats
+			fetchStats()
+				.then((s) => { stats = s; })
+				.catch(() => {});
+			loadLocations();
+		} catch (e: unknown) {
+			importError = e instanceof Error ? e.message : 'Import failed';
+		} finally {
+			importLoading = false;
 		}
 	}
 
@@ -228,12 +270,16 @@
 					<span class="setting-label">Repair</span>
 					<span class="repair-actions">
 						<button
-							class="btn btn-sm"
+							class="btn btn-outline btn-sm"
 							disabled={mqttStatus.status !== 'connected' || repairLoading}
 							title={mqttStatus.status !== 'connected' ? 'MQTT must be connected' : undefined}
 							onclick={handleRepair}
 						>
-							{repairLoading ? 'Repairing...' : 'Repair'}
+							{#if repairLoading}
+								Repairing...
+							{:else}
+								<Wrench size={14} /> Repair
+							{/if}
 						</button>
 						{#if repairMessage}
 							<span class="repair-success">{repairMessage}</span>
@@ -250,6 +296,38 @@
 	{#if stats}
 		<section class="section settings-section">
 			<h2 class="section-title"><Database size={14} /> Data</h2>
+			<div class="about-row">
+				<span class="setting-label">Backup</span>
+				<span class="backup-actions">
+					<button class="btn btn-outline btn-sm" onclick={handleExport}>
+						<Download size={14} /> Export
+					</button>
+					<input
+						type="file"
+						accept=".zip"
+						class="hidden"
+						bind:this={fileInput}
+						onchange={handleFileSelected}
+					/>
+					<button
+						class="btn btn-outline btn-sm"
+						disabled={importLoading}
+						onclick={handleImportClick}
+					>
+						{#if importLoading}
+							Importing...
+						{:else}
+							<Upload size={14} /> Import
+						{/if}
+					</button>
+					{#if importMessage}
+						<span class="backup-success">{importMessage}</span>
+					{/if}
+					{#if importError}
+						<span class="backup-error">{importError}</span>
+					{/if}
+				</span>
+			</div>
 			<div class="about-row">
 				<span class="setting-label">Plants</span>
 				<span>{stats.plant_count} {stats.plant_count === 1 ? 'plant' : 'plants'}, {stats.care_event_count} {stats.care_event_count === 1 ? 'log entry' : 'log entries'}</span>
@@ -472,27 +550,6 @@
 		gap: 8px;
 	}
 
-	.btn-sm {
-		padding: 4px 12px;
-		font-size: var(--fs-chip);
-		border-radius: var(--radius-pill);
-		border: 1px solid var(--color-border);
-		background: var(--color-surface-muted);
-		color: var(--color-text);
-		font-weight: 600;
-		cursor: pointer;
-		transition: background var(--transition-speed), color var(--transition-speed);
-	}
-
-	.btn-sm:hover:not(:disabled) {
-		background: var(--color-primary-tint);
-	}
-
-	.btn-sm:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
 	.repair-success {
 		font-size: var(--fs-chip);
 		color: var(--color-success);
@@ -501,6 +558,27 @@
 	.repair-error {
 		font-size: var(--fs-chip);
 		color: var(--color-danger);
+	}
+
+	.backup-actions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.backup-success {
+		font-size: var(--fs-chip);
+		color: var(--color-success);
+	}
+
+	.backup-error {
+		font-size: var(--fs-chip);
+		color: var(--color-danger);
+	}
+
+	.hidden {
+		display: none;
 	}
 
 	.about-row a {

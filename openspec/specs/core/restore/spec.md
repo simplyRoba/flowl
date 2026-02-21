@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Import user data and photos from a previously exported ZIP archive, replacing all existing data.
+
+## Requirements
 
 ### Requirement: Import data from ZIP
 The system SHALL provide a `POST /api/data/import` endpoint that replaces all existing data and photos with the contents of an uploaded ZIP archive.
@@ -12,7 +16,7 @@ The system SHALL provide a `POST /api/data/import` endpoint that replaces all ex
 - **AND** photo files from the `photos/` directory in the ZIP are extracted to the uploads directory
 - **AND** original timestamps (`created_at`, `updated_at`, `occurred_at`) are preserved
 - **AND** the response has status 200 with a summary of imported counts
-- **AND** MQTT auto-discovery is re-triggered for the imported plants
+- **AND** MQTT repair is triggered to clear orphaned retained topics from pre-import plants and republish fresh state for all imported plants
 
 #### Scenario: Import is atomic for database data
 - **WHEN** an import is in progress and a database error occurs mid-way

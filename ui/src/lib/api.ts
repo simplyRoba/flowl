@@ -175,6 +175,32 @@ export async function deletePlantPhoto(plantId: number): Promise<void> {
 	}
 }
 
+// --- Import/Export ---
+
+export interface ImportResult {
+	locations: number;
+	plants: number;
+	care_events: number;
+	photos: number;
+}
+
+export async function importData(file: File): Promise<ImportResult> {
+	const formData = new FormData();
+	formData.append('file', file);
+
+	const resp = await fetch('/api/data/import', {
+		method: 'POST',
+		body: formData
+	});
+
+	if (!resp.ok) {
+		const data = await resp.json().catch(() => ({ message: resp.statusText }));
+		throw new ApiError(resp.status, data.message || resp.statusText);
+	}
+
+	return resp.json();
+}
+
 // --- Care Events ---
 
 export interface CareEvent {

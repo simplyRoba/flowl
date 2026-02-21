@@ -7,7 +7,8 @@ import {
 	fetchLocations,
 	createLocation,
 	fetchCareEvents,
-	fetchAllCareEvents
+	fetchAllCareEvents,
+	importData
 } from './api';
 
 beforeEach(() => {
@@ -144,5 +145,31 @@ describe('API endpoint functions', () => {
 		const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue({ events: [], has_more: false }) });
 		await fetchAllCareEvents();
 		expect(fn).toHaveBeenCalledWith('/api/care', { method: 'GET' });
+	});
+});
+
+describe('importData', () => {
+	it('sends POST with FormData to /api/data/import', async () => {
+		const result = { locations: 1, plants: 2, care_events: 3, photos: 0 };
+		const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue(result) });
+		const file = new File(['zip content'], 'export.zip', { type: 'application/zip' });
+		const response = await importData(file);
+		expect(response).toEqual(result);
+		expect(fn).toHaveBeenCalledTimes(1);
+		const [url, init] = fn.mock.calls[0];
+		expect(url).toBe('/api/data/import');
+		expect(init.method).toBe('POST');
+		expect(init.body).toBeInstanceOf(FormData);
+	});
+
+	it('throws ApiError on failure', async () => {
+		mockFetch({
+			ok: false,
+			status: 400,
+			statusText: 'Bad Request',
+			json: vi.fn().mockResolvedValue({ message: 'Version mismatch' })
+		});
+		const file = new File(['bad'], 'bad.zip', { type: 'application/zip' });
+		await expect(importData(file)).rejects.toThrow('Version mismatch');
 	});
 });
