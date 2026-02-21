@@ -290,6 +290,12 @@
 				<div class="about-row">
 					<span class="setting-label">Repair</span>
 					<span class="repair-actions">
+						{#if repairMessage}
+							<span class="repair-success">{repairMessage}</span>
+						{/if}
+						{#if repairError}
+							<span class="repair-error">{repairError}</span>
+						{/if}
 						<button
 							class="btn btn-outline btn-sm"
 							disabled={mqttStatus.status !== 'connected' || repairLoading}
@@ -302,12 +308,6 @@
 								<Wrench size={14} /> Repair
 							{/if}
 						</button>
-						{#if repairMessage}
-							<span class="repair-success">{repairMessage}</span>
-						{/if}
-						{#if repairError}
-							<span class="repair-error">{repairError}</span>
-						{/if}
 					</span>
 				</div>
 			{/if}
@@ -319,17 +319,13 @@
 			<h2 class="section-title"><Database size={14} /> Data</h2>
 			<div class="about-row">
 				<span class="setting-label">Backup</span>
+				{#if importMessage}
+					<span class="backup-success">{importMessage}</span>
+				{/if}
+				{#if importError}
+					<span class="backup-error">{importError}</span>
+				{/if}
 				<span class="backup-actions">
-					<button class="btn btn-outline btn-sm" onclick={handleExport}>
-						<Download size={14} /> Export
-					</button>
-					<input
-						type="file"
-						accept=".zip"
-						class="hidden"
-						bind:this={fileInput}
-						onchange={handleFileSelected}
-					/>
 					<button
 						class="btn btn-outline btn-sm"
 						disabled={importLoading}
@@ -341,12 +337,16 @@
 							<Upload size={14} /> Import
 						{/if}
 					</button>
-					{#if importMessage}
-						<span class="backup-success">{importMessage}</span>
-					{/if}
-					{#if importError}
-						<span class="backup-error">{importError}</span>
-					{/if}
+					<input
+						type="file"
+						accept=".zip"
+						class="hidden"
+						bind:this={fileInput}
+						onchange={handleFileSelected}
+					/>
+					<button class="btn btn-outline btn-sm" onclick={handleExport}>
+						<Download size={14} /> Export
+					</button>
 				</span>
 			</div>
 			<div class="about-row">
