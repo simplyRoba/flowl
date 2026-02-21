@@ -8,6 +8,7 @@
 	import { emojiToSvgPath } from '$lib/emoji';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import PhotoLightbox from '$lib/components/PhotoLightbox.svelte';
 	import type { CareEvent } from '$lib/api';
 
 	let notFound = $state(false);
@@ -22,6 +23,7 @@
 	let showAllEvents = $state(false);
 	let deletingEventId = $state<number | null>(null);
 	let backHref = $state('/');
+	let lightboxOpen = $state(false);
 	const BACK_PATHS = new Set(['/', '/care-journal', '/plants', '/settings']);
 
 	const EVENT_LIMIT = 20;
@@ -181,6 +183,15 @@
 		return 'Peat moss';
 	}
 
+	function openLightbox() {
+		if (!$currentPlant?.photo_url) return;
+		lightboxOpen = true;
+	}
+
+	function closeLightbox() {
+		lightboxOpen = false;
+	}
+
 </script>
 
 {#if notFound}
@@ -203,11 +214,18 @@
 		<div class="detail-hero">
 			<div class="detail-photo">
 				{#if $currentPlant.photo_url}
-					<img
-						src={$currentPlant.photo_url}
-						alt={$currentPlant.name}
-						class="detail-photo-img"
-					/>
+					<button
+						type="button"
+						class="detail-photo-button"
+						aria-label="Open photo"
+						onclick={openLightbox}
+					>
+						<img
+							src={$currentPlant.photo_url}
+							alt={$currentPlant.name}
+							class="detail-photo-img"
+						/>
+					</button>
 				{:else}
 					<img
 						src={emojiToSvgPath($currentPlant.icon)}
@@ -403,6 +421,13 @@
 			{/if}
 			</div>
 		</div>
+
+		<PhotoLightbox
+			open={lightboxOpen}
+			src={$currentPlant.photo_url ?? ''}
+			alt={$currentPlant.name}
+			onclose={closeLightbox}
+		/>
 	</div>
 {:else if $plantsError}
 	<p class="error">{$plantsError}</p>
@@ -435,6 +460,15 @@
 		justify-content: center;
 	}
 
+	.detail-photo-button {
+		width: 100%;
+		height: 100%;
+		border: none;
+		background: transparent;
+		padding: 0;
+		cursor: zoom-in;
+	}
+
 	.detail-photo-img {
 		width: 100%;
 		height: 100%;
@@ -446,6 +480,7 @@
 		width: 110px;
 		height: 110px;
 	}
+
 
 	.detail-name {
 		display: flex;
