@@ -9,7 +9,7 @@
 
 ## Review expectations
 - Treat every change as pending until a human explicitly reviews it; nothing merges without that approval.
-- Before requesting review, run `cargo fmt`, `cargo clippy`, and `cargo test` (includes UI tests) so artifacts and implementation stay in sync.
+- Before requesting review, run `ui/npm run check`, `cargo fmt`, `cargo clippy`, and `cargo test` (includes UI tests) so artifacts and implementation stay in sync.
 
 ## Clarifications
 - When requirements or intent are unclear, asking for information is mandatory and preferred over proceeding with assumptions. Use **AskUserQuestion tool** if feasable.
@@ -34,4 +34,4 @@
 - **Design**: `DESIGN.md` — overall application design, architecture, and technical decisions. Read this first to understand the project.
 - **Plan**: `PLAN.md` — project roadmap and phased implementation plan. Check this to understand what has been done and what is next.
 - **Specs**: `openspec/` — OpenSpec-based specs and change proposals for all features. Check `openspec/specs/` for current capability specs and `openspec/changes/` for active/archived change sets with task checklists.
-- **UI Mockups**: `mockups/index.html` — HTML/CSS mockups for all UI screens (dashboard, detail, forms, settings). Open in a browser to view. Always match implemented UI to these mockups.
+- **Code**: `src/` and `ui/` — the Rust service and Svelte UI source code. Refer to this for implementation details and to understand how the codebase is organized.
