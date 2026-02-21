@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
 use super::error::{ApiError, JsonBody};
+use super::plants::{PLANT_SELECT, Plant, PlantRow};
+use crate::mqtt;
+use crate::state::AppState;
 
 const VALID_EVENT_TYPES: &[&str] = &["watered", "fertilized", "repotted", "pruned", "custom"];
 
@@ -73,6 +76,33 @@ async fn plant_exists(pool: &SqlitePool, id: i64) -> Result<(), ApiError> {
     Ok(())
 }
 
+async fn publish_plant_watering_mqtt(state: &AppState, plant_id: i64) {
+    let Ok(row) = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
+        .bind(plant_id)
+        .fetch_one(&state.pool)
+        .await
+    else {
+        return;
+    };
+    let plant = Plant::from(row);
+    mqtt::publish_state(
+        state.mqtt_client.as_ref(),
+        &state.mqtt_prefix,
+        plant.id,
+        &plant.watering_status,
+    )
+    .await;
+    mqtt::publish_attributes(
+        state.mqtt_client.as_ref(),
+        &state.mqtt_prefix,
+        plant.id,
+        plant.last_watered.as_deref(),
+        plant.next_due.as_deref(),
+        plant.watering_interval_days,
+    )
+    .await;
+}
+
 pub async fn list_care_events(
     State(pool): State<SqlitePool>,
     Path(plant_id): Path<i64>,
@@ -90,11 +120,11 @@ pub async fn list_care_events(
 }
 
 pub async fn create_care_event(
-    State(pool): State<SqlitePool>,
+    State(state): State<AppState>,
     Path(plant_id): Path<i64>,
     JsonBody(body): JsonBody<CreateCareEvent>,
 ) -> Result<(StatusCode, Json<CareEvent>), ApiError> {
-    plant_exists(&pool, plant_id).await?;
+    plant_exists(&state.pool, plant_id).await?;
 
     let event_type = body
         .event_type
@@ -115,33 +145,50 @@ pub async fn create_care_event(
     .bind(&event_type)
     .bind(&body.notes)
     .bind(&occurred_at)
-    .fetch_one(&pool)
+    .fetch_one(&state.pool)
     .await
     .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     let query = format!("{CARE_EVENT_SELECT} WHERE ce.id = ?");
     let event = sqlx::query_as::<_, CareEvent>(&query)
         .bind(id)
-        .fetch_one(&pool)
+        .fetch_one(&state.pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    if event_type == "watered" {
+        publish_plant_watering_mqtt(&state, plant_id).await;
+    }
 
     Ok((StatusCode::CREATED, Json(event)))
 }
 
 pub async fn delete_care_event(
-    State(pool): State<SqlitePool>,
+    State(state): State<AppState>,
     Path((plant_id, event_id)): Path<(i64, i64)>,
 ) -> Result<StatusCode, ApiError> {
-    let result = sqlx::query("DELETE FROM care_events WHERE id = ? AND plant_id = ?")
+    // Read event type before deleting so we know whether to publish MQTT
+    let event_type = sqlx::query_scalar::<_, String>(
+        "SELECT event_type FROM care_events WHERE id = ? AND plant_id = ?",
+    )
+    .bind(event_id)
+    .bind(plant_id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    let event_type =
+        event_type.ok_or_else(|| ApiError::NotFound("Care event not found".to_string()))?;
+
+    sqlx::query("DELETE FROM care_events WHERE id = ? AND plant_id = ?")
         .bind(event_id)
         .bind(plant_id)
-        .execute(&pool)
+        .execute(&state.pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
-    if result.rows_affected() == 0 {
-        return Err(ApiError::NotFound("Care event not found".to_string()));
+    if event_type == "watered" {
+        publish_plant_watering_mqtt(&state, plant_id).await;
     }
 
     Ok(StatusCode::NO_CONTENT)

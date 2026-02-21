@@ -73,6 +73,16 @@ The API SHALL create a care event via `POST /api/plants/:id/care` with a JSON bo
 - **WHEN** a POST request is made to `/api/plants/1/care` with `{}`
 - **THEN** the API responds with HTTP 422
 
+#### Scenario: Watered event triggers MQTT publish
+
+- **WHEN** a care event with `event_type` = `watered` is created for a plant
+- **THEN** the plant's watering state and attributes SHALL be published to MQTT
+
+#### Scenario: Non-watered event skips MQTT publish
+
+- **WHEN** a care event with `event_type` other than `watered` is created
+- **THEN** no MQTT publish SHALL occur
+
 #### Scenario: Plant not found
 
 - **WHEN** a POST request is made to `/api/plants/999/care` with `{"event_type": "watered"}`
@@ -103,6 +113,16 @@ The API SHALL delete a care event via `DELETE /api/plants/:id/care/:event_id`.
 - **WHEN** a DELETE request is made to `/api/plants/1/care/5`
 - **THEN** the API responds with HTTP 204
 - **AND** the care event is removed from the database
+
+#### Scenario: Watered event deletion triggers MQTT publish
+
+- **WHEN** a care event with `event_type` = `watered` is deleted
+- **THEN** the plant's watering state and attributes SHALL be republished to MQTT with the updated `last_watered` derived from remaining care events
+
+#### Scenario: Non-watered event deletion skips MQTT publish
+
+- **WHEN** a care event with `event_type` other than `watered` is deleted
+- **THEN** no MQTT publish SHALL occur
 
 #### Scenario: Care event not found
 

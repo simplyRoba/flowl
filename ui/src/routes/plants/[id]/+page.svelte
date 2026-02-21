@@ -131,6 +131,7 @@
 		if (!$currentPlant || deletingEventId === event.id) return;
 		deletingEventId = event.id;
 		await removeCareEvent($currentPlant.id, event.id);
+		await loadPlant($currentPlant.id);
 		deletingEventId = null;
 	}
 

@@ -34,7 +34,6 @@ struct ImportPlant {
     photo_path: Option<String>,
     location_id: Option<i64>,
     watering_interval_days: i64,
-    last_watered: Option<String>,
     light_needs: String,
     difficulty: Option<String>,
     pet_safety: Option<String>,
@@ -181,9 +180,9 @@ async fn replace_database(pool: &sqlx::SqlitePool, data: &ImportData) -> Result<
     for plant in &data.plants {
         sqlx::query(
             "INSERT INTO plants (id, name, species, icon, photo_path, location_id, \
-             watering_interval_days, last_watered, light_needs, difficulty, pet_safety, \
+             watering_interval_days, light_needs, difficulty, pet_safety, \
              growth_speed, soil_type, soil_moisture, notes, created_at, updated_at) \
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(plant.id)
         .bind(&plant.name)
@@ -192,7 +191,6 @@ async fn replace_database(pool: &sqlx::SqlitePool, data: &ImportData) -> Result<
         .bind(&plant.photo_path)
         .bind(plant.location_id)
         .bind(plant.watering_interval_days)
-        .bind(&plant.last_watered)
         .bind(&plant.light_needs)
         .bind(&plant.difficulty)
         .bind(&plant.pet_safety)

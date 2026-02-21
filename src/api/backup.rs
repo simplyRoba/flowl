@@ -66,7 +66,8 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
 
     let plants = sqlx::query_as::<_, ExportPlant>(
         "SELECT id, name, species, icon, photo_path, location_id, watering_interval_days, \
-         last_watered, light_needs, difficulty, pet_safety, growth_speed, soil_type, \
+         (SELECT MAX(occurred_at) FROM care_events WHERE plant_id = plants.id AND event_type = 'watered') AS last_watered, \
+         light_needs, difficulty, pet_safety, growth_speed, soil_type, \
          soil_moisture, notes, created_at, updated_at FROM plants",
     )
     .fetch_all(&state.pool)

@@ -457,6 +457,142 @@ async fn water_auto_logs_care_event() {
     assert_eq!(events[0]["plant_id"], id);
 }
 
+// --- Watered care event updates computed last_watered ---
+
+#[tokio::test]
+async fn create_watered_event_updates_plant_last_watered() {
+    let app = app().await;
+    let plant_id = create_plant(&app).await;
+
+    // Plant starts with no last_watered
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/plants/{plant_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    assert!(json["last_watered"].is_null());
+
+    // Create a watered care event
+    app.clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"watered","occurred_at":"2026-02-15T10:00:00"}"#),
+        ))
+        .await
+        .unwrap();
+
+    // Plant's last_watered should now reflect the care event
+    let resp = app
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/plants/{plant_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    assert_eq!(json["last_watered"], "2026-02-15T10:00:00");
+}
+
+#[tokio::test]
+async fn delete_watered_event_updates_plant_last_watered() {
+    let app = app().await;
+    let plant_id = create_plant(&app).await;
+
+    // Create two watered events
+    app.clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"watered","occurred_at":"2026-02-10T10:00:00"}"#),
+        ))
+        .await
+        .unwrap();
+
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"watered","occurred_at":"2026-02-15T10:00:00"}"#),
+        ))
+        .await
+        .unwrap();
+    let later_event = body_json(resp).await;
+    let later_event_id = later_event["id"].as_i64().unwrap();
+
+    // last_watered should be the latest event
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/plants/{plant_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    assert_eq!(json["last_watered"], "2026-02-15T10:00:00");
+
+    // Delete the later event
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "DELETE",
+            &format!("/api/plants/{plant_id}/care/{later_event_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+    // last_watered should revert to the earlier event
+    let resp = app
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/plants/{plant_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    assert_eq!(json["last_watered"], "2026-02-10T10:00:00");
+}
+
+#[tokio::test]
+async fn non_watered_event_does_not_affect_last_watered() {
+    let app = app().await;
+    let plant_id = create_plant(&app).await;
+
+    // Create a non-watered care event
+    app.clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"fertilized"}"#),
+        ))
+        .await
+        .unwrap();
+
+    // Plant's last_watered should still be null
+    let resp = app
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/plants/{plant_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    assert!(json["last_watered"].is_null());
+}
+
 // --- Cascade delete ---
 
 #[tokio::test]

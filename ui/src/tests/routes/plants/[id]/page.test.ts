@@ -48,8 +48,10 @@ vi.mock('$lib/stores/plants', async () => {
 vi.mock('$lib/stores/care', async () => {
 	const { writable } = await import('svelte/store');
 	const careEvents = writable<any[]>([]);
+	const careError = writable<string | null>(null);
 	return {
 		careEvents,
+		careError,
 		loadCareEvents: (...args: any[]) => mockLoadCareEvents(...args),
 		addCareEvent: (...args: any[]) => mockAddCareEvent(...args),
 		removeCareEvent: (...args: any[]) => mockRemoveCareEvent(...args)
@@ -61,6 +63,7 @@ vi.mock('$lib/emoji', () => ({
 }));
 
 import { currentPlant } from '$lib/stores/plants';
+import { careEvents } from '$lib/stores/care';
 
 function makePlant(overrides: Partial<any> = {}) {
 	return {
@@ -275,5 +278,46 @@ describe('plant delete confirmation', () => {
 
 		await new Promise((r) => setTimeout(r, 50));
 		expect(mockDeletePlant).not.toHaveBeenCalled();
+	});
+});
+
+describe('care event delete reloads plant', () => {
+	it('calls loadPlant after deleting a care event', async () => {
+		mockRemoveCareEvent.mockResolvedValue(true);
+		mockLoadPlant.mockResolvedValue(makePlant());
+
+		await renderWithPlant();
+		await screen.findByText('Fern');
+
+		// Inject a care event into the store
+		careEvents.set([
+			{
+				id: 10,
+				plant_id: 1,
+				plant_name: 'Fern',
+				event_type: 'watered',
+				notes: null,
+				occurred_at: '2025-01-01T10:00:00Z',
+				created_at: '2025-01-01T10:00:00Z'
+			}
+		]);
+
+		await waitFor(() => {
+			expect(screen.getByText('Watered')).toBeTruthy();
+		});
+
+		// Clear mock call history from initial render
+		mockLoadPlant.mockClear();
+		mockLoadPlant.mockResolvedValue(makePlant());
+
+		// Click the delete button on the care event
+		const deleteButton = screen.getByRole('button', { name: 'Delete log entry' });
+		const user = userEvent.setup();
+		await user.click(deleteButton);
+
+		await waitFor(() => {
+			expect(mockRemoveCareEvent).toHaveBeenCalledWith(1, 10);
+			expect(mockLoadPlant).toHaveBeenCalledWith(1);
+		});
 	});
 });

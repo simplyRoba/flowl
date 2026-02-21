@@ -374,7 +374,9 @@ pub async fn repair(
 /// Republish discovery, state, and attributes for all current plants.
 pub async fn republish_all(pool: &SqlitePool, client: &AsyncClient, prefix: &str) {
     let rows = match sqlx::query_as::<_, CheckerRow>(
-        "SELECT id, name, watering_interval_days, last_watered FROM plants",
+        "SELECT id, name, watering_interval_days, \
+                (SELECT MAX(occurred_at) FROM care_events WHERE plant_id = plants.id AND event_type = 'watered') AS last_watered \
+                FROM plants",
     )
     .fetch_all(pool)
     .await
@@ -449,7 +451,9 @@ pub fn spawn_state_checker(
             was_connected = is_connected;
 
             match sqlx::query_as::<_, CheckerRow>(
-                "SELECT id, name, watering_interval_days, last_watered FROM plants",
+                "SELECT id, name, watering_interval_days, \
+                (SELECT MAX(occurred_at) FROM care_events WHERE plant_id = plants.id AND event_type = 'watered') AS last_watered \
+                FROM plants",
             )
             .fetch_all(&pool)
             .await

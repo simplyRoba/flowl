@@ -164,7 +164,8 @@ impl From<PlantRow> for Plant {
 }
 
 pub(crate) const PLANT_SELECT: &str = "SELECT p.id, p.name, p.species, p.icon, p.photo_path, \
-    p.location_id, l.name AS location_name, p.watering_interval_days, p.last_watered, \
+    p.location_id, l.name AS location_name, p.watering_interval_days, \
+    (SELECT MAX(occurred_at) FROM care_events WHERE plant_id = p.id AND event_type = 'watered') AS last_watered, \
     p.light_needs, p.difficulty, p.pet_safety, p.growth_speed, p.soil_type, p.soil_moisture, \
     p.notes, p.created_at, p.updated_at \
     FROM plants p LEFT JOIN locations l ON p.location_id = l.id";
@@ -425,28 +426,25 @@ pub async fn water_plant(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<Json<Plant>, ApiError> {
-    let result = sqlx::query(
-        "UPDATE plants SET last_watered = datetime('now'), updated_at = datetime('now') WHERE id = ?",
-    )
-    .bind(id)
-    .execute(&state.pool)
-    .await
-    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    // Verify the plant exists
+    let result = sqlx::query("UPDATE plants SET updated_at = datetime('now') WHERE id = ?")
+        .bind(id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     if result.rows_affected() == 0 {
         return Err(ApiError::NotFound("Plant not found".to_string()));
     }
 
-    // Auto-log a care event for the watering
-    if let Err(e) = sqlx::query(
+    // Record the watering care event — last_watered is computed from this
+    sqlx::query(
         "INSERT INTO care_events (plant_id, event_type, occurred_at) VALUES (?, 'watered', strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))",
     )
     .bind(id)
     .execute(&state.pool)
     .await
-    {
-        tracing::error!("Failed to log watered care event for plant {id}: {e}");
-    }
+    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     let row = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
         .bind(id)

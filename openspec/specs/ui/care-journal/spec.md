@@ -73,6 +73,7 @@ The plant detail view SHALL allow deleting individual care events.
 - **WHEN** the user clicks the delete button on a care event in the timeline
 - **THEN** a `DELETE /api/plants/:id/care/:event_id` request is sent
 - **AND** the event is removed from the timeline
+- **AND** the plant data SHALL be reloaded so that `last_watered`, `watering_status`, and `next_due` reflect the updated care history
 
 ### Requirement: Global Care Log Page
 
