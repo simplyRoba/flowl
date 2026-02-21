@@ -91,6 +91,7 @@
 		transition: all var(--transition-speed);
 		flex: 1;
 		min-width: 0;
+		color: var(--color-text);
 	}
 
 	.interval-preset:hover {
