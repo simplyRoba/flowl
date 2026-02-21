@@ -224,5 +224,9 @@
 		.stepper-short {
 			display: inline;
 		}
+
+		.stepper-value {
+			height: 44px;
+		}
 	}
 </style>
