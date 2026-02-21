@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.11.0](https://github.com/simplyRoba/flowl/compare/v0.10.0...v0.11.0) (2026-02-21)
+
+
+### Features
+
+* detail image lightbox zoom ([#32](https://github.com/simplyRoba/flowl/issues/32)) ([e17fb34](https://github.com/simplyRoba/flowl/commit/e17fb344d5d640bbc78e15ad54568178f8ad69f0))
+* MQTT repair endpoint with orphan cleanup and auto-reconnect republish ([d00c37f](https://github.com/simplyRoba/flowl/commit/d00c37f4fefd4183dc8abe78b8f3a1e20051d09a))
+
+
+### Bug Fixes
+
+* **docs:** update commands in review expectations and config for consistency ([10a51db](https://github.com/simplyRoba/flowl/commit/10a51dbd1720a4218463a26a893f7a5e926554e4))
+* **plan:** mark seasonal watering adjustments as won't implement for now ([695047f](https://github.com/simplyRoba/flowl/commit/695047faf8a55fc2de2de14e78de249d2bae4f69))
+* remove unused variable and unnecessary drop in backup_restore tests ([2e975b7](https://github.com/simplyRoba/flowl/commit/2e975b7340407a0dbd93765ee087448f89e0623d))
+* **ui:** adjust dimensions of photo upload and detail components for better display ([dc60c0b](https://github.com/simplyRoba/flowl/commit/dc60c0b053175c9c43bd9748483cea454a6b74b9))
+* **ui:** match stepper input height to buttons on mobile ([c61be1d](https://github.com/simplyRoba/flowl/commit/c61be1dcc5df2af7d1afcefb3ed97a4ef0e4466c))
+* **ui:** update back label in PageHeader from "Back" to "Cancel" ([9b05f64](https://github.com/simplyRoba/flowl/commit/9b05f642948a4aa6b0d9c06a879dec30ba893f7e))
+* **ui:** update plant links to include source query parameter for navigation ([ef1c313](https://github.com/simplyRoba/flowl/commit/ef1c313e4ae5f95af94e9507b7c3197dc7fc45a9))
+
 ## [0.10.0](https://github.com/simplyRoba/flowl/compare/v0.9.0...v0.10.0) (2026-02-20)
 
 
