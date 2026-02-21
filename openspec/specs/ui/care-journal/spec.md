@@ -76,11 +76,11 @@ The plant detail view SHALL allow deleting individual care events.
 
 ### Requirement: Global Care Log Page
 
-The route `/log` SHALL display a paginated feed of care events across all plants.
+The route `/care-journal` SHALL display a paginated feed of care events across all plants.
 
 #### Scenario: Events displayed
 
-- **WHEN** the user navigates to `/log`
+- **WHEN** the user navigates to `/care-journal`
 - **THEN** the page fetches care events from `GET /api/care`
 - **AND** displays events grouped by day (e.g., "Today", "Yesterday", "Feb 11, 2026")
 - **AND** each event shows the plant name, event type icon, type label, time, and notes (if present)

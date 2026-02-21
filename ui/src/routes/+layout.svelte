@@ -29,7 +29,7 @@
 	<nav class="sidebar">
 		<div class="logo"><Logo size={28} /><span class="nav-label brand">flowl</span></div>
 		<a href="/" class="nav-item" class:active={isActive('/')}><Leaf size={20} /><span class="nav-label">Plants</span></a>
-		<a href="/log" class="nav-item" class:active={isActive('/log')}><BookOpen size={20} /><span class="nav-label">Log</span></a>
+		<a href="/care-journal" class="nav-item" class:active={isActive('/care-journal')}><BookOpen size={20} /><span class="nav-label">Care Journal</span></a>
 		<a href="/settings" class="nav-item bottom" class:active={isActive('/settings')}><Settings size={20} /><span class="nav-label">Settings</span></a>
 	</nav>
 	<main class="content">

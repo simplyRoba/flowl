@@ -22,7 +22,7 @@
 	let showAllEvents = $state(false);
 	let deletingEventId = $state<number | null>(null);
 	let backHref = $state('/');
-	const BACK_PATHS = new Set(['/', '/log', '/plants']);
+	const BACK_PATHS = new Set(['/', '/care-journal', '/plants', '/settings']);
 
 	const EVENT_LIMIT = 20;
 
@@ -187,7 +187,7 @@
 	<div class="not-found">
 		<h2>Plant not found</h2>
 		<p>This plant doesn't exist or may have been deleted.</p>
-		<a href={backHref} class="back-link"><ArrowLeft size={16} /> Back to plants</a>
+		<a href="/" class="back-link"><ArrowLeft size={16} /> Back to plants</a>
 	</div>
 {:else if $currentPlant}
 	<div class="detail">
