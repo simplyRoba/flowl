@@ -21,6 +21,8 @@
 	let logSubmitting = $state(false);
 	let showAllEvents = $state(false);
 	let deletingEventId = $state<number | null>(null);
+	let backHref = $state('/');
+	const BACK_PATHS = new Set(['/', '/log', '/plants']);
 
 	const EVENT_LIMIT = 20;
 
@@ -32,6 +34,11 @@
 		} else {
 			await loadCareEvents(id);
 		}
+	});
+
+	$effect(() => {
+		const from = $page.url.searchParams.get('from');
+		backHref = from && BACK_PATHS.has(from) ? from : '/';
 	});
 
 	async function handleDelete() {
@@ -180,11 +187,11 @@
 	<div class="not-found">
 		<h2>Plant not found</h2>
 		<p>This plant doesn't exist or may have been deleted.</p>
-		<a href="/" class="back-link"><ArrowLeft size={16} /> Back to plants</a>
+		<a href={backHref} class="back-link"><ArrowLeft size={16} /> Back to plants</a>
 	</div>
 {:else if $currentPlant}
 	<div class="detail">
-		<PageHeader backHref="/" backLabel="Back">
+		<PageHeader {backHref} backLabel="Back">
 			<a href="/plants/{$currentPlant.id}/edit" class="btn btn-icon">
 				<Pencil size={16} />
 			</a>

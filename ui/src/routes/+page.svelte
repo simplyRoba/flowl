@@ -154,7 +154,7 @@
 			</div>
 			<div class="attention-cards">
 				{#each attentionPlants as plant (plant.id)}
-					<a href="/plants/{plant.id}" class="attention-card">
+						<a href="/plants/{plant.id}?from=/" class="attention-card">
 						<div class="attention-card-accent" class:accent-overdue={plant.watering_status === 'overdue'} class:accent-due={plant.watering_status === 'due'}></div>
 						{#if plant.photo_url}
 							<div class="attention-card-photo">
@@ -215,7 +215,7 @@
 	{:else}
 		<div class="plant-grid">
 			{#each $plants as plant (plant.id)}
-				<a href="/plants/{plant.id}" class="plant-card">
+				<a href="/plants/{plant.id}?from=/" class="plant-card">
 					{#if plant.photo_url}
 						<div class="plant-card-photo">
 							<img src={plant.photo_url} alt={plant.name} class="photo-img" />

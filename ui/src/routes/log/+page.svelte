@@ -189,7 +189,7 @@
 							</div>
 							<div class="log-entry-content">
 								<div class="log-entry-top">
-									<a href="/plants/{event.plant_id}" class="log-entry-plant">{event.plant_name}</a>
+								<a href="/plants/{event.plant_id}?from=/log" class="log-entry-plant">{event.plant_name}</a>
 									<span class="log-entry-time">{formatTime(event.occurred_at)}</span>
 								</div>
 								<div class="log-entry-action">{eventTypeLabel(event.event_type)}</div>
