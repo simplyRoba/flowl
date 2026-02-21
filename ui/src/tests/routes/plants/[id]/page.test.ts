@@ -157,6 +157,46 @@ describe('plant detail lightbox', () => {
 		});
 	});
 
+	it('locks body scroll while lightbox is open and restores on close', async () => {
+		document.body.style.overflow = '';
+		await renderWithPlant();
+		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+
+		await fireEvent.click(openButton);
+		expect(document.body.style.overflow).toBe('hidden');
+
+		await fireEvent.keyDown(window, { key: 'Escape' });
+		await vi.waitFor(() => {
+			expect(document.querySelector('.lightbox')).toBeNull();
+		});
+		expect(document.body.style.overflow).toBe('');
+	});
+
+	it('zooms via touch pinch gesture', async () => {
+		await renderWithPlant();
+		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		await fireEvent.click(openButton);
+		const img = document.querySelector('.lightbox-image') as HTMLImageElement;
+		expect(img).toBeTruthy();
+		const before = img.style.transform;
+
+		const startEvent = new Event('touchstart', { bubbles: true }) as any;
+		startEvent.touches = [
+			{ clientX: 100, clientY: 100 },
+			{ clientX: 200, clientY: 200 }
+		];
+		await fireEvent(window, startEvent);
+
+		const moveEvent = new Event('touchmove', { bubbles: true, cancelable: true }) as any;
+		moveEvent.touches = [
+			{ clientX: 50, clientY: 50 },
+			{ clientX: 250, clientY: 250 }
+		];
+		await fireEvent(window, moveEvent);
+
+		expect(img.style.transform).not.toBe(before);
+	});
+
 	it('closes the lightbox via backdrop click', async () => {
 		await renderWithPlant();
 		const openButton = await screen.findByRole('button', { name: 'Open photo' });
