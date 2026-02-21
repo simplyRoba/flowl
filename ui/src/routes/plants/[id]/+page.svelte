@@ -9,6 +9,7 @@
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PhotoLightbox from '$lib/components/PhotoLightbox.svelte';
+	import ModalDialog from '$lib/components/ModalDialog.svelte';
 	import type { CareEvent } from '$lib/api';
 
 	let notFound = $state(false);
@@ -24,6 +25,7 @@
 	let deletingEventId = $state<number | null>(null);
 	let backHref = $state('/');
 	let lightboxOpen = $state(false);
+	let deleteDialogOpen = $state(false);
 	const BACK_PATHS = new Set(['/', '/care-journal', '/plants', '/settings']);
 
 	const EVENT_LIMIT = 20;
@@ -43,9 +45,13 @@
 		backHref = from && BACK_PATHS.has(from) ? from : '/';
 	});
 
-	async function handleDelete() {
+	function handleDelete() {
+		deleteDialogOpen = true;
+	}
+
+	async function handleDeleteConfirm() {
+		deleteDialogOpen = false;
 		if (!$currentPlant) return;
-		if (!confirm(`Delete "${$currentPlant.name}"? This cannot be undone.`)) return;
 		deleting = true;
 		const success = await deletePlant($currentPlant.id);
 		if (success) {
@@ -434,6 +440,17 @@
 {:else}
 	<p class="loading">Loading...</p>
 {/if}
+
+<ModalDialog
+	open={deleteDialogOpen}
+	title="Delete plant"
+	message={$currentPlant ? `Delete "${$currentPlant.name}"? This cannot be undone.` : ''}
+	mode="confirm"
+	variant="danger"
+	confirmLabel="Delete"
+	onconfirm={handleDeleteConfirm}
+	oncancel={() => { deleteDialogOpen = false; }}
+/>
 
 <style>
 	.detail {

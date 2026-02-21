@@ -1,17 +1,4 @@
-## Purpose
-
-Settings page with appearance, location management, MQTT status, data stats, and about sections.
-
-## Requirements
-
-### Requirement: Settings Page
-
-The route `/settings` SHALL display a settings page accessible from the sidebar navigation.
-
-#### Scenario: Page loads
-
-- **WHEN** the user navigates to `/settings`
-- **THEN** the page displays a "Settings" header
+## MODIFIED Requirements
 
 ### Requirement: Location Management
 
@@ -78,48 +65,6 @@ The settings page SHALL include a "Locations" section listing all locations with
 
 - **WHEN** no locations exist
 - **THEN** the section shows "No locations yet. Create locations when adding plants."
-
-### Requirement: Appearance theme selector
-
-The settings page SHALL include an Appearance section that lets the user choose Light, Dark, or System theme.
-
-#### Scenario: Settings page shows theme options
-
-- **WHEN** the user navigates to `/settings`
-- **THEN** the page displays an Appearance section
-- **AND** the theme selector shows Light, Dark, and System options
-
-#### Scenario: Theme option selection
-
-- **GIVEN** the settings page is visible
-- **WHEN** the user selects a theme option
-- **THEN** the selected option is visually indicated as active
-- **AND** the preference is saved for future sessions
-
-### Requirement: About Section
-
-The settings page SHALL include an "About" section displaying application metadata fetched from `GET /api/info`.
-
-#### Scenario: About section displays version
-
-- **WHEN** the settings page loads
-- **THEN** the About section shows a "Version" row with the app version from the API
-
-#### Scenario: About section displays source link
-
-- **WHEN** the settings page loads
-- **THEN** the About section shows a "Source" row with the repository URL as a clickable link
-- **AND** the link text displays the URL without the `https://` prefix
-
-#### Scenario: About section displays license
-
-- **WHEN** the settings page loads
-- **THEN** the About section shows a "License" row with the license identifier from the API
-
-#### Scenario: API fetch failure
-
-- **WHEN** the settings page loads and the `/api/info` request fails
-- **THEN** the About section is not rendered
 
 ### Requirement: MQTT Section
 

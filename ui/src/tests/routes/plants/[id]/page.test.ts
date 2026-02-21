@@ -1,6 +1,15 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Page from '../../../../routes/plants/[id]/+page.svelte';
+
+// jsdom doesn't implement HTMLDialogElement.showModal/close
+HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
+	this.setAttribute('open', '');
+});
+HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+	this.removeAttribute('open');
+});
 
 const mockLoadPlant = vi.fn();
 const mockDeletePlant = vi.fn();
@@ -97,16 +106,21 @@ afterEach(() => {
 	cleanup();
 });
 
+function getLightbox() {
+	return document.querySelector('dialog.lightbox') as HTMLDialogElement;
+}
+
 describe('plant detail lightbox', () => {
 	it('opens and closes the lightbox for a photo', async () => {
 		await renderWithPlant();
 		const openButton = await screen.findByRole('button', { name: 'Open photo' });
 		await fireEvent.click(openButton);
-		expect(document.querySelector('.lightbox')).toBeTruthy();
+		expect(getLightbox().hasAttribute('open')).toBe(true);
 
-		await fireEvent.keyDown(window, { key: 'Escape' });
+		// Escape triggers the dialog's cancel event
+		getLightbox().dispatchEvent(new Event('cancel'));
 		await vi.waitFor(() => {
-			expect(document.querySelector('.lightbox')).toBeNull();
+			expect(getLightbox().hasAttribute('open')).toBe(false);
 		});
 	});
 
@@ -148,12 +162,12 @@ describe('plant detail lightbox', () => {
 		await renderWithPlant();
 		const openButton = await screen.findByRole('button', { name: 'Open photo' });
 		await fireEvent.click(openButton);
-		expect(document.querySelector('.lightbox')).toBeTruthy();
+		expect(getLightbox().hasAttribute('open')).toBe(true);
 
 		const closeButton = screen.getByRole('button', { name: 'Close' });
 		await fireEvent.click(closeButton);
 		await vi.waitFor(() => {
-			expect(document.querySelector('.lightbox')).toBeNull();
+			expect(getLightbox().hasAttribute('open')).toBe(false);
 		});
 	});
 
@@ -165,9 +179,9 @@ describe('plant detail lightbox', () => {
 		await fireEvent.click(openButton);
 		expect(document.body.style.overflow).toBe('hidden');
 
-		await fireEvent.keyDown(window, { key: 'Escape' });
+		getLightbox().dispatchEvent(new Event('cancel'));
 		await vi.waitFor(() => {
-			expect(document.querySelector('.lightbox')).toBeNull();
+			expect(getLightbox().hasAttribute('open')).toBe(false);
 		});
 		expect(document.body.style.overflow).toBe('');
 	});
@@ -201,12 +215,65 @@ describe('plant detail lightbox', () => {
 		await renderWithPlant();
 		const openButton = await screen.findByRole('button', { name: 'Open photo' });
 		await fireEvent.click(openButton);
-		const lightbox = document.querySelector('.lightbox') as HTMLElement;
-		expect(lightbox).toBeTruthy();
+		const lightbox = getLightbox();
+		expect(lightbox.hasAttribute('open')).toBe(true);
 
+		// Click directly on the dialog element (backdrop area)
 		await fireEvent.click(lightbox);
 		await vi.waitFor(() => {
-			expect(document.querySelector('.lightbox')).toBeNull();
+			expect(lightbox.hasAttribute('open')).toBe(false);
 		});
+	});
+});
+
+describe('plant delete confirmation', () => {
+	function getDeleteIconButton() {
+		return document.querySelector('.btn-danger') as HTMLButtonElement;
+	}
+
+	it('shows confirmation dialog with plant name when delete is clicked', async () => {
+		await renderWithPlant({ name: 'My Fern' });
+		await screen.findByText('My Fern');
+
+		const user = userEvent.setup();
+		await user.click(getDeleteIconButton());
+
+		await waitFor(() => {
+			expect(screen.getByText(/Delete "My Fern"/)).toBeTruthy();
+		});
+	});
+
+	it('calls deletePlant when confirmed', async () => {
+		mockDeletePlant.mockResolvedValue(true);
+		await renderWithPlant({ name: 'My Fern' });
+		await screen.findByText('My Fern');
+
+		const user = userEvent.setup();
+		await user.click(getDeleteIconButton());
+
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy();
+		});
+		await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+		await waitFor(() => {
+			expect(mockDeletePlant).toHaveBeenCalledWith(1);
+		});
+	});
+
+	it('does not call deletePlant when cancelled', async () => {
+		await renderWithPlant({ name: 'My Fern' });
+		await screen.findByText('My Fern');
+
+		const user = userEvent.setup();
+		await user.click(getDeleteIconButton());
+
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
+		});
+		await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+		await new Promise((r) => setTimeout(r, 50));
+		expect(mockDeletePlant).not.toHaveBeenCalled();
 	});
 });

@@ -9,6 +9,7 @@
 		type ThemePreference
 	} from '$lib/stores/theme';
 	import { fetchAppInfo, fetchStats, fetchMqttStatus, repairMqtt, importData, type AppInfo, type Stats, type MqttStatus } from '$lib/api';
+	import ModalDialog from '$lib/components/ModalDialog.svelte';
 
 	const themeOptions: { value: ThemePreference; label: string }[] = [
 		{ value: 'light', label: 'Light' },
@@ -28,7 +29,14 @@
 	let importLoading = $state(false);
 	let importMessage = $state('');
 	let importError = $state('');
-	let fileInput: HTMLInputElement;
+	let fileInput: HTMLInputElement = $state() as HTMLInputElement;
+
+	// Dialog state
+	let deleteDialogOpen = $state(false);
+	let deleteTarget: { id: number; name: string; plantCount: number } | null = $state(null);
+	let importDialogOpen = $state(false);
+	let importFile: File | null = $state(null);
+	let repairDialogOpen = $state(false);
 
 	onMount(() => {
 		loadLocations();
@@ -91,7 +99,12 @@
 		}
 	}
 
-	async function handleRepair() {
+	function handleRepairClick() {
+		repairDialogOpen = true;
+	}
+
+	async function handleRepairConfirm() {
+		repairDialogOpen = false;
 		repairLoading = true;
 		repairMessage = '';
 		repairError = '';
@@ -113,7 +126,7 @@
 		fileInput.click();
 	}
 
-	async function handleFileSelected(e: Event) {
+	function handleFileSelected(e: Event) {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
@@ -121,9 +134,15 @@
 		// Reset for next use
 		input.value = '';
 
-		if (!confirm(`Import "${file.name}"?\n\nAll existing data and photos will be replaced.`)) {
-			return;
-		}
+		importFile = file;
+		importDialogOpen = true;
+	}
+
+	async function handleImportConfirm() {
+		importDialogOpen = false;
+		const file = importFile;
+		importFile = null;
+		if (!file) return;
 
 		importLoading = true;
 		importMessage = '';
@@ -131,7 +150,6 @@
 		try {
 			const result = await importData(file);
 			importMessage = `Imported ${result.plants} plants, ${result.care_events} log entries, ${result.photos} photos`;
-			// Reload stats
 			fetchStats()
 				.then((s) => { stats = s; })
 				.catch(() => {});
@@ -143,13 +161,16 @@
 		}
 	}
 
-	async function handleDelete(id: number, name: string, plantCount: number) {
-		const message = plantCount > 0
-			? `Delete "${name}"? ${plantCount} plant${plantCount === 1 ? '' : 's'} will lose ${plantCount === 1 ? 'its' : 'their'} location.`
-			: `Delete "${name}"?`;
+	function handleDelete(id: number, name: string, plantCount: number) {
+		deleteTarget = { id, name, plantCount };
+		deleteDialogOpen = true;
+	}
 
-		if (!confirm(message)) return;
-		await deleteLocation(id);
+	async function handleDeleteConfirm() {
+		deleteDialogOpen = false;
+		if (!deleteTarget) return;
+		await deleteLocation(deleteTarget.id);
+		deleteTarget = null;
 	}
 </script>
 
@@ -273,7 +294,7 @@
 							class="btn btn-outline btn-sm"
 							disabled={mqttStatus.status !== 'connected' || repairLoading}
 							title={mqttStatus.status !== 'connected' ? 'MQTT must be connected' : undefined}
-							onclick={handleRepair}
+							onclick={handleRepairClick}
 						>
 							{#if repairLoading}
 								Repairing...
@@ -355,6 +376,43 @@
 		</section>
 	{/if}
 </div>
+
+<ModalDialog
+	open={deleteDialogOpen}
+	title="Delete location"
+	message={deleteTarget
+		? deleteTarget.plantCount > 0
+			? `Delete "${deleteTarget.name}"? ${deleteTarget.plantCount} plant${deleteTarget.plantCount === 1 ? '' : 's'} will lose ${deleteTarget.plantCount === 1 ? 'its' : 'their'} location.`
+			: `Delete "${deleteTarget.name}"?`
+		: ''}
+	mode="confirm"
+	variant="danger"
+	confirmLabel="Delete"
+	onconfirm={handleDeleteConfirm}
+	oncancel={() => { deleteDialogOpen = false; deleteTarget = null; }}
+/>
+
+<ModalDialog
+	open={importDialogOpen}
+	title="Import data"
+	message={importFile ? `Import "${importFile.name}"? All existing data and photos will be replaced.` : ''}
+	mode="confirm"
+	variant="danger"
+	confirmLabel="Import"
+	onconfirm={handleImportConfirm}
+	oncancel={() => { importDialogOpen = false; importFile = null; }}
+/>
+
+<ModalDialog
+	open={repairDialogOpen}
+	title="Repair MQTT"
+	message="Clear all retained MQTT topics and republish fresh state for all plants?"
+	mode="confirm"
+	variant="warning"
+	confirmLabel="Repair"
+	onconfirm={handleRepairConfirm}
+	oncancel={() => { repairDialogOpen = false; }}
+/>
 
 <style>
 	.page {

@@ -13,7 +13,8 @@
 	let panOriginY = $state(0);
 	let pinchStartDistance = $state<number | null>(null);
 	let pinchStartZoom = $state(1);
-	let imageEl: HTMLImageElement | null = null;
+	let imageEl: HTMLImageElement | null = $state(null);
+	let dialogEl: HTMLDialogElement | undefined = $state();
 	let bodyOverflow = $state('');
 
 	const MIN_ZOOM = 1;
@@ -21,6 +22,17 @@
 
 	function requestClose() {
 		onclose?.();
+	}
+
+	function handleCancel(e: Event) {
+		e.preventDefault();
+		requestClose();
+	}
+
+	function handleBackdropClick(e: MouseEvent) {
+		if (e.target === dialogEl) {
+			requestClose();
+		}
 	}
 
 	function clamp(value: number, min: number, max: number): number {
@@ -111,10 +123,15 @@
 	}
 
 	$effect(() => {
-		if (!open) return;
-		zoom = 1;
-		translateX = 0;
-		translateY = 0;
+		if (!dialogEl) return;
+		if (open && src && !dialogEl.open) {
+			zoom = 1;
+			translateX = 0;
+			translateY = 0;
+			dialogEl.showModal();
+		} else if ((!open || !src) && dialogEl.open) {
+			dialogEl.close();
+		}
 	});
 
 	$effect(() => {
@@ -129,14 +146,12 @@
 
 	$effect(() => {
 		if (!open || typeof window === 'undefined') return;
-		window.addEventListener('keydown', handleWindowKeydown);
 		window.addEventListener('pointermove', handleWindowPointerMove);
 		window.addEventListener('pointerup', handleWindowPointerUp);
 		window.addEventListener('touchstart', handleWindowTouchStart, { passive: true });
 		window.addEventListener('touchmove', handleWindowTouchMove, { passive: false });
 		window.addEventListener('touchend', handleWindowTouchEnd);
 		return () => {
-			window.removeEventListener('keydown', handleWindowKeydown);
 			window.removeEventListener('pointermove', handleWindowPointerMove);
 			window.removeEventListener('pointerup', handleWindowPointerUp);
 			window.removeEventListener('touchstart', handleWindowTouchStart);
@@ -146,34 +161,45 @@
 	});
 </script>
 
-{#if open && src}
-	<div class="lightbox" onclick={requestClose} role="dialog" aria-modal="true" aria-label="Plant photo">
-		<button type="button" class="lightbox-close" aria-label="Close" onclick={requestClose}>
-			<X size={24} />
-		</button>
-		<div class="lightbox-content" onclick={(event) => event.stopPropagation()}>
-			<img
-				src={src}
-				alt={alt}
-				class="lightbox-image"
-				bind:this={imageEl}
-				onwheel={handleWheel}
-				onpointerdown={handlePointerDown}
-				style={`transform: translate(${translateX}px, ${translateY}px) scale(${zoom});`}
-			/>
-		</div>
+<dialog
+	bind:this={dialogEl}
+	class="lightbox"
+	aria-label="Plant photo"
+	oncancel={handleCancel}
+	onclick={handleBackdropClick}
+>
+	<button type="button" class="lightbox-close" aria-label="Close" onclick={requestClose}>
+		<X size={24} />
+	</button>
+	<div class="lightbox-content">
+		<img
+			src={src}
+			alt={alt}
+			class="lightbox-image"
+			bind:this={imageEl}
+			onwheel={handleWheel}
+			onpointerdown={handlePointerDown}
+			style={`transform: translate(${translateX}px, ${translateY}px) scale(${zoom});`}
+		/>
 	</div>
-{/if}
+</dialog>
 
 <style>
 	.lightbox {
-		position: fixed;
-		inset: 0;
-		background: color-mix(in srgb, var(--color-background) 82%, transparent);
+		border: none;
+		background: transparent;
+		padding: 0;
+		max-width: none;
+		max-height: none;
+		width: 100vw;
+		height: 100vh;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		z-index: 1000;
+	}
+
+	.lightbox::backdrop {
+		background: color-mix(in srgb, var(--color-background) 82%, transparent);
 	}
 
 	.lightbox-close {

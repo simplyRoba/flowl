@@ -6,6 +6,14 @@ import { setThemePreference, THEME_STORAGE_KEY } from '$lib/stores/theme';
 import { locations, locationsError } from '$lib/stores/locations';
 import * as api from '$lib/api';
 
+// jsdom doesn't implement HTMLDialogElement.showModal/close
+HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
+	this.setAttribute('open', '');
+});
+HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+	this.removeAttribute('open');
+});
+
 const mockDeleteLocation = vi.fn();
 const mockUpdateLocation = vi.fn();
 
@@ -150,9 +158,25 @@ describe('settings data section export/import', () => {
 		expect(fileInput.accept).toBe('.zip');
 	});
 
+	it('shows import confirmation dialog with file name', async () => {
+		render(Page);
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: /Import/ })).toBeTruthy();
+		});
+
+		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		const file = new File(['zip'], 'test.zip', { type: 'application/zip' });
+		Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+		fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+		await waitFor(() => {
+			expect(screen.getByText(/test\.zip/)).toBeTruthy();
+			expect(screen.getByText(/replaced/)).toBeTruthy();
+		});
+	});
+
 	it('shows import error on failure', async () => {
 		vi.spyOn(api, 'importData').mockRejectedValue(new Error('Version mismatch'));
-		vi.spyOn(window, 'confirm').mockReturnValue(true);
 
 		render(Page);
 		await waitFor(() => {
@@ -163,6 +187,15 @@ describe('settings data section export/import', () => {
 		const file = new File(['zip'], 'test.zip', { type: 'application/zip' });
 		Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
 		fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+		// Confirm in dialog
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: 'Import' })).toBeTruthy();
+		});
+		const user = userEvent.setup();
+		// There are two "Import" buttons (the toolbar one and the dialog one) — click the dialog one
+		const importButtons = screen.getAllByRole('button', { name: 'Import' });
+		await user.click(importButtons[importButtons.length - 1]);
 
 		await waitFor(() => {
 			expect(screen.getByText('Version mismatch')).toBeTruthy();
@@ -176,7 +209,6 @@ describe('settings data section export/import', () => {
 			care_events: 5,
 			photos: 2
 		});
-		vi.spyOn(window, 'confirm').mockReturnValue(true);
 
 		render(Page);
 		await waitFor(() => {
@@ -187,15 +219,22 @@ describe('settings data section export/import', () => {
 		const file = new File(['zip'], 'test.zip', { type: 'application/zip' });
 		Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
 		fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+		// Confirm in dialog
+		await waitFor(() => {
+			expect(screen.getByText(/test\.zip/)).toBeTruthy();
+		});
+		const user = userEvent.setup();
+		const importButtons = screen.getAllByRole('button', { name: 'Import' });
+		await user.click(importButtons[importButtons.length - 1]);
 
 		await waitFor(() => {
 			expect(screen.getByText(/Imported 3 plants/)).toBeTruthy();
 		});
 	});
 
-	it('does not import when confirm is cancelled', async () => {
+	it('does not import when dialog is cancelled', async () => {
 		const importSpy = vi.spyOn(api, 'importData');
-		vi.spyOn(window, 'confirm').mockReturnValue(false);
 
 		render(Page);
 		await waitFor(() => {
@@ -207,8 +246,147 @@ describe('settings data section export/import', () => {
 		Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
 		fileInput.dispatchEvent(new Event('change', { bubbles: true }));
 
-		// Wait a tick, then verify importData was never called
+		// Cancel in dialog
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
+		});
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
 		await new Promise((r) => setTimeout(r, 50));
 		expect(importSpy).not.toHaveBeenCalled();
+	});
+});
+
+describe('settings delete location confirmation', () => {
+	function getDeleteButtons() {
+		return document.querySelectorAll('.btn-danger') as NodeListOf<HTMLButtonElement>;
+	}
+
+	it('shows confirmation dialog with location name when delete is clicked', async () => {
+		locations.set([{ id: 1, name: 'Bedroom', plant_count: 0 }]);
+		render(Page);
+
+		const user = userEvent.setup();
+		await user.click(getDeleteButtons()[0]);
+
+		await waitFor(() => {
+			expect(screen.getByText(/Delete "Bedroom"/)).toBeTruthy();
+		});
+	});
+
+	it('shows plant count warning in dialog when location has plants', async () => {
+		locations.set([{ id: 1, name: 'Bedroom', plant_count: 3 }]);
+		render(Page);
+
+		const user = userEvent.setup();
+		await user.click(getDeleteButtons()[0]);
+
+		await waitFor(() => {
+			expect(screen.getByText(/Delete "Bedroom"/)).toBeTruthy();
+			expect(screen.getByText(/3 plants will lose their location/)).toBeTruthy();
+		});
+	});
+
+	it('calls deleteLocation when confirmed', async () => {
+		locations.set([{ id: 1, name: 'Bedroom', plant_count: 0 }]);
+		render(Page);
+
+		const user = userEvent.setup();
+		await user.click(getDeleteButtons()[0]);
+
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy();
+		});
+		await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+		await waitFor(() => {
+			expect(mockDeleteLocation).toHaveBeenCalledWith(1);
+		});
+	});
+
+	it('does not delete when dialog is cancelled', async () => {
+		locations.set([{ id: 1, name: 'Bedroom', plant_count: 0 }]);
+		render(Page);
+
+		const user = userEvent.setup();
+		await user.click(getDeleteButtons()[0]);
+
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
+		});
+		await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+		await new Promise((r) => setTimeout(r, 50));
+		expect(mockDeleteLocation).not.toHaveBeenCalled();
+	});
+});
+
+describe('settings MQTT repair confirmation', () => {
+	beforeEach(() => {
+		vi.spyOn(api, 'fetchStats').mockRejectedValue(new Error('skip'));
+		vi.spyOn(api, 'fetchAppInfo').mockRejectedValue(new Error('skip'));
+		vi.spyOn(api, 'fetchMqttStatus').mockResolvedValue({
+			status: 'connected',
+			broker: 'mqtt://localhost',
+			topic_prefix: 'flowl'
+		});
+	});
+
+	it('shows confirmation dialog when repair is clicked', async () => {
+		render(Page);
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: /Repair/ })).toBeTruthy();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: /Repair/ }));
+
+		await waitFor(() => {
+			expect(screen.getByText(/Clear all retained MQTT topics/)).toBeTruthy();
+		});
+	});
+
+	it('calls repairMqtt when confirmed', async () => {
+		vi.spyOn(api, 'repairMqtt').mockResolvedValue({ cleared: 5, published: 3 });
+
+		render(Page);
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: /Repair/ })).toBeTruthy();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: /Repair/ }));
+
+		await waitFor(() => {
+			expect(screen.getByText(/Clear all retained MQTT topics/)).toBeTruthy();
+		});
+		// Two "Repair" buttons: toolbar and dialog confirm — click the dialog one
+		const repairButtons = screen.getAllByRole('button', { name: 'Repair' });
+		await user.click(repairButtons[repairButtons.length - 1]);
+
+		await waitFor(() => {
+			expect(screen.getByText(/Cleared 5, published 3/)).toBeTruthy();
+		});
+	});
+
+	it('does not repair when dialog is cancelled', async () => {
+		const repairSpy = vi.spyOn(api, 'repairMqtt');
+
+		render(Page);
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: /Repair/ })).toBeTruthy();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: /Repair/ }));
+
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
+		});
+		await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+		await new Promise((r) => setTimeout(r, 50));
+		expect(repairSpy).not.toHaveBeenCalled();
 	});
 });
