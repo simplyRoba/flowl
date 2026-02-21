@@ -143,4 +143,30 @@ describe('plant detail lightbox', () => {
 		await fireEvent.pointerUp(window);
 		expect(img.style.transform).not.toBe(before);
 	});
+
+	it('closes the lightbox via close button', async () => {
+		await renderWithPlant();
+		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		await fireEvent.click(openButton);
+		expect(document.querySelector('.lightbox')).toBeTruthy();
+
+		const closeButton = screen.getByRole('button', { name: 'Close' });
+		await fireEvent.click(closeButton);
+		await vi.waitFor(() => {
+			expect(document.querySelector('.lightbox')).toBeNull();
+		});
+	});
+
+	it('closes the lightbox via backdrop click', async () => {
+		await renderWithPlant();
+		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		await fireEvent.click(openButton);
+		const lightbox = document.querySelector('.lightbox') as HTMLElement;
+		expect(lightbox).toBeTruthy();
+
+		await fireEvent.click(lightbox);
+		await vi.waitFor(() => {
+			expect(document.querySelector('.lightbox')).toBeNull();
+		});
+	});
 });

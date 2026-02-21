@@ -99,7 +99,7 @@ describe('dashboard page', () => {
 		plants.set([makePlant({ id: 42, name: 'Fern' })]);
 		render(Page);
 		const link = screen.getByText('Fern').closest('a');
-		expect(link?.getAttribute('href')).toBe('/plants/42');
+		expect(link?.getAttribute('href')).toBe('/plants/42?from=/');
 	});
 
 	it('shows "My Plants" header', () => {
@@ -228,7 +228,7 @@ describe('needs attention section', () => {
 		render(Page);
 		const attentionSection = document.querySelector('.attention-section');
 		const link = attentionSection!.querySelector('a');
-		expect(link?.getAttribute('href')).toBe('/plants/42');
+		expect(link?.getAttribute('href')).toBe('/plants/42?from=/');
 	});
 });
 

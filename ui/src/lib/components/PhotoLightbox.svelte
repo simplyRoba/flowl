@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { X } from 'lucide-svelte';
+
 	let { open = false, src = '', alt = '', onclose }: { open?: boolean; src?: string; alt?: string; onclose?: () => void } = $props();
 
 	let zoom = $state(1);
@@ -146,6 +148,9 @@
 
 {#if open && src}
 	<div class="lightbox" onclick={requestClose} role="dialog" aria-modal="true" aria-label="Plant photo">
+		<button type="button" class="lightbox-close" aria-label="Close" onclick={requestClose}>
+			<X size={24} />
+		</button>
 		<div class="lightbox-content" onclick={(event) => event.stopPropagation()}>
 			<img
 				src={src}
@@ -164,11 +169,33 @@
 	.lightbox {
 		position: fixed;
 		inset: 0;
-		background: rgba(8, 12, 16, 0.82);
+		background: color-mix(in srgb, var(--color-background) 82%, transparent);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 1000;
+	}
+
+	.lightbox-close {
+		position: absolute;
+		top: 16px;
+		right: 16px;
+		width: 40px;
+		height: 40px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: none;
+		border-radius: var(--radius-btn);
+		background: var(--color-surface);
+		color: var(--color-text-muted);
+		cursor: pointer;
+		z-index: 1;
+		transition: color var(--transition-speed);
+	}
+
+	.lightbox-close:hover {
+		color: var(--color-text);
 	}
 
 	.lightbox-content {
@@ -177,6 +204,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		overflow: hidden;
+		border-radius: var(--radius-card);
 	}
 
 	.lightbox-image {

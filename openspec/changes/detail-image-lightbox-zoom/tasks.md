@@ -17,4 +17,4 @@
 ## 4. Wrap-up
 
 - [x] 4.1 Review README.md for any needed user-facing updates
-- [ ] 4.2 Run `cargo fmt`, `cargo clippy`, and `cargo test`
+- [x] 4.2 Run `cargo fmt`, `cargo clippy`, and `cargo test`

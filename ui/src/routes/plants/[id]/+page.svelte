@@ -481,7 +481,6 @@
 		height: 110px;
 	}
 
-
 	.detail-name {
 		display: flex;
 		align-items: baseline;
