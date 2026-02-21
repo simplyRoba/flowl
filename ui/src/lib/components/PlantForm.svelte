@@ -576,7 +576,7 @@
 
 	.photo-upload-refined {
 		width: 100%;
-		height: 160px;
+		height: 220px;
 		border: 2px dashed var(--color-border);
 		border-radius: var(--radius-card);
 		display: flex;
@@ -636,8 +636,8 @@
 	}
 
 	.preview-img {
-		width: 180px;
-		height: 180px;
+		width: 240px;
+		height: 240px;
 		object-fit: cover;
 		border-radius: var(--radius-card);
 		border: 1px solid var(--color-border);
@@ -757,12 +757,12 @@
 		}
 
 		.photo-upload-refined {
-			height: 120px;
+			height: 180px;
 		}
 
 		.preview-img {
-			width: 150px;
-			height: 150px;
+			width: 200px;
+			height: 200px;
 		}
 
 		.media-divider {

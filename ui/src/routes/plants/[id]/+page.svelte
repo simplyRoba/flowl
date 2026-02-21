@@ -425,8 +425,8 @@
 	}
 
 	.detail-photo {
-		width: 200px;
-		height: 200px;
+		width: 260px;
+		height: 260px;
 		flex-shrink: 0;
 		border-radius: var(--radius-card);
 		overflow: hidden;
@@ -443,8 +443,8 @@
 	}
 
 	.detail-photo-icon {
-		width: 80px;
-		height: 80px;
+		width: 110px;
+		height: 110px;
 	}
 
 	.detail-name {
@@ -662,8 +662,8 @@
 
 	@media (min-width: 1280px) {
 		.detail-photo {
-			width: 220px;
-			height: 220px;
+			width: 300px;
+			height: 300px;
 		}
 	}
 
@@ -679,7 +679,7 @@
 
 		.detail-photo {
 			width: 100%;
-			height: 180px;
+			height: 220px;
 		}
 
 		.detail-info h2 {
