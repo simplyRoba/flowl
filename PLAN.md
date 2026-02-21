@@ -96,7 +96,7 @@ HA picks up the entities automatically. HA automations handle notifications (mob
 
 - [x] Dashboard with "due today" / "overdue" overview
 - [x] Care tags (low light, high humidity, toxic to pets)
-- [ ] Seasonal watering adjustments (less frequent in winter)
+- [ ] ~~Seasonal watering adjustments (less frequent in winter)~~ — won't implement for now
 - [ ] Import/export (JSON backup)
 
 ### Phase 6 — AI Integration (future)
