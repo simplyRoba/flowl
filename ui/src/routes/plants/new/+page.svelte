@@ -21,7 +21,7 @@
 </script>
 
 <div class="page">
-	<PageHeader backHref="/" backLabel="Back">
+<PageHeader backHref="/" backLabel="Cancel">
 		<button type="submit" form="plant-form" class="btn btn-primary" disabled={saving}>
 			{saving ? 'Saving...' : 'Save'}
 		</button>
