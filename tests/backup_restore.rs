@@ -118,22 +118,9 @@ async fn export_empty_database() {
 
 #[tokio::test]
 async fn export_populated_database_with_photo() {
-    let (app, upload_dir) = common::test_app_with_uploads().await;
+    let (_app, _upload_dir) = common::test_app_with_uploads().await;
 
-    // Seed data
-    let app = app
-        .oneshot(common::json_request(
-            "POST",
-            "/api/locations",
-            Some(r#"{"name": "Balcony"}"#),
-        ))
-        .await
-        .map(|r| {
-            assert_eq!(r.status(), StatusCode::CREATED);
-            // Rebuild router for next request
-        });
-    drop(app);
-
+    // Seed data via import into a shared pool so we can then export
     let (app, upload_dir) = common::test_app_with_uploads().await;
     // Seed location, plant with photo, care event — then export
     let app_clone = app;
