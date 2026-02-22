@@ -149,7 +149,7 @@
 		importError = '';
 		try {
 			const result = await importData(file);
-			importMessage = `Imported ${result.plants} plants, ${result.care_events} log entries, ${result.photos} photos`;
+			importMessage = `Imported ${result.plants} plants, ${result.photos} photos, ${result.care_events} log entries, ${result.locations} locations`;
 			fetchStats()
 				.then((s) => { stats = s; })
 				.catch(() => {});
@@ -323,13 +323,13 @@
 			<h2 class="section-title"><Database size={14} /> Data</h2>
 			<div class="about-row">
 				<span class="setting-label">Backup</span>
-				{#if importMessage}
-					<span class="backup-success">{importMessage}</span>
-				{/if}
-				{#if importError}
-					<span class="backup-error">{importError}</span>
-				{/if}
 				<span class="backup-actions">
+					{#if importMessage}
+					<span class="backup-success">{importMessage}</span>
+					{/if}
+					{#if importError}
+						<span class="backup-error">{importError}</span>
+					{/if}
 					<button
 						class="btn btn-outline btn-sm"
 						disabled={importLoading}
