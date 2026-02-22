@@ -445,9 +445,12 @@
 		align-items: center;
 		justify-content: center;
 		overflow: hidden;
+		position: relative;
 	}
 
 	.attention-photo-img {
+		position: absolute;
+		inset: 0;
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
