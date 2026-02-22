@@ -218,10 +218,7 @@
 				{/each}
 			</div>
 		</div>
-	</section>
-
-	<section class="section settings-section">
-		<h2 class="section-title"><Globe size={14} /> {$translations.settings.language}</h2>
+		<div class="setting-divider"></div>
 		<div class="setting-row">
 			<div>
 				<div class="setting-label">{$translations.settings.language}</div>
@@ -515,6 +512,13 @@
 		border: 1px solid var(--color-border);
 		background: var(--color-surface-muted);
 		gap: 4px;
+	}
+
+	.setting-divider {
+		height: 1px;
+		background: var(--color-border-subtle);
+		margin: 14px 0;
+		width: 100%;
 	}
 
 	.theme-option {

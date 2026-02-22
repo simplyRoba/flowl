@@ -25,19 +25,19 @@
 
 ## 5. Component string replacement
 
-- [ ] 5.1 Replace hardcoded strings in dashboard/plant list pages
-- [ ] 5.2 Replace hardcoded strings in plant detail and care journal pages
-- [ ] 5.3 Replace hardcoded strings in form and dialog components
-- [ ] 5.4 Replace hardcoded strings in settings page sections
+- [x] 5.1 Replace hardcoded strings in dashboard/plant list pages
+- [x] 5.2 Replace hardcoded strings in plant detail and care journal pages
+- [x] 5.3 Replace hardcoded strings in form and dialog components
+- [x] 5.4 Replace hardcoded strings in settings page sections
 
 ## 6. Tests
 
-- [ ] 6.1 Add unit tests for locale store persistence and fallback behavior
-- [ ] 6.2 Add unit tests for plural helper
-- [ ] 6.3 Add unit tests for translations store reactivity
+- [x] 6.1 Add unit tests for locale store persistence and fallback behavior
+- [x] 6.2 Add unit tests for plural helper
+- [x] 6.3 Add unit tests for translations store reactivity
 
 ## 7. Verification
 
-- [ ] 7.1 Manually verify all three languages render correctly across pages
-- [ ] 7.2 Run `npm run check` and `npm run build` in `ui/`
-- [ ] 7.3 Run `cargo fmt`, `cargo clippy`, and `cargo test`
+- [x] 7.1 Manually verify all three languages render correctly across pages
+- [x] 7.2 Run `npm run check` and `npm run build` in `ui/`
+- [x] 7.3 Run `cargo fmt`, `cargo clippy`, and `cargo test`

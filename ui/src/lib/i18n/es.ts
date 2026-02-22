@@ -24,6 +24,7 @@ export const es: Translations = {
 		needsAttention: 'Necesita Atención',
 		noPlants: 'Aún no hay plantas',
 		noPlantsHint: 'Añade tu primera planta para empezar.',
+		emptyIconAlt: 'Planta',
 		water: 'Regar',
 		watering: 'Regando...',
 		greetings: {

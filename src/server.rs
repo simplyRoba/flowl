@@ -34,7 +34,7 @@ async fn access_log(req: Request<Body>, next: Next) -> Response {
     let response = next.run(req).await;
     let status = response.status().as_u16();
     let latency = start.elapsed();
-    debug!(method = %method, path, status, latency_ms = latency.as_millis() as u64, "access");
+    debug!(method = %method, path, status, latency_ms = latency.as_millis(), "access");
     response
 }
 

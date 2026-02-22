@@ -22,6 +22,7 @@ const en = {
 		needsAttention: 'Needs Attention',
 		noPlants: 'No plants yet',
 		noPlantsHint: 'Add your first plant to get started.',
+		emptyIconAlt: 'Plant',
 		water: 'Water',
 		watering: 'Watering...',
 		greetings: {

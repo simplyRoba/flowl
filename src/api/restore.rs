@@ -274,10 +274,10 @@ pub async fn import_data(
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?
     {
-        if entry.path().is_file() {
-            if let Err(e) = tokio::fs::remove_file(entry.path()).await {
-                warn!(path = %entry.path().display(), error = %e, "Failed to remove old upload file");
-            }
+        if entry.path().is_file()
+            && let Err(e) = tokio::fs::remove_file(entry.path()).await
+        {
+            warn!(path = %entry.path().display(), error = %e, "Failed to remove old upload file");
         }
     }
 

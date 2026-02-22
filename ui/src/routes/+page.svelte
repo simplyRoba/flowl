@@ -134,7 +134,7 @@
 		<p class="error">{$plantsError}</p>
 	{:else if $plants.length === 0}
 		<div class="empty-state">
-			<img src={emojiToSvgPath('🪴')} alt="Plant" class="empty-icon" />
+			<img src={emojiToSvgPath('🪴')} alt={$translations.dashboard.emptyIconAlt} class="empty-icon" />
 			<h2>{$translations.dashboard.noPlants}</h2>
 			<p>{$translations.dashboard.noPlantsHint}</p>
 			<a href="/plants/new" class="btn btn-primary btn-sm">

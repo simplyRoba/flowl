@@ -3,7 +3,7 @@ import type { Translations } from './en';
 export const de: Translations = {
 	nav: {
 		plants: 'Pflanzen',
-		careJournal: 'Pflegetagebuch',
+		careJournal: 'Tagebuch',
 		settings: 'Einstellungen'
 	},
 	common: {
@@ -24,6 +24,7 @@ export const de: Translations = {
 		needsAttention: 'Braucht Aufmerksamkeit',
 		noPlants: 'Noch keine Pflanzen',
 		noPlantsHint: 'Füge deine erste Pflanze hinzu.',
+		emptyIconAlt: 'Pflanze',
 		water: 'Gießen',
 		watering: 'Gießen...',
 		greetings: {
@@ -109,7 +110,7 @@ export const de: Translations = {
 		wateringSection: 'Bewässerung',
 		careInfoSection: 'Pflegeinfo',
 		notesSection: 'Notizen',
-		careJournalSection: 'Pflegetagebuch',
+		careJournalSection: 'Tagebuch',
 		interval: 'Intervall',
 		everyNDays: 'Alle {n} Tage',
 		lastWatered: 'Zuletzt gegossen',
@@ -151,7 +152,7 @@ export const de: Translations = {
 		soilPeat: 'Torfmoos'
 	},
 	care: {
-		title: 'Pflegetagebuch',
+		title: 'Tagebuch',
 		filterAll: 'Alle',
 		watered: 'Gegossen',
 		fertilized: 'Gedüngt',
