@@ -109,7 +109,9 @@ describe('settings locations section', () => {
 
 describe('settings data section export/import', () => {
 	beforeEach(() => {
-		vi.spyOn(api, 'fetchStats').mockResolvedValue({ plant_count: 5, care_event_count: 10 });
+		vi
+			.spyOn(api, 'fetchStats')
+			.mockResolvedValue({ plant_count: 5, care_event_count: 10, location_count: 2 });
 		vi.spyOn(api, 'fetchAppInfo').mockRejectedValue(new Error('skip'));
 		vi.spyOn(api, 'fetchMqttStatus').mockRejectedValue(new Error('skip'));
 	});

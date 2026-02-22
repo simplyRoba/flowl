@@ -355,7 +355,7 @@
 			</div>
 			<div class="about-row">
 				<span class="setting-label">Plants</span>
-				<span>{stats.plant_count} {stats.plant_count === 1 ? 'plant' : 'plants'}, {stats.care_event_count} {stats.care_event_count === 1 ? 'log entry' : 'log entries'}</span>
+				<span>{stats.plant_count} {stats.plant_count === 1 ? 'plant' : 'plants'}, {stats.care_event_count} {stats.care_event_count === 1 ? 'care journal entry' : 'care journal entries'}, {stats.location_count} {stats.location_count === 1 ? 'location' : 'locations'}</span>
 			</div>
 		</section>
 	{/if}

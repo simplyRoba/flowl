@@ -8,9 +8,11 @@ use sqlx::SqlitePool;
 use super::error::ApiError;
 
 #[derive(Serialize)]
+#[allow(clippy::struct_field_names)]
 pub struct Stats {
     pub plant_count: i64,
     pub care_event_count: i64,
+    pub location_count: i64,
 }
 
 pub async fn get_stats(State(pool): State<SqlitePool>) -> Result<Json<Stats>, ApiError> {
@@ -22,9 +24,14 @@ pub async fn get_stats(State(pool): State<SqlitePool>) -> Result<Json<Stats>, Ap
         .fetch_one(&pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    let location_count = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM locations")
+        .fetch_one(&pool)
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     Ok(Json(Stats {
         plant_count,
         care_event_count,
+        location_count,
     }))
 }

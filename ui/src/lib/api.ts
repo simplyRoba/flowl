@@ -66,6 +66,7 @@ export interface AppInfo {
 export interface Stats {
 	plant_count: number;
 	care_event_count: number;
+	location_count: number;
 }
 
 export interface MqttStatus {
