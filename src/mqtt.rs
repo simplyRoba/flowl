@@ -259,7 +259,6 @@ async fn discover_broker_plant_ids(host: &str, port: u16, prefix: &str) -> HashS
 
     let (client, mut event_loop) = AsyncClient::new(options, 50);
     let mut ids: HashSet<i64> = HashSet::new();
-    let mut connected = false;
     let mut subscribed = false;
 
     let topics = [
@@ -269,54 +268,59 @@ async fn discover_broker_plant_ids(host: &str, port: u16, prefix: &str) -> HashS
     ];
 
     let timeout_duration = std::time::Duration::from_secs(2);
-    let mut last_message = tokio::time::Instant::now();
+
+    // Forward events from the event loop via a channel so the loop is polled
+    // concurrently with subscribe/publish calls (rumqttc requirement).
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<Event>(50);
+
+    let event_loop_task = tokio::spawn(async move {
+        loop {
+            match event_loop.poll().await {
+                Ok(event) => {
+                    if tx.send(event).await.is_err() {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    warn!("MQTT repair connection error: {e}");
+                    break;
+                }
+            }
+        }
+    });
 
     loop {
-        let poll_result = tokio::time::timeout(timeout_duration, event_loop.poll()).await;
-
-        match poll_result {
-            Ok(Ok(Event::Incoming(Packet::ConnAck(_)))) => {
-                connected = true;
+        match tokio::time::timeout(timeout_duration, rx.recv()).await {
+            Ok(Some(Event::Incoming(Packet::ConnAck(_)))) => {
                 for topic in &topics {
                     if let Err(e) = client.subscribe(topic, QoS::AtMostOnce).await {
                         warn!("MQTT repair subscribe error for {topic}: {e}");
                     }
                 }
                 subscribed = true;
-                last_message = tokio::time::Instant::now();
             }
-            Ok(Ok(Event::Incoming(Packet::Publish(publish)))) => {
+            Ok(Some(Event::Incoming(Packet::Publish(publish)))) => {
                 if let Some(id) = extract_plant_id(&publish.topic, prefix) {
                     ids.insert(id);
                 }
-                last_message = tokio::time::Instant::now();
             }
-            Ok(Ok(_)) => {}
-            Ok(Err(e)) => {
-                warn!("MQTT repair connection error: {e}");
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                // Event loop task ended
                 break;
             }
             Err(_) => {
-                // Timeout elapsed
-                if connected && subscribed {
-                    // Silence timeout reached after subscribing — we've collected all retained messages
+                if subscribed {
                     break;
                 }
-                if !connected {
-                    warn!("MQTT repair: timed out waiting for broker connection");
-                    break;
-                }
+                warn!("MQTT repair: timed out waiting for broker connection");
+                break;
             }
-        }
-
-        // Safety: if we've been subscribed and had no new messages for the timeout, stop
-        if subscribed && last_message.elapsed() >= timeout_duration {
-            break;
         }
     }
 
-    // Clean up
     let _ = client.disconnect().await;
+    event_loop_task.abort();
 
     ids
 }
