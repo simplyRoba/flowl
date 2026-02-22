@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.12.0](https://github.com/simplyRoba/flowl/compare/v0.11.0...v0.12.0) (2026-02-22)
+
+
+### Features
+
+* add HTTP access log middleware ([475c962](https://github.com/simplyRoba/flowl/commit/475c962eee2114b9e21d387d15d26dc33b17377b))
+* add location_count to stats and update related interfaces and tests ([612eabc](https://github.com/simplyRoba/flowl/commit/612eabca5b57b7efa7533c74c863abdea9f26810))
+* add logging to API handlers and MQTT publish operations ([2b222ad](https://github.com/simplyRoba/flowl/commit/2b222adfa2117c404f7879d1493c38469dde4d85))
+* compute last_watered from care_events instead of stored column ([886c672](https://github.com/simplyRoba/flowl/commit/886c67256bde2e81e11ab76762140bd14c93e7f8))
+* enhance settings page with descriptions for Repair and Backup options ([b361e8d](https://github.com/simplyRoba/flowl/commit/b361e8d221f7be3ab8222eff1300d52a77380f90))
+* **i18n:** add internationalization support with de, en, es ([#35](https://github.com/simplyRoba/flowl/issues/35)) ([bc3cdd5](https://github.com/simplyRoba/flowl/commit/bc3cdd512261d6fff8f982a8edb9549018918174))
+* replace native confirm() with themed ModalDialog component ([4bcacdd](https://github.com/simplyRoba/flowl/commit/4bcacdd91e5e149afe6cae5446c355f69107f022))
+
+
+### Bug Fixes
+
+* delete location immediately if it has no plants ([7535381](https://github.com/simplyRoba/flowl/commit/7535381821ec66f0c84a78857b2d0e68e7e9f974))
+* mqtt repair event loop ([#34](https://github.com/simplyRoba/flowl/issues/34)) ([22f98f6](https://github.com/simplyRoba/flowl/commit/22f98f6ee452bce55a5f88dc122138d27c941bcb))
+* prevent lightbox dialog from blocking page content when closed ([eb066cf](https://github.com/simplyRoba/flowl/commit/eb066cf9e337055e0a82e473c23bac1ab096df39))
+* prevent portrait images from stretching attention cards ([a4d502d](https://github.com/simplyRoba/flowl/commit/a4d502d4251959a69d7d44b92be778cdadef5082))
+* **ui:** fix position of success and error message on settings actions ([e0a00f6](https://github.com/simplyRoba/flowl/commit/e0a00f6514561017c2af5a705ca01848d7b09c4c))
+* update import message format to include locations ([de684c0](https://github.com/simplyRoba/flowl/commit/de684c0b2cf20404de731a45b3c8231d4fe6fbe5))
+
 ## [0.11.0](https://github.com/simplyRoba/flowl/compare/v0.10.0...v0.11.0) (2026-02-21)
 
 
