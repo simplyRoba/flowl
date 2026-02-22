@@ -292,7 +292,10 @@
 					<span>{mqttStatus.topic_prefix}</span>
 				</div>
 				<div class="about-row">
-					<span class="setting-label">Repair</span>
+					<div class="setting-info">
+						<div class="setting-label">Repair</div>
+						<div class="setting-description">Clears retained MQTT topics and republishes current state.</div>
+					</div>
 					<span class="repair-actions">
 						{#if repairMessage}
 							<span class="repair-success">{repairMessage}</span>
@@ -322,10 +325,13 @@
 		<section class="section settings-section">
 			<h2 class="section-title"><Database size={14} /> Data</h2>
 			<div class="about-row">
-				<span class="setting-label">Backup</span>
+				<div class="setting-info">
+					<div class="setting-label">Backup</div>
+					<div class="setting-description">Import replaces all existing data and photos.</div>
+				</div>
 				<span class="backup-actions">
 					{#if importMessage}
-					<span class="backup-success">{importMessage}</span>
+						<span class="backup-success">{importMessage}</span>
 					{/if}
 					{#if importError}
 						<span class="backup-error">{importError}</span>
@@ -451,6 +457,17 @@
 		font-weight: 500;
 	}
 
+	.setting-info {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.setting-description {
+		font-size: var(--fs-chip);
+		color: var(--color-text-muted);
+	}
+
 	.theme-selector {
 		display: inline-flex;
 		padding: 4px;
@@ -565,7 +582,7 @@
 
 	.about-row {
 		display: flex;
-		align-items: center;
+		align-items: flex-start;
 		justify-content: space-between;
 		padding: 10px 0;
 		border-bottom: 1px solid var(--color-border);
