@@ -28,3 +28,6 @@ target
 # Ignore Mac system files
 
 .DS_Store
+
+# Claude Code
+.claude/
