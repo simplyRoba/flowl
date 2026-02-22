@@ -161,7 +161,11 @@
 		}
 	}
 
-	function handleDelete(id: number, name: string, plantCount: number) {
+	async function handleDelete(id: number, name: string, plantCount: number) {
+		if (plantCount === 0) {
+			await deleteLocation(id);
+			return;
+		}
 		deleteTarget = { id, name, plantCount };
 		deleteDialogOpen = true;
 	}

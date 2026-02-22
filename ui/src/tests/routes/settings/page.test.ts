@@ -263,7 +263,7 @@ describe('settings delete location confirmation', () => {
 		return document.querySelectorAll('.btn-danger') as NodeListOf<HTMLButtonElement>;
 	}
 
-	it('shows confirmation dialog with location name when delete is clicked', async () => {
+	it('deletes immediately when location has no plants', async () => {
 		locations.set([{ id: 1, name: 'Bedroom', plant_count: 0 }]);
 		render(Page);
 
@@ -271,11 +271,11 @@ describe('settings delete location confirmation', () => {
 		await user.click(getDeleteButtons()[0]);
 
 		await waitFor(() => {
-			expect(screen.getByText(/Delete "Bedroom"/)).toBeTruthy();
+			expect(mockDeleteLocation).toHaveBeenCalledWith(1);
 		});
 	});
 
-	it('shows plant count warning in dialog when location has plants', async () => {
+	it('shows confirmation dialog with location name when location has plants', async () => {
 		locations.set([{ id: 1, name: 'Bedroom', plant_count: 3 }]);
 		render(Page);
 
@@ -289,7 +289,7 @@ describe('settings delete location confirmation', () => {
 	});
 
 	it('calls deleteLocation when confirmed', async () => {
-		locations.set([{ id: 1, name: 'Bedroom', plant_count: 0 }]);
+		locations.set([{ id: 1, name: 'Bedroom', plant_count: 2 }]);
 		render(Page);
 
 		const user = userEvent.setup();
@@ -306,7 +306,7 @@ describe('settings delete location confirmation', () => {
 	});
 
 	it('does not delete when dialog is cancelled', async () => {
-		locations.set([{ id: 1, name: 'Bedroom', plant_count: 0 }]);
+		locations.set([{ id: 1, name: 'Bedroom', plant_count: 1 }]);
 		render(Page);
 
 		const user = userEvent.setup();
