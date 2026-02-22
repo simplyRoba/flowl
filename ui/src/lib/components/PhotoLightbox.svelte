@@ -193,6 +193,9 @@
 		max-height: none;
 		width: 100vw;
 		height: 100vh;
+	}
+
+	.lightbox[open] {
 		display: flex;
 		align-items: center;
 		justify-content: center;
