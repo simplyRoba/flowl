@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { Minus, Plus, Droplet } from 'lucide-svelte';
+	import { translations } from '$lib/stores/locale';
 
-	const PRESETS = [
-		{ days: 3, label: '3 days', shortLabel: '3d', desc: 'Thirsty' },
-		{ days: 7, label: '7 days', shortLabel: '7d', desc: 'Weekly' },
-		{ days: 14, label: '14 days', shortLabel: '14d', desc: 'Biweekly' },
-		{ days: 30, label: '30 days', shortLabel: '30d', desc: 'Monthly' }
+	const PRESET_KEYS = [
+		{ days: 3, labelKey: 'threeDays' as const, shortKey: 'threeDaysShort' as const, descKey: 'thirsty' as const },
+		{ days: 7, labelKey: 'sevenDays' as const, shortKey: 'sevenDaysShort' as const, descKey: 'weekly' as const },
+		{ days: 14, labelKey: 'fourteenDays' as const, shortKey: 'fourteenDaysShort' as const, descKey: 'biweekly' as const },
+		{ days: 30, labelKey: 'thirtyDays' as const, shortKey: 'thirtyDaysShort' as const, descKey: 'monthly' as const }
 	];
 
 	let { value = 7, onchange }: { value: number; onchange: (days: number) => void } = $props();
@@ -21,7 +22,7 @@
 
 <div class="watering-interval">
 	<div class="interval-presets">
-		{#each PRESETS as preset}
+		{#each PRESET_KEYS as preset}
 			<button
 				type="button"
 				class="interval-preset"
@@ -30,18 +31,18 @@
 			>
 				<span class="preset-icon"><Droplet size={16} /></span>
 				<span class="preset-value">
-					<span class="preset-long">{preset.label}</span>
-					<span class="preset-short">{preset.shortLabel}</span>
+					<span class="preset-long">{$translations.form[preset.labelKey]}</span>
+					<span class="preset-short">{$translations.form[preset.shortKey]}</span>
 				</span>
-				<span class="preset-label">{preset.desc}</span>
+				<span class="preset-label">{$translations.form[preset.descKey]}</span>
 			</button>
 		{/each}
 	</div>
 
 	<div class="interval-custom">
 		<span class="stepper-label">
-			<span class="stepper-long">Or set custom:</span>
-			<span class="stepper-short">Custom:</span>
+			<span class="stepper-long">{$translations.form.customLong}</span>
+			<span class="stepper-short">{$translations.form.customShort}</span>
 		</span>
 		<div class="stepper">
 			<button type="button" class="btn btn-icon stepper-btn" onclick={decrement} disabled={value <= 1}>
@@ -61,7 +62,7 @@
 				<Plus size={16} />
 			</button>
 		</div>
-		<span class="stepper-label">days</span>
+		<span class="stepper-label">{$translations.form.days}</span>
 	</div>
 </div>
 

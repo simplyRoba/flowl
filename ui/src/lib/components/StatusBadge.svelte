@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { translations } from '$lib/stores/locale';
+
 	interface Props {
 		status: string;
 		nextDue: string | null;
@@ -7,9 +9,9 @@
 	let { status, nextDue }: Props = $props();
 
 	function statusLabel(s: string): string {
-		if (s === 'overdue') return 'Overdue';
-		if (s === 'due') return 'Due';
-		return 'Ok';
+		if (s === 'overdue') return $translations.status.overdue;
+		if (s === 'due') return $translations.status.due;
+		return $translations.status.ok;
 	}
 
 	function statusSuffix(nd: string | null): string | null {
@@ -20,11 +22,11 @@
 		const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 		const dueStart = new Date(due.getFullYear(), due.getMonth(), due.getDate());
 		const diffDays = Math.round((dueStart.getTime() - start.getTime()) / 86400000);
-		if (diffDays === 0) return 'today';
-		if (diffDays === 1) return 'in 1 day';
-		if (diffDays > 1) return `in ${diffDays} days`;
+		if (diffDays === 0) return $translations.status.today;
+		if (diffDays === 1) return $translations.status.inOneDay;
+		if (diffDays > 1) return $translations.status.inNDays.replace('{n}', String(diffDays));
 		const overdueDays = Math.abs(diffDays);
-		return overdueDays === 1 ? '1 day' : `${overdueDays} days`;
+		return overdueDays === 1 ? $translations.status.oneDay : $translations.status.nDays.replace('{n}', String(overdueDays));
 	}
 
 	let suffix = $derived(statusSuffix(nextDue));

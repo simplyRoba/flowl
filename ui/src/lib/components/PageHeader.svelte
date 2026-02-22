@@ -1,22 +1,25 @@
 <script lang="ts">
 	import { ArrowLeft } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
+	import { translations } from '$lib/stores/locale';
 
 	let {
 		backHref,
-		backLabel = 'Back',
+		backLabel = '',
 		children
 	}: {
 		backHref: string;
 		backLabel?: string;
 		children?: Snippet;
 	} = $props();
+
+	let resolvedLabel = $derived(backLabel || $translations.common.back);
 </script>
 
 <!-- Desktop: inline header row -->
 <div class="page-header-inline">
 	<a href={backHref} class="back-link">
-		<ArrowLeft size={16} /> {backLabel}
+		<ArrowLeft size={16} /> {resolvedLabel}
 	</a>
 	{#if children}
 		<div class="header-actions">
@@ -28,7 +31,7 @@
 <!-- Mobile: fixed bottom action bar -->
 <div class="action-bar">
 	<a href={backHref} class="action-bar-back">
-		<ArrowLeft size={16} /> {backLabel}
+		<ArrowLeft size={16} /> {resolvedLabel}
 	</a>
 	{#if children}
 		<div class="action-bar-actions">

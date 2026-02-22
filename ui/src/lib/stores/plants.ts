@@ -1,6 +1,7 @@
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import type { Plant, CreatePlant, UpdatePlant } from '$lib/api';
 import * as api from '$lib/api';
+import { translations } from './locale';
 
 export const plants = writable<Plant[]>([]);
 export const currentPlant = writable<Plant | null>(null);
@@ -12,7 +13,7 @@ export async function loadPlants() {
 		const data = await api.fetchPlants();
 		plants.set(data);
 	} catch (e) {
-		plantsError.set(e instanceof Error ? e.message : 'Failed to load plants');
+		plantsError.set(e instanceof Error ? e.message : get(translations).error.loadPlants);
 	}
 }
 
@@ -23,7 +24,7 @@ export async function loadPlant(id: number) {
 		currentPlant.set(data);
 		return data;
 	} catch (e) {
-		plantsError.set(e instanceof Error ? e.message : 'Failed to load plant');
+		plantsError.set(e instanceof Error ? e.message : get(translations).error.loadPlant);
 		currentPlant.set(null);
 		return null;
 	}
@@ -36,7 +37,7 @@ export async function createPlant(data: CreatePlant): Promise<Plant | null> {
 		plants.update((list) => [...list, plant]);
 		return plant;
 	} catch (e) {
-		plantsError.set(e instanceof Error ? e.message : 'Failed to create plant');
+		plantsError.set(e instanceof Error ? e.message : get(translations).error.createPlant);
 		return null;
 	}
 }
@@ -49,7 +50,7 @@ export async function updatePlant(id: number, data: UpdatePlant): Promise<Plant 
 		currentPlant.set(plant);
 		return plant;
 	} catch (e) {
-		plantsError.set(e instanceof Error ? e.message : 'Failed to update plant');
+		plantsError.set(e instanceof Error ? e.message : get(translations).error.updatePlant);
 		return null;
 	}
 }
@@ -62,7 +63,7 @@ export async function deletePlant(id: number): Promise<boolean> {
 		currentPlant.set(null);
 		return true;
 	} catch (e) {
-		plantsError.set(e instanceof Error ? e.message : 'Failed to delete plant');
+		plantsError.set(e instanceof Error ? e.message : get(translations).error.deletePlant);
 		return false;
 	}
 }
@@ -75,7 +76,7 @@ export async function uploadPhoto(plantId: number, file: File): Promise<Plant | 
 		currentPlant.set(plant);
 		return plant;
 	} catch (e) {
-		plantsError.set(e instanceof Error ? e.message : 'Failed to upload photo');
+		plantsError.set(e instanceof Error ? e.message : get(translations).error.uploadPhoto);
 		return null;
 	}
 }
@@ -88,7 +89,7 @@ export async function waterPlant(id: number): Promise<Plant | null> {
 		currentPlant.set(plant);
 		return plant;
 	} catch (e) {
-		plantsError.set(e instanceof Error ? e.message : 'Failed to water plant');
+		plantsError.set(e instanceof Error ? e.message : get(translations).error.waterPlant);
 		return null;
 	}
 }
@@ -103,7 +104,7 @@ export async function deletePhoto(plantId: number): Promise<boolean> {
 		currentPlant.update((p) => (p && p.id === plantId ? { ...p, photo_url: null } : p));
 		return true;
 	} catch (e) {
-		plantsError.set(e instanceof Error ? e.message : 'Failed to delete photo');
+		plantsError.set(e instanceof Error ? e.message : get(translations).error.deletePhoto);
 		return false;
 	}
 }

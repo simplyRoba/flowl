@@ -1,11 +1,13 @@
 <script lang="ts">
+	import { translations } from '$lib/stores/locale';
+
 	let {
 		open = false,
 		title = '',
 		message = '',
 		mode = 'confirm',
 		variant = 'warning',
-		confirmLabel = 'Confirm',
+		confirmLabel = '',
 		onconfirm,
 		oncancel,
 		onclose
@@ -68,13 +70,13 @@
 		<p class="modal-message">{message}</p>
 		<div class="modal-actions">
 			{#if mode === 'confirm'}
-				<button type="button" class="btn btn-outline" onclick={oncancel}>Cancel</button>
+				<button type="button" class="btn btn-outline" onclick={oncancel}>{$translations.common.cancel}</button>
 				<button
 					type="button"
 					class="btn {variant === 'danger' ? 'btn-danger-fill' : 'btn-primary'}"
 					onclick={handleConfirm}
 				>
-					{confirmLabel}
+					{confirmLabel || $translations.common.confirm}
 				</button>
 			{:else}
 				<button
@@ -82,7 +84,7 @@
 					class="btn {variant === 'danger' ? 'btn-danger-fill' : 'btn-primary'}"
 					onclick={handleAlertClose}
 				>
-					OK
+					{$translations.common.ok}
 				</button>
 			{/if}
 		</div>

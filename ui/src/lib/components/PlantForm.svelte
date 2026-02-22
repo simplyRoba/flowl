@@ -3,6 +3,7 @@
 	import { Sun, CloudSun, Cloud, Camera, X, Gauge, PawPrint, TrendingUp, Layers, Droplets } from 'lucide-svelte';
 	import type { Plant, CreatePlant, Location } from '$lib/api';
 	import { locations, loadLocations, createLocation } from '$lib/stores/locations';
+	import { translations } from '$lib/stores/locale';
 	import IconPicker from './IconPicker.svelte';
 	import LocationChips from './LocationChips.svelte';
 	import WateringInterval from './WateringInterval.svelte';
@@ -157,7 +158,7 @@
 	function handleSubmit(e: Event) {
 		e.preventDefault();
 		if (!name.trim()) {
-			nameError = 'Name is required';
+			nameError = $translations.form.nameRequired;
 			return;
 		}
 		nameError = '';
@@ -188,14 +189,14 @@
 <form class="plant-form" id={formId} onsubmit={handleSubmit}>
 	<section class="section media-section">
 		<div class="media-header">
-			<div class="section-title">Media</div>
+			<div class="section-title">{$translations.form.media}</div>
 		</div>
 		<div class="media-stack">
 			{#if mediaMode !== 'icon'}
 				<div class="media-photo">
 					{#if photoPreview}
 						<div class="photo-preview">
-							<img src={photoPreview} alt="Preview" class="preview-img" />
+							<img src={photoPreview} alt={$translations.form.photoPreview} class="preview-img" />
 							<button type="button" class="photo-remove-btn" onclick={handleRemoveNewPhoto}>
 								<X size={16} />
 							</button>
@@ -219,8 +220,8 @@
 							ondrop={handlePhotoDrop}
 						>
 							<div class="upload-icon"><Camera size={24} /></div>
-							<span>Add a photo</span>
-							<span class="upload-hint">Click to select or drag & drop</span>
+							<span>{$translations.form.addPhoto}</span>
+							<span class="upload-hint">{$translations.form.clickOrDrag}</span>
 							<input
 								type="file"
 								accept="image/jpeg,image/png,image/webp"
@@ -235,7 +236,7 @@
 						{:else if !photoPreview && initial?.photo_url}
 							<label class="btn btn-outline photo-replace">
 								<Camera size={16} />
-								<span>Replace photo</span>
+								<span>{$translations.form.replacePhoto}</span>
 								<input
 									type="file"
 									accept="image/jpeg,image/png,image/webp"
@@ -246,14 +247,14 @@
 						{/if}
 						{#if mediaMode === 'photo'}
 							<button type="button" class="btn btn-outline media-switch" onclick={switchToIcon}>
-								Use icon instead
+								{$translations.form.useIcon}
 							</button>
 						{/if}
 					</div>
 				</div>
 			{/if}
 			{#if mediaMode === 'both'}
-				<div class="media-divider"><span>or</span></div>
+				<div class="media-divider"><span>{$translations.common.or}</span></div>
 			{/if}
 			{#if mediaMode !== 'photo'}
 				<div class="media-icon">
@@ -261,7 +262,7 @@
 					{#if mediaMode === 'icon'}
 						<div class="media-actions">
 							<button type="button" class="btn btn-outline media-switch" onclick={switchToPhoto}>
-								Use photo instead
+								{$translations.form.usePhoto}
 							</button>
 						</div>
 					{/if}
@@ -271,14 +272,14 @@
 	</section>
 
 	<section class="section">
-		<div class="section-title">Identity</div>
+		<div class="section-title">{$translations.form.identity}</div>
 		<div class="form-group">
-			<label class="form-label" for="plant-name">Name *</label>
+			<label class="form-label" for="plant-name">{$translations.form.nameLabel}</label>
 			<input
 				id="plant-name"
 				type="text"
 				bind:value={name}
-				placeholder="e.g. Monstera Deliciosa"
+				placeholder={$translations.form.namePlaceholder}
 				class="input"
 				class:input-error={nameError}
 				oninput={() => { nameError = ''; }}
@@ -289,12 +290,12 @@
 		</div>
 
 		<div class="form-group">
-			<label class="form-label" for="plant-species">Species (optional)</label>
+			<label class="form-label" for="plant-species">{$translations.form.speciesLabel}</label>
 			<input
 				id="plant-species"
 				type="text"
 				bind:value={species}
-				placeholder="e.g. Monstera"
+				placeholder={$translations.form.speciesPlaceholder}
 				class="input"
 			/>
 		</div>
@@ -303,7 +304,7 @@
 	</section>
 
 	<section class="section">
-		<div class="section-title">Location</div>
+		<div class="section-title">{$translations.form.location}</div>
 		<LocationChips
 			locations={$locations}
 			value={locationId}
@@ -314,12 +315,12 @@
 	</section>
 
 	<section class="section">
-		<div class="section-title">Watering</div>
+		<div class="section-title">{$translations.form.watering}</div>
 		<WateringInterval value={wateringDays} onchange={(v) => { wateringDays = v; }} />
 	</section>
 
 	<section class="section">
-		<div class="section-title">Light needs</div>
+		<div class="section-title">{$translations.form.lightNeeds}</div>
 		<div class="light-selector">
 			<button
 				type="button"
@@ -328,8 +329,8 @@
 				onclick={() => { lightNeeds = 'direct'; }}
 			>
 				<span class="light-icon"><Sun size={20} /></span>
-				<span>Direct</span>
-				<span class="light-label">Full sun</span>
+				<span>{$translations.form.direct}</span>
+				<span class="light-label">{$translations.form.fullSun}</span>
 			</button>
 			<button
 				type="button"
@@ -338,8 +339,8 @@
 				onclick={() => { lightNeeds = 'indirect'; }}
 			>
 				<span class="light-icon"><CloudSun size={20} /></span>
-				<span>Indirect</span>
-				<span class="light-label">Bright, filtered</span>
+				<span>{$translations.form.indirect}</span>
+				<span class="light-label">{$translations.form.brightFiltered}</span>
 			</button>
 			<button
 				type="button"
@@ -348,22 +349,22 @@
 				onclick={() => { lightNeeds = 'low'; }}
 			>
 				<span class="light-icon"><Cloud size={20} /></span>
-				<span>Low</span>
-				<span class="light-label">Shade tolerant</span>
+				<span>{$translations.form.low}</span>
+				<span class="light-label">{$translations.form.shadeTolerant}</span>
 			</button>
 		</div>
 	</section>
 
 	<section class="section">
-		<div class="section-title">Care Info <span class="section-optional">(optional)</span></div>
+		<div class="section-title">{$translations.form.careInfo} <span class="section-optional">{$translations.form.optional}</span></div>
 
 		<div class="care-info-group">
-			<span class="care-info-label"><Gauge size={14} /> Difficulty</span>
+			<span class="care-info-label"><Gauge size={14} /> {$translations.form.difficulty}</span>
 			<div class="light-selector">
 				{#each [
-					{ value: 'easy', label: 'Easy' },
-					{ value: 'moderate', label: 'Moderate' },
-					{ value: 'demanding', label: 'Demanding' }
+					{ value: 'easy', label: $translations.form.easy },
+					{ value: 'moderate', label: $translations.form.moderate },
+					{ value: 'demanding', label: $translations.form.demanding }
 				] as opt}
 					<button
 						type="button"
@@ -378,12 +379,12 @@
 		</div>
 
 		<div class="care-info-group">
-			<span class="care-info-label"><PawPrint size={14} /> Pet safety</span>
+			<span class="care-info-label"><PawPrint size={14} /> {$translations.form.petSafety}</span>
 			<div class="light-selector">
 				{#each [
-					{ value: 'safe', label: 'Safe' },
-					{ value: 'caution', label: 'Caution' },
-					{ value: 'toxic', label: 'Toxic' }
+					{ value: 'safe', label: $translations.form.safe },
+					{ value: 'caution', label: $translations.form.caution },
+					{ value: 'toxic', label: $translations.form.toxic }
 				] as opt}
 					<button
 						type="button"
@@ -398,12 +399,12 @@
 		</div>
 
 		<div class="care-info-group">
-			<span class="care-info-label"><TrendingUp size={14} /> Growth speed</span>
+			<span class="care-info-label"><TrendingUp size={14} /> {$translations.form.growthSpeed}</span>
 			<div class="light-selector">
 				{#each [
-					{ value: 'slow', label: 'Slow' },
-					{ value: 'moderate', label: 'Moderate' },
-					{ value: 'fast', label: 'Fast' }
+					{ value: 'slow', label: $translations.form.slow },
+					{ value: 'moderate', label: $translations.form.moderate },
+					{ value: 'fast', label: $translations.form.fast }
 				] as opt}
 					<button
 						type="button"
@@ -418,13 +419,13 @@
 		</div>
 
 		<div class="care-info-group">
-			<span class="care-info-label"><Layers size={14} /> Soil type</span>
+			<span class="care-info-label"><Layers size={14} /> {$translations.form.soilType}</span>
 			<div class="light-selector">
 				{#each [
-					{ value: 'standard', label: 'Standard' },
-					{ value: 'cactus-mix', label: 'Cactus mix' },
-					{ value: 'orchid-bark', label: 'Orchid bark' },
-					{ value: 'peat-moss', label: 'Peat moss' }
+					{ value: 'standard', label: $translations.form.standard },
+					{ value: 'cactus-mix', label: $translations.form.cactusMix },
+					{ value: 'orchid-bark', label: $translations.form.orchidBark },
+					{ value: 'peat-moss', label: $translations.form.peatMoss }
 				] as opt}
 					<button
 						type="button"
@@ -439,12 +440,12 @@
 		</div>
 
 		<div class="care-info-group">
-			<span class="care-info-label"><Droplets size={14} /> Soil moisture</span>
+			<span class="care-info-label"><Droplets size={14} /> {$translations.form.soilMoisture}</span>
 			<div class="light-selector">
 				{#each [
-					{ value: 'dry', label: 'Dry' },
-					{ value: 'moderate', label: 'Moderate' },
-					{ value: 'moist', label: 'Moist' }
+					{ value: 'dry', label: $translations.form.dry },
+					{ value: 'moderate', label: $translations.form.moderate },
+					{ value: 'moist', label: $translations.form.moist }
 				] as opt}
 					<button
 						type="button"
@@ -460,10 +461,10 @@
 	</section>
 
 	<section class="section">
-		<div class="section-title">Notes</div>
+		<div class="section-title">{$translations.form.notes}</div>
 		<textarea
 			bind:value={notes}
-			placeholder="Care tips, observations, anything useful..."
+			placeholder={$translations.form.notesPlaceholder}
 			class="input textarea"
 			rows="4"
 		></textarea>
@@ -471,7 +472,7 @@
 
 	{#if showFooterActions}
 		<button type="submit" class="btn btn-primary save-btn" disabled={saving}>
-			{saving ? 'Saving...' : 'Save'}
+			{saving ? $translations.common.saving : $translations.common.save}
 		</button>
 	{/if}
 </form>

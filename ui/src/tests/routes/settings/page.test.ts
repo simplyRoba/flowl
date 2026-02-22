@@ -2,7 +2,9 @@ import { cleanup, render, screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Page from '../../../routes/settings/+page.svelte';
+import { get } from 'svelte/store';
 import { setThemePreference, THEME_STORAGE_KEY } from '$lib/stores/theme';
+import { locale, setLocale, destroyLocale, LOCALE_STORAGE_KEY } from '$lib/stores/locale';
 import { locations, locationsError } from '$lib/stores/locations';
 import * as api from '$lib/api';
 
@@ -31,6 +33,8 @@ vi.mock('$lib/stores/locations', async () => {
 beforeEach(() => {
 	localStorage.clear();
 	setThemePreference('system');
+	destroyLocale();
+	setLocale('en');
 	locations.set([]);
 	locationsError.set(null);
 	vi.clearAllMocks();
@@ -60,6 +64,42 @@ describe('settings appearance theme selector', () => {
 
 		expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
 		expect(darkButton.classList.contains('active')).toBe(true);
+	});
+});
+
+describe('settings language selector', () => {
+	it('shows language section with English, Deutsch, and Español options', () => {
+		render(Page);
+
+		expect(screen.getByRole('radiogroup', { name: 'Language' })).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'English' })).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Deutsch' })).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Español' })).toBeTruthy();
+	});
+
+	it('updates locale store and persists when selecting a language', async () => {
+		const user = userEvent.setup();
+		render(Page);
+
+		const deutschButton = screen.getByRole('button', { name: 'Deutsch' });
+		await user.click(deutschButton);
+
+		expect(get(locale)).toBe('de');
+		expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('de');
+		expect(deutschButton.classList.contains('active')).toBe(true);
+	});
+
+	it('reactively updates UI text when language changes', async () => {
+		const user = userEvent.setup();
+		render(Page);
+
+		expect(screen.getByText('Appearance')).toBeTruthy();
+
+		await user.click(screen.getByRole('button', { name: 'Deutsch' }));
+
+		await waitFor(() => {
+			expect(screen.getByText('Darstellung')).toBeTruthy();
+		});
 	});
 });
 

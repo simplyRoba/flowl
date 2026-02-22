@@ -3,6 +3,7 @@
 	import { Droplet, Leaf, Shovel, Scissors, Pencil } from 'lucide-svelte';
 	import type { CareEvent } from '$lib/api';
 	import { fetchAllCareEvents } from '$lib/api';
+	import { translations } from '$lib/stores/locale';
 
 	const PAGE_SIZE = 20;
 
@@ -13,14 +14,7 @@
 	let activeFilter = $state('');
 	let sentinel: HTMLElement;
 
-	const FILTERS = [
-		{ value: '', label: 'All' },
-		{ value: 'watered', label: 'Watered' },
-		{ value: 'fertilized', label: 'Fertilized' },
-		{ value: 'repotted', label: 'Repotted' },
-		{ value: 'pruned', label: 'Pruned' },
-		{ value: 'custom', label: 'Custom' },
-	];
+	const FILTER_VALUES = ['', 'watered', 'fertilized', 'repotted', 'pruned', 'custom'] as const;
 
 	async function loadPage(reset = false) {
 		if (loading) return;
@@ -39,7 +33,7 @@
 			}
 			hasMore = page.has_more;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to load events';
+			error = e instanceof Error ? e.message : $translations.care.failedToLoad;
 		}
 		loading = false;
 	}
@@ -68,17 +62,22 @@
 		yesterday.setDate(yesterday.getDate() - 1);
 		const eventDate = new Date(date);
 		eventDate.setHours(0, 0, 0, 0);
-		if (eventDate.getTime() === today.getTime()) return `Today — ${fullDate}`;
-		if (eventDate.getTime() === yesterday.getTime()) return `Yesterday — ${fullDate}`;
+		if (eventDate.getTime() === today.getTime()) return `${$translations.care.today} — ${fullDate}`;
+		if (eventDate.getTime() === yesterday.getTime()) return `${$translations.care.yesterday} — ${fullDate}`;
 		return fullDate;
 	}
 
 	function eventTypeLabel(type: string): string {
-		if (type === 'watered') return 'Watered';
-		if (type === 'fertilized') return 'Fertilized';
-		if (type === 'repotted') return 'Repotted';
-		if (type === 'pruned') return 'Pruned';
-		return 'Custom';
+		if (type === 'watered') return $translations.care.watered;
+		if (type === 'fertilized') return $translations.care.fertilized;
+		if (type === 'repotted') return $translations.care.repotted;
+		if (type === 'pruned') return $translations.care.pruned;
+		return $translations.care.custom;
+	}
+
+	function filterLabel(value: string): string {
+		if (value === '') return $translations.care.filterAll;
+		return eventTypeLabel(value);
 	}
 
 	function formatTime(dateStr: string): string {
@@ -128,28 +127,28 @@
 
 <div class="log-page">
 	<header class="page-header">
-		<h1>Care Journal</h1>
+		<h1>{$translations.care.title}</h1>
 	</header>
 
 	<div class="log-filters">
-		{#each FILTERS as filter}
+		{#each FILTER_VALUES as value}
 			<button
 				class="chip chip-solid"
-				class:active={activeFilter === filter.value}
-				onclick={() => setFilter(filter.value)}
+				class:active={activeFilter === value}
+				onclick={() => setFilter(value)}
 			>
-				{#if filter.value === 'watered'}
+				{#if value === 'watered'}
 					<Droplet size={14} />
-				{:else if filter.value === 'fertilized'}
+				{:else if value === 'fertilized'}
 					<Leaf size={14} />
-				{:else if filter.value === 'repotted'}
+				{:else if value === 'repotted'}
 					<Shovel size={14} />
-				{:else if filter.value === 'pruned'}
+				{:else if value === 'pruned'}
 					<Scissors size={14} />
-				{:else if filter.value === 'custom'}
+				{:else if value === 'custom'}
 					<Pencil size={14} />
 				{/if}
-				{filter.label}
+				{filterLabel(value)}
 			</button>
 		{/each}
 	</div>
@@ -158,7 +157,7 @@
 		<p class="error">{error}</p>
 	{:else if events.length === 0 && !loading}
 		<div class="empty-state">
-			<p>No care events recorded yet.</p>
+			<p>{$translations.care.noCareEvents}</p>
 		</div>
 	{:else}
 		<div class="log-timeline">
@@ -205,7 +204,7 @@
 	{/if}
 
 	{#if loading}
-		<p class="loading-text">Loading...</p>
+		<p class="loading-text">{$translations.common.loading}</p>
 	{/if}
 
 	<div bind:this={sentinel} class="sentinel"></div>

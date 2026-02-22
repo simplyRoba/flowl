@@ -2,82 +2,9 @@
 	import { onMount } from 'svelte';
 	import { Plus, TriangleAlert, Droplet } from 'lucide-svelte';
 	import { plants, plantsError, loadPlants, waterPlant } from '$lib/stores/plants';
+	import { translations } from '$lib/stores/locale';
 	import { emojiToSvgPath } from '$lib/emoji';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
-
-	const GREETINGS: Record<string, string[]> = {
-		morning: [
-			'Good morning!',
-			'Rise and shine!',
-			'Morning, plant parent!',
-			'Wakey wakey, leaves and stems!',
-			'Top of the morning!',
-		],
-		afternoon: [
-			'Good afternoon!',
-			'Afternoon check-in!',
-			'Hope lunch was good!',
-			'Post-lunch plant patrol!',
-			'Sun\'s still up, so are your plants!',
-		],
-		evening: [
-			'Good evening!',
-			'Evening wind-down!',
-			'Golden hour for greens!',
-			'Almost bedtime for the ferns!',
-			'Night shift plant check!',
-		],
-		night: [
-			'Still up?',
-			'Burning the midnight oil?',
-			'The plants are sleeping, are you?',
-			'Late night leaf gazing!',
-			'Shh... the succulents are dreaming!',
-		],
-	};
-
-	const SUBTITLES: Record<string, string[]> = {
-		morning: [
-			'Your plants had their morning dew.',
-			'Time to check on the green crew.',
-			'Coffee first, then watering.',
-			'The early bird waters the plant.',
-		],
-		afternoon: [
-			'How\'s the garden doing?',
-			'Perfect time for a leaf inspection.',
-			'Your plants missed you since morning.',
-			'Sunshine report: looking leafy.',
-		],
-		evening: [
-			'One last look before the day ends.',
-			'Tuck your plants in for the night.',
-			'Sunset vibes and happy leaves.',
-			'The plants say goodnight soon.',
-		],
-		night: [
-			'Your plants are on autopilot.',
-			'Nothing to water at this hour... probably.',
-			'Even owls check on their plants.',
-			'Moonlight gardening, very cool.',
-		],
-	};
-
-	const ATTENTION_SUBTITLES_PLURAL = [
-		(n: number) => `${n} plants are thirsty today.`,
-		(n: number) => `${n} plants could use a drink.`,
-		(n: number) => `${n} plants are waiting for water.`,
-		(n: number) => `Your plants are calling — ${n} need water.`,
-		(n: number) => `Time to hydrate! ${n} plants are due.`,
-	];
-
-	const ATTENTION_SUBTITLES_SINGULAR = [
-		'1 plant is thirsty today.',
-		'1 plant could use a drink.',
-		'1 plant is waiting for water.',
-		'Your plant is calling — it needs water.',
-		'Time to hydrate! 1 plant is due.',
-	];
 
 	function getTimeOfDay(): string {
 		const hour = new Date().getHours();
@@ -91,10 +18,13 @@
 		return arr[Math.floor(Math.random() * arr.length)];
 	}
 
-	const timeOfDay = getTimeOfDay();
-	const greeting = pick(GREETINGS[timeOfDay]);
-	const defaultSubtitle = pick(SUBTITLES[timeOfDay]);
-	const attentionMsgIndex = Math.floor(Math.random() * ATTENTION_SUBTITLES_PLURAL.length);
+	const timeOfDay = getTimeOfDay() as keyof typeof $translations.dashboard.greetings;
+	const greetingIndex = Math.floor(Math.random() * 5);
+	const subtitleIndex = Math.floor(Math.random() * 4);
+	const attentionMsgIndex = Math.floor(Math.random() * 5);
+
+	let greeting = $derived($translations.dashboard.greetings[timeOfDay][greetingIndex]);
+	let defaultSubtitle = $derived($translations.dashboard.subtitles[timeOfDay][subtitleIndex]);
 
 	let attentionPlants = $derived(
 		$plants
@@ -110,8 +40,8 @@
 		attentionPlants.length === 0
 			? defaultSubtitle
 			: attentionPlants.length === 1
-				? ATTENTION_SUBTITLES_SINGULAR[attentionMsgIndex]
-				: ATTENTION_SUBTITLES_PLURAL[attentionMsgIndex](attentionPlants.length)
+				? $translations.dashboard.attentionSingular[attentionMsgIndex]
+				: $translations.dashboard.attentionPlural[attentionMsgIndex].replace('{n}', String(attentionPlants.length))
 	);
 
 	let wateringIds: Set<number> = $state(new Set());
@@ -150,7 +80,7 @@
 		<div class="attention-section">
 			<div class="attention-title">
 				<TriangleAlert size={16} />
-				Needs Attention
+				{$translations.dashboard.needsAttention}
 			</div>
 			<div class="attention-cards">
 				{#each attentionPlants as plant (plant.id)}
@@ -179,7 +109,7 @@
 								>
 									<Droplet size={16} />
 									<span class="water-btn-label">
-										{wateringIds.has(plant.id) ? 'Watering...' : 'Water'}
+										{wateringIds.has(plant.id) ? $translations.dashboard.watering : $translations.dashboard.water}
 									</span>
 								</button>
 							</div>
@@ -191,11 +121,11 @@
 	{/if}
 
 	<header class="page-header">
-		<h1>My Plants</h1>
+		<h1>{$translations.dashboard.myPlants}</h1>
 		{#if $plants.length > 0}
 			<a href="/plants/new" class="btn btn-primary btn-sm">
 				<Plus size={18} />
-				Add Plant
+				{$translations.dashboard.addPlant}
 			</a>
 		{/if}
 	</header>
@@ -204,12 +134,12 @@
 		<p class="error">{$plantsError}</p>
 	{:else if $plants.length === 0}
 		<div class="empty-state">
-			<img src={emojiToSvgPath('🪴')} alt="Plant" class="empty-icon" />
-			<h2>No plants yet</h2>
-			<p>Add your first plant to get started.</p>
+			<img src={emojiToSvgPath('🪴')} alt={$translations.dashboard.emptyIconAlt} class="empty-icon" />
+			<h2>{$translations.dashboard.noPlants}</h2>
+			<p>{$translations.dashboard.noPlantsHint}</p>
 			<a href="/plants/new" class="btn btn-primary btn-sm">
 				<Plus size={18} />
-				Add Plant
+				{$translations.dashboard.addPlant}
 			</a>
 		</div>
 	{:else}

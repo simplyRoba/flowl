@@ -42,7 +42,7 @@ The SvelteKit project SHALL include a root layout with the application name and 
 
 - **WHEN** the viewport width is >= 1280px
 - **THEN** the sidebar SHALL expand to 200px width
-- **AND** each navigation item SHALL display its icon alongside a text label ("Plants", "Log", "Settings")
+- **AND** each navigation item SHALL display its icon alongside a translated text label
 - **AND** the logo area SHALL display the "flowl" brand name next to the sprout icon
 
 #### Scenario: Below widescreen breakpoint
@@ -146,3 +146,30 @@ Each page SHALL constrain its content width using one of the three content-width
 
 - **WHEN** a page uses a content-width token on its wrapper
 - **THEN** child components within that page MUST NOT define their own `max-width` for layout purposes
+
+### Requirement: Translated navigation labels
+
+Sidebar nav labels SHALL use translated strings from the locale store instead of hardcoded English text.
+
+#### Scenario: Default English labels
+
+- **GIVEN** the locale is `'en'`
+- **WHEN** the sidebar renders
+- **THEN** the navigation labels are "Plants", "Log", and "Settings"
+
+#### Scenario: German labels
+
+- **GIVEN** the locale is `'de'`
+- **WHEN** the sidebar renders
+- **THEN** the navigation labels display the German translations
+
+#### Scenario: Spanish labels
+
+- **GIVEN** the locale is `'es'`
+- **WHEN** the sidebar renders
+- **THEN** the navigation labels display the Spanish translations
+
+#### Scenario: Widescreen expanded sidebar
+
+- **WHEN** the viewport width is >= 1280px
+- **THEN** the expanded sidebar displays translated text labels alongside icons
