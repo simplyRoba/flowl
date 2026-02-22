@@ -6,6 +6,8 @@ use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
+use tracing::debug;
+
 use super::error::{ApiError, JsonBody};
 
 #[derive(Serialize)]
@@ -86,6 +88,7 @@ pub async fn create_location(
     .await
     .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
+    debug!(location_id = row.id, name = %row.name, "Location created");
     Ok((
         StatusCode::CREATED,
         Json(Location {
@@ -176,5 +179,6 @@ pub async fn delete_location(
         return Err(ApiError::NotFound("Location not found".to_string()));
     }
 
+    debug!(location_id = id, "Location deleted");
     Ok(StatusCode::NO_CONTENT)
 }

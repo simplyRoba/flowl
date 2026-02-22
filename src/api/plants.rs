@@ -7,6 +7,8 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
+use tracing::{debug, info, warn};
+
 use super::error::{ApiError, JsonBody};
 use crate::mqtt;
 use crate::state::AppState;
@@ -300,6 +302,7 @@ pub async fn create_plant(
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     let plant = Plant::from(row);
+    info!(plant_id = id, name = %plant.name, "Plant created");
 
     mqtt::publish_discovery(
         state.mqtt_client.as_ref(),
@@ -394,6 +397,7 @@ pub async fn update_plant(
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     let plant = Plant::from(row);
+    debug!(plant_id = id, "Plant updated");
 
     mqtt::publish_discovery(
         state.mqtt_client.as_ref(),
@@ -453,6 +457,7 @@ pub async fn water_plant(
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     let plant = Plant::from(row);
+    debug!(plant_id = id, "Plant watered");
 
     mqtt::publish_state(
         state.mqtt_client.as_ref(),
@@ -500,10 +505,13 @@ pub async fn delete_plant(
     // Delete photo file if exists
     if let Some(filename) = photo_path {
         let file_path = state.upload_dir.join(&filename);
-        let _ = tokio::fs::remove_file(&file_path).await;
+        if let Err(e) = tokio::fs::remove_file(&file_path).await {
+            warn!(plant_id = id, error = %e, "Failed to remove photo file during plant deletion");
+        }
     }
 
     mqtt::remove_plant(state.mqtt_client.as_ref(), &state.mqtt_prefix, id).await;
 
+    info!(plant_id = id, "Plant deleted");
     Ok(StatusCode::NO_CONTENT)
 }

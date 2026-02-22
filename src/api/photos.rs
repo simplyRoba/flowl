@@ -4,6 +4,8 @@ use axum::Json;
 use axum::extract::{Multipart, Path, State};
 use axum::http::StatusCode;
 
+use tracing::{info, warn};
+
 use super::error::ApiError;
 use super::plants::{PLANT_SELECT, Plant, PlantRow};
 use crate::state::AppState;
@@ -66,9 +68,11 @@ pub async fn upload_photo(
         .map_err(|e| ApiError::BadRequest(format!("Failed to save file: {e}")))?;
 
     // Delete old photo if replacing
-    if let Some(old_filename) = current_photo {
-        let old_path = state.upload_dir.join(&old_filename);
-        let _ = tokio::fs::remove_file(&old_path).await;
+    if let Some(ref old_filename) = current_photo {
+        let old_path = state.upload_dir.join(old_filename);
+        if let Err(e) = tokio::fs::remove_file(&old_path).await {
+            warn!(plant_id = id, filename = %old_filename, error = %e, "Failed to remove old photo file");
+        }
     }
 
     // Update photo_path in DB
@@ -78,6 +82,8 @@ pub async fn upload_photo(
         .execute(&state.pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    info!(plant_id = id, filename = %filename, "Photo uploaded");
 
     // Return updated plant
     let query = format!("{PLANT_SELECT} WHERE p.id = ?");
@@ -115,7 +121,10 @@ pub async fn delete_photo(
 
     // Delete file from disk
     let file_path = state.upload_dir.join(&filename);
-    let _ = tokio::fs::remove_file(&file_path).await;
+    if let Err(e) = tokio::fs::remove_file(&file_path).await {
+        warn!(plant_id = id, filename = %filename, error = %e, "Failed to remove photo file");
+    }
 
+    info!(plant_id = id, "Photo deleted");
     Ok(StatusCode::NO_CONTENT)
 }

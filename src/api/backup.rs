@@ -9,6 +9,8 @@ use serde::Serialize;
 use zip::CompressionMethod;
 use zip::write::SimpleFileOptions;
 
+use tracing::info;
+
 use super::error::ApiError;
 use crate::state::AppState;
 
@@ -88,6 +90,13 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
         plants,
         care_events,
     };
+
+    info!(
+        locations = data.locations.len(),
+        plants = data.plants.len(),
+        care_events = data.care_events.len(),
+        "Data export started"
+    );
 
     let json =
         serde_json::to_string_pretty(&data).map_err(|e| ApiError::BadRequest(e.to_string()))?;

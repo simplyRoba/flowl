@@ -8,6 +8,8 @@ use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
+use tracing::debug;
+
 use super::error::{ApiError, JsonBody};
 use super::plants::{PLANT_SELECT, Plant, PlantRow};
 use crate::mqtt;
@@ -160,6 +162,7 @@ pub async fn create_care_event(
         publish_plant_watering_mqtt(&state, plant_id).await;
     }
 
+    debug!(plant_id, event_type = %event_type, "Care event created");
     Ok((StatusCode::CREATED, Json(event)))
 }
 
@@ -191,6 +194,7 @@ pub async fn delete_care_event(
         publish_plant_watering_mqtt(&state, plant_id).await;
     }
 
+    debug!(plant_id, event_id, event_type = %event_type, "Care event deleted");
     Ok(StatusCode::NO_CONTENT)
 }
 

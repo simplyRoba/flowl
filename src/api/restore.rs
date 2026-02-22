@@ -7,6 +7,8 @@ use axum::Json;
 use axum::extract::{Multipart, State};
 use serde::{Deserialize, Serialize};
 
+use tracing::{info, warn};
+
 use super::error::ApiError;
 use crate::mqtt;
 use crate::state::AppState;
@@ -244,8 +246,19 @@ pub async fn import_data(
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
+    info!(size_bytes = bytes.len(), "Data import started");
+
     // Phase 1: Parse and validate the archive (synchronous — keeps future Send)
     let (data, photos) = parse_archive(&bytes)?;
+
+    info!(
+        version = %data.version,
+        locations = data.locations.len(),
+        plants = data.plants.len(),
+        care_events = data.care_events.len(),
+        photos = photos.len(),
+        "Archive parsed, replacing database"
+    );
 
     // Phase 2: Replace database data in a transaction
     replace_database(&state.pool, &data).await?;
@@ -262,7 +275,9 @@ pub async fn import_data(
         .map_err(|e| ApiError::BadRequest(e.to_string()))?
     {
         if entry.path().is_file() {
-            let _ = tokio::fs::remove_file(entry.path()).await;
+            if let Err(e) = tokio::fs::remove_file(entry.path()).await {
+                warn!(path = %entry.path().display(), error = %e, "Failed to remove old upload file");
+            }
         }
     }
 
@@ -293,6 +308,14 @@ pub async fn import_data(
             .await;
         }
     }
+
+    info!(
+        locations = data.locations.len(),
+        plants = data.plants.len(),
+        care_events = data.care_events.len(),
+        photos = photos_count,
+        "Data import complete"
+    );
 
     Ok(Json(ImportResult {
         locations: data.locations.len(),

@@ -7,7 +7,7 @@ use serde::Serialize;
 use serde_json::json;
 use sqlx::SqlitePool;
 use tokio::task::JoinHandle;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::api::plants::compute_watering_status;
 use crate::config::Config;
@@ -155,11 +155,12 @@ pub async fn publish_discovery(
         }
     });
 
-    if let Err(e) = client
+    match client
         .publish(&topic, QoS::AtLeastOnce, true, payload.to_string())
         .await
     {
-        warn!("MQTT publish discovery error for plant {plant_id}: {e}");
+        Ok(()) => debug!(plant_id, "MQTT published discovery"),
+        Err(e) => warn!(plant_id, error = %e, "MQTT publish discovery failed"),
     }
 }
 
@@ -174,8 +175,9 @@ pub async fn publish_state(
 
     let topic = format!("{prefix}/plant/{plant_id}/state");
 
-    if let Err(e) = client.publish(&topic, QoS::AtLeastOnce, true, status).await {
-        warn!("MQTT publish state error for plant {plant_id}: {e}");
+    match client.publish(&topic, QoS::AtLeastOnce, true, status).await {
+        Ok(()) => debug!(plant_id, status, "MQTT published state"),
+        Err(e) => warn!(plant_id, error = %e, "MQTT publish state failed"),
     }
 }
 
@@ -197,11 +199,12 @@ pub async fn publish_attributes(
         "watering_interval_days": interval_days,
     });
 
-    if let Err(e) = client
+    match client
         .publish(&topic, QoS::AtLeastOnce, true, payload.to_string())
         .await
     {
-        warn!("MQTT publish attributes error for plant {plant_id}: {e}");
+        Ok(()) => debug!(plant_id, "MQTT published attributes"),
+        Err(e) => warn!(plant_id, error = %e, "MQTT publish attributes failed"),
     }
 }
 
@@ -220,9 +223,10 @@ pub async fn remove_plant(client: Option<&AsyncClient>, prefix: &str, plant_id: 
             .publish(topic, QoS::AtLeastOnce, true, Vec::<u8>::new())
             .await
         {
-            warn!("MQTT remove error for plant {plant_id} on {topic}: {e}");
+            warn!(plant_id, topic, error = %e, "MQTT remove plant failed");
         }
     }
+    debug!(plant_id, "MQTT removed plant topics");
 }
 
 /// Extract a plant ID from an MQTT topic name matching known patterns.
