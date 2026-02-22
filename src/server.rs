@@ -1,11 +1,16 @@
+use std::time::Instant;
+
 use axum::Router;
-use axum::response::Json;
+use axum::body::Body;
+use axum::http::Request;
+use axum::middleware::{self, Next};
+use axum::response::{Json, Response};
 use axum::routing::get;
 use serde_json::{Value, json};
 use tokio::net::TcpListener;
 use tokio::signal;
 use tower_http::services::ServeDir;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::api;
 use crate::embedded::static_handler;
@@ -19,6 +24,18 @@ pub fn router(state: AppState) -> Router {
         .nest("/api", api::router(state))
         .nest_service("/uploads", uploads)
         .fallback(static_handler)
+        .layer(middleware::from_fn(access_log))
+}
+
+async fn access_log(req: Request<Body>, next: Next) -> Response {
+    let method = req.method().clone();
+    let path = req.uri().path().to_string();
+    let start = Instant::now();
+    let response = next.run(req).await;
+    let status = response.status().as_u16();
+    let latency = start.elapsed();
+    debug!(method = %method, path, status, latency_ms = latency.as_millis() as u64, "access");
+    response
 }
 
 async fn health() -> Json<Value> {
