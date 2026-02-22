@@ -176,7 +176,7 @@ export const de: Translations = {
 	},
 	settings: {
 		title: 'Einstellungen',
-		appearance: 'Erscheinungsbild',
+		appearance: 'Darstellung',
 		theme: 'Thema',
 		themeLight: 'Hell',
 		themeDark: 'Dunkel',

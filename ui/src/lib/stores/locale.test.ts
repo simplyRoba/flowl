@@ -4,8 +4,11 @@ import { de, en, es } from '$lib/i18n';
 import {
 	DEFAULT_LOCALE,
 	LOCALE_STORAGE_KEY,
+	destroyLocale,
+	initLocale,
 	locale,
 	readLocale,
+	setLocale,
 	translations,
 	writeLocale
 } from './locale';
@@ -31,7 +34,9 @@ function createStorage(): Storage {
 }
 
 beforeEach(() => {
+	destroyLocale();
 	locale.set(DEFAULT_LOCALE);
+	localStorage.clear();
 });
 
 describe('locale persistence', () => {
@@ -67,5 +72,42 @@ describe('translations store', () => {
 		expect(get(translations)).toBe(de);
 		locale.set('es');
 		expect(get(translations)).toBe(es);
+	});
+});
+
+describe('initLocale', () => {
+	it('sets locale from localStorage', () => {
+		localStorage.setItem(LOCALE_STORAGE_KEY, 'es');
+		initLocale();
+		expect(get(locale)).toBe('es');
+	});
+
+	it('defaults to en when localStorage is empty', () => {
+		initLocale();
+		expect(get(locale)).toBe('en');
+	});
+
+	it('defaults to en for invalid stored values', () => {
+		localStorage.setItem(LOCALE_STORAGE_KEY, 'fr');
+		initLocale();
+		expect(get(locale)).toBe('en');
+	});
+
+	it('only initializes once until destroyed', () => {
+		localStorage.setItem(LOCALE_STORAGE_KEY, 'de');
+		initLocale();
+		expect(get(locale)).toBe('de');
+
+		localStorage.setItem(LOCALE_STORAGE_KEY, 'es');
+		initLocale();
+		expect(get(locale)).toBe('de');
+	});
+});
+
+describe('setLocale', () => {
+	it('updates store and persists to localStorage', () => {
+		setLocale('de');
+		expect(get(locale)).toBe('de');
+		expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('de');
 	});
 });
