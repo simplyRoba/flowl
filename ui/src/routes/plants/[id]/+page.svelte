@@ -5,6 +5,7 @@
 	import { ArrowLeft, Pencil, Trash2, Droplet, Droplets, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, Info, Gauge, PawPrint, TrendingUp, Layers, Repeat, CalendarCheck, CalendarClock } from 'lucide-svelte';
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
 	import { careEvents, loadCareEvents, addCareEvent, removeCareEvent } from '$lib/stores/care';
+	import { translations } from '$lib/stores/locale';
 	import { emojiToSvgPath } from '$lib/emoji';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -61,9 +62,9 @@
 	}
 
 	function lightLabel(needs: string) {
-		if (needs === 'direct') return 'Direct sunlight';
-		if (needs === 'low') return 'Low light';
-		return 'Indirect light';
+		if (needs === 'direct') return $translations.plant.lightDirect;
+		if (needs === 'low') return $translations.plant.lightLow;
+		return $translations.plant.lightIndirect;
 	}
 
 	function lightIcon(needs: string) {
@@ -81,18 +82,18 @@
 	}
 
 	function formatDate(dateStr: string | null): string {
-		if (!dateStr) return 'Never';
+		if (!dateStr) return $translations.plant.never;
 		const date = new Date(dateStr);
 		if (isNaN(date.getTime())) return dateStr;
 		return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 	}
 
 	function eventTypeLabel(type: string): string {
-		if (type === 'watered') return 'Watered';
-		if (type === 'fertilized') return 'Fertilized';
-		if (type === 'repotted') return 'Repotted';
-		if (type === 'pruned') return 'Pruned';
-		return 'Custom';
+		if (type === 'watered') return $translations.care.watered;
+		if (type === 'fertilized') return $translations.care.fertilized;
+		if (type === 'repotted') return $translations.care.repotted;
+		if (type === 'pruned') return $translations.care.pruned;
+		return $translations.care.custom;
 	}
 
 	function parseEventDate(dateStr: string): Date {
@@ -160,34 +161,34 @@
 	);
 
 	function difficultyLabel(val: string): string {
-		if (val === 'easy') return 'Easy';
-		if (val === 'moderate') return 'Moderate';
-		return 'Demanding';
+		if (val === 'easy') return $translations.plant.difficultyEasy;
+		if (val === 'moderate') return $translations.plant.difficultyModerate;
+		return $translations.plant.difficultyDemanding;
 	}
 
 	function petSafetyLabel(val: string): string {
-		if (val === 'safe') return 'Safe';
-		if (val === 'caution') return 'Caution';
-		return 'Toxic';
+		if (val === 'safe') return $translations.plant.petSafe;
+		if (val === 'caution') return $translations.plant.petCaution;
+		return $translations.plant.petToxic;
 	}
 
 	function growthSpeedLabel(val: string): string {
-		if (val === 'slow') return 'Slow';
-		if (val === 'moderate') return 'Moderate';
-		return 'Fast';
+		if (val === 'slow') return $translations.plant.growthSlow;
+		if (val === 'moderate') return $translations.plant.growthModerate;
+		return $translations.plant.growthFast;
 	}
 
 	function soilMoistureLabel(val: string): string {
-		if (val === 'dry') return 'Prefers dry';
-		if (val === 'moderate') return 'Moderate';
-		return 'Keeps moist';
+		if (val === 'dry') return $translations.plant.moistureDry;
+		if (val === 'moderate') return $translations.plant.moistureModerate;
+		return $translations.plant.moistureMoist;
 	}
 
 	function soilTypeLabel(val: string): string {
-		if (val === 'standard') return 'Standard';
-		if (val === 'cactus-mix') return 'Cactus mix';
-		if (val === 'orchid-bark') return 'Orchid bark';
-		return 'Peat moss';
+		if (val === 'standard') return $translations.plant.soilStandard;
+		if (val === 'cactus-mix') return $translations.plant.soilCactus;
+		if (val === 'orchid-bark') return $translations.plant.soilOrchid;
+		return $translations.plant.soilPeat;
 	}
 
 	function openLightbox() {
@@ -203,13 +204,13 @@
 
 {#if notFound}
 	<div class="not-found">
-		<h2>Plant not found</h2>
-		<p>This plant doesn't exist or may have been deleted.</p>
-		<a href="/" class="back-link"><ArrowLeft size={16} /> Back to plants</a>
+		<h2>{$translations.plant.notFound}</h2>
+		<p>{$translations.plant.notFoundHint}</p>
+		<a href="/" class="back-link"><ArrowLeft size={16} /> {$translations.plant.backToPlants}</a>
 	</div>
 {:else if $currentPlant}
 	<div class="detail">
-		<PageHeader {backHref} backLabel="Back">
+		<PageHeader {backHref} backLabel={$translations.common.back}>
 			<a href="/plants/{$currentPlant.id}/edit" class="btn btn-icon">
 				<Pencil size={16} />
 			</a>
@@ -224,7 +225,7 @@
 					<button
 						type="button"
 						class="detail-photo-button"
-						aria-label="Open photo"
+						aria-label={$translations.plant.openPhoto}
 						onclick={openLightbox}
 					>
 						<img
@@ -256,7 +257,7 @@
 				</div>
 				<button class="btn btn-water btn-lg" onclick={handleWater} disabled={watering}>
 					<Droplet size={16} />
-					{watering ? 'Watering...' : 'Water now'}
+					{watering ? $translations.dashboard.watering : $translations.plant.waterNow}
 				</button>
 			</div>
 		</div>
@@ -264,21 +265,21 @@
 		<div class="detail-sections">
 			<div class="detail-grid">
 				<div class="section">
-					<div class="section-title"><Droplet size={14} /> Watering</div>
-					<div class="detail-row"><span class="detail-row-label">Interval</span><span class="detail-row-value">Every {$currentPlant.watering_interval_days} days <Repeat size={14} /></span></div>
-					<div class="detail-row"><span class="detail-row-label">Last watered</span><span class="detail-row-value">{formatDate($currentPlant.last_watered)} <CalendarCheck size={14} /></span></div>
-					<div class="detail-row"><span class="detail-row-label">Next due</span><span class="detail-row-value">{$currentPlant.next_due ? formatDate($currentPlant.next_due) : 'N/A'} <CalendarClock size={14} /></span></div>
+					<div class="section-title"><Droplet size={14} /> {$translations.plant.wateringSection}</div>
+					<div class="detail-row"><span class="detail-row-label">{$translations.plant.interval}</span><span class="detail-row-value">{$translations.plant.everyNDays.replace('{n}', String($currentPlant.watering_interval_days))} <Repeat size={14} /></span></div>
+					<div class="detail-row"><span class="detail-row-label">{$translations.plant.lastWatered}</span><span class="detail-row-value">{formatDate($currentPlant.last_watered)} <CalendarCheck size={14} /></span></div>
+					<div class="detail-row"><span class="detail-row-label">{$translations.plant.nextDue}</span><span class="detail-row-value">{$currentPlant.next_due ? formatDate($currentPlant.next_due) : $translations.plant.na} <CalendarClock size={14} /></span></div>
 					{#if $currentPlant.soil_moisture}
 						<div class="detail-row">
-							<span class="detail-row-label">Soil moisture</span>
+							<span class="detail-row-label">{$translations.plant.soilMoisture}</span>
 							<span class="detail-row-value">{soilMoistureLabel($currentPlant.soil_moisture)} <Droplets size={14} /></span>
 						</div>
 					{/if}
 				</div>
 				<div class="section">
-					<div class="section-title"><Info size={14} /> Care Info</div>
+					<div class="section-title"><Info size={14} /> {$translations.plant.careInfoSection}</div>
 					<div class="detail-row">
-						<span class="detail-row-label">Light</span>
+						<span class="detail-row-label">{$translations.plant.light}</span>
 						<span class="detail-row-value">
 							{lightLabel($currentPlant.light_needs)}
 							<LightNeedsIcon size={14} />
@@ -286,25 +287,25 @@
 					</div>
 					{#if $currentPlant.difficulty}
 						<div class="detail-row">
-							<span class="detail-row-label">Difficulty</span>
+							<span class="detail-row-label">{$translations.plant.difficulty}</span>
 							<span class="detail-row-value">{difficultyLabel($currentPlant.difficulty)} <Gauge size={14} /></span>
 						</div>
 					{/if}
 					{#if $currentPlant.pet_safety}
 						<div class="detail-row">
-							<span class="detail-row-label">Pet safety</span>
+							<span class="detail-row-label">{$translations.plant.petSafety}</span>
 							<span class="detail-row-value">{petSafetyLabel($currentPlant.pet_safety)} <PawPrint size={14} /></span>
 						</div>
 					{/if}
 					{#if $currentPlant.growth_speed}
 						<div class="detail-row">
-							<span class="detail-row-label">Growth</span>
+							<span class="detail-row-label">{$translations.plant.growth}</span>
 							<span class="detail-row-value">{growthSpeedLabel($currentPlant.growth_speed)} <TrendingUp size={14} /></span>
 						</div>
 					{/if}
 					{#if $currentPlant.soil_type}
 						<div class="detail-row">
-							<span class="detail-row-label">Soil</span>
+							<span class="detail-row-label">{$translations.plant.soil}</span>
 							<span class="detail-row-value">{soilTypeLabel($currentPlant.soil_type)} <Layers size={14} /></span>
 						</div>
 					{/if}
@@ -313,16 +314,16 @@
 
 			{#if $currentPlant.notes}
 				<div class="section">
-					<div class="section-title"><PencilIcon size={14} /> Notes</div>
+					<div class="section-title"><PencilIcon size={14} /> {$translations.plant.notesSection}</div>
 					<div class="detail-notes">{$currentPlant.notes}</div>
 				</div>
 			{/if}
 
 			<div class="section care-journal">
-				<div class="section-title"><BookOpen size={14} /> Care Journal</div>
+				<div class="section-title"><BookOpen size={14} /> {$translations.plant.careJournalSection}</div>
 
 			{#if $careEvents.length === 0}
-				<p class="journal-empty">No care events recorded yet.</p>
+				<p class="journal-empty">{$translations.plant.noCareEvents}</p>
 			{:else}
 					<ul class="timeline">
 						{#each displayEvents as event}
@@ -352,7 +353,7 @@
 										class="btn btn-ghost event-delete"
 										onclick={() => handleEventDelete(event)}
 										disabled={deletingEventId === event.id}
-										aria-label="Delete log entry"
+										aria-label={$translations.plant.deleteLogEntry}
 									>
 										<Trash2 size={16} />
 									</button>
@@ -361,7 +362,7 @@
 						{/each}
 					</ul>
 				{#if hasMoreEvents && !showAllEvents}
-					<button class="btn btn-ghost" onclick={() => showAllEvents = true}>Show more events</button>
+					<button class="btn btn-ghost" onclick={() => showAllEvents = true}>{$translations.plant.showMore}</button>
 				{/if}
 			{/if}
 
@@ -369,10 +370,10 @@
 				<div class="log-form">
 					<div class="type-chips">
 						{#each [
-							{ value: 'fertilized', label: 'Fertilized' },
-							{ value: 'repotted', label: 'Repotted' },
-							{ value: 'pruned', label: 'Pruned' },
-							{ value: 'custom', label: 'Custom' }
+							{ value: 'fertilized', label: $translations.care.fertilized },
+							{ value: 'repotted', label: $translations.care.repotted },
+							{ value: 'pruned', label: $translations.care.pruned },
+							{ value: 'custom', label: $translations.care.custom }
 						] as chip}
 							<button
 								class="chip chip-solid"
@@ -385,14 +386,14 @@
 					</div>
 					<textarea
 						class="input log-notes"
-						placeholder="Notes (optional)"
+						placeholder={$translations.plant.notesOptional}
 						bind:value={logNotes}
 						rows="2"
 					></textarea>
 					<div class="log-when">
 						{#if showLogOccurredAt}
 							<label class="log-label">
-								When
+								{$translations.plant.when}
 								<input
 									class="input log-input"
 									type="datetime-local"
@@ -404,7 +405,7 @@
 					</div>
 					<div class="log-actions">
 						<button class="btn btn-primary" onclick={handleLogSubmit} disabled={!logEventType || logSubmitting}>
-							{logSubmitting ? 'Saving...' : 'Save'}
+							{logSubmitting ? $translations.common.saving : $translations.common.save}
 						</button>
 						<button
 							type="button"
@@ -416,14 +417,14 @@
 								}
 							}}
 						>
-							Backdate
+							{$translations.plant.backdate}
 						</button>
-						<button class="btn btn-outline" onclick={handleLogCancel}>Cancel</button>
+						<button class="btn btn-outline" onclick={handleLogCancel}>{$translations.common.cancel}</button>
 					</div>
 				</div>
 			{:else}
 				<button class="btn btn-ghost" onclick={() => showLogForm = true}>
-					+ Add log entry
+					{$translations.plant.addLogEntry}
 				</button>
 			{/if}
 			</div>
@@ -439,16 +440,16 @@
 {:else if $plantsError}
 	<p class="error">{$plantsError}</p>
 {:else}
-	<p class="loading">Loading...</p>
+	<p class="loading">{$translations.common.loading}</p>
 {/if}
 
 <ModalDialog
 	open={deleteDialogOpen}
-	title="Delete plant"
-	message={$currentPlant ? `Delete "${$currentPlant.name}"? This cannot be undone.` : ''}
+	title={$translations.plant.deletePlant}
+	message={$currentPlant ? $translations.plant.deleteConfirm.replace('{name}', $currentPlant.name) : ''}
 	mode="confirm"
 	variant="danger"
-	confirmLabel="Delete"
+	confirmLabel={$translations.common.delete}
 	onconfirm={handleDeleteConfirm}
 	oncancel={() => { deleteDialogOpen = false; }}
 />

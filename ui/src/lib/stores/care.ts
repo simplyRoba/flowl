@@ -1,6 +1,7 @@
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import type { CareEvent, CreateCareEvent } from '$lib/api';
 import * as api from '$lib/api';
+import { translations } from './locale';
 
 export const careEvents = writable<CareEvent[]>([]);
 export const careError = writable<string | null>(null);
@@ -11,7 +12,7 @@ export async function loadCareEvents(plantId: number) {
 		const data = await api.fetchCareEvents(plantId);
 		careEvents.set(data);
 	} catch (e) {
-		careError.set(e instanceof Error ? e.message : 'Failed to load care events');
+		careError.set(e instanceof Error ? e.message : get(translations).error.loadCareEvents);
 	}
 }
 
@@ -31,7 +32,7 @@ export async function addCareEvent(plantId: number, data: CreateCareEvent): Prom
 		careEvents.update((list) => sortEvents([event, ...list]));
 		return event;
 	} catch (e) {
-		careError.set(e instanceof Error ? e.message : 'Failed to add care event');
+		careError.set(e instanceof Error ? e.message : get(translations).error.addCareEvent);
 		return null;
 	}
 }
@@ -43,7 +44,7 @@ export async function removeCareEvent(plantId: number, eventId: number): Promise
 		careEvents.update((list) => list.filter((e) => e.id !== eventId));
 		return true;
 	} catch (e) {
-		careError.set(e instanceof Error ? e.message : 'Failed to delete care event');
+		careError.set(e instanceof Error ? e.message : get(translations).error.deleteCareEvent);
 		return false;
 	}
 }

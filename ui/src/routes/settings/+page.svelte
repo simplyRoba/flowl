@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { get } from 'svelte/store';
+	import { Globe } from 'lucide-svelte';
 	import { Check, Pencil, Trash2, Palette, MapPin, Database, Info, Radio, Download, Upload, Wrench } from 'lucide-svelte';
 	import { locations, locationsError, loadLocations, deleteLocation, updateLocation } from '$lib/stores/locations';
 	import {
@@ -8,13 +9,21 @@
 		setThemePreference,
 		type ThemePreference
 	} from '$lib/stores/theme';
+	import { translations, locale, setLocale, type Locale } from '$lib/stores/locale';
+	import { plural } from '$lib/i18n';
 	import { fetchAppInfo, fetchStats, fetchMqttStatus, repairMqtt, importData, type AppInfo, type Stats, type MqttStatus } from '$lib/api';
 	import ModalDialog from '$lib/components/ModalDialog.svelte';
 
-	const themeOptions: { value: ThemePreference; label: string }[] = [
-		{ value: 'light', label: 'Light' },
-		{ value: 'dark', label: 'Dark' },
-		{ value: 'system', label: 'System' }
+	const themeOptions: { value: ThemePreference; labelKey: 'themeLight' | 'themeDark' | 'themeSystem' }[] = [
+		{ value: 'light', labelKey: 'themeLight' },
+		{ value: 'dark', labelKey: 'themeDark' },
+		{ value: 'system', labelKey: 'themeSystem' }
+	];
+
+	const localeOptions: { value: Locale; label: string }[] = [
+		{ value: 'en', label: 'English' },
+		{ value: 'de', label: 'Deutsch' },
+		{ value: 'es', label: 'Español' }
 	];
 
 	let editingId: number | null = $state(null);
@@ -78,7 +87,7 @@
 			editingId = null;
 			editError = '';
 		} else {
-			editError = get(locationsError) || 'Failed to rename location';
+			editError = get(locationsError) || get(translations).settings.failedToRename;
 			locationsError.set(null);
 		}
 	}
@@ -110,9 +119,10 @@
 		repairError = '';
 		try {
 			const result = await repairMqtt();
-			repairMessage = `Cleared ${result.cleared}, published ${result.published}`;
+			const t = get(translations);
+			repairMessage = t.settings.repairResult.replace('{cleared}', String(result.cleared)).replace('{published}', String(result.published));
 		} catch (e: unknown) {
-			repairError = e instanceof Error ? e.message : 'Repair failed';
+			repairError = e instanceof Error ? e.message : get(translations).settings.repairFailed;
 		} finally {
 			repairLoading = false;
 		}
@@ -149,13 +159,18 @@
 		importError = '';
 		try {
 			const result = await importData(file);
-			importMessage = `Imported ${result.plants} plants, ${result.photos} photos, ${result.care_events} log entries, ${result.locations} locations`;
+			const t = get(translations);
+			importMessage = t.settings.importResult
+				.replace('{plants}', String(result.plants))
+				.replace('{photos}', String(result.photos))
+				.replace('{care_events}', String(result.care_events))
+				.replace('{locations}', String(result.locations));
 			fetchStats()
 				.then((s) => { stats = s; })
 				.catch(() => {});
 			loadLocations();
 		} catch (e: unknown) {
-			importError = e instanceof Error ? e.message : 'Import failed';
+			importError = e instanceof Error ? e.message : get(translations).settings.importFailed;
 		} finally {
 			importLoading = false;
 		}
@@ -180,16 +195,16 @@
 
 <div class="page">
 	<header class="page-header">
-		<h1>Settings</h1>
+		<h1>{$translations.settings.title}</h1>
 	</header>
 
 	<section class="section settings-section">
-		<h2 class="section-title"><Palette size={14} /> Appearance</h2>
+		<h2 class="section-title"><Palette size={14} /> {$translations.settings.appearance}</h2>
 		<div class="setting-row">
 			<div>
-				<div class="setting-label">Theme</div>
+				<div class="setting-label">{$translations.settings.theme}</div>
 			</div>
-			<div class="theme-selector" role="radiogroup" aria-label="Theme">
+			<div class="theme-selector" role="radiogroup" aria-label={$translations.settings.theme}>
 				{#each themeOptions as option}
 					<button
 						type="button"
@@ -197,6 +212,28 @@
 						class:active={$themePreference === option.value}
 						aria-pressed={$themePreference === option.value}
 						onclick={() => setThemePreference(option.value)}
+					>
+						{$translations.settings[option.labelKey]}
+					</button>
+				{/each}
+			</div>
+		</div>
+	</section>
+
+	<section class="section settings-section">
+		<h2 class="section-title"><Globe size={14} /> {$translations.settings.language}</h2>
+		<div class="setting-row">
+			<div>
+				<div class="setting-label">{$translations.settings.language}</div>
+			</div>
+			<div class="theme-selector" role="radiogroup" aria-label={$translations.settings.language}>
+				{#each localeOptions as option}
+					<button
+						type="button"
+						class="theme-option"
+						class:active={$locale === option.value}
+						aria-pressed={$locale === option.value}
+						onclick={() => setLocale(option.value)}
 					>
 						{option.label}
 					</button>
@@ -206,12 +243,12 @@
 	</section>
 
 	<section class="section settings-section">
-		<h2 class="section-title"><MapPin size={14} /> Locations</h2>
+		<h2 class="section-title"><MapPin size={14} /> {$translations.settings.locations}</h2>
 
 		{#if $locationsError}
 			<p class="error">{$locationsError}</p>
 		{:else if $locations.length === 0}
-			<p class="empty">No locations yet. Create locations when adding plants.</p>
+			<p class="empty">{$translations.settings.noLocations}</p>
 		{:else}
 			<ul class="location-list">
 				{#each $locations as location (location.id)}
@@ -243,7 +280,7 @@
 							<div class="location-info">
 								<span class="location-name">{location.name}</span>
 								{#if location.plant_count > 0}
-									<span class="plant-count">{location.plant_count} plant{location.plant_count === 1 ? '' : 's'}</span>
+									<span class="plant-count">{plural($translations.settings.plantCount, location.plant_count)}</span>
 								{/if}
 							</div>
 							<div class="location-actions">
@@ -269,32 +306,32 @@
 
 	{#if mqttStatus}
 		<section class="section settings-section">
-			<h2 class="section-title"><Radio size={14} /> MQTT</h2>
+			<h2 class="section-title"><Radio size={14} /> {$translations.settings.mqtt}</h2>
 			<div class="about-row">
-				<span class="setting-label">Status</span>
+				<span class="setting-label">{$translations.settings.mqttStatus}</span>
 				<span class="mqtt-status">
 					{#if mqttStatus.status === 'connected'}
-						<span class="status-dot status-connected"></span> Connected
+						<span class="status-dot status-connected"></span> {$translations.settings.connected}
 					{:else if mqttStatus.status === 'disconnected'}
-						<span class="status-dot status-disconnected"></span> Disconnected
+						<span class="status-dot status-disconnected"></span> {$translations.settings.disconnected}
 					{:else}
-						Disabled
+						{$translations.settings.disabled}
 					{/if}
 				</span>
 			</div>
 			{#if mqttStatus.status !== 'disabled'}
 				<div class="about-row">
-					<span class="setting-label">Broker</span>
+					<span class="setting-label">{$translations.settings.broker}</span>
 					<span>{mqttStatus.broker}</span>
 				</div>
 				<div class="about-row">
-					<span class="setting-label">Topic prefix</span>
+					<span class="setting-label">{$translations.settings.topicPrefix}</span>
 					<span>{mqttStatus.topic_prefix}</span>
 				</div>
 				<div class="about-row">
 					<div class="setting-info">
-						<div class="setting-label">Repair</div>
-						<div class="setting-description">Clears retained MQTT topics and republishes current state.</div>
+						<div class="setting-label">{$translations.settings.repair}</div>
+						<div class="setting-description">{$translations.settings.repairDesc}</div>
 					</div>
 					<span class="repair-actions">
 						{#if repairMessage}
@@ -306,13 +343,13 @@
 						<button
 							class="btn btn-outline btn-sm"
 							disabled={mqttStatus.status !== 'connected' || repairLoading}
-							title={mqttStatus.status !== 'connected' ? 'MQTT must be connected' : undefined}
+							title={mqttStatus.status !== 'connected' ? $translations.settings.mqttMustBeConnected : undefined}
 							onclick={handleRepairClick}
 						>
 							{#if repairLoading}
-								Repairing...
+								{$translations.settings.repairing}
 							{:else}
-								<Wrench size={14} /> Repair
+								<Wrench size={14} /> {$translations.settings.repair}
 							{/if}
 						</button>
 					</span>
@@ -323,11 +360,11 @@
 
 	{#if stats}
 		<section class="section settings-section">
-			<h2 class="section-title"><Database size={14} /> Data</h2>
+			<h2 class="section-title"><Database size={14} /> {$translations.settings.data}</h2>
 			<div class="about-row">
 				<div class="setting-info">
-					<div class="setting-label">Backup</div>
-					<div class="setting-description">Import replaces all existing data and photos.</div>
+					<div class="setting-label">{$translations.settings.backup}</div>
+					<div class="setting-description">{$translations.settings.backupDesc}</div>
 				</div>
 				<span class="backup-actions">
 					{#if importMessage}
@@ -342,9 +379,9 @@
 						onclick={handleImportClick}
 					>
 						{#if importLoading}
-							Importing...
+							{$translations.settings.importing}
 						{:else}
-							<Upload size={14} /> Import
+							<Upload size={14} /> {$translations.settings.importBtn}
 						{/if}
 					</button>
 					<input
@@ -355,32 +392,32 @@
 						onchange={handleFileSelected}
 					/>
 					<button class="btn btn-outline btn-sm" onclick={handleExport}>
-						<Download size={14} /> Export
+						<Download size={14} /> {$translations.settings.exportBtn}
 					</button>
 				</span>
 			</div>
 			<div class="about-row">
-				<span class="setting-label">Plants</span>
-				<span>{stats.plant_count} {stats.plant_count === 1 ? 'plant' : 'plants'}, {stats.care_event_count} {stats.care_event_count === 1 ? 'care journal entry' : 'care journal entries'}, {stats.location_count} {stats.location_count === 1 ? 'location' : 'locations'}</span>
+				<span class="setting-label">{$translations.settings.statsLabel}</span>
+				<span>{plural($translations.settings.statsPlants, stats.plant_count)}, {plural($translations.settings.statsCareEvents, stats.care_event_count)}, {plural($translations.settings.statsLocations, stats.location_count)}</span>
 			</div>
 		</section>
 	{/if}
 
 	{#if appInfo}
 		<section class="section settings-section">
-			<h2 class="section-title"><Info size={14} /> About</h2>
+			<h2 class="section-title"><Info size={14} /> {$translations.settings.about}</h2>
 			<div class="about-row">
-				<span class="setting-label">Version</span>
+				<span class="setting-label">{$translations.settings.version}</span>
 				<span>{appInfo.version}</span>
 			</div>
 			<div class="about-row">
-				<span class="setting-label">Source</span>
+				<span class="setting-label">{$translations.settings.source}</span>
 				<a href={appInfo.repository} target="_blank" rel="noopener noreferrer">
 					{appInfo.repository.replace('https://', '')}
 				</a>
 			</div>
 			<div class="about-row">
-				<span class="setting-label">License</span>
+				<span class="setting-label">{$translations.settings.license}</span>
 				<span>{appInfo.license}</span>
 			</div>
 		</section>
@@ -389,37 +426,40 @@
 
 <ModalDialog
 	open={deleteDialogOpen}
-	title="Delete location"
+	title={$translations.settings.deleteLocation}
 	message={deleteTarget
 		? deleteTarget.plantCount > 0
-			? `Delete "${deleteTarget.name}"? ${deleteTarget.plantCount} plant${deleteTarget.plantCount === 1 ? '' : 's'} will lose ${deleteTarget.plantCount === 1 ? 'its' : 'their'} location.`
-			: `Delete "${deleteTarget.name}"?`
+			? $translations.settings.deleteLocationConfirmPlants
+				.replace('{name}', deleteTarget.name)
+				.replace('{count}', plural($translations.settings.plantCount, deleteTarget.plantCount))
+				.replace('{pronoun}', deleteTarget.plantCount === 1 ? $translations.settings.deleteLocationPronoun.one : $translations.settings.deleteLocationPronoun.other)
+			: $translations.settings.deleteLocationConfirm.replace('{name}', deleteTarget.name)
 		: ''}
 	mode="confirm"
 	variant="danger"
-	confirmLabel="Delete"
+	confirmLabel={$translations.common.delete}
 	onconfirm={handleDeleteConfirm}
 	oncancel={() => { deleteDialogOpen = false; deleteTarget = null; }}
 />
 
 <ModalDialog
 	open={importDialogOpen}
-	title="Import data"
-	message={importFile ? `Import "${importFile.name}"? All existing data and photos will be replaced.` : ''}
+	title={$translations.settings.importData}
+	message={importFile ? $translations.settings.importConfirm.replace('{name}', importFile.name) : ''}
 	mode="confirm"
 	variant="danger"
-	confirmLabel="Import"
+	confirmLabel={$translations.settings.importBtn}
 	onconfirm={handleImportConfirm}
 	oncancel={() => { importDialogOpen = false; importFile = null; }}
 />
 
 <ModalDialog
 	open={repairDialogOpen}
-	title="Repair MQTT"
-	message="Clear all retained MQTT topics and republish fresh state for all plants?"
+	title={$translations.settings.repairTitle}
+	message={$translations.settings.repairConfirm}
 	mode="confirm"
 	variant="warning"
-	confirmLabel="Repair"
+	confirmLabel={$translations.settings.repair}
 	onconfirm={handleRepairConfirm}
 	oncancel={() => { repairDialogOpen = false; }}
 />

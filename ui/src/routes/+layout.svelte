@@ -4,6 +4,7 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import { page } from '$app/state';
 	import { initTheme } from '$lib/stores/theme';
+	import { initLocale, translations } from '$lib/stores/locale';
 	import '$lib/styles/buttons.css';
 	import '$lib/styles/chips.css';
 	import '$lib/styles/inputs.css';
@@ -18,6 +19,7 @@
 
 	onMount(() => {
 		initTheme();
+		initLocale();
 	});
 </script>
 
@@ -28,9 +30,9 @@
 <div class="app">
 	<nav class="sidebar">
 		<div class="logo"><Logo size={28} /><span class="nav-label brand">flowl</span></div>
-		<a href="/" class="nav-item" class:active={isActive('/')}><Leaf size={20} /><span class="nav-label">Plants</span></a>
-		<a href="/care-journal" class="nav-item" class:active={isActive('/care-journal')}><BookOpen size={20} /><span class="nav-label">Care Journal</span></a>
-		<a href="/settings" class="nav-item bottom" class:active={isActive('/settings')}><Settings size={20} /><span class="nav-label">Settings</span></a>
+		<a href="/" class="nav-item" class:active={isActive('/')}><Leaf size={20} /><span class="nav-label">{$translations.nav.plants}</span></a>
+		<a href="/care-journal" class="nav-item" class:active={isActive('/care-journal')}><BookOpen size={20} /><span class="nav-label">{$translations.nav.careJournal}</span></a>
+		<a href="/settings" class="nav-item bottom" class:active={isActive('/settings')}><Settings size={20} /><span class="nav-label">{$translations.nav.settings}</span></a>
 	</nav>
 	<main class="content">
 		{@render children()}

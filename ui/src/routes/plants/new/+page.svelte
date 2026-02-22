@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import type { CreatePlant } from '$lib/api';
 	import { createPlant, uploadPhoto } from '$lib/stores/plants';
+	import { translations } from '$lib/stores/locale';
 	import PlantForm from '$lib/components/PlantForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 
@@ -21,13 +22,13 @@
 </script>
 
 <div class="page">
-<PageHeader backHref="/" backLabel="Cancel">
+<PageHeader backHref="/" backLabel={$translations.common.cancel}>
 		<button type="submit" form="plant-form" class="btn btn-primary" disabled={saving}>
-			{saving ? 'Saving...' : 'Save'}
+			{saving ? $translations.common.saving : $translations.common.save}
 		</button>
 	</PageHeader>
 
-	<h1>Add Plant</h1>
+	<h1>{$translations.plant.addPlant}</h1>
 
 	<PlantForm onsave={handleSave} {saving} showLocationNone={false} showFooterActions={false} />
 </div>

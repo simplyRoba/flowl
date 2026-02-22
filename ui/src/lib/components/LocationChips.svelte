@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { MapPin } from 'lucide-svelte';
 	import type { Location } from '$lib/api';
+	import { translations } from '$lib/stores/locale';
 
 	let {
 		locations,
@@ -38,7 +39,7 @@
 			class:active={value === null}
 			onclick={() => onchange(null)}
 		>
-			None
+			{$translations.form.none}
 		</button>
 	{/if}
 	{#each locations as loc (loc.id)}
@@ -57,17 +58,17 @@
 			<input
 				type="text"
 				bind:value={newName}
-				placeholder="Location name"
+				placeholder={$translations.form.locationName}
 				class="input new-input"
 			/>
-			<button type="submit" class="chip add-btn">Add</button>
+			<button type="submit" class="chip add-btn">{$translations.form.add}</button>
 			<button type="button" class="chip" onclick={() => { adding = false; newName = ''; }}>
-				Cancel
+				{$translations.common.cancel}
 			</button>
 		</form>
 	{:else}
 		<button type="button" class="chip chip-dashed" onclick={() => { adding = true; }}>
-			+ New
+			{$translations.form.newLocation}
 		</button>
 	{/if}
 </div>

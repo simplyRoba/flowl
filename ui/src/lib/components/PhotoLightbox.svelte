@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { X } from 'lucide-svelte';
+	import { translations } from '$lib/stores/locale';
 
 	let { open = false, src = '', alt = '', onclose }: { open?: boolean; src?: string; alt?: string; onclose?: () => void } = $props();
 
@@ -164,11 +165,11 @@
 <dialog
 	bind:this={dialogEl}
 	class="lightbox"
-	aria-label="Plant photo"
+	aria-label={$translations.plant.openPhoto}
 	oncancel={handleCancel}
 	onclick={handleBackdropClick}
 >
-	<button type="button" class="lightbox-close" aria-label="Close" onclick={requestClose}>
+	<button type="button" class="lightbox-close" aria-label={$translations.common.close} onclick={requestClose}>
 		<X size={24} />
 	</button>
 	<div class="lightbox-content">
