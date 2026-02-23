@@ -75,6 +75,12 @@ export interface MqttStatus {
 	topic_prefix: string | null;
 }
 
+export interface AiStatus {
+	enabled: boolean;
+	base_url: string | null;
+	model: string | null;
+}
+
 class ApiError extends Error {
 	status: number;
 
@@ -115,6 +121,10 @@ export function fetchStats(): Promise<Stats> {
 
 export function fetchMqttStatus(): Promise<MqttStatus> {
 	return request('GET', '/api/mqtt/status');
+}
+
+export function fetchAiStatus(): Promise<AiStatus> {
+	return request('GET', '/api/ai/status');
 }
 
 export interface MqttRepairResult {

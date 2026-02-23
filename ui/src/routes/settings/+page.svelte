@@ -2,7 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import { get } from 'svelte/store';
 	import { Globe } from 'lucide-svelte';
-	import { Check, Pencil, Trash2, Palette, MapPin, Database, Info, Radio, Download, Upload, Wrench } from 'lucide-svelte';
+	import { Check, Pencil, Trash2, Palette, MapPin, Database, Info, Radio, Download, Upload, Wrench, Sparkles } from 'lucide-svelte';
 	import { locations, locationsError, loadLocations, deleteLocation, updateLocation } from '$lib/stores/locations';
 	import {
 		themePreference,
@@ -11,7 +11,7 @@
 	} from '$lib/stores/theme';
 	import { translations, locale, setLocale, type Locale } from '$lib/stores/locale';
 	import { plural } from '$lib/i18n';
-	import { fetchAppInfo, fetchStats, fetchMqttStatus, repairMqtt, importData, type AppInfo, type Stats, type MqttStatus } from '$lib/api';
+	import { fetchAppInfo, fetchStats, fetchMqttStatus, fetchAiStatus, repairMqtt, importData, type AppInfo, type Stats, type MqttStatus, type AiStatus } from '$lib/api';
 	import ModalDialog from '$lib/components/ModalDialog.svelte';
 
 	const themeOptions: { value: ThemePreference; labelKey: 'themeLight' | 'themeDark' | 'themeSystem' }[] = [
@@ -32,6 +32,7 @@
 	let appInfo: AppInfo | null = $state(null);
 	let stats: Stats | null = $state(null);
 	let mqttStatus: MqttStatus | null = $state(null);
+	let aiStatus: AiStatus | null = $state(null);
 	let repairLoading = $state(false);
 	let repairMessage = $state('');
 	let repairError = $state('');
@@ -58,6 +59,9 @@
 		fetchMqttStatus()
 			.then((m) => { mqttStatus = m; })
 			.catch(() => { /* hide MQTT section on failure */ });
+		fetchAiStatus()
+			.then((s) => { aiStatus = s; })
+			.catch(() => { /* hide AI section on failure */ });
 	});
 
 	async function startEditing(id: number, name: string) {
@@ -305,8 +309,8 @@
 		<section class="section settings-section">
 			<h2 class="section-title"><Radio size={14} /> {$translations.settings.mqtt}</h2>
 			<div class="about-row">
-				<span class="setting-label">{$translations.settings.mqttStatus}</span>
-				<span class="mqtt-status">
+				<span class="setting-label">{$translations.settings.status}</span>
+				<span class="status-value">
 					{#if mqttStatus.status === 'connected'}
 						<span class="status-dot status-connected"></span> {$translations.settings.connected}
 					{:else if mqttStatus.status === 'disconnected'}
@@ -350,6 +354,40 @@
 							{/if}
 						</button>
 					</span>
+				</div>
+			{/if}
+		</section>
+	{/if}
+
+	{#if aiStatus}
+		<section class="section settings-section">
+			<h2 class="section-title"><Sparkles size={14} /> {$translations.settings.ai}</h2>
+			<div class="about-row">
+				<span class="setting-label">{$translations.settings.status}</span>
+				<span class="status-value">
+					{#if aiStatus.enabled}
+						<span class="status-dot status-connected"></span> {$translations.settings.aiEnabled}
+					{:else}
+						{$translations.settings.aiDisabled}
+					{/if}
+				</span>
+			</div>
+			{#if aiStatus.enabled}
+				{#if aiStatus.base_url}
+					<div class="about-row">
+						<span class="setting-label">{$translations.settings.provider}</span>
+						<span>{(() => { try { return new URL(aiStatus.base_url).hostname; } catch { return aiStatus.base_url; } })()}</span>
+					</div>
+				{/if}
+				{#if aiStatus.model}
+					<div class="about-row">
+						<span class="setting-label">{$translations.settings.model}</span>
+						<span>{aiStatus.model}</span>
+					</div>
+				{/if}
+			{:else}
+				<div class="about-row">
+					<span class="ai-hint">{$translations.settings.aiDisabledHint}</span>
 				</div>
 			{/if}
 		</section>
@@ -646,7 +684,7 @@
 		color: var(--color-text-muted);
 	}
 
-	.mqtt-status {
+	.status-value {
 		display: flex;
 		align-items: center;
 		gap: 6px;
@@ -665,6 +703,11 @@
 
 	.status-disconnected {
 		background-color: var(--color-text-muted);
+	}
+
+	.ai-hint {
+		font-size: 14px;
+		color: var(--color-text-muted);
 	}
 
 	.repair-actions {
