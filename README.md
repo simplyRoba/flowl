@@ -24,6 +24,9 @@ A small Rust service that exposes plant care data (watering schedules, care need
 | `FLOWL_MQTT_PORT` | `1883` | MQTT broker port. |
 | `FLOWL_MQTT_TOPIC_PREFIX` | `flowl` | Topic prefix used for auto-discovery and plant topics. |
 | `FLOWL_MQTT_DISABLED` | `false` | Skip MQTT client, state checker, and publishes when set to `true`. |
+| `FLOWL_AI_API_KEY` | — | API key for the OpenAI-compatible AI provider. AI features are disabled when unset. |
+| `FLOWL_AI_BASE_URL` | `https://api.openai.com/v1` | Base URL for the AI API. |
+| `FLOWL_AI_MODEL` | `gpt-4o-mini` | Model name used for all AI tasks. |
 
 ---
 

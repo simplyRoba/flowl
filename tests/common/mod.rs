@@ -41,6 +41,9 @@ pub async fn test_app() -> Router {
         mqtt_host: "localhost".to_string(),
         mqtt_port: 1883,
         mqtt_disabled: true,
+        ai_provider: None,
+        ai_base_url: String::new(),
+        ai_model: String::new(),
     };
     flowl::server::router(state)
 }
@@ -58,6 +61,9 @@ pub async fn test_app_with_uploads() -> (Router, PathBuf) {
         mqtt_host: "localhost".to_string(),
         mqtt_port: 1883,
         mqtt_disabled: true,
+        ai_provider: None,
+        ai_base_url: String::new(),
+        ai_model: String::new(),
     };
     (flowl::server::router(state), upload_dir)
 }

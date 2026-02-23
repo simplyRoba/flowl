@@ -1,3 +1,4 @@
+pub mod ai;
 pub mod backup;
 pub mod care_events;
 pub mod error;
@@ -37,6 +38,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/care", get(care_events::list_all_care_events))
         .route("/stats", get(stats::get_stats))
+        .route("/ai/status", get(ai::get_ai_status))
         .route("/mqtt/status", get(mqtt::get_mqtt_status))
         .route("/mqtt/repair", post(mqtt::post_mqtt_repair))
         .route("/data/export", get(backup::export_data))

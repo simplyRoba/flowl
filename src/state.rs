@@ -6,6 +6,8 @@ use axum::extract::FromRef;
 use rumqttc::AsyncClient;
 use sqlx::SqlitePool;
 
+use crate::ai::provider::AiProvider;
+
 #[derive(Clone)]
 pub struct AppState {
     pub pool: SqlitePool,
@@ -16,6 +18,9 @@ pub struct AppState {
     pub mqtt_host: String,
     pub mqtt_port: u16,
     pub mqtt_disabled: bool,
+    pub ai_provider: Option<Arc<dyn AiProvider>>,
+    pub ai_base_url: String,
+    pub ai_model: String,
 }
 
 impl FromRef<AppState> for SqlitePool {

@@ -116,6 +116,12 @@ A Dockerfile SHALL provide a minimal multi-arch container image based on `debian
 - **WHEN** the container is started with a volume mounted at `/data`
 - **THEN** the SQLite database is persisted at `/data/flowl.db`
 
+#### Scenario: AI environment variables
+
+- **WHEN** the container is started with `FLOWL_AI_API_KEY` set
+- **THEN** the AI provider is initialized and `GET /api/ai/status` returns `enabled: true`
+- **AND** `FLOWL_AI_BASE_URL` and `FLOWL_AI_MODEL` are optional with defaults
+
 ### Requirement: Code Ownership
 
 A CODEOWNERS file SHALL assign `@simplyroba` as the default reviewer for all files.

@@ -150,6 +150,9 @@ async fn export_populated_database_with_photo() {
         mqtt_host: "localhost".to_string(),
         mqtt_port: 1883,
         mqtt_disabled: true,
+        ai_provider: None,
+        ai_base_url: String::new(),
+        ai_model: String::new(),
     };
     let app = flowl::server::router(state.clone());
 
@@ -393,6 +396,9 @@ async fn round_trip_export_import_export() {
         mqtt_host: "localhost".to_string(),
         mqtt_port: 1883,
         mqtt_disabled: true,
+        ai_provider: None,
+        ai_base_url: String::new(),
+        ai_model: String::new(),
     };
 
     // Seed data via import
@@ -439,6 +445,9 @@ async fn round_trip_export_import_export() {
         mqtt_host: "localhost".to_string(),
         mqtt_port: 1883,
         mqtt_disabled: true,
+        ai_provider: None,
+        ai_base_url: String::new(),
+        ai_model: String::new(),
     };
 
     let app = flowl::server::router(state2.clone());

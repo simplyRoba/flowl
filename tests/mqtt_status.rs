@@ -23,6 +23,9 @@ async fn test_app_mqtt_enabled(connected: bool) -> Router {
         mqtt_host: "broker.local".to_string(),
         mqtt_port: 1883,
         mqtt_disabled: false,
+        ai_provider: None,
+        ai_base_url: String::new(),
+        ai_model: String::new(),
     };
     flowl::server::router(state)
 }

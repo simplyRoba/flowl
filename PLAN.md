@@ -24,12 +24,7 @@ Add optional AI capabilities that enhance the plant care experience without repl
 
 **OpenAI-compatible API** — the only provider for now. This covers OpenAI itself, plus any service that exposes an OpenAI-compatible endpoint (Azure OpenAI, local proxies, LM Studio, vLLM, etc.). A provider trait in the backend keeps the door open for a dedicated Ollama integration later.
 
-Two model slots with sensible defaults:
-
-| Slot | Env Var | Default | Used for |
-|------|---------|---------|----------|
-| **Vision** | `FLOWL_AI_VISION_MODEL` | `gpt-4o` | Plant identification, health check (image input) |
-| **Chat** | `FLOWL_AI_CHAT_MODEL` | `gpt-4o-mini` | Care assistant, watering suggestions (text only) |
+Single model for all AI tasks (identification, chat, summarization). Most modern models support both text and vision input.
 
 Configuration is entirely via environment variables — no settings UI for keys or models.
 
@@ -37,8 +32,7 @@ Configuration is entirely via environment variables — no settings UI for keys 
 |----------|---------|-------------|
 | `FLOWL_AI_API_KEY` | — | OpenAI API key (required to enable AI) |
 | `FLOWL_AI_BASE_URL` | `https://api.openai.com/v1` | API base URL (change for compatible services) |
-| `FLOWL_AI_VISION_MODEL` | `gpt-4o` | Model for vision tasks |
-| `FLOWL_AI_CHAT_MODEL` | `gpt-4o-mini` | Model for text tasks |
+| `FLOWL_AI_MODEL` | `gpt-4o-mini` | Model for all AI tasks (must support vision) |
 
 AI is **disabled** when `FLOWL_AI_API_KEY` is not set. No settings table needed.
 
@@ -334,9 +328,8 @@ New section in the Settings page, between "MQTT" and "Data". Read-only status in
 ┌ AI Assistant ────────────────────────────┐
 │                                          │
 │  ● Enabled                               │
-│  Provider   OpenAI (api.openai.com)      │
-│  Vision     gpt-4o                       │
-│  Chat       gpt-4o-mini                  │
+│  Provider   api.openai.com               │
+│  Model      gpt-4o-mini                  │
 │                                          │
 └──────────────────────────────────────────┘
 ```
@@ -355,7 +348,7 @@ When AI is not configured (no API key):
 **API endpoint:**
 
 ```
-GET /api/ai/status → { "enabled": true, "base_url": "https://api.openai.com/v1", "vision_model": "gpt-4o", "chat_model": "gpt-4o-mini" }
+GET /api/ai/status → { "enabled": true, "base_url": "https://api.openai.com/v1", "model": "gpt-4o-mini" }
 ```
 
 ---
@@ -389,9 +382,10 @@ trait AiProvider: Send + Sync {
 
 One implementation for now: `OpenAiProvider` (works with any OpenAI-compatible API). Ollama provider can be added later behind the same trait.
 
-- `identify` uses the **vision model** + JSON mode
-- `chat` uses the **chat model** (or vision model when an image is attached) + plain text streaming
-- `summarize` uses the **chat model** + JSON mode
+All three methods use the same model (`FLOWL_AI_MODEL`):
+- `identify` — JSON mode, multi-image input
+- `chat` — plain text streaming, optional image input
+- `summarize` — JSON mode, text only
 
 ### Response Deserialization
 
@@ -433,9 +427,9 @@ struct IdentifyResponse {
 
 Env vars, provider trait, OpenAI client. No UI yet — testable via curl.
 
-- [ ] AI config in `Config` struct (env vars: API key, base URL, vision model, chat model)
+- [ ] AI config in `Config` struct (env vars: API key, base URL, model)
 - [ ] AI provider trait definition (`identify`, `chat`, `summarize`)
-- [ ] OpenAI provider: `identify` method (vision model, JSON mode, multi-image)
+- [ ] OpenAI provider: `identify` method (JSON mode, multi-image)
 - [ ] `Option<Arc<dyn AiProvider>>` in `AppState` (None when no API key)
 - [ ] `GET /api/ai/status` endpoint
 
@@ -443,7 +437,7 @@ Env vars, provider trait, OpenAI client. No UI yet — testable via curl.
 
 AI status indicator in the Settings page. First visible AI presence in the app.
 
-- [ ] AI status section in Settings UI (enabled/disabled, provider, model names)
+- [ ] AI status section in Settings UI (enabled/disabled, provider, model)
 - [ ] i18n keys for AI status labels
 
 ### Phase 3 — Identify Endpoint

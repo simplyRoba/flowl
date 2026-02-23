@@ -1,3 +1,4 @@
+mod ai;
 mod api;
 mod config;
 mod db;
@@ -10,6 +11,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
+use ai::openai::OpenAiProvider;
+use ai::provider::AiProvider;
 use state::AppState;
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
@@ -61,6 +64,21 @@ async fn main() {
         .expect("Failed to create upload directory");
     info!("Upload directory at {}", upload_dir.display());
 
+    let ai_provider: Option<Arc<dyn AiProvider>> = config.ai_api_key.as_ref().map(|key| {
+        info!(
+            "AI provider enabled (model: {}, base: {})",
+            config.ai_model, config.ai_base_url
+        );
+        Arc::new(OpenAiProvider::new(
+            key.clone(),
+            config.ai_base_url.clone(),
+            config.ai_model.clone(),
+        )) as Arc<dyn AiProvider>
+    });
+    if ai_provider.is_none() {
+        info!("AI provider disabled (no FLOWL_AI_API_KEY set)");
+    }
+
     let state = AppState {
         pool: pool.clone(),
         upload_dir,
@@ -70,6 +88,9 @@ async fn main() {
         mqtt_host: config.mqtt_host.clone(),
         mqtt_port: config.mqtt_port,
         mqtt_disabled: config.mqtt_disabled,
+        ai_provider,
+        ai_base_url: config.ai_base_url,
+        ai_model: config.ai_model,
     };
     let router = server::router(state);
 
