@@ -165,148 +165,101 @@ photos[]: <file>       (optional extra 2)
 
 ---
 
-### 2. Plant Health Check
+### 2. AI Chat (Health Check, Care Q&A, Watering Advice)
 
-**What:** Analyze a photo of a plant for visible health issues — yellowing leaves, brown spots, pests, drooping, root rot signs, etc. Returns a health assessment with actionable advice.
+**What:** A unified conversational interface for all plant AI interactions. The user can ask care questions, share photos of problems, get health assessments, and request watering advice — all in one chat. The AI has full context about the plant (species, care profile, watering history, care log). At the end, a "Save note" button asks the AI to summarize the conversation into a care journal entry.
 
-**Where:** Plant Detail page — new action button in the hero section, next to "Water now".
+**Where:** Slide-out drawer on desktop, bottom sheet on mobile. Triggered by an "Ask AI" button on the Plant Detail hero section.
 
-```
-┌─────────────────────────────────────────────┐
-│  ← Back                        ✏️  🗑️        │
-│─────────────────────────────────────────────│
-│                                              │
-│  ┌────────┐  Monstera                        │
-│  │ photo  │  Monstera deliciosa              │
-│  │        │  📍 Living Room                  │
-│  │        │  ● Ok — in 3 days                │
-│  └────────┘                                  │
-│              [💧 Water now] [🔍 Health check] │
-│                                              │
-│  ┌ Health Report ───────────────────┐        │
-│  │                                  │        │
-│  │  Overall: ⚠️ Needs attention     │        │
-│  │                                  │        │
-│  │  Findings:                       │        │
-│  │  • Yellowing lower leaves        │        │
-│  │    → Likely overwatering. Let     │        │
-│  │      soil dry out between         │        │
-│  │      waterings.                   │        │
-│  │                                  │        │
-│  │  • Brown leaf tips                │        │
-│  │    → Low humidity. Consider       │        │
-│  │      misting or a pebble tray.    │        │
-│  │                                  │        │
-│  │  Suggested actions:               │        │
-│  │  ☐ Reduce watering to every 14d  │        │
-│  │  ☐ Increase humidity             │        │
-│  │                                  │        │
-│  │  [Dismiss]                        │        │
-│  └──────────────────────────────────┘        │
-│                                              │
-│  Watering                                    │
-│  ...                                         │
-└─────────────────────────────────────────────┘
-```
-
-**Behavior:**
-- "Health check" button opens a flow: either analyze the existing plant photo, or upload/take a new one
-- Camera capture option on mobile (`capture="environment"` on file input)
-- Results appear inline on the detail page as a collapsible report card
-- Health status levels: `healthy`, `needs-attention`, `unhealthy`
-- Each finding has a short description and a recommendation
-- Suggested actions can include watering interval changes — with a one-tap "Apply" that updates the plant's schedule
-
-**API endpoint:**
+**Desktop — drawer slides in from the right:**
 
 ```
-POST /api/ai/health-check
-Content-Type: multipart/form-data
-
-photo: <file>
-plant_id: 42  (optional — includes plant context: species, care history, watering schedule)
-
-→ 200 {
-    "status": "needs-attention",
-    "findings": [
-      {
-        "issue": "Yellowing lower leaves",
-        "severity": "moderate",
-        "cause": "Likely overwatering",
-        "recommendation": "Let soil dry out between waterings."
-      },
-      {
-        "issue": "Brown leaf tips",
-        "severity": "mild",
-        "cause": "Low humidity",
-        "recommendation": "Consider misting or using a pebble tray."
-      }
-    ],
-    "suggested_actions": [
-      {
-        "type": "update_watering_interval",
-        "value": 14,
-        "reason": "Current interval may be too frequent for this species in indirect light."
-      }
-    ]
-  }
+┌──── Plant Detail ─────────────┬── AI Chat ───────────────────┐
+│                               │                              │
+│  ┌────────┐ Monstera          │  ✨ Monstera            [✕]  │
+│  │ photo  │ M. deliciosa      │                              │
+│  │        │ 📍 Living Room    │  Quick questions:            │
+│  │        │ ● Ok — in 3 days  │  [Health check] [Watering?]  │
+│  └────────┘                   │  [When to repot?]            │
+│  [💧 Water] [✨ Ask AI]       │                              │
+│                               │  You: The lower leaves are   │
+│  Watering                     │  turning yellow              │
+│  Every 7 days                 │  ┌──────────┐                │
+│  ...                          │  │ 📷 photo │                │
+│                               │  └──────────┘                │
+│  Care Info                    │                              │
+│  ...                          │  flowl: Based on your photo  │
+│                               │  and watering every 7 days,  │
+│  (dimmed behind drawer)       │  this looks like             │
+│                               │  overwatering. The yellowing │
+│                               │  pattern on lower leaves is  │
+│                               │  typical. Try extending to   │
+│                               │  10-12 days between          │
+│                               │  waterings.                  │
+│                               │                              │
+│                               │  ┌──────────────────┐ [📷]   │
+│                               │  │ Ask...           │ [Send] │
+│                               │  └──────────────────┘        │
+│                               │           [Save note]        │
+└───────────────────────────────┴──────────────────────────────┘
 ```
 
----
-
-### 3. Care Assistant (Chat)
-
-**What:** A conversational interface where users can ask plant care questions. The AI has full context about the specific plant — its species, care profile, watering history, care log, and current health.
-
-**Where:** Plant Detail page — a collapsible panel at the bottom, or a floating action button that opens a chat drawer.
+**Mobile — bottom sheet slides up (~90% height):**
 
 ```
-┌─────────────────────────────────────────────┐
-│  ← Back                        ✏️  🗑️        │
-│─────────────────────────────────────────────│
-│  ... (hero, watering info, care info) ...    │
-│                                              │
-│  ┌ Ask about this plant ────────────┐        │
-│  │                                  │        │
-│  │  Quick questions:                │        │
-│  │  [When to repot?]               │        │
-│  │  [Why are leaves drooping?]     │        │
-│  │  [Fertilizer schedule?]         │        │
-│  │                                  │        │
-│  │  ┌──────────────────────┐ [Ask]  │        │
-│  │  │ Type your question   │        │        │
-│  │  └──────────────────────┘        │        │
-│  │                                  │        │
-│  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │        │
-│  │                                  │        │
-│  │  You: When should I repot this?  │        │
-│  │                                  │        │
-│  │  flowl: Monstera deliciosa       │        │
-│  │  typically needs repotting every  │        │
-│  │  1-2 years, or when roots start  │        │
-│  │  growing through drainage holes. │        │
-│  │  Based on your care log, the     │        │
-│  │  last repotting was 14 months    │        │
-│  │  ago — it may be time soon.      │        │
-│  │  Look for roots circling the     │        │
-│  │  pot or slowed growth as signs.  │        │
-│  │                                  │        │
-│  └──────────────────────────────────┘        │
-│                                              │
-│  Care Journal                                │
-│  ...                                         │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────┐
+│  Plant Detail (dimmed)      │
+│  ┌────────┐ Monstera        │
+│  │ photo  │ M. deliciosa    │
+│  └────────┘                 │
+├─── ▬▬▬ drag handle ▬▬▬ ────┤
+│  ✨ Monstera            [✕] │
+│                             │
+│  You: Lower leaves are      │
+│  turning yellow             │
+│  ┌──────────┐               │
+│  │ 📷 photo │               │
+│  └──────────┘               │
+│                             │
+│  flowl: Based on your       │
+│  photo and watering every   │
+│  7 days, this looks like    │
+│  overwatering...            │
+│                             │
+│                             │
+│  ┌───────────────────┐      │
+│  │ Ask...            │ [>]  │
+│  └───────────────────┘      │
+│  [📷]          [Save note]  │
+└─────────────────────────────┘
+   ▬▬▬▬ nav bar ▬▬▬▬▬▬▬▬▬▬▬▬
 ```
 
 **Behavior:**
-- Section titled "Ask about this plant" with a text input and send button
-- Quick-question chips for common queries (context-aware — e.g. shows "Why overdue?" if plant is overdue)
-- Responses are plant-specific: the AI receives the full plant profile, recent care history, and current watering status as context
-- Chat history persists for the session only (not stored in DB) — keeps the feature lightweight
+- "Ask AI" button on Plant Detail hero section opens the drawer/sheet
+- Plant context header at the top (name, species, status) — compact, not a full card
+- Quick-question chips shown when chat is empty (context-aware — e.g. "Why overdue?" if plant is overdue, "Health check" always available)
+- **Inline photo upload:** attach a photo to any message (file picker or camera on mobile via `capture="environment"`). Photos are sent to the vision model alongside the text. Photos are ephemeral — not stored on the plant or in the DB
+- Streaming responses with typing indicator
 - Markdown rendering for AI responses (bold, lists, etc.)
-- Streaming responses with a typing indicator
+- Chat history persists for the session only (not stored in DB)
+- Closing and reopening the drawer within the same page visit preserves the conversation
+- Swipe down to dismiss on mobile
 
-**Context sent to AI:**
+**"Save note" flow:**
+1. User taps "Save note" at the bottom of the chat
+2. An additional AI call summarizes the conversation into 1–3 sentences
+3. Summary appears in an editable text field for the user to review/adjust
+4. User confirms → saved as a care journal entry with a new event type `ai-consultation`
+5. The saved entry appears in the plant's care journal and the global care journal timeline
+
+**New care event type: `ai-consultation`**
+- Icon: sparkle/wand (matching the "Ask AI" button)
+- Color: purple (distinct from water=blue, fertilize=orange, repot=green, prune=gray)
+- Shows the AI-generated summary as the event notes
+- Displayed in care journal timeline like any other event
+
+**Context sent to AI (system prompt):**
 
 ```json
 {
@@ -331,7 +284,7 @@ plant_id: 42  (optional — includes plant context: species, care history, water
 }
 ```
 
-**API endpoint:**
+**API endpoints:**
 
 ```
 POST /api/ai/chat
@@ -339,7 +292,8 @@ Content-Type: application/json
 
 {
   "plant_id": 42,
-  "message": "When should I repot this?",
+  "message": "The lower leaves are turning yellow",
+  "image": "<base64>",           (optional — attached photo)
   "history": [
     { "role": "user", "content": "..." },
     { "role": "assistant", "content": "..." }
@@ -347,60 +301,26 @@ Content-Type: application/json
 }
 
 → 200 (streamed, text/event-stream)
-data: {"delta": "Monstera deliciosa "}
-data: {"delta": "typically needs "}
-data: {"delta": "repotting every 1-2 years..."}
+data: {"delta": "Based on your photo "}
+data: {"delta": "and watering every 7 days, "}
+data: {"delta": "this looks like overwatering..."}
 data: {"done": true}
 ```
 
----
-
-### 4. Smart Watering Suggestions
-
-**What:** AI analyzes the plant's species, location, light conditions, and care history to suggest an optimal watering interval. Appears as a non-intrusive hint — never auto-changes settings.
-
-**Where:** Plant Detail page — inline in the Watering section when the current interval differs significantly from what's typical for the species.
-
 ```
-┌ Watering ────────────────────────────────┐
-│                                          │
-│  Interval      Every 7 days              │
-│  Last watered  Feb 20, 2026              │
-│  Next due      Feb 27, 2026              │
-│                                          │
-│  ┌ 💡 Suggestion ─────────────────────┐  │
-│  │ Monstera in indirect light          │  │
-│  │ typically needs water every 10-14   │  │
-│  │ days. Your current 7-day interval   │  │
-│  │ may be too frequent.                │  │
-│  │                                     │  │
-│  │ [Apply 12 days]  [Dismiss]          │  │
-│  └─────────────────────────────────────┘  │
-│                                          │
-└──────────────────────────────────────────┘
-```
-
-**Behavior:**
-- Suggestion is fetched once when the plant detail page loads (if AI is configured and species is known)
-- Cached per plant — re-fetched only when species or light_needs change
-- Dismissing hides the suggestion until the plant profile changes
-- "Apply" updates the watering interval immediately
-- Suggestion stored in a new DB column `ai_watering_suggestion` on the plants table (nullable JSON) so it doesn't re-query every page load
-
-**API endpoint:**
-
-```
-POST /api/ai/suggest-watering
+POST /api/ai/summarize
 Content-Type: application/json
 
 {
-  "plant_id": 42
+  "plant_id": 42,
+  "history": [
+    { "role": "user", "content": "..." },
+    { "role": "assistant", "content": "..." }
+  ]
 }
 
 → 200 {
-    "suggested_interval_days": 12,
-    "reasoning": "Monstera in indirect light typically needs water every 10-14 days.",
-    "confidence": 0.82
+    "summary": "Diagnosed yellowing lower leaves as overwatering. Recommended extending watering interval from 7 to 10-12 days and letting soil dry between waterings."
   }
 ```
 
@@ -442,12 +362,9 @@ GET /api/ai/status → { "enabled": true, "base_url": "https://api.openai.com/v1
 
 ## Data Model Changes
 
-### New column on `plants`
+### New care event type
 
-```sql
-ALTER TABLE plants ADD COLUMN ai_watering_suggestion TEXT;
--- JSON: {"interval_days": 12, "reasoning": "...", "confidence": 0.82, "generated_at": "..."}
-```
+Add `ai-consultation` to the set of valid event types (`watered`, `fertilized`, `repotted`, `pruned`, `custom`, **`ai-consultation`**). No schema migration needed — `event_type` is a free-text column. Frontend needs the new type in its filter chips, icon map, and color map.
 
 ---
 
@@ -458,21 +375,23 @@ ALTER TABLE plants ADD COLUMN ai_watering_suggestion TEXT;
 ```rust
 #[async_trait]
 trait AiProvider: Send + Sync {
-    /// Identify a plant from a photo. Returns species + care profile.
-    async fn identify_plant(&self, image: &[u8]) -> Result<IdentifyResult>;
+    /// Identify a plant from photos. Returns species + care profile + summary.
+    async fn identify(&self, images: Vec<&[u8]>) -> Result<IdentifyResult>;
 
-    /// Analyze a photo for health issues. Plant context is optional.
-    async fn health_check(&self, image: &[u8], context: Option<&PlantContext>) -> Result<HealthReport>;
+    /// Chat about a specific plant. Supports text + optional image.
+    /// Streams response tokens via a channel.
+    async fn chat(&self, context: &PlantContext, message: &str, image: Option<&[u8]>, history: &[ChatMessage]) -> Result<ChatResponseStream>;
 
-    /// Chat about a specific plant. Receives full plant context + history.
-    async fn chat(&self, context: &PlantContext, message: &str, history: &[ChatMessage]) -> Result<ChatResponseStream>;
-
-    /// Suggest a watering interval based on species and conditions.
-    async fn suggest_watering(&self, context: &PlantContext) -> Result<WateringSuggestion>;
+    /// Summarize a chat conversation into a short care journal note.
+    async fn summarize(&self, context: &PlantContext, history: &[ChatMessage]) -> Result<String>;
 }
 ```
 
 One implementation for now: `OpenAiProvider` (works with any OpenAI-compatible API). Ollama provider can be added later behind the same trait.
+
+- `identify` uses the **vision model** + JSON mode
+- `chat` uses the **chat model** (or vision model when an image is attached) + plain text streaming
+- `summarize` uses the **chat model** + JSON mode
 
 ### Response Deserialization
 
@@ -494,7 +413,8 @@ struct IdentifyResponse {
 - Required fields (`common_name`, `scientific_name`) — if missing, serde returns an error and the endpoint responds with a clear "AI returned an unexpected response" message
 - Optional fields (`confidence`, `summary`, `care_profile`) — gracefully absent, the frontend just doesn't show them
 - JSON mode is widely supported across OpenAI-compatible APIs (OpenAI, Azure, vLLM, LM Studio, etc.)
-- Chat responses (feature 3) don't use JSON mode — they stream plain text via SSE
+- Chat responses (feature 2) don't use JSON mode — they stream plain text via SSE
+- Summarize endpoint uses JSON mode to return a structured `{ "summary": "..." }` response
 
 ### New Rust Dependencies
 
@@ -513,40 +433,31 @@ struct IdentifyResponse {
 
 - [ ] AI config in `Config` struct (env vars: API key, base URL, vision model, chat model)
 - [ ] AI provider trait definition
-- [ ] OpenAI provider implementation (reqwest-based, vision + chat)
+- [ ] OpenAI provider implementation (reqwest-based, vision + chat + summarize)
 - [ ] `Option<Arc<dyn AiProvider>>` in `AppState` (None when no API key)
 - [ ] `GET /api/ai/status` endpoint
 - [ ] AI status section in Settings UI (enabled/disabled indicator, models)
 
 ### Phase B — Plant Identification
 
-- [ ] `POST /api/ai/identify` endpoint
+- [ ] `POST /api/ai/identify` endpoint (multi-photo)
 - [ ] "Identify Plant" button in `PlantForm` (below photo upload)
-- [ ] Suggestion card with "Apply to form" / "Dismiss"
-- [ ] Auto-fill form fields from care profile
+- [ ] Optional extra photo slots (leaf close-up, stem/pot)
+- [ ] Suggestion card with field preview + "Apply to form" / "Dismiss"
+- [ ] Auto-fill form fields including notes summary
 
-### Phase C — Health Check
+### Phase C — AI Chat
 
-- [ ] `POST /api/ai/health-check` endpoint
-- [ ] "Health check" button on Plant Detail hero section
-- [ ] Photo selection flow (use existing photo or upload new)
-- [ ] Health report card with findings and recommendations
-- [ ] "Apply" action for suggested watering changes
-
-### Phase D — Care Assistant
-
-- [ ] `POST /api/ai/chat` endpoint with SSE streaming
-- [ ] Chat section on Plant Detail page
+- [ ] `POST /api/ai/chat` endpoint with SSE streaming (text + optional image)
+- [ ] `POST /api/ai/summarize` endpoint
+- [ ] New care event type `ai-consultation` (icon, color, i18n)
+- [ ] Chat drawer component (desktop) / bottom sheet (mobile)
+- [ ] "Ask AI" button on Plant Detail hero section
 - [ ] Quick-question chips (context-aware)
+- [ ] Inline photo upload in chat messages
 - [ ] Streaming response rendering with typing indicator
 - [ ] Markdown rendering for responses
-
-### Phase E — Smart Suggestions
-
-- [ ] `POST /api/ai/suggest-watering` endpoint
-- [ ] `ai_watering_suggestion` column + migration
-- [ ] Inline suggestion card in Watering section on Plant Detail
-- [ ] Dismiss + apply flow
+- [ ] "Save note" flow: AI summary → editable → save as care journal entry
 
 ### Future — Additional Providers
 
