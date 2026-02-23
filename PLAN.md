@@ -429,35 +429,74 @@ struct IdentifyResponse {
 
 ## Implementation Phases
 
-### Phase A — Foundation
+### Phase 1 — Backend AI Foundation
+
+Env vars, provider trait, OpenAI client. No UI yet — testable via curl.
 
 - [ ] AI config in `Config` struct (env vars: API key, base URL, vision model, chat model)
-- [ ] AI provider trait definition
-- [ ] OpenAI provider implementation (reqwest-based, vision + chat + summarize)
+- [ ] AI provider trait definition (`identify`, `chat`, `summarize`)
+- [ ] OpenAI provider: `identify` method (vision model, JSON mode, multi-image)
 - [ ] `Option<Arc<dyn AiProvider>>` in `AppState` (None when no API key)
 - [ ] `GET /api/ai/status` endpoint
-- [ ] AI status section in Settings UI (enabled/disabled indicator, models)
 
-### Phase B — Plant Identification
+### Phase 2 — Settings UI + Status
 
-- [ ] `POST /api/ai/identify` endpoint (multi-photo)
-- [ ] "Identify Plant" button in `PlantForm` (below photo upload)
+AI status indicator in the Settings page. First visible AI presence in the app.
+
+- [ ] AI status section in Settings UI (enabled/disabled, provider, model names)
+- [ ] i18n keys for AI status labels
+
+### Phase 3 — Identify Endpoint
+
+Backend endpoint for plant identification. Testable via curl with a photo.
+
+- [ ] `POST /api/ai/identify` endpoint (accepts multi-photo multipart)
+- [ ] Response deserialization with serde (IdentifyResult, CareProfile)
+- [ ] Error handling (AI disabled, bad response, API errors)
+
+### Phase 4 — Identify UI
+
+"Identify Plant" button and suggestion card in PlantForm.
+
+- [ ] "Identify Plant" button in `PlantForm` (visible when photo present + AI enabled)
 - [ ] Optional extra photo slots (leaf close-up, stem/pot)
+- [ ] Loading state (shimmer/spinner)
 - [ ] Suggestion card with field preview + "Apply to form" / "Dismiss"
 - [ ] Auto-fill form fields including notes summary
+- [ ] i18n keys for identification UI
 
-### Phase C — AI Chat
+### Phase 5 — Chat Backend
 
-- [ ] `POST /api/ai/chat` endpoint with SSE streaming (text + optional image)
+Streaming chat endpoint + summarize endpoint. Testable via curl.
+
+- [ ] OpenAI provider: `chat` method (SSE streaming, optional image support)
+- [ ] OpenAI provider: `summarize` method (JSON mode)
+- [ ] `POST /api/ai/chat` endpoint (SSE streaming, accepts text + optional base64 image)
 - [ ] `POST /api/ai/summarize` endpoint
-- [ ] New care event type `ai-consultation` (icon, color, i18n)
-- [ ] Chat drawer component (desktop) / bottom sheet (mobile)
+- [ ] Plant context builder (loads plant + recent care events for system prompt)
+
+### Phase 6 — Chat Drawer UI
+
+Drawer/bottom sheet component with text-only chat. Core chat experience.
+
+- [ ] Chat drawer component (slides from right on desktop)
+- [ ] Bottom sheet component (slides up on mobile, drag to dismiss)
 - [ ] "Ask AI" button on Plant Detail hero section
-- [ ] Quick-question chips (context-aware)
-- [ ] Inline photo upload in chat messages
+- [ ] Chat message list (user messages, AI responses)
+- [ ] Text input + send button
 - [ ] Streaming response rendering with typing indicator
-- [ ] Markdown rendering for responses
-- [ ] "Save note" flow: AI summary → editable → save as care journal entry
+- [ ] Quick-question chips (context-aware)
+
+### Phase 7 — Chat Photos + Save Note
+
+Photo attachments in chat messages and journal save flow.
+
+- [ ] Inline photo upload in chat (file picker + camera capture on mobile)
+- [ ] Photo preview in sent messages
+- [ ] Markdown rendering for AI responses
+- [ ] New care event type `ai-consultation` (icon, color, i18n)
+- [ ] "Save note" button in chat
+- [ ] AI summary generation → editable text field → save as care journal entry
 
 ### Future — Additional Providers
 
