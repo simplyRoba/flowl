@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.13.0](https://github.com/simplyRoba/flowl/compare/v0.12.0...v0.13.0) (2026-02-24)
+
+
+### Features
+
+* **ai:** add AI provider foundation with status endpoint ([4ecb73e](https://github.com/simplyRoba/flowl/commit/4ecb73e1bd790e8b66e6294090a881ea213f5270))
+* **api:** add POST /api/ai/identify endpoint for plant identification ([593b1fb](https://github.com/simplyRoba/flowl/commit/593b1fbcfc225c6e60fb63431fc9b42dc9cb8100))
+* **ui:** add AI assistant status section to settings page ([aad1185](https://github.com/simplyRoba/flowl/commit/aad1185d172c8226b2fac9027f682719d13e90aa))
+* **ui:** add plant identification UI to PlantForm ([be96965](https://github.com/simplyRoba/flowl/commit/be96965279548bdfa800163a64be011ab60fa0e5))
+
+
+### Bug Fixes
+
+* **deps:** bump @sveltejs/kit from 2.52.2 to 2.53.0 in /ui ([d571b9b](https://github.com/simplyRoba/flowl/commit/d571b9b867533293ad816992c355f2e15577d4ed))
+* **deps:** bump chrono from 0.4.43 to 0.4.44 ([b470602](https://github.com/simplyRoba/flowl/commit/b470602e964a38a88ac32ca8abf09e6b713fea0e))
+* **deps:** bump svelte from 5.53.0 to 5.53.2 in /ui ([09b41a9](https://github.com/simplyRoba/flowl/commit/09b41a963fa91725f486672a7bc3cd0eeae9f438))
+* **deps:** bump svelte-check from 4.4.1 to 4.4.3 in /ui ([6dc1214](https://github.com/simplyRoba/flowl/commit/6dc12148a242809a0c4ecd4f24f535a8a74daf90))
+* **deps:** bump zip from 2.4.2 to 8.1.0 ([dd04186](https://github.com/simplyRoba/flowl/commit/dd041866db6e110b1a845bce417be2fac4cb8a96))
+
 ## [0.12.0](https://github.com/simplyRoba/flowl/compare/v0.11.0...v0.12.0) (2026-02-22)
 
 
