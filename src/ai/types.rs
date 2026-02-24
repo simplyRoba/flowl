@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct IdentifyResult {
     pub common_name: String,
     pub scientific_name: String,
@@ -9,7 +9,7 @@ pub struct IdentifyResult {
     pub care_profile: Option<CareProfile>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CareProfile {
     pub watering_interval_days: Option<u32>,
     pub light_needs: Option<String>,
@@ -82,5 +82,33 @@ mod tests {
         let json = r#"{"not_a_plant": true}"#;
         let result = serde_json::from_str::<IdentifyResult>(json);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn serialize_identify_result_round_trip() {
+        let result = IdentifyResult {
+            common_name: "Monstera".to_string(),
+            scientific_name: "Monstera deliciosa".to_string(),
+            confidence: Some(0.95),
+            summary: Some("A tropical houseplant".to_string()),
+            care_profile: Some(CareProfile {
+                watering_interval_days: Some(7),
+                light_needs: Some("bright indirect".to_string()),
+                difficulty: Some("easy".to_string()),
+                pet_safety: None,
+                growth_speed: None,
+                soil_type: None,
+                soil_moisture: None,
+            }),
+        };
+
+        let json = serde_json::to_value(&result).unwrap();
+        assert_eq!(json["common_name"], "Monstera");
+        assert_eq!(json["scientific_name"], "Monstera deliciosa");
+        assert_eq!(json["confidence"], 0.95);
+        assert_eq!(json["summary"], "A tropical houseplant");
+        assert_eq!(json["care_profile"]["watering_interval_days"], 7);
+        assert_eq!(json["care_profile"]["light_needs"], "bright indirect");
+        assert!(json["care_profile"]["pet_safety"].is_null());
     }
 }

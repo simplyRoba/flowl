@@ -39,6 +39,10 @@ pub fn router(state: AppState) -> Router {
         .route("/care", get(care_events::list_all_care_events))
         .route("/stats", get(stats::get_stats))
         .route("/ai/status", get(ai::get_ai_status))
+        .route(
+            "/ai/identify",
+            post(ai::identify_plant).layer(DefaultBodyLimit::max(30 * 1024 * 1024)),
+        )
         .route("/mqtt/status", get(mqtt::get_mqtt_status))
         .route("/mqtt/repair", post(mqtt::post_mqtt_repair))
         .route("/data/export", get(backup::export_data))

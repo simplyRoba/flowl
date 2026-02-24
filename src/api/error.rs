@@ -26,6 +26,7 @@ pub enum ApiError {
     Conflict(String),
     BadRequest(String),
     ServiceUnavailable(String),
+    InternalError(String),
 }
 
 impl IntoResponse for ApiError {
@@ -36,6 +37,7 @@ impl IntoResponse for ApiError {
             Self::Conflict(msg) => (StatusCode::CONFLICT, msg),
             Self::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
             Self::ServiceUnavailable(msg) => (StatusCode::SERVICE_UNAVAILABLE, msg),
+            Self::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
         };
 
         let body = axum::Json(json!({ "message": message }));

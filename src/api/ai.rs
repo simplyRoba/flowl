@@ -1,7 +1,11 @@
-use axum::Json;
-use axum::extract::State;
-use serde::Serialize;
+#![allow(clippy::missing_errors_doc)]
 
+use axum::Json;
+use axum::extract::{Multipart, State};
+use serde::Serialize;
+use tracing::warn;
+
+use super::error::ApiError;
 use crate::state::AppState;
 
 #[derive(Serialize)]
@@ -25,4 +29,59 @@ pub async fn get_ai_status(State(state): State<AppState>) -> Json<AiStatus> {
             model: None,
         })
     }
+}
+
+pub async fn identify_plant(
+    State(state): State<AppState>,
+    mut multipart: Multipart,
+) -> Result<Json<crate::ai::types::IdentifyResult>, ApiError> {
+    let provider = state
+        .ai_provider
+        .as_ref()
+        .ok_or_else(|| ApiError::ServiceUnavailable("AI provider is not configured".to_string()))?;
+
+    let mut photos: Vec<Vec<u8>> = Vec::new();
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?
+    {
+        let name = field.name().unwrap_or("").to_string();
+        if name != "photos" && name != "photo" {
+            continue;
+        }
+
+        let content_type = field.content_type().unwrap_or("").to_string();
+        match content_type.as_str() {
+            "image/jpeg" | "image/png" | "image/webp" => {}
+            _ => {
+                return Err(ApiError::Validation(
+                    "Invalid file type. Allowed: JPEG, PNG, WebP".to_string(),
+                ));
+            }
+        }
+
+        let data = field
+            .bytes()
+            .await
+            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+        photos.push(data.to_vec());
+    }
+
+    if photos.is_empty() {
+        return Err(ApiError::Validation(
+            "At least one photo is required".to_string(),
+        ));
+    }
+
+    let image_refs: Vec<&[u8]> = photos.iter().map(Vec::as_slice).collect();
+
+    let result = provider.identify(&image_refs).await.map_err(|e| {
+        warn!(error = %e, "AI identify failed");
+        ApiError::InternalError(format!("AI identification failed: {e}"))
+    })?;
+
+    Ok(Json(result))
 }

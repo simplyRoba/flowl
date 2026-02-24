@@ -29,7 +29,7 @@ The system SHALL implement `OpenAiProvider` that communicates with any OpenAI-co
 
 ### Requirement: Identify method
 
-The `identify` method SHALL accept a list of images (as byte slices), encode them as base64 data URLs, send them to the configured model using JSON mode (`response_format: { "type": "json_object" }`), and deserialize the response into an `IdentifyResult` containing `common_name`, `scientific_name`, optional `confidence`, optional `summary`, and optional `care_profile`.
+The `identify` method SHALL accept a list of images (as byte slices), encode them as base64 data URLs, send them to the configured model using JSON mode (`response_format: { "type": "json_object" }`), and deserialize the response into an `IdentifyResult` containing `common_name`, `scientific_name`, optional `confidence`, optional `summary`, and optional `care_profile`. The `IdentifyResult` and `CareProfile` types SHALL derive both `Serialize` and `Deserialize` so they can be used as HTTP response bodies.
 
 #### Scenario: Single image identification
 
@@ -51,6 +51,11 @@ The `identify` method SHALL accept a list of images (as byte slices), encode the
 
 - **WHEN** the AI response cannot be deserialized into `IdentifyResult`
 - **THEN** the method returns an error
+
+#### Scenario: IdentifyResult is serializable
+
+- **WHEN** an `IdentifyResult` is serialized to JSON
+- **THEN** the output contains `common_name`, `scientific_name`, and any present optional fields
 
 ### Requirement: AI configuration via environment variables
 

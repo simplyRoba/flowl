@@ -427,26 +427,26 @@ struct IdentifyResponse {
 
 Env vars, provider trait, OpenAI client. No UI yet — testable via curl.
 
-- [ ] AI config in `Config` struct (env vars: API key, base URL, model)
-- [ ] AI provider trait definition (`identify`, `chat`, `summarize`)
-- [ ] OpenAI provider: `identify` method (JSON mode, multi-image)
-- [ ] `Option<Arc<dyn AiProvider>>` in `AppState` (None when no API key)
-- [ ] `GET /api/ai/status` endpoint
+- [x] AI config in `Config` struct (env vars: API key, base URL, model)
+- [x] AI provider trait definition (`identify`, `chat`, `summarize`)
+- [x] OpenAI provider: `identify` method (JSON mode, multi-image)
+- [x] `Option<Arc<dyn AiProvider>>` in `AppState` (None when no API key)
+- [x] `GET /api/ai/status` endpoint
 
 ### Phase 2 — Settings UI + Status
 
 AI status indicator in the Settings page. First visible AI presence in the app.
 
-- [ ] AI status section in Settings UI (enabled/disabled, provider, model)
-- [ ] i18n keys for AI status labels
+- [x] AI status section in Settings UI (enabled/disabled, provider, model)
+- [x] i18n keys for AI status labels
 
 ### Phase 3 — Identify Endpoint
 
 Backend endpoint for plant identification. Testable via curl with a photo.
 
-- [ ] `POST /api/ai/identify` endpoint (accepts multi-photo multipart)
-- [ ] Response deserialization with serde (IdentifyResult, CareProfile)
-- [ ] Error handling (AI disabled, bad response, API errors)
+- [x] `POST /api/ai/identify` endpoint (accepts multi-photo multipart)
+- [x] Response deserialization with serde (IdentifyResult, CareProfile)
+- [x] Error handling (AI disabled, bad response, API errors)
 
 ### Phase 4 — Identify UI
 
