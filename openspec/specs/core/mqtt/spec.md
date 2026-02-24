@@ -17,7 +17,7 @@ The application SHALL allow operators to skip MQTT setup by setting `FLOWL_MQTT_
 
 ### Requirement: MQTT Client Connection
 
-The application SHALL connect an MQTT client to the broker specified by `FLOWL_MQTT_HOST` (default `localhost`) and `FLOWL_MQTT_PORT` (default `1883`) on startup when `FLOWL_MQTT_DISABLED` is not true. The connection function SHALL accept a shared `Arc<AtomicBool>` and update it to reflect the live connection state.
+The application SHALL connect an MQTT client to the broker specified by `FLOWL_MQTT_HOST` (default `localhost`) and `FLOWL_MQTT_PORT` (default `1883`) on startup when `FLOWL_MQTT_DISABLED` is not true. The connection function SHALL accept a shared `Arc<AtomicBool>` for live connection state and a separate `Arc<AtomicBool>` (`needs_republish`) that is set to `true` on every successful connection (ConnAck).
 
 #### Scenario: Successful connection
 
@@ -172,7 +172,7 @@ The application SHALL publish plant watering attributes as a retained JSON objec
 
 ### Requirement: Background State Checker
 
-The application SHALL run a background task that periodically checks all plants for watering state transitions and publishes updates to MQTT whenever MQTT is enabled. The checker SHALL also detect MQTT reconnection and trigger a full republish of all plant state.
+The application SHALL run a background task that periodically checks all plants for watering state transitions and publishes updates to MQTT whenever MQTT is enabled. The checker SHALL use a shared `needs_republish` flag (set by the event loop on every ConnAck) to detect initial connection and reconnection, triggering a full republish when the flag is set.
 
 #### Scenario: State transition detected
 
@@ -193,7 +193,7 @@ The application SHALL run a background task that periodically checks all plants 
 #### Scenario: Checker interval
 
 - **WHEN** the application is running and MQTT is enabled
-- **THEN** the background state checker runs every 60 seconds
+- **THEN** the background state checker runs every 60 minutes
 
 #### Scenario: Full publish on startup
 
@@ -202,7 +202,8 @@ The application SHALL run a background task that periodically checks all plants 
 
 #### Scenario: Full republish on reconnect
 
-- **GIVEN** the MQTT connection was lost (AtomicBool is `false`)
-- **AND** the connection is recovered (AtomicBool transitions to `true`)
+- **GIVEN** the MQTT connection was lost and subsequently recovered
+- **AND** the event loop set `needs_republish` to `true` on ConnAck
 - **WHEN** the background checker runs its next tick
-- **THEN** the checker SHALL republish discovery configs, current state, and attributes for all existing plants
+- **THEN** the checker SHALL clear the `needs_republish` flag
+- **AND** republish discovery configs, current state, and attributes for all existing plants

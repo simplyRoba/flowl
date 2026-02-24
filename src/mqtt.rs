@@ -101,7 +101,11 @@ impl MqttHandle {
     }
 }
 
-pub fn connect(config: &Config, connected: Arc<AtomicBool>) -> Option<MqttHandle> {
+pub fn connect(
+    config: &Config,
+    connected: Arc<AtomicBool>,
+    needs_republish: Arc<AtomicBool>,
+) -> Option<MqttHandle> {
     if config.mqtt_disabled {
         info!("FLOWL_MQTT_DISABLED=true, skipping MQTT client setup");
         return None;
@@ -117,6 +121,7 @@ pub fn connect(config: &Config, connected: Arc<AtomicBool>) -> Option<MqttHandle
             match event_loop.poll().await {
                 Ok(Event::Incoming(Packet::ConnAck(_))) => {
                     connected.store(true, Ordering::Relaxed);
+                    needs_republish.store(true, Ordering::Relaxed);
                     info!("MQTT connected");
                 }
                 Ok(_) => {}
@@ -423,32 +428,24 @@ pub fn spawn_state_checker(
     pool: SqlitePool,
     client: Option<AsyncClient>,
     prefix: String,
-    connected: Option<Arc<AtomicBool>>,
+    needs_republish: Option<Arc<AtomicBool>>,
 ) -> Option<JoinHandle<()>> {
     let client = client?;
+    let needs_republish = needs_republish?;
 
     info!("Starting MQTT background state checker");
 
     Some(tokio::spawn(async move {
         let mut cache: HashMap<i64, String> = HashMap::new();
-        let mut first_run = true;
-        let mut was_connected = false;
 
         loop {
-            // Detect reconnect: false → true transition
-            let is_connected = connected
-                .as_ref()
-                .is_some_and(|b| b.load(Ordering::Relaxed));
-
-            if !first_run && !was_connected && is_connected {
-                info!("MQTT reconnected, triggering full republish");
+            if needs_republish.swap(false, Ordering::Relaxed) {
+                info!("MQTT (re)connected, triggering full republish");
                 republish_all(&pool, &client, &prefix).await;
                 cache.clear();
-                was_connected = is_connected;
-                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                tokio::time::sleep(std::time::Duration::from_secs(3600)).await;
                 continue;
             }
-            was_connected = is_connected;
 
             match sqlx::query_as::<_, CheckerRow>(
                 "SELECT id, name, watering_interval_days, \
@@ -465,12 +462,8 @@ pub fn spawn_state_checker(
                             row.watering_interval_days,
                         );
 
-                        if first_run {
-                            publish_discovery(Some(&client), &prefix, row.id, &row.name).await;
-                        }
-
                         let changed = cache.get(&row.id).is_none_or(|prev| *prev != status);
-                        if changed || first_run {
+                        if changed {
                             publish_state(Some(&client), &prefix, row.id, &status).await;
                             publish_attributes(
                                 Some(&client),
@@ -493,8 +486,7 @@ pub fn spawn_state_checker(
                 }
             }
 
-            first_run = false;
-            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(3600)).await;
         }
     }))
 }

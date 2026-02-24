@@ -39,19 +39,20 @@ async fn main() {
     info!("Database ready at {}", config.db_path);
 
     let mqtt_prefix = config.mqtt_topic_prefix.clone();
-    let (mqtt_handle, mqtt_connected) = if config.mqtt_disabled {
+    let (mqtt_handle, mqtt_connected, mqtt_needs_republish) = if config.mqtt_disabled {
         info!("FLOWL_MQTT_DISABLED set, skipping MQTT initialization");
-        (None, None)
+        (None, None, None)
     } else {
         let connected = Arc::new(AtomicBool::new(false));
-        let handle = mqtt::connect(&config, connected.clone());
+        let needs_republish = Arc::new(AtomicBool::new(false));
+        let handle = mqtt::connect(&config, connected.clone(), needs_republish.clone());
         if handle.is_some() {
             info!(
                 "MQTT client connecting to {}:{}",
                 config.mqtt_host, config.mqtt_port
             );
         }
-        (handle, Some(connected))
+        (handle, Some(connected), Some(needs_republish))
     };
     let mqtt_client = mqtt_handle.as_ref().map(|h| h.client.clone());
 
@@ -95,7 +96,7 @@ async fn main() {
     let router = server::router(state);
 
     let checker_handle =
-        mqtt::spawn_state_checker(pool, mqtt_client.clone(), mqtt_prefix, mqtt_connected);
+        mqtt::spawn_state_checker(pool, mqtt_client.clone(), mqtt_prefix, mqtt_needs_republish);
 
     if let Err(e) = server::serve(router, config.port).await {
         error!("Server error: {e}");

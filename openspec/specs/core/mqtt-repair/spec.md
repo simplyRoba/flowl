@@ -35,7 +35,7 @@ The repair function SHALL discover orphaned plant topics on the broker by creati
 
 - **WHEN** a repair is triggered
 - **THEN** a temporary MQTT client connects to the same broker as the main client
-- **AND** subscribes to `homeassistant/sensor/{prefix}_plant_+/config`
+- **AND** subscribes to `homeassistant/sensor/+/config`
 - **AND** subscribes to `{prefix}/plant/+/state`
 - **AND** subscribes to `{prefix}/plant/+/attributes`
 - **AND** collects retained messages until a silence timeout elapses
