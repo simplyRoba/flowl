@@ -296,6 +296,22 @@ export const es: Translations = {
 		soilMoisture: 'Humedad del suelo',
 		photoPreview: 'Vista previa'
 	},
+	identify: {
+		identifyPlant: 'Identificar Planta',
+		identifying: 'Identificando...',
+		extraPhotosHint: 'Añade más fotos para mayor precisión (opcional):',
+		closeUp: 'Primer plano',
+		stemPot: 'Tallo / maceta',
+		aiSuggestion: 'Sugerencia IA',
+		willFill: 'Rellenará:',
+		applyToForm: 'Aplicar al formulario',
+		dismiss: 'Descartar',
+		applied: 'Sugerencia IA aplicada — {n} campos actualizados',
+		undo: 'Deshacer',
+		errorMessage: 'Identificación fallida. El servicio de IA podría no estar disponible temporalmente.',
+		retry: 'Reintentar',
+		confidence: '{n} %'
+	},
 	error: {
 		loadPlants: 'No se pudieron cargar las plantas',
 		loadPlant: 'No se pudo cargar la planta',

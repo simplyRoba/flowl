@@ -65,6 +65,9 @@
 		--color-success-soft: color-mix(in srgb, var(--color-success) 20%, transparent);
 		--color-warning-soft: color-mix(in srgb, var(--color-warning) 18%, transparent);
 		--color-danger-soft: color-mix(in srgb, var(--color-danger) 16%, transparent);
+		--color-ai: #9B7ED8;
+		--color-ai-tint: color-mix(in srgb, var(--color-ai) 10%, transparent);
+		--color-ai-soft: color-mix(in srgb, var(--color-ai) 15%, transparent);
 
 		/* Typography */
 		--fs-page-title: 22px;
@@ -109,6 +112,9 @@
 		--color-text-on-water: #1A1612;
 		--color-text-on-danger: #1A1612;
 		--color-text-on-image: #FFFFFF;
+		--color-ai: #B89EE8;
+		--color-ai-tint: color-mix(in srgb, var(--color-ai) 12%, transparent);
+		--color-ai-soft: color-mix(in srgb, var(--color-ai) 18%, transparent);
 	}
 
 	:global(html, body) {

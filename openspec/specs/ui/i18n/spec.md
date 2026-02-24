@@ -38,7 +38,7 @@ Each supported locale SHALL have a TypeScript translation object with identical 
 
 - **GIVEN** the English, German, and Spanish translation dictionaries
 - **THEN** all three dictionaries SHALL have identical key structures
-- **AND** keys are organized in shallow nested groups (e.g., `nav`, `dashboard`, `plant`, `status`, `settings`, `care`, `form`, `dialog`)
+- **AND** keys are organized in shallow nested groups (e.g., `nav`, `dashboard`, `plant`, `status`, `settings`, `care`, `form`, `identify`, `dialog`)
 
 #### Scenario: English as canonical type
 

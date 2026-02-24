@@ -294,6 +294,22 @@ const en = {
 		soilMoisture: 'Soil moisture',
 		photoPreview: 'Preview'
 	},
+	identify: {
+		identifyPlant: 'Identify Plant',
+		identifying: 'Identifying...',
+		extraPhotosHint: 'Add more photos for better accuracy (optional):',
+		closeUp: 'Close-up',
+		stemPot: 'Stem / pot',
+		aiSuggestion: 'AI Suggestion',
+		willFill: 'Will fill:',
+		applyToForm: 'Apply to form',
+		dismiss: 'Dismiss',
+		applied: 'AI suggestion applied — {n} fields updated',
+		undo: 'Undo',
+		errorMessage: 'Identification failed. The AI service might be temporarily unavailable.',
+		retry: 'Retry',
+		confidence: '{n}%'
+	},
 	error: {
 		loadPlants: 'Failed to load plants',
 		loadPlant: 'Failed to load plant',

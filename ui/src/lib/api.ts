@@ -81,6 +81,24 @@ export interface AiStatus {
 	model: string | null;
 }
 
+export interface CareProfile {
+	watering_interval_days: number | null;
+	light_needs: string | null;
+	difficulty: string | null;
+	pet_safety: string | null;
+	growth_speed: string | null;
+	soil_type: string | null;
+	soil_moisture: string | null;
+}
+
+export interface IdentifyResult {
+	common_name: string;
+	scientific_name: string;
+	confidence: number | null;
+	summary: string | null;
+	care_profile: CareProfile | null;
+}
+
 class ApiError extends Error {
 	status: number;
 
@@ -125,6 +143,25 @@ export function fetchMqttStatus(): Promise<MqttStatus> {
 
 export function fetchAiStatus(): Promise<AiStatus> {
 	return request('GET', '/api/ai/status');
+}
+
+export async function identifyPlant(photos: File[]): Promise<IdentifyResult> {
+	const formData = new FormData();
+	for (const photo of photos) {
+		formData.append('photos', photo);
+	}
+
+	const resp = await fetch('/api/ai/identify', {
+		method: 'POST',
+		body: formData
+	});
+
+	if (!resp.ok) {
+		const data = await resp.json().catch(() => ({ message: resp.statusText }));
+		throw new ApiError(resp.status, data.message || resp.statusText);
+	}
+
+	return resp.json();
 }
 
 export interface MqttRepairResult {

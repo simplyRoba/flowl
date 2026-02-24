@@ -296,6 +296,22 @@ export const de: Translations = {
 		soilMoisture: 'Bodenfeuchtigkeit',
 		photoPreview: 'Vorschau'
 	},
+	identify: {
+		identifyPlant: 'Pflanze identifizieren',
+		identifying: 'Identifiziere...',
+		extraPhotosHint: 'Weitere Fotos für bessere Genauigkeit hinzufügen (optional):',
+		closeUp: 'Nahaufnahme',
+		stemPot: 'Stängel / Topf',
+		aiSuggestion: 'KI-Vorschlag',
+		willFill: 'Wird ausfüllen:',
+		applyToForm: 'Übernehmen',
+		dismiss: 'Verwerfen',
+		applied: 'KI-Vorschlag übernommen — {n} Felder aktualisiert',
+		undo: 'Rückgängig',
+		errorMessage: 'Identifikation fehlgeschlagen. Der KI-Dienst ist möglicherweise vorübergehend nicht verfügbar.',
+		retry: 'Erneut versuchen',
+		confidence: '{n} %'
+	},
 	error: {
 		loadPlants: 'Pflanzen konnten nicht geladen werden',
 		loadPlant: 'Pflanze konnte nicht geladen werden',
