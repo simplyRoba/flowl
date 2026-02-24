@@ -3,7 +3,7 @@
 use axum::Json;
 use axum::extract::{Multipart, State};
 use serde::Serialize;
-use tracing::warn;
+use tracing::{debug, warn};
 
 use super::error::ApiError;
 use crate::state::AppState;
@@ -76,12 +76,37 @@ pub async fn identify_plant(
         ));
     }
 
+    debug!(photo_count = photos.len(), "sending photos to AI provider");
     let image_refs: Vec<&[u8]> = photos.iter().map(Vec::as_slice).collect();
 
     let result = provider.identify(&image_refs).await.map_err(|e| {
         warn!(error = %e, "AI identify failed");
         ApiError::InternalError(format!("AI identification failed: {e}"))
     })?;
+
+    debug!(
+        common_name = %result.common_name,
+        scientific_name = %result.scientific_name,
+        confidence = ?result.confidence,
+        has_summary = result.summary.is_some(),
+        has_care_profile = result.care_profile.is_some(),
+        "AI identify result"
+    );
+
+    if let Some(ref care) = result.care_profile {
+        debug!(
+            watering_interval_days = ?care.watering_interval_days,
+            light_needs = ?care.light_needs,
+            difficulty = ?care.difficulty,
+            pet_safety = ?care.pet_safety,
+            growth_speed = ?care.growth_speed,
+            soil_type = ?care.soil_type,
+            soil_moisture = ?care.soil_moisture,
+            "AI care profile fields"
+        );
+    } else {
+        debug!("AI response contained no care_profile");
+    }
 
     Ok(Json(result))
 }

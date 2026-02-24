@@ -3,6 +3,7 @@ use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 use reqwest::Client;
 use serde_json::{Value, json};
+use tracing::debug;
 
 use super::provider::AiProvider;
 use super::types::{ChatMessage, ChatResponseStream, IdentifyResult};
@@ -72,6 +73,8 @@ impl AiProvider for OpenAiProvider {
         let content_str = response_body["choices"][0]["message"]["content"]
             .as_str()
             .ok_or("Missing content in API response")?;
+
+        debug!(raw_content = %content_str, "AI raw response content");
 
         let result: IdentifyResult = serde_json::from_str(content_str)?;
         Ok(result)
