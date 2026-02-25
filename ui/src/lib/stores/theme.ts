@@ -71,12 +71,14 @@ function applyTheme(theme: ThemeMode): void {
 let initialized = false;
 let cleanup: (() => void) | null = null;
 
-export function initTheme(): void {
+export function initTheme(serverPreference?: ThemePreference): void {
 	if (typeof window === 'undefined' || initialized) return;
 	initialized = true;
 
 	const storage = getStorage();
-	themePreference.set(readThemePreference(storage));
+	const preference = serverPreference ?? readThemePreference(storage);
+	themePreference.set(preference);
+	if (serverPreference) writeThemePreference(storage, serverPreference);
 
 	let stopSystemListener = () => {
 		// no-op
@@ -104,4 +106,5 @@ export function destroyTheme(): void {
 export function setThemePreference(preference: ThemePreference): void {
 	themePreference.set(preference);
 	writeThemePreference(getStorage(), preference);
+	import('$lib/api').then(({ updateSettings }) => updateSettings({ theme: preference })).catch(() => {});
 }

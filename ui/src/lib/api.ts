@@ -249,6 +249,21 @@ export async function importData(file: File): Promise<ImportResult> {
 	return resp.json();
 }
 
+// --- Settings ---
+
+export interface UserSettings {
+	theme: string;
+	locale: string;
+}
+
+export function fetchSettings(): Promise<UserSettings> {
+	return request('GET', '/api/settings');
+}
+
+export function updateSettings(data: Partial<UserSettings>): Promise<UserSettings> {
+	return request('PUT', '/api/settings', data);
+}
+
 // --- Care Events ---
 
 export interface CareEvent {

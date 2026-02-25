@@ -209,8 +209,15 @@ mod tests {
 
         assert_eq!(body["model"], "gpt-4.1-mini");
         assert_eq!(body["response_format"]["type"], "json_schema");
-        assert_eq!(body["response_format"]["json_schema"]["name"], "identify_result");
-        assert!(body["response_format"]["json_schema"]["strict"].as_bool().unwrap());
+        assert_eq!(
+            body["response_format"]["json_schema"]["name"],
+            "identify_result"
+        );
+        assert!(
+            body["response_format"]["json_schema"]["strict"]
+                .as_bool()
+                .unwrap()
+        );
         assert_eq!(body["messages"][0]["role"], "user");
 
         let parts = body["messages"][0]["content"].as_array().unwrap();

@@ -3,8 +3,9 @@
 	import { Leaf, BookOpen, Settings } from 'lucide-svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import { page } from '$app/state';
-	import { initTheme } from '$lib/stores/theme';
-	import { initLocale, translations } from '$lib/stores/locale';
+	import { initTheme, isThemePreference } from '$lib/stores/theme';
+	import { initLocale, isLocale, translations } from '$lib/stores/locale';
+	import { fetchSettings } from '$lib/api';
 	import '$lib/styles/buttons.css';
 	import '$lib/styles/chips.css';
 	import '$lib/styles/inputs.css';
@@ -17,9 +18,17 @@
 		return page.url.pathname.startsWith(href);
 	}
 
-	onMount(() => {
-		initTheme();
-		initLocale();
+	onMount(async () => {
+		try {
+			const settings = await fetchSettings();
+			const theme = isThemePreference(settings.theme) ? settings.theme : undefined;
+			const locale = isLocale(settings.locale) ? settings.locale : undefined;
+			initTheme(theme);
+			initLocale(locale);
+		} catch {
+			initTheme();
+			initLocale();
+		}
 	});
 </script>
 

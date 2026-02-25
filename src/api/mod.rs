@@ -7,6 +7,7 @@ pub mod mqtt;
 pub mod photos;
 pub mod plants;
 pub mod restore;
+pub mod settings;
 pub mod stats;
 
 use axum::Router;
@@ -55,6 +56,10 @@ pub fn router(state: AppState) -> Router {
             axum::routing::post(photos::upload_photo)
                 .delete(photos::delete_photo)
                 .layer(DefaultBodyLimit::max(10 * 1024 * 1024)),
+        )
+        .route(
+            "/settings",
+            get(settings::get_settings).put(settings::update_settings),
         )
         .route(
             "/locations",

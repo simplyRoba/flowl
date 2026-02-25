@@ -49,11 +49,13 @@ export const translations = derived(locale, ($locale) => dictionaries[$locale]);
 
 let initialized = false;
 
-export function initLocale(): void {
+export function initLocale(serverLocale?: Locale): void {
 	if (typeof window === 'undefined' || initialized) return;
 	initialized = true;
 	const storage = getStorage();
-	locale.set(readLocale(storage));
+	const value = serverLocale ?? readLocale(storage);
+	locale.set(value);
+	if (serverLocale) writeLocale(storage, serverLocale);
 }
 
 export function destroyLocale(): void {
@@ -63,4 +65,5 @@ export function destroyLocale(): void {
 export function setLocale(l: Locale): void {
 	locale.set(l);
 	writeLocale(getStorage(), l);
+	import('$lib/api').then(({ updateSettings }) => updateSettings({ locale: l })).catch(() => {});
 }
