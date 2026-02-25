@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.14.1](https://github.com/simplyRoba/flowl/compare/v0.14.0...v0.14.1) (2026-02-25)
+
+
+### Bug Fixes
+
+* **deps:** bump @sveltejs/kit from 2.53.1 to 2.53.2 in /ui ([#47](https://github.com/simplyRoba/flowl/issues/47)) ([906e54f](https://github.com/simplyRoba/flowl/commit/906e54f4478987ab098d53e78f3e4cda071f6fcc))
+* **deps:** bump svelte from 5.53.3 to 5.53.5 in /ui ([#46](https://github.com/simplyRoba/flowl/issues/46)) ([b58b91b](https://github.com/simplyRoba/flowl/commit/b58b91bf6a7151dd8ce2b80f59e5b6d2e115bf7a))
+* **ui:** prevent care journal date input from overflowing container on mobile ([9dfce10](https://github.com/simplyRoba/flowl/commit/9dfce10909d5fdc32eb98de13e80b3547d5e5cef))
+* **ui:** show main photo inline in identify extra-photos row instead of duplicating at top ([bc866ca](https://github.com/simplyRoba/flowl/commit/bc866ca68f1723ef1c8472940bb56c9942240ed5))
+* **ui:** truncate long watering interval labels on mobile with ellipsis ([14efa02](https://github.com/simplyRoba/flowl/commit/14efa0257b8b67253b2d6d5e081d551456bd0cc2))
+
 ## [0.14.0](https://github.com/simplyRoba/flowl/compare/v0.13.0...v0.14.0) (2026-02-25)
 
 
