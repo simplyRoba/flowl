@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.14.0](https://github.com/simplyRoba/flowl/compare/v0.13.0...v0.14.0) (2026-02-25)
+
+
+### Features
+
+* **ai:** add debug logging to plant identification flow ([9274f7f](https://github.com/simplyRoba/flowl/commit/9274f7fae7f1d891b96cf179c0440bed77dd7b56))
+* **ai:** localize plant identification results based on user locale ([81f8567](https://github.com/simplyRoba/flowl/commit/81f85678288d7d076c85d3ddab950106dc332bef))
+* **ai:** switch to structured output with enum constraints and update default model to gpt-4.1-mini ([ec70969](https://github.com/simplyRoba/flowl/commit/ec7096976a71769e77060bdad71b1ead104be940))
+* **settings:** implement backend persistence for user preferences (theme, locale) with REST API ([397f147](https://github.com/simplyRoba/flowl/commit/397f1478c1d8adbd440fcf0bffb840c02ef8a1a3))
+* **ui:** move identify section from Media to Identity section ([5588825](https://github.com/simplyRoba/flowl/commit/5588825b158500b62c9a770bd0d0398335bc4629))
+
+
+### Bug Fixes
+
+* **deps:** bump @sveltejs/kit from 2.53.0 to 2.53.1 in /ui ([d7fafe7](https://github.com/simplyRoba/flowl/commit/d7fafe7d9d148f388665ec4a6c13d60c8cd57815))
+* **ui:** prevent care journal date input from overflowing container on mobile ([d22dcbf](https://github.com/simplyRoba/flowl/commit/d22dcbf8062352ba3c711663d0a02e74102833c3))
+* use valid MQTT wildcard in repair discovery subscribe ([31e3031](https://github.com/simplyRoba/flowl/commit/31e3031e95da74aabf87dc34592635aa02c45f2f))
+
 ## [0.13.0](https://github.com/simplyRoba/flowl/compare/v0.12.0...v0.13.0) (2026-02-24)
 
 
