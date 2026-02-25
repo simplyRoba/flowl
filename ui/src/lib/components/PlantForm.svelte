@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Sun, CloudSun, Cloud, Camera, X, Gauge, PawPrint, TrendingUp, Layers, Droplets, Sparkles, Check, TriangleAlert } from 'lucide-svelte';
+	import { Sun, CloudSun, Cloud, Camera, X, Gauge, PawPrint, TrendingUp, Layers, Droplets, Sparkles, Check, TriangleAlert, ChevronLeft, ChevronRight } from 'lucide-svelte';
 	import type { Plant, CreatePlant, Location, IdentifyResult } from '$lib/api';
 	import { fetchAiStatus, identifyPlant } from '$lib/api';
 	import { locations, loadLocations, createLocation } from '$lib/stores/locations';
@@ -53,10 +53,14 @@
 	// AI Identify state
 	let aiEnabled = $state(false);
 	let identifyState = $state<'idle' | 'loading' | 'result' | 'applied' | 'error'>('idle');
-	let identifyResult = $state<IdentifyResult | null>(null);
+	let identifyResults = $state<IdentifyResult[]>([]);
+	let currentSuggestion = $state(0);
 	let identifyError = $state('');
 	let appliedCount = $state(0);
 	let previousValues = $state<Record<string, unknown> | null>(null);
+
+	let activeSuggestion = $derived(identifyResults[currentSuggestion] ?? null);
+	let suggestionCount = $derived(identifyResults.length);
 
 	// Extra photo slots
 	let extraPhoto1 = $state<File | null>(null);
@@ -219,11 +223,11 @@
 	type FillChip = { label: string; value: string };
 
 	let willFillChips = $derived.by((): FillChip[] => {
-		if (!identifyResult) return [];
+		if (!activeSuggestion) return [];
 		const t = $translations;
 		const chips: FillChip[] = [];
-		chips.push({ label: t.form.speciesLabel.replace(' (optional)', '').replace(' (opcional)', ''), value: identifyResult.scientific_name });
-		const cp = identifyResult.care_profile;
+		chips.push({ label: t.form.speciesLabel.replace(' (optional)', '').replace(' (opcional)', ''), value: activeSuggestion.scientific_name });
+		const cp = activeSuggestion.care_profile;
 		if (cp) {
 			if (cp.watering_interval_days != null) chips.push({ label: t.form.watering, value: `${cp.watering_interval_days}d` });
 			if (cp.light_needs && VALID_LIGHT.includes(cp.light_needs)) chips.push({ label: t.form.lightNeeds, value: cp.light_needs });
@@ -260,8 +264,9 @@
 				return;
 			}
 
-			const result = await identifyPlant(photos);
-			identifyResult = result;
+			const response = await identifyPlant(photos);
+			identifyResults = response.suggestions;
+			currentSuggestion = 0;
 			identifyState = 'result';
 		} catch (e: unknown) {
 			identifyError = e instanceof Error ? e.message : $translations.identify.errorMessage;
@@ -270,7 +275,7 @@
 	}
 
 	function handleApply() {
-		if (!identifyResult) return;
+		if (!activeSuggestion) return;
 
 		// Snapshot current values
 		previousValues = {
@@ -279,7 +284,7 @@
 		};
 
 		let count = 0;
-		const r = identifyResult;
+		const r = activeSuggestion;
 		const cp = r.care_profile;
 
 		species = r.scientific_name;
@@ -323,12 +328,44 @@
 			previousValues = null;
 		}
 		identifyState = 'idle';
-		identifyResult = null;
+		identifyResults = [];
+		currentSuggestion = 0;
 	}
 
 	function handleDismiss() {
 		identifyState = 'idle';
-		identifyResult = null;
+		identifyResults = [];
+		currentSuggestion = 0;
+	}
+
+	// Carousel navigation (task 5.7)
+	function prevSuggestion() {
+		if (suggestionCount <= 1) return;
+		currentSuggestion = (currentSuggestion - 1 + suggestionCount) % suggestionCount;
+	}
+
+	function nextSuggestion() {
+		if (suggestionCount <= 1) return;
+		currentSuggestion = (currentSuggestion + 1) % suggestionCount;
+	}
+
+	// Touch swipe state
+	let swipeStartX = 0;
+	let swiping = false;
+
+	function handleSwipeStart(e: PointerEvent) {
+		swipeStartX = e.clientX;
+		swiping = true;
+	}
+
+	function handleSwipeEnd(e: PointerEvent) {
+		if (!swiping) return;
+		swiping = false;
+		const dx = e.clientX - swipeStartX;
+		if (Math.abs(dx) > 50) {
+			if (dx < 0) nextSuggestion();
+			else prevSuggestion();
+		}
 	}
 
 	function handleSubmit(e: Event) {
@@ -537,22 +574,31 @@
 						<div class="shimmer"></div>
 					</div>
 
-				{:else if identifyState === 'result' && identifyResult}
+				{:else if identifyState === 'result' && activeSuggestion}
 					<div class="suggestion-header">
 						<Sparkles size={14} />
 						{$translations.identify.aiSuggestion}
+							{#if suggestionCount > 1}
+								<span class="suggestion-counter">{$translations.identify.suggestionCount.replace('{current}', String(currentSuggestion + 1)).replace('{total}', String(suggestionCount))}</span>
+							{/if}
 					</div>
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div
+						class="suggestion-body"
+						onpointerdown={suggestionCount > 1 ? handleSwipeStart : undefined}
+						onpointerup={suggestionCount > 1 ? handleSwipeEnd : undefined}
+					>
 					<div class="suggestion-name">
-						<span class="suggestion-scientific">{identifyResult.scientific_name}</span>
-						{#if identifyResult.confidence != null}
-							<span class="suggestion-confidence">{$translations.identify.confidence.replace('{n}', String(Math.round(identifyResult.confidence * 100)))}</span>
+						<span class="suggestion-scientific">{activeSuggestion.scientific_name}</span>
+						{#if activeSuggestion.confidence != null}
+							<span class="suggestion-confidence">{$translations.identify.confidence.replace('{n}', String(Math.round(activeSuggestion.confidence * 100)))}</span>
 						{/if}
 					</div>
-					{#if identifyResult.common_name}
-						<div class="suggestion-common">"{identifyResult.common_name}"</div>
+					{#if activeSuggestion.common_name}
+						<div class="suggestion-common">"{activeSuggestion.common_name}"</div>
 					{/if}
-					{#if identifyResult.summary}
-						<div class="suggestion-summary">{identifyResult.summary}</div>
+					{#if activeSuggestion.summary}
+						<div class="suggestion-summary">{activeSuggestion.summary}</div>
 					{/if}
 					{#if willFillChips.length > 0}
 						<div class="will-fill">
@@ -562,6 +608,28 @@
 									<span class="fill-chip"><Check size={11} /> {chip.label} ({chip.value})</span>
 								{/each}
 							</div>
+						</div>
+					{/if}
+					</div>
+					{#if suggestionCount > 1}
+						<div class="suggestion-nav">
+							<button type="button" class="nav-btn" onclick={prevSuggestion} aria-label={$translations.identify.prevSuggestion}>
+								<ChevronLeft size={18} />
+							</button>
+							<div class="nav-dots">
+								{#each identifyResults as _, i}
+									<button
+										type="button"
+										class="nav-dot"
+										class:active={i === currentSuggestion}
+										onclick={() => { currentSuggestion = i; }}
+										aria-label={$translations.identify.suggestionCount.replace('{current}', String(i + 1)).replace('{total}', String(suggestionCount))}
+									></button>
+								{/each}
+							</div>
+							<button type="button" class="nav-btn" onclick={nextSuggestion} aria-label={$translations.identify.nextSuggestion}>
+								<ChevronRight size={18} />
+							</button>
 						</div>
 					{/if}
 					<div class="suggestion-actions">
@@ -1346,6 +1414,74 @@
 		background: var(--color-primary-tint);
 		color: var(--color-primary);
 		border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+	}
+
+	.suggestion-body {
+		touch-action: pan-y;
+		user-select: none;
+	}
+
+	.suggestion-counter {
+		margin-left: auto;
+		font-size: var(--fs-chip);
+		font-weight: 500;
+		color: var(--color-text-muted);
+		text-transform: none;
+		letter-spacing: 0;
+	}
+
+	.suggestion-nav {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		margin: 14px 0 16px;
+	}
+
+	.nav-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		color: var(--color-text-muted);
+		cursor: pointer;
+		padding: 0;
+		transition: all var(--transition-speed);
+	}
+
+	.nav-btn:hover {
+		border-color: var(--color-ai);
+		color: var(--color-ai);
+		background: var(--color-ai-tint);
+	}
+
+	.nav-dots {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.nav-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		border: 1.5px solid var(--color-ai);
+		background: transparent;
+		padding: 0;
+		cursor: pointer;
+		transition: all var(--transition-speed);
+	}
+
+	.nav-dot.active {
+		background: var(--color-ai);
+	}
+
+	.nav-dot:hover:not(.active) {
+		background: color-mix(in srgb, var(--color-ai) 40%, transparent);
 	}
 
 	.suggestion-actions {

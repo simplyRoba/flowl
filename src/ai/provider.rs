@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use super::types::IdentifyResult;
+use super::types::IdentifyResponse;
 
 #[async_trait]
 pub trait AiProvider: Send + Sync {
@@ -8,7 +8,7 @@ pub trait AiProvider: Send + Sync {
         &self,
         images: &[&[u8]],
         locale: &str,
-    ) -> Result<IdentifyResult, Box<dyn std::error::Error + Send + Sync>>;
+    ) -> Result<IdentifyResponse, Box<dyn std::error::Error + Send + Sync>>;
 
     async fn chat(
         &self,

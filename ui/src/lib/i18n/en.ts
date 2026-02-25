@@ -309,7 +309,10 @@ const en = {
 		undo: 'Undo',
 		errorMessage: 'Identification failed. The AI service might be temporarily unavailable.',
 		retry: 'Retry',
-		confidence: '{n}%'
+		confidence: '{n}%',
+		suggestionCount: '{current} / {total}',
+		prevSuggestion: 'Previous suggestion',
+		nextSuggestion: 'Next suggestion'
 	},
 	error: {
 		loadPlants: 'Failed to load plants',

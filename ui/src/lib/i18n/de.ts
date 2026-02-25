@@ -311,7 +311,10 @@ export const de: Translations = {
 		undo: 'Rückgängig',
 		errorMessage: 'Identifikation fehlgeschlagen. Der KI-Dienst ist möglicherweise vorübergehend nicht verfügbar.',
 		retry: 'Erneut versuchen',
-		confidence: '{n} %'
+		confidence: '{n} %',
+		suggestionCount: '{current} / {total}',
+		prevSuggestion: 'Vorheriger Vorschlag',
+		nextSuggestion: 'Nächster Vorschlag'
 	},
 	error: {
 		loadPlants: 'Pflanzen konnten nicht geladen werden',

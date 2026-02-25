@@ -311,7 +311,10 @@ export const es: Translations = {
 		undo: 'Deshacer',
 		errorMessage: 'Identificación fallida. El servicio de IA podría no estar disponible temporalmente.',
 		retry: 'Reintentar',
-		confidence: '{n} %'
+		confidence: '{n} %',
+		suggestionCount: '{current} / {total}',
+		prevSuggestion: 'Sugerencia anterior',
+		nextSuggestion: 'Siguiente sugerencia'
 	},
 	error: {
 		loadPlants: 'No se pudieron cargar las plantas',

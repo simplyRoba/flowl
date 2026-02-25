@@ -20,6 +20,11 @@ pub struct CareProfile {
     pub soil_moisture: Option<String>,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct IdentifyResponse {
+    pub suggestions: Vec<IdentifyResult>,
+}
+
 pub struct ChatMessage {
     pub role: String,
     pub content: String,
@@ -82,6 +87,62 @@ mod tests {
         let json = r#"{"not_a_plant": true}"#;
         let result = serde_json::from_str::<IdentifyResult>(json);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn deserialize_identify_response_multiple() {
+        let json = r#"{
+            "suggestions": [
+                { "common_name": "Monstera", "scientific_name": "Monstera deliciosa", "confidence": 0.95 },
+                { "common_name": "Philodendron", "scientific_name": "Philodendron bipinnatifidum", "confidence": 0.72 }
+            ]
+        }"#;
+
+        let resp: IdentifyResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(resp.suggestions.len(), 2);
+        assert_eq!(resp.suggestions[0].common_name, "Monstera");
+        assert_eq!(resp.suggestions[1].common_name, "Philodendron");
+    }
+
+    #[test]
+    fn deserialize_identify_response_single() {
+        let json = r#"{
+            "suggestions": [
+                { "common_name": "Snake Plant", "scientific_name": "Dracaena trifasciata" }
+            ]
+        }"#;
+
+        let resp: IdentifyResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(resp.suggestions.len(), 1);
+        assert_eq!(resp.suggestions[0].scientific_name, "Dracaena trifasciata");
+    }
+
+    #[test]
+    fn serialize_identify_response_round_trip() {
+        let resp = IdentifyResponse {
+            suggestions: vec![
+                IdentifyResult {
+                    common_name: "Monstera".to_string(),
+                    scientific_name: "Monstera deliciosa".to_string(),
+                    confidence: Some(0.95),
+                    summary: None,
+                    care_profile: None,
+                },
+                IdentifyResult {
+                    common_name: "Pothos".to_string(),
+                    scientific_name: "Epipremnum aureum".to_string(),
+                    confidence: Some(0.60),
+                    summary: None,
+                    care_profile: None,
+                },
+            ],
+        };
+
+        let json = serde_json::to_value(&resp).unwrap();
+        let suggestions = json["suggestions"].as_array().unwrap();
+        assert_eq!(suggestions.len(), 2);
+        assert_eq!(suggestions[0]["common_name"], "Monstera");
+        assert_eq!(suggestions[1]["scientific_name"], "Epipremnum aureum");
     }
 
     #[test]

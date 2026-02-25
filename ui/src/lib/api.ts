@@ -99,6 +99,10 @@ export interface IdentifyResult {
 	care_profile: CareProfile | null;
 }
 
+export interface IdentifyResponse {
+	suggestions: IdentifyResult[];
+}
+
 class ApiError extends Error {
 	status: number;
 
@@ -145,7 +149,7 @@ export function fetchAiStatus(): Promise<AiStatus> {
 	return request('GET', '/api/ai/status');
 }
 
-export async function identifyPlant(photos: File[]): Promise<IdentifyResult> {
+export async function identifyPlant(photos: File[]): Promise<IdentifyResponse> {
 	const formData = new FormData();
 	for (const photo of photos) {
 		formData.append('photos', photo);

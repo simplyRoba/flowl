@@ -34,7 +34,7 @@ pub async fn get_ai_status(State(state): State<AppState>) -> Json<AiStatus> {
 pub async fn identify_plant(
     State(state): State<AppState>,
     mut multipart: Multipart,
-) -> Result<Json<crate::ai::types::IdentifyResult>, ApiError> {
+) -> Result<Json<crate::ai::types::IdentifyResponse>, ApiError> {
     let provider = state
         .ai_provider
         .as_ref()
@@ -92,28 +92,12 @@ pub async fn identify_plant(
     })?;
 
     debug!(
-        common_name = %result.common_name,
-        scientific_name = %result.scientific_name,
-        confidence = ?result.confidence,
-        has_summary = result.summary.is_some(),
-        has_care_profile = result.care_profile.is_some(),
+        suggestion_count = result.suggestions.len(),
+        first_name = result.suggestions.first().map_or("—", |s| s.common_name.as_str()),
+        first_scientific = result.suggestions.first().map_or("—", |s| s.scientific_name.as_str()),
+        first_confidence = ?result.suggestions.first().and_then(|s| s.confidence),
         "AI identify result"
     );
-
-    if let Some(ref care) = result.care_profile {
-        debug!(
-            watering_interval_days = ?care.watering_interval_days,
-            light_needs = ?care.light_needs,
-            difficulty = ?care.difficulty,
-            pet_safety = ?care.pet_safety,
-            growth_speed = ?care.growth_speed,
-            soil_type = ?care.soil_type,
-            soil_moisture = ?care.soil_moisture,
-            "AI care profile fields"
-        );
-    } else {
-        debug!("AI response contained no care_profile");
-    }
 
     Ok(Json(result))
 }

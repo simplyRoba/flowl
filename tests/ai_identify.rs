@@ -7,7 +7,7 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use flowl::ai::provider::AiProvider;
-use flowl::ai::types::{ChatMessage, ChatResponseStream, IdentifyResult};
+use flowl::ai::types::{ChatMessage, ChatResponseStream, IdentifyResponse, IdentifyResult};
 use flowl::state::AppState;
 use tower::ServiceExt;
 
@@ -19,13 +19,24 @@ impl AiProvider for MockAiProvider {
         &self,
         _images: &[&[u8]],
         _locale: &str,
-    ) -> Result<IdentifyResult, Box<dyn std::error::Error + Send + Sync>> {
-        Ok(IdentifyResult {
-            common_name: "Monstera".to_string(),
-            scientific_name: "Monstera deliciosa".to_string(),
-            confidence: Some(0.95),
-            summary: Some("A popular tropical houseplant".to_string()),
-            care_profile: None,
+    ) -> Result<IdentifyResponse, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(IdentifyResponse {
+            suggestions: vec![
+                IdentifyResult {
+                    common_name: "Monstera".to_string(),
+                    scientific_name: "Monstera deliciosa".to_string(),
+                    confidence: Some(0.95),
+                    summary: Some("A popular tropical houseplant".to_string()),
+                    care_profile: None,
+                },
+                IdentifyResult {
+                    common_name: "Philodendron".to_string(),
+                    scientific_name: "Philodendron bipinnatifidum".to_string(),
+                    confidence: Some(0.72),
+                    summary: Some("A tropical foliage plant".to_string()),
+                    care_profile: None,
+                },
+            ],
         })
     }
 
@@ -52,7 +63,7 @@ impl AiProvider for FailingAiProvider {
         &self,
         _images: &[&[u8]],
         _locale: &str,
-    ) -> Result<IdentifyResult, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<IdentifyResponse, Box<dyn std::error::Error + Send + Sync>> {
         Err("upstream API returned 502".into())
     }
 
@@ -202,10 +213,13 @@ async fn identify_returns_200_for_single_photo() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = common::body_json(response).await;
-    assert_eq!(body["common_name"], "Monstera");
-    assert_eq!(body["scientific_name"], "Monstera deliciosa");
-    assert_eq!(body["confidence"], 0.95);
-    assert_eq!(body["summary"], "A popular tropical houseplant");
+    let suggestions = body["suggestions"].as_array().unwrap();
+    assert_eq!(suggestions.len(), 2);
+    assert_eq!(suggestions[0]["common_name"], "Monstera");
+    assert_eq!(suggestions[0]["scientific_name"], "Monstera deliciosa");
+    assert_eq!(suggestions[0]["confidence"], 0.95);
+    assert_eq!(suggestions[0]["summary"], "A popular tropical houseplant");
+    assert_eq!(suggestions[1]["common_name"], "Philodendron");
 }
 
 #[tokio::test]
@@ -229,8 +243,10 @@ async fn identify_returns_200_for_multiple_photos() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = common::body_json(response).await;
-    assert_eq!(body["common_name"], "Monstera");
-    assert_eq!(body["scientific_name"], "Monstera deliciosa");
+    let suggestions = body["suggestions"].as_array().unwrap();
+    assert!(suggestions.len() >= 1);
+    assert_eq!(suggestions[0]["common_name"], "Monstera");
+    assert_eq!(suggestions[0]["scientific_name"], "Monstera deliciosa");
 }
 
 #[tokio::test]
