@@ -456,15 +456,6 @@
 		<!-- Identify section -->
 		{#if hasPhoto && aiEnabled}
 			<div class="identify-section">
-				<!-- Read-only main photo thumbnail -->
-				<div class="identify-photo-preview">
-					{#if photoPreview}
-						<img src={photoPreview} alt={$translations.form.photoPreview} class="identify-thumb" />
-					{:else if initial?.photo_url}
-						<img src={initial.photo_url} alt={initial.name} class="identify-thumb" />
-					{/if}
-				</div>
-
 				{#if identifyState === 'idle'}
 					<button type="button" class="identify-btn" onclick={handleIdentify}>
 						<Sparkles size={18} />
@@ -472,6 +463,13 @@
 					</button>
 					<div class="extra-photos-label">{$translations.identify.extraPhotosHint}</div>
 					<div class="extra-photos">
+						<div class="extra-photo-slot extra-photo-filled extra-photo-main">
+							{#if photoPreview}
+								<img src={photoPreview} alt={$translations.form.photoPreview} />
+							{:else if initial?.photo_url}
+								<img src={initial.photo_url} alt={initial.name} />
+							{/if}
+						</div>
 						{#if extraPreview1}
 							<div class="extra-photo-slot extra-photo-filled">
 								<img src={extraPreview1} alt={$translations.identify.closeUp} />
@@ -1081,20 +1079,6 @@
 	}
 
 	/* ---- Identify section ---- */
-	.identify-photo-preview {
-		display: flex;
-		justify-content: center;
-		margin-bottom: 12px;
-	}
-
-	.identify-thumb {
-		width: 80px;
-		height: 80px;
-		object-fit: cover;
-		border-radius: var(--radius-btn);
-		border: 1px solid var(--color-border);
-	}
-
 	.identify-section {
 		border: 1px dashed var(--color-border);
 		border-radius: var(--radius-card);
