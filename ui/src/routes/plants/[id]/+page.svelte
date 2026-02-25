@@ -672,7 +672,6 @@
 		margin-top: 12px;
 		padding-top: 12px;
 		border-top: 1px solid var(--color-border-subtle);
-		overflow: hidden;
 	}
 
 	.log-when {
@@ -689,12 +688,6 @@
 		margin-bottom: 10px;
 	}
 
-
-	.log-input {
-		width: 100%;
-		min-width: 0;
-		max-width: 100%;
-	}
 
 	.type-chips {
 		display: flex;
