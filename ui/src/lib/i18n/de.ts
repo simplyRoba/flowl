@@ -246,6 +246,7 @@ export const de: Translations = {
 		speciesPlaceholder: 'z. B. Monstera',
 		notesPlaceholder: 'Pflegetipps, Beobachtungen, alles Nützliche...',
 		addPhoto: 'Foto hinzufügen',
+		addPhotoHint: 'Benötigt für KI-Pflanzenidentifikation',
 		clickOrDrag: 'Klicken oder hierher ziehen',
 		replacePhoto: 'Foto ersetzen',
 		useIcon: 'Icon verwenden',

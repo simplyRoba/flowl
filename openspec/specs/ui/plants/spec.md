@@ -423,13 +423,14 @@ The plant add/edit form SHALL include a "Care Info (optional)" section between "
 
 ### Requirement: Identify section visibility
 
-The PlantForm SHALL display an "Identify Plant" section inside the media section, below the photo preview and its action buttons, when both conditions are met: a photo is present and the AI provider is enabled. The form SHALL check AI status via `GET /api/ai/status` on mount.
+The PlantForm SHALL display an "Identify Plant" section inside the Identity section (below the name and species fields), when both conditions are met: a photo is present and the AI provider is enabled. The form SHALL check AI status via `GET /api/ai/status` on mount. The identify section SHALL display a read-only thumbnail of the main photo so the user can see which image will be used for identification without scrolling back to the Media section. This thumbnail SHALL NOT have a remove button — photo management is handled exclusively in the Media section.
 
 #### Scenario: Photo present and AI enabled
 
 - **WHEN** the PlantForm renders with a photo (new upload or existing `photo_url`)
 - **AND** `GET /api/ai/status` returns `{ "enabled": true }`
-- **THEN** the identify section SHALL be visible below the photo action buttons
+- **THEN** the identify section SHALL be visible inside the Identity section, above the name and species fields
+- **AND** a read-only thumbnail of the main photo SHALL be displayed at the top of the identify section
 
 #### Scenario: No photo present
 
@@ -445,6 +446,15 @@ The PlantForm SHALL display an "Identify Plant" section inside the media section
 
 - **WHEN** `GET /api/ai/status` returns an error
 - **THEN** the identify section SHALL NOT be visible
+
+### Requirement: Media section upload hint
+
+The photo upload placeholder in the Media section SHALL mention that a photo is needed for AI plant identification.
+
+#### Scenario: Empty photo upload area
+
+- **WHEN** the media section shows the empty photo upload dropzone
+- **THEN** a hint SHALL be displayed indicating that a photo is also needed to identify a plant
 
 ### Requirement: Identify button
 

@@ -246,6 +246,7 @@ export const es: Translations = {
 		speciesPlaceholder: 'ej. Monstera',
 		notesPlaceholder: 'Consejos de cuidado, observaciones, lo que sea útil...',
 		addPhoto: 'Añadir foto',
+		addPhotoHint: 'Necesaria para la identificación por IA',
 		clickOrDrag: 'Haz clic o arrastra y suelta',
 		replacePhoto: 'Reemplazar foto',
 		useIcon: 'Usar icono',

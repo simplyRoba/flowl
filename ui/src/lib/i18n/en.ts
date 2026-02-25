@@ -244,6 +244,7 @@ const en = {
 		speciesPlaceholder: 'e.g. Monstera',
 		notesPlaceholder: 'Care tips, observations, anything useful...',
 		addPhoto: 'Add a photo',
+		addPhotoHint: 'Needed for AI plant identification',
 		clickOrDrag: 'Click to select or drag & drop',
 		replacePhoto: 'Replace photo',
 		useIcon: 'Use icon instead',

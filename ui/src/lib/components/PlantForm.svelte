@@ -398,6 +398,9 @@
 							<div class="upload-icon"><Camera size={24} /></div>
 							<span>{$translations.form.addPhoto}</span>
 							<span class="upload-hint">{$translations.form.clickOrDrag}</span>
+							{#if aiEnabled}
+								<span class="upload-hint upload-hint-ai"><Sparkles size={12} /> {$translations.form.addPhotoHint}</span>
+							{/if}
 							<input
 								type="file"
 								accept="image/jpeg,image/png,image/webp"
@@ -428,132 +431,6 @@
 						{/if}
 					</div>
 				</div>
-
-				<!-- Identify section -->
-				{#if hasPhoto && aiEnabled}
-					<div class="identify-section">
-						{#if identifyState === 'idle'}
-							<button type="button" class="identify-btn" onclick={handleIdentify}>
-								<Sparkles size={18} />
-								{$translations.identify.identifyPlant}
-							</button>
-							<div class="extra-photos-label">{$translations.identify.extraPhotosHint}</div>
-							<div class="extra-photos">
-								{#if extraPreview1}
-									<div class="extra-photo-slot extra-photo-filled">
-										<img src={extraPreview1} alt={$translations.identify.closeUp} />
-										<button type="button" class="extra-photo-remove" onclick={() => removeExtraPhoto(1)}>
-											<X size={12} />
-										</button>
-									</div>
-								{:else}
-									<label class="extra-photo-slot">
-										<Camera size={18} />
-										<span>{$translations.identify.closeUp}</span>
-										<input
-											type="file"
-											accept="image/jpeg,image/png,image/webp"
-											class="file-input"
-											bind:this={extraInput1}
-											onchange={(e) => handleExtraSelect(1, e)}
-										/>
-									</label>
-								{/if}
-								{#if extraPreview2}
-									<div class="extra-photo-slot extra-photo-filled">
-										<img src={extraPreview2} alt={$translations.identify.stemPot} />
-										<button type="button" class="extra-photo-remove" onclick={() => removeExtraPhoto(2)}>
-											<X size={12} />
-										</button>
-									</div>
-								{:else}
-									<label class="extra-photo-slot">
-										<Camera size={18} />
-										<span>{$translations.identify.stemPot}</span>
-										<input
-											type="file"
-											accept="image/jpeg,image/png,image/webp"
-											class="file-input"
-											bind:this={extraInput2}
-											onchange={(e) => handleExtraSelect(2, e)}
-										/>
-									</label>
-								{/if}
-							</div>
-
-						{:else if identifyState === 'loading'}
-							<div class="identify-loading-header">
-								<span class="spinner"></span>
-								<Sparkles size={16} />
-								{$translations.identify.identifying}
-							</div>
-							<div class="loading-photos">
-								{#if photoPreview}
-									<img src={photoPreview} alt="" class="loading-thumb" />
-								{:else if initial?.photo_url}
-									<img src={initial.photo_url} alt="" class="loading-thumb" />
-								{/if}
-								{#if extraPreview1}
-									<img src={extraPreview1} alt="" class="loading-thumb" />
-								{/if}
-								{#if extraPreview2}
-									<img src={extraPreview2} alt="" class="loading-thumb" />
-								{/if}
-							</div>
-							<div class="shimmer-lines">
-								<div class="shimmer"></div>
-								<div class="shimmer"></div>
-								<div class="shimmer"></div>
-							</div>
-
-						{:else if identifyState === 'result' && identifyResult}
-							<div class="suggestion-header">
-								<Sparkles size={14} />
-								{$translations.identify.aiSuggestion}
-							</div>
-							<div class="suggestion-name">
-								<span class="suggestion-scientific">{identifyResult.scientific_name}</span>
-								{#if identifyResult.confidence != null}
-									<span class="suggestion-confidence">{$translations.identify.confidence.replace('{n}', String(Math.round(identifyResult.confidence * 100)))}</span>
-								{/if}
-							</div>
-							{#if identifyResult.common_name}
-								<div class="suggestion-common">"{identifyResult.common_name}"</div>
-							{/if}
-							{#if identifyResult.summary}
-								<div class="suggestion-summary">{identifyResult.summary}</div>
-							{/if}
-							{#if willFillChips.length > 0}
-								<div class="will-fill">
-									<div class="will-fill-label">{$translations.identify.willFill}</div>
-									<div class="fill-chips">
-										{#each willFillChips as chip}
-											<span class="fill-chip"><Check size={11} /> {chip.label} ({chip.value})</span>
-										{/each}
-									</div>
-								</div>
-							{/if}
-							<div class="suggestion-actions">
-								<button type="button" class="btn btn-ai" onclick={handleApply}>{$translations.identify.applyToForm}</button>
-								<button type="button" class="btn btn-outline" onclick={handleDismiss}>{$translations.identify.dismiss}</button>
-							</div>
-
-						{:else if identifyState === 'applied'}
-							<div class="applied-banner">
-								<Check size={18} />
-								<span>{$translations.identify.applied.replace('{n}', String(appliedCount))}</span>
-								<button type="button" class="applied-undo" onclick={handleUndo}>{$translations.identify.undo}</button>
-							</div>
-
-						{:else if identifyState === 'error'}
-							<div class="identify-error">
-								<TriangleAlert size={18} />
-								<span>{identifyError || $translations.identify.errorMessage}</span>
-								<button type="button" class="btn btn-outline btn-sm" onclick={handleIdentify}>{$translations.identify.retry}</button>
-							</div>
-						{/if}
-					</div>
-				{/if}
 			{/if}
 			{#if mediaMode === 'both'}
 				<div class="media-divider"><span>{$translations.common.or}</span></div>
@@ -575,6 +452,142 @@
 
 	<section class="section">
 		<div class="section-title">{$translations.form.identity}</div>
+
+		<!-- Identify section -->
+		{#if hasPhoto && aiEnabled}
+			<div class="identify-section">
+				<!-- Read-only main photo thumbnail -->
+				<div class="identify-photo-preview">
+					{#if photoPreview}
+						<img src={photoPreview} alt={$translations.form.photoPreview} class="identify-thumb" />
+					{:else if initial?.photo_url}
+						<img src={initial.photo_url} alt={initial.name} class="identify-thumb" />
+					{/if}
+				</div>
+
+				{#if identifyState === 'idle'}
+					<button type="button" class="identify-btn" onclick={handleIdentify}>
+						<Sparkles size={18} />
+						{$translations.identify.identifyPlant}
+					</button>
+					<div class="extra-photos-label">{$translations.identify.extraPhotosHint}</div>
+					<div class="extra-photos">
+						{#if extraPreview1}
+							<div class="extra-photo-slot extra-photo-filled">
+								<img src={extraPreview1} alt={$translations.identify.closeUp} />
+								<button type="button" class="extra-photo-remove" onclick={() => removeExtraPhoto(1)}>
+									<X size={12} />
+								</button>
+							</div>
+						{:else}
+							<label class="extra-photo-slot">
+								<Camera size={18} />
+								<span>{$translations.identify.closeUp}</span>
+								<input
+									type="file"
+									accept="image/jpeg,image/png,image/webp"
+									class="file-input"
+									bind:this={extraInput1}
+									onchange={(e) => handleExtraSelect(1, e)}
+								/>
+							</label>
+						{/if}
+						{#if extraPreview2}
+							<div class="extra-photo-slot extra-photo-filled">
+								<img src={extraPreview2} alt={$translations.identify.stemPot} />
+								<button type="button" class="extra-photo-remove" onclick={() => removeExtraPhoto(2)}>
+									<X size={12} />
+								</button>
+							</div>
+						{:else}
+							<label class="extra-photo-slot">
+								<Camera size={18} />
+								<span>{$translations.identify.stemPot}</span>
+								<input
+									type="file"
+									accept="image/jpeg,image/png,image/webp"
+									class="file-input"
+									bind:this={extraInput2}
+									onchange={(e) => handleExtraSelect(2, e)}
+								/>
+							</label>
+						{/if}
+					</div>
+
+				{:else if identifyState === 'loading'}
+					<div class="identify-loading-header">
+						<span class="spinner"></span>
+						<Sparkles size={16} />
+						{$translations.identify.identifying}
+					</div>
+					<div class="loading-photos">
+						{#if photoPreview}
+							<img src={photoPreview} alt="" class="loading-thumb" />
+						{:else if initial?.photo_url}
+							<img src={initial.photo_url} alt="" class="loading-thumb" />
+						{/if}
+						{#if extraPreview1}
+							<img src={extraPreview1} alt="" class="loading-thumb" />
+						{/if}
+						{#if extraPreview2}
+							<img src={extraPreview2} alt="" class="loading-thumb" />
+						{/if}
+					</div>
+					<div class="shimmer-lines">
+						<div class="shimmer"></div>
+						<div class="shimmer"></div>
+						<div class="shimmer"></div>
+					</div>
+
+				{:else if identifyState === 'result' && identifyResult}
+					<div class="suggestion-header">
+						<Sparkles size={14} />
+						{$translations.identify.aiSuggestion}
+					</div>
+					<div class="suggestion-name">
+						<span class="suggestion-scientific">{identifyResult.scientific_name}</span>
+						{#if identifyResult.confidence != null}
+							<span class="suggestion-confidence">{$translations.identify.confidence.replace('{n}', String(Math.round(identifyResult.confidence * 100)))}</span>
+						{/if}
+					</div>
+					{#if identifyResult.common_name}
+						<div class="suggestion-common">"{identifyResult.common_name}"</div>
+					{/if}
+					{#if identifyResult.summary}
+						<div class="suggestion-summary">{identifyResult.summary}</div>
+					{/if}
+					{#if willFillChips.length > 0}
+						<div class="will-fill">
+							<div class="will-fill-label">{$translations.identify.willFill}</div>
+							<div class="fill-chips">
+								{#each willFillChips as chip}
+									<span class="fill-chip"><Check size={11} /> {chip.label} ({chip.value})</span>
+								{/each}
+							</div>
+						</div>
+					{/if}
+					<div class="suggestion-actions">
+						<button type="button" class="btn btn-ai" onclick={handleApply}>{$translations.identify.applyToForm}</button>
+						<button type="button" class="btn btn-outline" onclick={handleDismiss}>{$translations.identify.dismiss}</button>
+					</div>
+
+				{:else if identifyState === 'applied'}
+					<div class="applied-banner">
+						<Check size={18} />
+						<span>{$translations.identify.applied.replace('{n}', String(appliedCount))}</span>
+						<button type="button" class="applied-undo" onclick={handleUndo}>{$translations.identify.undo}</button>
+					</div>
+
+				{:else if identifyState === 'error'}
+					<div class="identify-error">
+						<TriangleAlert size={18} />
+						<span>{identifyError || $translations.identify.errorMessage}</span>
+						<button type="button" class="btn btn-outline btn-sm" onclick={handleIdentify}>{$translations.identify.retry}</button>
+					</div>
+				{/if}
+			</div>
+		{/if}
+
 		<div class="form-group">
 			<label class="form-label" for="plant-name">{$translations.form.nameLabel}</label>
 			<input
@@ -601,8 +614,6 @@
 				class="input"
 			/>
 		</div>
-
-		<!-- Icon picker moved to Media section -->
 	</section>
 
 	<section class="section">
@@ -1057,7 +1068,33 @@
 		align-self: flex-start;
 	}
 
+	.upload-hint-ai {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		color: var(--color-ai);
+		font-size: 11px;
+	}
+
+	.upload-hint-ai :global(svg) {
+		color: var(--color-ai);
+	}
+
 	/* ---- Identify section ---- */
+	.identify-photo-preview {
+		display: flex;
+		justify-content: center;
+		margin-bottom: 12px;
+	}
+
+	.identify-thumb {
+		width: 80px;
+		height: 80px;
+		object-fit: cover;
+		border-radius: var(--radius-btn);
+		border: 1px solid var(--color-border);
+	}
+
 	.identify-section {
 		border: 1px dashed var(--color-border);
 		border-radius: var(--radius-card);
