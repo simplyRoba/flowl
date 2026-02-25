@@ -39,7 +39,9 @@ impl AiProvider for OpenAiProvider {
     ) -> Result<IdentifyResult, Box<dyn std::error::Error + Send + Sync>> {
         let lang_instruction = match locale {
             "en" => "Respond in English.".to_string(),
-            _ => format!("Respond in the language with locale code \"{locale}\". Use that language for the common_name and summary field. Keep the scientific_name in Latin."),
+            _ => format!(
+                "Respond in the language with locale code \"{locale}\". Use that language for the common_name and summary field. Keep the scientific_name in Latin."
+            ),
         };
 
         let mut content: Vec<Value> = vec![json!({
