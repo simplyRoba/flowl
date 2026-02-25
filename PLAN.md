@@ -452,12 +452,26 @@ Backend endpoint for plant identification. Testable via curl with a photo.
 
 "Identify Plant" button and suggestion card in PlantForm.
 
-- [ ] "Identify Plant" button in `PlantForm` (visible when photo present + AI enabled)
-- [ ] Optional extra photo slots (leaf close-up, stem/pot)
-- [ ] Loading state (shimmer/spinner)
-- [ ] Suggestion card with field preview + "Apply to form" / "Dismiss"
-- [ ] Auto-fill form fields including notes summary
-- [ ] i18n keys for identification UI
+- [x] "Identify Plant" button in `PlantForm` (visible when photo present + AI enabled)
+- [x] Optional extra photo slots (leaf close-up, stem/pot)
+- [x] Loading state (shimmer/spinner)
+- [x] Suggestion card with field preview + "Apply to form" / "Dismiss"
+- [x] Auto-fill form fields including notes summary
+- [x] i18n keys for identification UI
+
+### Phase 4.1 — Multiple Identification Suggestions
+
+Return 3 ranked suggestions in a single API call instead of one. Carousel UI to slide between them.
+
+- [x] `IdentifyResponse { suggestions: Vec<IdentifyResult> }` wrapper type
+- [x] Provider trait + OpenAI provider return `IdentifyResponse`
+- [x] Updated prompt requesting top 3 identifications
+- [x] Updated JSON schema wrapping results in `{ "suggestions": [...] }`
+- [x] `POST /api/ai/identify` returns `Json<IdentifyResponse>`
+- [x] Frontend `identifyPlant()` returns array of suggestions
+- [x] Carousel UI in suggestion card (chevron nav, dot indicators, counter)
+- [x] Touch swipe navigation on mobile
+- [x] i18n keys for suggestion navigation (en/de/es)
 
 ### Phase 5 — Chat Backend
 
