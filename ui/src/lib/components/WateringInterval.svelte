@@ -122,6 +122,10 @@
 	.preset-label {
 		font-size: 12px;
 		color: var(--color-text-muted);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 100%;
 	}
 
 	.interval-preset.active .preset-label {
