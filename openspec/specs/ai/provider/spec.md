@@ -29,7 +29,7 @@ The system SHALL implement `OpenAiProvider` that communicates with any OpenAI-co
 
 ### Requirement: Identify method
 
-The `identify` method SHALL accept a list of images (as byte slices), encode them as base64 data URLs, send them to the configured model using structured output (`response_format: { "type": "json_schema" }`) with the `IdentifyResult` schema, and deserialize the response into an `IdentifyResult` containing `common_name`, `scientific_name`, optional `confidence`, optional `summary`, and optional `care_profile`. The `IdentifyResult` and `CareProfile` types SHALL derive both `Serialize` and `Deserialize` so they can be used as HTTP response bodies.
+The `identify` method SHALL accept a list of images (as byte slices) and a `locale` string, encode the images as base64 data URLs, send them to the configured model using structured output (`response_format: { "type": "json_schema" }`) with the `IdentifyResult` schema, and deserialize the response into an `IdentifyResult` containing `common_name`, `scientific_name`, optional `confidence`, optional `summary`, and optional `care_profile`. The prompt SHALL instruct the model to respond in the language matching the given locale for free-text fields (`common_name`, `summary`) while keeping `scientific_name` in Latin. Enum-constrained fields in `care_profile` remain in English by virtue of the JSON schema constraints. The `IdentifyResult` and `CareProfile` types SHALL derive both `Serialize` and `Deserialize` so they can be used as HTTP response bodies.
 
 #### Scenario: Single image identification
 

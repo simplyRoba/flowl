@@ -6,7 +6,7 @@ HTTP endpoint for AI-powered plant identification: accepts multipart photo uploa
 
 ### Requirement: Identify endpoint accepts multipart photo uploads
 
-The system SHALL expose `POST /api/ai/identify` accepting `multipart/form-data` with 1–3 image files in fields named `photos`. Accepted content types are `image/jpeg`, `image/png`, and `image/webp`. The endpoint SHALL forward the images to the configured AI provider's `identify` method and return the result as JSON.
+The system SHALL expose `POST /api/ai/identify` accepting `multipart/form-data` with 1–3 image files in fields named `photos`. Accepted content types are `image/jpeg`, `image/png`, and `image/webp`. The endpoint SHALL read the user's locale from `user_settings` and forward it along with the images to the configured AI provider's `identify` method. If the locale cannot be read, it SHALL default to `en`. The result is returned as JSON.
 
 #### Scenario: Single photo identification
 

@@ -35,10 +35,16 @@ impl AiProvider for OpenAiProvider {
     async fn identify(
         &self,
         images: &[&[u8]],
+        locale: &str,
     ) -> Result<IdentifyResult, Box<dyn std::error::Error + Send + Sync>> {
+        let lang_instruction = match locale {
+            "en" => "Respond in English.".to_string(),
+            _ => format!("Respond in the language with locale code \"{locale}\". Use that language for the common_name and summary field. Keep the scientific_name in Latin."),
+        };
+
         let mut content: Vec<Value> = vec![json!({
             "type": "text",
-            "text": "Identify this plant from the photo(s). Provide the common name, scientific name, your confidence level, a short summary of the species, and a care profile with typical care requirements."
+            "text": format!("Identify this plant from the photo(s). Provide the common name, scientific name, your confidence level, a short summary of the species, and a care profile with typical care requirements. {lang_instruction}")
         })];
 
         for image_data in images {
@@ -174,7 +180,7 @@ mod tests {
 
         let mut content: Vec<Value> = vec![json!({
             "type": "text",
-            "text": "Identify this plant from the photo(s). Provide the common name, scientific name, your confidence level, a short summary of the species, and a care profile with typical care requirements."
+            "text": "Identify this plant from the photo(s). Provide the common name, scientific name, your confidence level, a short summary of the species, and a care profile with typical care requirements. Respond in English."
         })];
         content.push(json!({
             "type": "image_url",

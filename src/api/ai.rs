@@ -76,10 +76,17 @@ pub async fn identify_plant(
         ));
     }
 
-    debug!(photo_count = photos.len(), "sending photos to AI provider");
+    let locale = sqlx::query_scalar::<_, String>("SELECT locale FROM user_settings WHERE id = 1")
+        .fetch_optional(&state.pool)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or_else(|| "en".to_string());
+
+    debug!(photo_count = photos.len(), locale = %locale, "sending photos to AI provider");
     let image_refs: Vec<&[u8]> = photos.iter().map(Vec::as_slice).collect();
 
-    let result = provider.identify(&image_refs).await.map_err(|e| {
+    let result = provider.identify(&image_refs, &locale).await.map_err(|e| {
         warn!(error = %e, "AI identify failed");
         ApiError::InternalError(format!("AI identification failed: {e}"))
     })?;

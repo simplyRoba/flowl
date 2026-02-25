@@ -18,6 +18,7 @@ impl AiProvider for MockAiProvider {
     async fn identify(
         &self,
         _images: &[&[u8]],
+        _locale: &str,
     ) -> Result<IdentifyResult, Box<dyn std::error::Error + Send + Sync>> {
         Ok(IdentifyResult {
             common_name: "Monstera".to_string(),
@@ -50,6 +51,7 @@ impl AiProvider for FailingAiProvider {
     async fn identify(
         &self,
         _images: &[&[u8]],
+        _locale: &str,
     ) -> Result<IdentifyResult, Box<dyn std::error::Error + Send + Sync>> {
         Err("upstream API returned 502".into())
     }
