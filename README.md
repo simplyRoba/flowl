@@ -26,7 +26,31 @@ A small Rust service that exposes plant care data (watering schedules, care need
 | `FLOWL_MQTT_DISABLED` | `false` | Skip MQTT client, state checker, and publishes when set to `true`. |
 | `FLOWL_AI_API_KEY` | — | API key for the OpenAI-compatible AI provider. AI features are disabled when unset. |
 | `FLOWL_AI_BASE_URL` | `https://api.openai.com/v1` | Base URL for the AI API. |
-| `FLOWL_AI_MODEL` | `gpt-4o-mini` | Model name used for all AI tasks. |
+| `FLOWL_AI_MODEL` | `gpt-4.1-mini` | Model name used for all AI tasks. |
+
+### Compatible AI models
+
+The model must support **vision** (image input), **structured output** (`response_format: json_schema`), and **streaming** (SSE).
+
+#### OpenAI (`https://api.openai.com/v1`)
+
+| Model | Vision | Structured output | Streaming | Notes |
+| --- | --- | --- | --- | --- |
+| `gpt-5-mini` | Yes | Yes | Yes | GPT-5 family, most capable but significantly more expensive |
+| `gpt-4.1-mini` | Yes | Yes | Yes | Successor to gpt-4o-mini with better performance |
+| `gpt-4.1-nano` | Yes | Yes | Yes | Cheapest OpenAI option, outperforms gpt-4o-mini |
+| `gpt-4o-mini` | Yes | Yes | Yes | Previous generation, still capable |
+
+#### Mistral (`https://api.mistral.ai/v1`)
+
+| Model | Vision | Structured output | Streaming | Notes |
+| --- | --- | --- | --- | --- |
+| `mistral-small-latest` | Yes | Yes | Yes | Best value — 24B, strong vision and structured output |
+| `ministral-14b-latest` | Yes | Yes | Yes | 14B edge model, successor to pixtral-12b, Apache 2.0 |
+
+To use Mistral, set `FLOWL_AI_BASE_URL=https://api.mistral.ai/v1` and `FLOWL_AI_API_KEY` to your Mistral API key.
+
+Any other provider exposing an OpenAI-compatible `/v1/chat/completions` endpoint (LM Studio, vLLM, Ollama with OpenAI shim, etc.) should also work as long as the model supports the capabilities above.
 
 ---
 

@@ -28,7 +28,7 @@ impl Config {
             ai_api_key: env::var("FLOWL_AI_API_KEY").ok(),
             ai_base_url: env::var("FLOWL_AI_BASE_URL")
                 .unwrap_or_else(|_| "https://api.openai.com/v1".to_string()),
-            ai_model: env::var("FLOWL_AI_MODEL").unwrap_or_else(|_| "gpt-4o-mini".to_string()),
+            ai_model: env::var("FLOWL_AI_MODEL").unwrap_or_else(|_| "gpt-4.1-mini".to_string()),
         }
     }
 }
@@ -79,7 +79,7 @@ mod tests {
         assert_eq!(config.log_level, "info");
         assert!(config.ai_api_key.is_none());
         assert_eq!(config.ai_base_url, "https://api.openai.com/v1");
-        assert_eq!(config.ai_model, "gpt-4o-mini");
+        assert_eq!(config.ai_model, "gpt-4.1-mini");
     }
 
     #[test]

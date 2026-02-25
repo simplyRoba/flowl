@@ -29,7 +29,7 @@ The system SHALL implement `OpenAiProvider` that communicates with any OpenAI-co
 
 ### Requirement: Identify method
 
-The `identify` method SHALL accept a list of images (as byte slices), encode them as base64 data URLs, send them to the configured model using JSON mode (`response_format: { "type": "json_object" }`), and deserialize the response into an `IdentifyResult` containing `common_name`, `scientific_name`, optional `confidence`, optional `summary`, and optional `care_profile`. The `IdentifyResult` and `CareProfile` types SHALL derive both `Serialize` and `Deserialize` so they can be used as HTTP response bodies.
+The `identify` method SHALL accept a list of images (as byte slices), encode them as base64 data URLs, send them to the configured model using structured output (`response_format: { "type": "json_schema" }`) with the `IdentifyResult` schema, and deserialize the response into an `IdentifyResult` containing `common_name`, `scientific_name`, optional `confidence`, optional `summary`, and optional `care_profile`. The `IdentifyResult` and `CareProfile` types SHALL derive both `Serialize` and `Deserialize` so they can be used as HTTP response bodies.
 
 #### Scenario: Single image identification
 
@@ -59,7 +59,7 @@ The `identify` method SHALL accept a list of images (as byte slices), encode the
 
 ### Requirement: AI configuration via environment variables
 
-The system SHALL read AI configuration from environment variables: `FLOWL_AI_API_KEY` (required to enable AI, no default), `FLOWL_AI_BASE_URL` (default: `https://api.openai.com/v1`), and `FLOWL_AI_MODEL` (default: `gpt-4o-mini`).
+The system SHALL read AI configuration from environment variables: `FLOWL_AI_API_KEY` (required to enable AI, no default), `FLOWL_AI_BASE_URL` (default: `https://api.openai.com/v1`), and `FLOWL_AI_MODEL` (default: `gpt-4.1-mini`).
 
 #### Scenario: All AI env vars set
 
@@ -69,7 +69,7 @@ The system SHALL read AI configuration from environment variables: `FLOWL_AI_API
 #### Scenario: Only API key set
 
 - **WHEN** only `FLOWL_AI_API_KEY` is set
-- **THEN** the AI provider uses base URL `https://api.openai.com/v1` and model `gpt-4o-mini`
+- **THEN** the AI provider uses base URL `https://api.openai.com/v1` and model `gpt-4.1-mini`
 
 #### Scenario: No API key set
 

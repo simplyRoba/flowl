@@ -38,7 +38,7 @@ impl AiProvider for OpenAiProvider {
     ) -> Result<IdentifyResult, Box<dyn std::error::Error + Send + Sync>> {
         let mut content: Vec<Value> = vec![json!({
             "type": "text",
-            "text": "Identify this plant. Return a JSON object with: common_name (string), scientific_name (string), confidence (number 0-1), summary (string describing the plant), and care_profile (object with watering_interval_days, light_needs, difficulty, pet_safety, growth_speed, soil_type, soil_moisture)."
+            "text": "Identify this plant from the photo(s). Provide the common name, scientific name, your confidence level, a short summary of the species, and a care profile with typical care requirements."
         })];
 
         for image_data in images {
@@ -57,7 +57,43 @@ impl AiProvider for OpenAiProvider {
                 "role": "user",
                 "content": content
             }],
-            "response_format": { "type": "json_object" }
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "identify_result",
+                    "strict": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "common_name": { "type": "string" },
+                            "scientific_name": { "type": "string" },
+                            "confidence": { "type": ["number", "null"] },
+                            "summary": { "type": ["string", "null"] },
+                            "care_profile": {
+                                "anyOf": [
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "watering_interval_days": { "type": ["integer", "null"] },
+                                            "light_needs": { "anyOf": [{ "type": "string", "enum": ["direct", "indirect", "low"] }, { "type": "null" }] },
+                                            "difficulty": { "anyOf": [{ "type": "string", "enum": ["easy", "moderate", "demanding"] }, { "type": "null" }] },
+                                            "pet_safety": { "anyOf": [{ "type": "string", "enum": ["safe", "caution", "toxic"] }, { "type": "null" }] },
+                                            "growth_speed": { "anyOf": [{ "type": "string", "enum": ["slow", "moderate", "fast"] }, { "type": "null" }] },
+                                            "soil_type": { "anyOf": [{ "type": "string", "enum": ["standard", "cactus-mix", "orchid-bark", "peat-moss"] }, { "type": "null" }] },
+                                            "soil_moisture": { "anyOf": [{ "type": "string", "enum": ["dry", "moderate", "moist"] }, { "type": "null" }] }
+                                        },
+                                        "required": ["watering_interval_days", "light_needs", "difficulty", "pet_safety", "growth_speed", "soil_type", "soil_moisture"],
+                                        "additionalProperties": false
+                                    },
+                                    { "type": "null" }
+                                ]
+                            }
+                        },
+                        "required": ["common_name", "scientific_name", "confidence", "summary", "care_profile"],
+                        "additionalProperties": false
+                    }
+                }
+            }
         });
 
         let response = self
@@ -104,7 +140,7 @@ mod tests {
         let provider = OpenAiProvider::new(
             "key".into(),
             "https://api.openai.com/v1".into(),
-            "gpt-4o-mini".into(),
+            "gpt-4.1-mini".into(),
         );
         assert_eq!(
             provider.completions_url(),
@@ -130,7 +166,7 @@ mod tests {
         let provider = OpenAiProvider::new(
             "test-key".into(),
             "https://api.openai.com/v1".into(),
-            "gpt-4o-mini".into(),
+            "gpt-4.1-mini".into(),
         );
 
         let image_data: &[u8] = b"fake-image-bytes";
@@ -138,7 +174,7 @@ mod tests {
 
         let mut content: Vec<Value> = vec![json!({
             "type": "text",
-            "text": "Identify this plant. Return a JSON object with: common_name (string), scientific_name (string), confidence (number 0-1), summary (string describing the plant), and care_profile (object with watering_interval_days, light_needs, difficulty, pet_safety, growth_speed, soil_type, soil_moisture)."
+            "text": "Identify this plant from the photo(s). Provide the common name, scientific name, your confidence level, a short summary of the species, and a care profile with typical care requirements."
         })];
         content.push(json!({
             "type": "image_url",
@@ -153,11 +189,28 @@ mod tests {
                 "role": "user",
                 "content": content
             }],
-            "response_format": { "type": "json_object" }
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "identify_result",
+                    "strict": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "common_name": { "type": "string" },
+                            "scientific_name": { "type": "string" }
+                        },
+                        "required": ["common_name", "scientific_name"],
+                        "additionalProperties": false
+                    }
+                }
+            }
         });
 
-        assert_eq!(body["model"], "gpt-4o-mini");
-        assert_eq!(body["response_format"]["type"], "json_object");
+        assert_eq!(body["model"], "gpt-4.1-mini");
+        assert_eq!(body["response_format"]["type"], "json_schema");
+        assert_eq!(body["response_format"]["json_schema"]["name"], "identify_result");
+        assert!(body["response_format"]["json_schema"]["strict"].as_bool().unwrap());
         assert_eq!(body["messages"][0]["role"], "user");
 
         let parts = body["messages"][0]["content"].as_array().unwrap();

@@ -17,7 +17,7 @@ async fn test_app_ai_enabled() -> Router {
     let provider: Arc<dyn AiProvider> = Arc::new(OpenAiProvider::new(
         "sk-test".into(),
         "https://api.openai.com/v1".into(),
-        "gpt-4o-mini".into(),
+        "gpt-4.1-mini".into(),
     ));
 
     let state = AppState {
@@ -31,7 +31,7 @@ async fn test_app_ai_enabled() -> Router {
         mqtt_disabled: true,
         ai_provider: Some(provider),
         ai_base_url: "https://api.openai.com/v1".to_string(),
-        ai_model: "gpt-4o-mini".to_string(),
+        ai_model: "gpt-4.1-mini".to_string(),
     };
     flowl::server::router(state)
 }
@@ -49,7 +49,7 @@ async fn ai_status_enabled() {
     let body = common::body_json(response).await;
     assert_eq!(body["enabled"], true);
     assert_eq!(body["base_url"], "https://api.openai.com/v1");
-    assert_eq!(body["model"], "gpt-4o-mini");
+    assert_eq!(body["model"], "gpt-4.1-mini");
 }
 
 #[tokio::test]

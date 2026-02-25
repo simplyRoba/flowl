@@ -85,7 +85,7 @@ async fn test_app_with_provider(provider: Arc<dyn AiProvider>) -> Router {
         mqtt_disabled: true,
         ai_provider: Some(provider),
         ai_base_url: "https://api.openai.com/v1".to_string(),
-        ai_model: "gpt-4o-mini".to_string(),
+        ai_model: "gpt-4.1-mini".to_string(),
     };
     flowl::server::router(state)
 }
