@@ -317,7 +317,7 @@
 		top: 60px;
 		left: 0;
 		right: 0;
-		bottom: 56px;
+		bottom: 0;
 		width: 100%;
 		max-width: 100%;
 		max-height: none;
