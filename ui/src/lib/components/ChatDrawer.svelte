@@ -230,9 +230,11 @@
 			</div>
 		{:else}
 			{#each messages as msg}
+				{#if msg.content}
 				<div class="message" class:user={msg.role === 'user'} class:assistant={msg.role === 'assistant'}>
 					{msg.content}
 				</div>
+				{/if}
 			{/each}
 			{#if streaming && messages[messages.length - 1]?.content === ''}
 				<div class="typing-indicator">
