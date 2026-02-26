@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.15.0](https://github.com/simplyRoba/flowl/compare/v0.14.1...v0.15.0) (2026-02-26)
+
+
+### Features
+
+* **ai:** add streaming chat and summarize endpoints ([5279fbd](https://github.com/simplyRoba/flowl/commit/5279fbddcfe78639d3f2c2ee4be2ceb862cdbeed))
+* **ai:** return up to 3 ranked identification suggestions per request ([eeee4d1](https://github.com/simplyRoba/flowl/commit/eeee4d10a0c937d7897851b368fe9b70a5f515a3))
+* **ui:** add AI chat drawer to plant detail page ([320cd95](https://github.com/simplyRoba/flowl/commit/320cd9532884f0b7debaec73b3d5dba53dfbca74))
+
+
+### Bug Fixes
+
+* **deps:** bump rollup from 4.57.1 to 4.59.0 in /ui ([318338e](https://github.com/simplyRoba/flowl/commit/318338e277dbf7c6849524fa2832bdacda160381))
+* resolve clippy pedantic lints for CI ([b8cc141](https://github.com/simplyRoba/flowl/commit/b8cc14166a7a1f2b5c0aca7adb2df177d1d7fcbd))
+
 ## [0.14.1](https://github.com/simplyRoba/flowl/compare/v0.14.0...v0.14.1) (2026-02-25)
 
 
