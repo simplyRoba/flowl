@@ -490,13 +490,21 @@
 		display: flex;
 		max-width: none;
 		height: 100%;
+		gap: 24px;
+	}
+
+	.detail.chat-open :global(.page-header-inline),
+	.detail.chat-open :global(.action-bar) {
+		display: none !important;
 	}
 
 	.detail-content {
 		flex: 1;
 		min-width: 0;
+	}
+
+	.detail.chat-open .detail-content {
 		max-width: var(--content-width-default);
-		margin: 0 auto;
 		overflow-y: auto;
 	}
 
@@ -515,12 +523,7 @@
 		filter: brightness(0.95);
 	}
 
-	/* Hide mobile action bar when chat is open */
-	@media (max-width: 768px) {
-		.detail.chat-open :global(.action-bar) {
-			display: none !important;
-		}
-	}
+
 
 
 	.detail-hero {
