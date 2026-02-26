@@ -82,7 +82,7 @@
 		--fs-page-title: 22px;
 		--fs-section-label: 13px;
 		--fs-btn: 14px;
-		--fs-input: 15px;
+		--fs-input: 16px;
 		--fs-chip: 13px;
 
 		/* Radii */
