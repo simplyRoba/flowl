@@ -73,7 +73,7 @@ async fn put_both_fields() {
 async fn put_empty_body() {
     let app = app().await;
     let resp = app
-        .oneshot(json_request("PUT", "/api/settings", Some(r#"{}"#)))
+        .oneshot(json_request("PUT", "/api/settings", Some("{}")))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);

@@ -254,7 +254,7 @@ async fn identify_returns_200_for_multiple_photos() {
 
     let body = common::body_json(response).await;
     let suggestions = body["suggestions"].as_array().unwrap();
-    assert!(suggestions.len() >= 1);
+    assert!(!suggestions.is_empty());
     assert_eq!(suggestions[0]["common_name"], "Monstera");
     assert_eq!(suggestions[0]["scientific_name"], "Monstera deliciosa");
 }

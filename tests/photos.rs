@@ -8,7 +8,7 @@ use tower::ServiceExt;
 fn multipart_request(uri: &str, content_type: &str, data: &[u8]) -> Request<Body> {
     let boundary = "----testboundary";
     let mut body_bytes = Vec::new();
-    body_bytes.extend_from_slice(format!("------testboundary\r\n").as_bytes());
+    body_bytes.extend_from_slice("------testboundary\r\n".as_bytes());
     body_bytes.extend_from_slice(
         format!(
             "Content-Disposition: form-data; name=\"file\"; filename=\"test.jpg\"\r\n\
@@ -63,7 +63,11 @@ async fn upload_photo() {
 
     let json = body_json(resp).await;
     assert!(json["photo_url"].as_str().unwrap().starts_with("/uploads/"));
-    assert!(json["photo_url"].as_str().unwrap().ends_with(".jpg"));
+    assert!(
+        std::path::Path::new(json["photo_url"].as_str().unwrap())
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("jpg"))
+    );
 
     // Verify file exists on disk
     let filename = json["photo_url"]
@@ -125,7 +129,11 @@ async fn upload_replaces_existing_photo() {
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
     let json = body_json(resp).await;
-    assert!(json["photo_url"].as_str().unwrap().ends_with(".png"));
+    assert!(
+        std::path::Path::new(json["photo_url"].as_str().unwrap())
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("png"))
+    );
 
     // Old file should be deleted
     assert!(!upload_dir.join(&first_filename).exists());

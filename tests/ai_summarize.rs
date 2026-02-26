@@ -38,7 +38,10 @@ impl AiProvider for MockSummarizeProvider {
         _messages: &[ChatMessage],
         _locale: &str,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-        Ok("Diagnosed yellowing leaves as overwatering. Recommended reducing frequency.".to_string())
+        Ok(
+            "Diagnosed yellowing leaves as overwatering. Recommended reducing frequency."
+                .to_string(),
+        )
     }
 }
 

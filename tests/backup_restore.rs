@@ -334,13 +334,12 @@ async fn import_patch_version_difference_allowed() {
 
     let json = format!(
         r#"{{
-            "version": "{}",
+            "version": "{compatible_version}",
             "exported_at": "2026-02-21T12:00:00Z",
             "locations": [],
             "plants": [],
             "care_events": []
-        }}"#,
-        compatible_version
+        }}"#
     );
     let zip_bytes = build_export_zip(&json);
 

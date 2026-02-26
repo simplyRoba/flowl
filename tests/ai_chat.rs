@@ -242,9 +242,7 @@ async fn chat_returns_500_when_provider_fails() {
     let request = common::json_request(
         "POST",
         "/api/ai/chat",
-        Some(&format!(
-            r#"{{"plant_id":{plant_id},"message":"hello"}}"#
-        )),
+        Some(&format!(r#"{{"plant_id":{plant_id},"message":"hello"}}"#)),
     );
 
     let response = app.oneshot(request).await.unwrap();

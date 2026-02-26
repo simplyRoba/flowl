@@ -253,7 +253,7 @@ impl AiProvider for OpenAiProvider {
     }
 }
 
-/// Read an SSE byte stream from the OpenAI API, extract content deltas, and forward them
+/// Read an SSE byte stream from the `OpenAI` API, extract content deltas, and forward them
 /// through the channel.
 async fn stream_sse_deltas(
     response: reqwest::Response,
@@ -266,10 +266,10 @@ async fn stream_sse_deltas(
             Ok(bytes) => {
                 buf.push_str(&String::from_utf8_lossy(&bytes));
                 while let Some(pos) = buf.find('\n') {
-                    if let Some(delta) = parse_sse_line(&buf[..pos]) {
-                        if tx.send(Ok(delta)).await.is_err() {
-                            return;
-                        }
+                    if let Some(delta) = parse_sse_line(&buf[..pos])
+                        && tx.send(Ok(delta)).await.is_err()
+                    {
+                        return;
                     }
                     buf = buf[pos + 1..].to_string();
                 }
