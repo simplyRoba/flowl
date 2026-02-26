@@ -556,7 +556,7 @@
 		border-radius: 999px;
 		border: 1px solid var(--color-border);
 		background: var(--color-background);
-		font-size: 14px;
+		font-size: var(--fs-input);
 		color: var(--color-text);
 		outline: none;
 		font-family: inherit;
