@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.15.1](https://github.com/simplyRoba/flowl/compare/v0.15.0...v0.15.1) (2026-02-26)
+
+
+### Bug Fixes
+
+* **ui:** disable pinch-to-zoom on mobile ([6e7e00b](https://github.com/simplyRoba/flowl/commit/6e7e00b7c4eca8ae72272d44686191bfb44d80db))
+* **ui:** extend mobile chat drawer over bottom navigation ([8229740](https://github.com/simplyRoba/flowl/commit/822974033860d20dc33ce962471f75d193d7afca))
+* **ui:** prevent iOS Safari auto-zoom on input focus ([1580c13](https://github.com/simplyRoba/flowl/commit/1580c139b5e7927e394b5026c9841e2f66fd391d))
+* **ui:** render chat drawer side-by-side on desktop/tablet ([747975c](https://github.com/simplyRoba/flowl/commit/747975c1bab9d4667b5f7d0196b433f0dfd42ebd))
+* **ui:** use --fs-input variable for chat input font size ([f793070](https://github.com/simplyRoba/flowl/commit/f793070e86c7e678de24f9b63bfcebfef2abf807))
+
 ## [0.15.0](https://github.com/simplyRoba/flowl/compare/v0.14.1...v0.15.0) (2026-02-26)
 
 
