@@ -25,9 +25,12 @@ pub struct IdentifyResponse {
     pub suggestions: Vec<IdentifyResult>,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ChatMessage {
     pub role: String,
     pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
 }
 
 pub type ChatResponseStream = tokio_stream::wrappers::ReceiverStream<Result<String, String>>;

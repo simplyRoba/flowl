@@ -42,14 +42,19 @@ impl AiProvider for MockAiProvider {
 
     async fn chat(
         &self,
+        _system_prompt: &str,
         _messages: &[ChatMessage],
+        _image: Option<&[u8]>,
+        _locale: &str,
     ) -> Result<ChatResponseStream, Box<dyn std::error::Error + Send + Sync>> {
         unimplemented!()
     }
 
     async fn summarize(
         &self,
-        _text: &str,
+        _system_prompt: &str,
+        _messages: &[ChatMessage],
+        _locale: &str,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
         unimplemented!()
     }
@@ -69,14 +74,19 @@ impl AiProvider for FailingAiProvider {
 
     async fn chat(
         &self,
+        _system_prompt: &str,
         _messages: &[ChatMessage],
+        _image: Option<&[u8]>,
+        _locale: &str,
     ) -> Result<ChatResponseStream, Box<dyn std::error::Error + Send + Sync>> {
         unimplemented!()
     }
 
     async fn summarize(
         &self,
-        _text: &str,
+        _system_prompt: &str,
+        _messages: &[ChatMessage],
+        _locale: &str,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
         unimplemented!()
     }

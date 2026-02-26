@@ -3,7 +3,8 @@ use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 use reqwest::Client;
 use serde_json::{Value, json};
-use tracing::debug;
+use tokio_stream::StreamExt as _;
+use tracing::{debug, warn};
 
 use super::provider::AiProvider;
 use super::types::{ChatMessage, ChatResponseStream, IdentifyResponse};
@@ -138,16 +139,168 @@ impl AiProvider for OpenAiProvider {
 
     async fn chat(
         &self,
-        _messages: &[ChatMessage],
+        system_prompt: &str,
+        messages: &[ChatMessage],
+        image: Option<&[u8]>,
+        _locale: &str,
     ) -> Result<ChatResponseStream, Box<dyn std::error::Error + Send + Sync>> {
-        unimplemented!("chat is not yet implemented")
+        let mut api_messages: Vec<Value> = vec![json!({
+            "role": "system",
+            "content": system_prompt
+        })];
+
+        // Add history messages
+        for msg in messages {
+            if let Some(ref img_b64) = msg.image {
+                // Message with image: use content array
+                api_messages.push(json!({
+                    "role": msg.role,
+                    "content": [
+                        { "type": "text", "text": msg.content },
+                        { "type": "image_url", "image_url": { "url": format!("data:image/jpeg;base64,{img_b64}") } }
+                    ]
+                }));
+            } else {
+                api_messages.push(json!({
+                    "role": msg.role,
+                    "content": msg.content
+                }));
+            }
+        }
+
+        // Add current image to the last user message if provided
+        if let Some(img_bytes) = image {
+            let b64 = STANDARD.encode(img_bytes);
+            if let Some(last) = api_messages.last_mut()
+                && last["role"] == "user"
+            {
+                let text = last["content"].as_str().unwrap_or("").to_string();
+                last["content"] = json!([
+                    { "type": "text", "text": text },
+                    { "type": "image_url", "image_url": { "url": format!("data:image/jpeg;base64,{b64}") } }
+                ]);
+            }
+        }
+
+        let body = json!({
+            "model": self.model,
+            "messages": api_messages,
+            "stream": true
+        });
+
+        let response = self
+            .client
+            .post(self.completions_url())
+            .bearer_auth(&self.api_key)
+            .json(&body)
+            .send()
+            .await?
+            .error_for_status()?;
+
+        let (tx, rx) = tokio::sync::mpsc::channel::<Result<String, String>>(32);
+
+        tokio::spawn(stream_sse_deltas(response, tx));
+
+        Ok(tokio_stream::wrappers::ReceiverStream::new(rx))
     }
 
     async fn summarize(
         &self,
-        _text: &str,
+        system_prompt: &str,
+        messages: &[ChatMessage],
+        _locale: &str,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-        unimplemented!("summarize is not yet implemented")
+        let mut api_messages: Vec<Value> = vec![json!({
+            "role": "system",
+            "content": system_prompt
+        })];
+
+        for msg in messages {
+            api_messages.push(json!({
+                "role": msg.role,
+                "content": msg.content
+            }));
+        }
+
+        let body = json!({
+            "model": self.model,
+            "messages": api_messages,
+            "response_format": { "type": "json_object" }
+        });
+
+        let response = self
+            .client
+            .post(self.completions_url())
+            .bearer_auth(&self.api_key)
+            .json(&body)
+            .send()
+            .await?
+            .error_for_status()?;
+
+        let response_body: Value = response.json().await?;
+        let content_str = response_body["choices"][0]["message"]["content"]
+            .as_str()
+            .ok_or("Missing content in API response")?;
+
+        debug!(raw_content = %content_str, "AI summarize raw response");
+
+        let parsed: Value = serde_json::from_str(content_str)?;
+        let summary = parsed["summary"]
+            .as_str()
+            .ok_or("Missing 'summary' field in AI response")?;
+
+        Ok(summary.to_string())
+    }
+}
+
+/// Read an SSE byte stream from the OpenAI API, extract content deltas, and forward them
+/// through the channel.
+async fn stream_sse_deltas(
+    response: reqwest::Response,
+    tx: tokio::sync::mpsc::Sender<Result<String, String>>,
+) {
+    let mut stream = response.bytes_stream();
+    let mut buf = String::new();
+    while let Some(chunk) = stream.next().await {
+        match chunk {
+            Ok(bytes) => {
+                buf.push_str(&String::from_utf8_lossy(&bytes));
+                while let Some(pos) = buf.find('\n') {
+                    if let Some(delta) = parse_sse_line(&buf[..pos]) {
+                        if tx.send(Ok(delta)).await.is_err() {
+                            return;
+                        }
+                    }
+                    buf = buf[pos + 1..].to_string();
+                }
+            }
+            Err(e) => {
+                let _ = tx.send(Err(e.to_string())).await;
+                return;
+            }
+        }
+    }
+}
+
+/// Parse a single SSE line from the `OpenAI` streaming response.
+/// Returns `Some(delta_text)` if the line contains a content delta, `None` otherwise.
+fn parse_sse_line(line: &str) -> Option<String> {
+    let data = line.strip_prefix("data: ")?;
+
+    // Skip the [DONE] marker and empty data
+    if data == "[DONE]" || data.is_empty() {
+        return None;
+    }
+
+    match serde_json::from_str::<Value>(data) {
+        Ok(parsed) => parsed["choices"][0]["delta"]["content"]
+            .as_str()
+            .filter(|s| !s.is_empty())
+            .map(String::from),
+        Err(e) => {
+            warn!(line = %line, error = %e, "Failed to parse SSE chunk");
+            None
+        }
     }
 }
 
@@ -268,5 +421,70 @@ mod tests {
                 .unwrap()
                 .starts_with("data:image/jpeg;base64,")
         );
+    }
+
+    // --- SSE parsing tests ---
+
+    #[test]
+    fn parse_sse_line_extracts_delta() {
+        let line = r#"data: {"choices":[{"delta":{"content":"Hello"},"index":0}]}"#;
+        assert_eq!(parse_sse_line(line), Some("Hello".to_string()));
+    }
+
+    #[test]
+    fn parse_sse_line_skips_done_marker() {
+        assert_eq!(parse_sse_line("data: [DONE]"), None);
+    }
+
+    #[test]
+    fn parse_sse_line_skips_empty_lines() {
+        assert_eq!(parse_sse_line(""), None);
+        assert_eq!(parse_sse_line("\n"), None);
+    }
+
+    #[test]
+    fn parse_sse_line_skips_non_data_lines() {
+        assert_eq!(parse_sse_line("event: message"), None);
+        assert_eq!(parse_sse_line(": comment"), None);
+    }
+
+    #[test]
+    fn parse_sse_line_skips_empty_content() {
+        let line = r#"data: {"choices":[{"delta":{"content":""},"index":0}]}"#;
+        assert_eq!(parse_sse_line(line), None);
+    }
+
+    #[test]
+    fn parse_sse_line_skips_role_only_delta() {
+        let line = r#"data: {"choices":[{"delta":{"role":"assistant"},"index":0}]}"#;
+        assert_eq!(parse_sse_line(line), None);
+    }
+
+    #[test]
+    fn parse_sse_line_handles_malformed_json() {
+        assert_eq!(parse_sse_line("data: {invalid json}"), None);
+    }
+
+    // --- Summarize response parsing tests ---
+
+    #[test]
+    fn parse_summarize_response_valid() {
+        let content = r#"{"summary":"Diagnosed yellowing as overwatering."}"#;
+        let parsed: Value = serde_json::from_str(content).unwrap();
+        let summary = parsed["summary"].as_str().unwrap();
+        assert_eq!(summary, "Diagnosed yellowing as overwatering.");
+    }
+
+    #[test]
+    fn parse_summarize_response_missing_field() {
+        let content = r#"{"note":"Something else"}"#;
+        let parsed: Value = serde_json::from_str(content).unwrap();
+        assert!(parsed["summary"].as_str().is_none());
+    }
+
+    #[test]
+    fn parse_summarize_response_invalid_json() {
+        let result = serde_json::from_str::<Value>("{not valid}");
+        assert!(result.is_err());
     }
 }

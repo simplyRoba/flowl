@@ -44,6 +44,11 @@ pub fn router(state: AppState) -> Router {
             "/ai/identify",
             post(ai::identify_plant).layer(DefaultBodyLimit::max(30 * 1024 * 1024)),
         )
+        .route(
+            "/ai/chat",
+            post(ai::chat).layer(DefaultBodyLimit::max(30 * 1024 * 1024)),
+        )
+        .route("/ai/summarize", post(ai::summarize))
         .route("/mqtt/status", get(mqtt::get_mqtt_status))
         .route("/mqtt/repair", post(mqtt::post_mqtt_repair))
         .route("/data/export", get(backup::export_data))

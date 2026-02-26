@@ -12,11 +12,16 @@ pub trait AiProvider: Send + Sync {
 
     async fn chat(
         &self,
+        system_prompt: &str,
         messages: &[super::types::ChatMessage],
+        image: Option<&[u8]>,
+        locale: &str,
     ) -> Result<super::types::ChatResponseStream, Box<dyn std::error::Error + Send + Sync>>;
 
     async fn summarize(
         &self,
-        text: &str,
+        system_prompt: &str,
+        messages: &[super::types::ChatMessage],
+        locale: &str,
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>;
 }
