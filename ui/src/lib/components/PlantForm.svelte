@@ -1153,6 +1153,7 @@
 		padding: 16px;
 		background: var(--color-ai-tint);
 		margin-top: 4px;
+		margin-bottom: 12px;
 		width: 100%;
 		box-sizing: border-box;
 	}
