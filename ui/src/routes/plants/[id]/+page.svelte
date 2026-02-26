@@ -800,8 +800,9 @@
 			font-size: var(--fs-page-title);
 		}
 
-		.btn-water {
-			width: 100%;
+		.hero-actions :global(.btn) {
+			flex: 1;
+			justify-content: center;
 		}
 
 		.detail-grid {
