@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>flowl — Chat Drawer UI Mockups</title>
+<style>
+  /* ── Reset & base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #f0ebe4;
+    color: #2C2418;
+    padding: 40px 24px;
+  }
+
+  /* ── flowl design tokens (light) ── */
+  :root {
+    --color-background: #FAF6F1;
+    --color-surface: #FFFFFF;
+    --color-border: #E5DDD3;
+    --color-border-subtle: color-mix(in srgb, #E5DDD3 70%, #FAF6F1);
+    --color-text: #2C2418;
+    --color-text-muted: #8C7E6E;
+    --color-primary: #6B8F71;
+    --color-water: #5B9BC4;
+    --color-ai: #9B7ED8;
+    --color-ai-tint: color-mix(in srgb, #9B7ED8 10%, transparent);
+    --color-ai-soft: color-mix(in srgb, #9B7ED8 15%, transparent);
+    --color-success: #7AB87A;
+    --radius-card: 12px;
+    --radius-btn: 8px;
+    --radius-pill: 999px;
+  }
+
+  /* ── Mockup frame ── */
+  .mockup-title {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 8px;
+    color: var(--color-text);
+  }
+  .mockup-subtitle {
+    text-align: center;
+    color: var(--color-text-muted);
+    margin-bottom: 48px;
+    font-size: 15px;
+  }
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    margin-bottom: 16px;
+  }
+  .mockup-section {
+    margin-bottom: 64px;
+  }
+
+  /* ── Shared frame chrome ── */
+  .frame {
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--color-background);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    margin: 0 auto;
+  }
+
+  /* ================================================================
+     DESKTOP MOCKUP
+     ================================================================ */
+  .desktop-frame {
+    width: 100%;
+    max-width: 1100px;
+    height: 640px;
+    display: flex;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 64px;
+    flex-shrink: 0;
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 8px;
+  }
+  .sidebar .logo {
+    width: 28px; height: 28px;
+    background: var(--color-primary);
+    border-radius: 6px;
+    margin-bottom: 16px;
+  }
+  .sidebar .nav-dot {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--color-text-muted);
+    font-size: 18px;
+  }
+  .sidebar .nav-dot.active {
+    background: var(--color-primary);
+    color: white;
+  }
+  .sidebar .nav-dot.bottom { margin-top: auto; }
+
+  /* Main content area */
+  .main-area {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .main-content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  /* Plant detail hero */
+  .detail-hero {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .detail-photo {
+    width: 180px; height: 180px;
+    border-radius: var(--radius-card);
+    background: linear-gradient(135deg, #a8d5a2 0%, #6B8F71 100%);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 64px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .detail-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.3)' stroke-width='1.5'%3E%3Cpath d='M7 20h10'/%3E%3Cpath d='M10 20c5.5-2.5.8-6.4 3-10'/%3E%3Cpath d='M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z'/%3E%3Cpath d='M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z'/%3E%3C/svg%3E") center/60px no-repeat;
+    opacity: 0.6;
+  }
+  .detail-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .detail-name h2 {
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .detail-species {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+  .detail-location {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    width: fit-content;
+  }
+  .status-badge.ok {
+    background: color-mix(in srgb, var(--color-success) 20%, transparent);
+    color: #4a7a4a;
+  }
+  .status-badge .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--color-success);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--radius-btn);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s;
+    width: fit-content;
+  }
+  .btn:hover { filter: brightness(0.95); }
+  .btn-water {
+    background: var(--color-water);
+    color: white;
+  }
+  .btn-ai {
+    background: var(--color-ai);
+    color: white;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  /* Sections */
+  .detail-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .section-card {
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    padding: 16px;
+    border: 1px solid var(--color-border);
+  }
+  .section-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row-label { color: var(--color-text-muted); }
+
+  /* ── Chat drawer (desktop) ── */
+  .chat-drawer {
+    width: 400px;
+    flex-shrink: 0;
+    background: var(--color-surface);
+    border-left: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .chat-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .chat-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chat-header-sparkle {
+    color: var(--color-ai);
+    font-size: 18px;
+  }
+  .chat-header-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .chat-close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chat-close:hover { background: var(--color-ai-tint); }
+
+  /* Quick chips */
+  .quick-chips {
+    padding: 16px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .quick-chips-label {
+    width: 100%;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-bottom: 4px;
+  }
+  .chip {
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    font-size: 13px;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .chip:hover {
+    border-color: var(--color-ai);
+    background: var(--color-ai-tint);
+    color: var(--color-ai);
+  }
+
+  /* Messages */
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .message {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .message.user {
+    align-self: flex-end;
+    background: var(--color-ai);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .message.assistant {
+    align-self: flex-start;
+    background: var(--color-ai-tint);
+    color: var(--color-text);
+    border-bottom-left-radius: 4px;
+  }
+  .typing-indicator {
+    align-self: flex-start;
+    display: flex;
+    gap: 4px;
+    padding: 12px 16px;
+    background: var(--color-ai-tint);
+    border-radius: 14px;
+    border-bottom-left-radius: 4px;
+  }
+  .typing-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--color-ai);
+    opacity: 0.4;
+    animation: typing 1.4s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing {
+    0%, 60%, 100% { opacity: 0.4; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-4px); }
+  }
+
+  /* Input */
+  .chat-input-area {
+    padding: 12px 16px;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-border);
+    background: var(--color-background);
+    font-size: 14px;
+    color: var(--color-text);
+    outline: none;
+  }
+  .chat-input::placeholder { color: var(--color-text-muted); }
+  .chat-input:focus { border-color: var(--color-ai); }
+  .send-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-ai);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { filter: brightness(0.9); }
+  .send-btn.disabled { opacity: 0.4; cursor: default; }
+
+  /* ================================================================
+     MOBILE MOCKUP
+     ================================================================ */
+  .mobile-frame {
+    width: 375px;
+    height: 812px;
+    position: relative;
+  }
+  .mobile-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    position: relative;
+  }
+  .mobile-frame {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Mobile hero */
+  .mobile-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .mobile-photo {
+    width: 100%;
+    height: 200px;
+    border-radius: var(--radius-card);
+    background: linear-gradient(135deg, #a8d5a2 0%, #6B8F71 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 64px; color: white;
+    position: relative; overflow: hidden;
+  }
+  .mobile-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.3)' stroke-width='1.5'%3E%3Cpath d='M7 20h10'/%3E%3Cpath d='M10 20c5.5-2.5.8-6.4 3-10'/%3E%3Cpath d='M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z'/%3E%3Cpath d='M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z'/%3E%3C/svg%3E") center/60px no-repeat;
+    opacity: 0.6;
+  }
+  .mobile-info {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  }
+  .mobile-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    margin-top: 4px;
+  }
+  .mobile-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    height: 56px;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+  }
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .bottom-nav-item.active { color: var(--color-primary); }
+  .bottom-nav-icon {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+  }
+
+  /* Mobile action bar */
+  .action-bar {
+    height: 52px;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+  }
+  .action-bar-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-primary);
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .action-bar-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-btn);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .btn-icon.btn-danger {
+    color: var(--color-danger);
+    border-color: color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
+  }
+
+  /* Mobile bottom sheet */
+  .bottom-sheet-overlay {
+    position: absolute;
+    inset: 0;
+    bottom: 56px;
+    background: rgba(0,0,0,0.3);
+    z-index: 10;
+  }
+  .bottom-sheet {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 56px;
+    height: calc(100% - 56px - 60px);
+    background: var(--color-surface);
+    border-radius: 16px 16px 0 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
+  }
+  .drag-handle {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .drag-handle-bar {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-border);
+  }
+
+  /* ================================================================
+     STATE VARIATIONS
+     ================================================================ */
+  .mockup-row {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .mockup-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .mockup-item-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+
+  /* ── Small state frames ── */
+  .state-frame {
+    width: 360px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  /* Dimmed content behind drawer */
+  .content-dimmed {
+    opacity: 0.4;
+  }
+
+  /* ── Annotation callouts ── */
+  .annotation {
+    font-size: 12px;
+    color: var(--color-ai);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .annotation::before {
+    content: '';
+    width: 12px;
+    height: 1px;
+    background: var(--color-ai);
+  }
+
+  /* ── Spacer ── */
+  hr.divider {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 48px auto;
+    max-width: 600px;
+  }
+</style>
+</head>
+<body>
+
+<h1 class="mockup-title">Chat Drawer UI — Mockups</h1>
+<p class="mockup-subtitle">Phase 6 · flowl AI Chat · Desktop &amp; Mobile</p>
+
+<!-- ════════════════════════════════════════════════════════
+     1. DESKTOP — DRAWER CLOSED (Hero with Ask AI button)
+     ════════════════════════════════════════════════════════ -->
+<div class="mockup-section">
+  <p class="section-label">1 &middot; Desktop — Plant Detail with "Ask AI" Button</p>
+
+  <div class="frame desktop-frame">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="logo"></div>
+      <div class="nav-dot active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12"/><path d="M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="m15 6-6.5 6.5"/><path d="M18 15v6"/><path d="M21 18h-6"/></svg>
+      </div>
+      <div class="nav-dot">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      </div>
+      <div class="nav-dot bottom">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-area">
+      <div class="main-content">
+        <div class="detail-hero">
+          <div class="detail-photo"></div>
+          <div class="detail-info">
+            <div class="detail-name">
+              <h2>Monstera</h2>
+              <span class="detail-species">Monstera deliciosa</span>
+            </div>
+            <div class="detail-location">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              Living Room
+            </div>
+            <div class="status-badge ok">
+              <span class="dot"></span>
+              Ok — due in 3 days
+            </div>
+            <div class="hero-actions">
+              <button class="btn btn-water">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                Water now
+              </button>
+              <button class="btn btn-ai">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+                Ask AI
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-sections">
+          <div class="section-card">
+            <div class="section-card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+              Watering
+            </div>
+            <div class="detail-row"><span class="detail-row-label">Interval</span><span>Every 10 days</span></div>
+            <div class="detail-row"><span class="detail-row-label">Last watered</span><span>Feb 20, 2026</span></div>
+            <div class="detail-row"><span class="detail-row-label">Next due</span><span>Mar 2, 2026</span></div>
+            <div class="detail-row"><span class="detail-row-label">Soil moisture</span><span>Moderate</span></div>
+          </div>
+          <div class="section-card">
+            <div class="section-card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              Care Info
+            </div>
+            <div class="detail-row"><span class="detail-row-label">Light</span><span>Indirect</span></div>
+            <div class="detail-row"><span class="detail-row-label">Difficulty</span><span>Easy</span></div>
+            <div class="detail-row"><span class="detail-row-label">Pet safety</span><span>Toxic</span></div>
+            <div class="detail-row"><span class="detail-row-label">Growth</span><span>Moderate</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     2. DESKTOP — DRAWER OPEN (Empty state + quick chips)
+     ════════════════════════════════════════════════════════ -->
+<div class="mockup-section">
+  <p class="section-label">2 &middot; Desktop — Chat Drawer Open (Empty State)</p>
+
+  <div class="frame desktop-frame">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="logo"></div>
+      <div class="nav-dot active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12"/><path d="M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="m15 6-6.5 6.5"/><path d="M18 15v6"/><path d="M21 18h-6"/></svg>
+      </div>
+      <div class="nav-dot">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      </div>
+      <div class="nav-dot bottom">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/></svg>
+      </div>
+    </div>
+
+    <!-- Main content (dimmed) -->
+    <div class="main-area content-dimmed">
+      <div class="main-content">
+        <div class="detail-hero">
+          <div class="detail-photo"></div>
+          <div class="detail-info">
+            <div class="detail-name">
+              <h2>Monstera</h2>
+              <span class="detail-species">Monstera deliciosa</span>
+            </div>
+            <div class="detail-location">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              Living Room
+            </div>
+            <div class="status-badge ok">
+              <span class="dot"></span>
+              Ok — due in 3 days
+            </div>
+            <div class="hero-actions">
+              <button class="btn btn-water">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                Water now
+              </button>
+              <button class="btn btn-ai">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                Ask AI
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat drawer -->
+    <div class="chat-drawer">
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <span class="chat-header-sparkle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          </span>
+          <span class="chat-header-title">Monstera</span>
+        </div>
+        <button class="chat-close">&times;</button>
+      </div>
+
+      <div class="quick-chips">
+        <span class="quick-chips-label">Quick questions</span>
+        <span class="chip">Health check</span>
+        <span class="chip">Watering advice</span>
+        <span class="chip">When to repot?</span>
+        <span class="chip">Yellow leaves?</span>
+      </div>
+
+      <div class="chat-messages" style="flex: 1; display: flex; align-items: center; justify-content: center;">
+        <div style="text-align: center; color: var(--color-text-muted); font-size: 14px; padding: 20px;">
+          <div style="font-size: 32px; margin-bottom: 12px; opacity: 0.4;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          </div>
+          Ask anything about your<br>Monstera's care
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <input class="chat-input" placeholder="Ask about your plant..." readonly>
+        <button class="send-btn disabled">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     3. DESKTOP — DRAWER OPEN (Active conversation)
+     ════════════════════════════════════════════════════════ -->
+<div class="mockup-section">
+  <p class="section-label">3 &middot; Desktop — Chat Drawer with Conversation</p>
+
+  <div class="frame desktop-frame">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="logo"></div>
+      <div class="nav-dot active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12"/><path d="M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+      </div>
+      <div class="nav-dot">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      </div>
+      <div class="nav-dot bottom">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+    </div>
+
+    <!-- Main content (dimmed) -->
+    <div class="main-area content-dimmed">
+      <div class="main-content">
+        <div class="detail-hero">
+          <div class="detail-photo"></div>
+          <div class="detail-info">
+            <div class="detail-name">
+              <h2>Monstera</h2>
+              <span class="detail-species">Monstera deliciosa</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat drawer with conversation -->
+    <div class="chat-drawer">
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <span class="chat-header-sparkle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          </span>
+          <span class="chat-header-title">Monstera</span>
+        </div>
+        <button class="chat-close">&times;</button>
+      </div>
+
+      <div class="chat-messages">
+        <div class="message user">The lower leaves are turning yellow. Is something wrong?</div>
+        <div class="message assistant">Based on your Monstera's care profile, yellowing lower leaves can indicate <strong>overwatering</strong>. Your current watering interval is every 10 days, which is typical for Monstera — but several factors might warrant adjustment:<br><br>&bull; <strong>Season:</strong> In winter, most Monsteras need less frequent watering (every 12-14 days)<br>&bull; <strong>Soil check:</strong> Let the top 2-3 inches of soil dry out between waterings<br>&bull; <strong>Drainage:</strong> Ensure the pot has drainage holes and water isn't pooling<br><br>Try extending your interval to 12-14 days and see if the yellowing stops. If new yellow leaves appear on top, that could indicate a different issue like low light or nutrient deficiency.</div>
+        <div class="message user">Should I cut off the yellow leaves?</div>
+        <div class="message assistant">Yes, you can safely remove them! Yellow leaves won't recover, and removing them lets your Monstera redirect energy to healthy growth.<br><br>Use clean, sharp scissors and cut at the base of the leaf stem where it meets the main stalk. This is essentially a light pruning — you might want to log it in your care journal.</div>
+      </div>
+
+      <div class="chat-input-area">
+        <input class="chat-input" placeholder="Ask about your plant..." readonly>
+        <button class="send-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     4. DESKTOP — STREAMING / TYPING INDICATOR
+     ════════════════════════════════════════════════════════ -->
+<div class="mockup-section">
+  <p class="section-label">4 &middot; Desktop — Streaming Response (Typing Indicator)</p>
+
+  <div class="frame desktop-frame">
+    <div class="sidebar">
+      <div class="logo"></div>
+      <div class="nav-dot active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12"/></svg>
+      </div>
+      <div class="nav-dot bottom">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+    </div>
+
+    <div class="main-area content-dimmed">
+      <div class="main-content">
+        <div class="detail-hero">
+          <div class="detail-photo"></div>
+          <div class="detail-info">
+            <div class="detail-name"><h2>Monstera</h2></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-drawer">
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <span class="chat-header-sparkle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          </span>
+          <span class="chat-header-title">Monstera</span>
+        </div>
+        <button class="chat-close">&times;</button>
+      </div>
+
+      <div class="chat-messages">
+        <div class="message user">How much light does it need?</div>
+        <div class="message assistant" style="opacity: 1;">Monsteras thrive in <strong>bright, indirect light</strong>. Your current placement in the Living Room should work well as long as</div>
+        <div class="typing-indicator">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <input class="chat-input" placeholder="Ask about your plant..." readonly disabled style="opacity: 0.5;">
+        <button class="send-btn disabled">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ════════════════════════════════════════════════════════
+     5. MOBILE — PLANT DETAIL WITH ASK AI BUTTON
+     ════════════════════════════════════════════════════════ -->
+<div class="mockup-section">
+  <p class="section-label">5 &middot; Mobile — Plant Detail with "Ask AI" Button</p>
+
+  <div class="mockup-row">
+    <div class="mockup-item">
+      <div class="frame mobile-frame">
+        <div class="mobile-content">
+          <div class="mobile-hero">
+            <div class="mobile-photo"></div>
+            <div class="mobile-info">
+              <div class="detail-name">
+                <h2>Monstera</h2>
+                <span class="detail-species">Monstera deliciosa</span>
+              </div>
+              <div class="detail-location">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                Living Room
+              </div>
+              <div class="status-badge ok" style="align-self: center;">
+                <span class="dot"></span>
+                Ok — due in 3 days
+              </div>
+              <div class="mobile-actions">
+                <button class="btn btn-water">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                  Water
+                </button>
+                <button class="btn btn-ai">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                  Ask AI
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="section-card">
+              <div class="section-card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                Watering
+              </div>
+              <div class="detail-row"><span class="detail-row-label">Interval</span><span>Every 10 days</span></div>
+              <div class="detail-row"><span class="detail-row-label">Last watered</span><span>Feb 20</span></div>
+              <div class="detail-row"><span class="detail-row-label">Next due</span><span>Mar 2</span></div>
+            </div>
+            <div class="section-card">
+              <div class="section-card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                Care Info
+              </div>
+              <div class="detail-row"><span class="detail-row-label">Light</span><span>Indirect</span></div>
+              <div class="detail-row"><span class="detail-row-label">Difficulty</span><span>Easy</span></div>
+              <div class="detail-row"><span class="detail-row-label">Pet safety</span><span>Toxic</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- Action bar (Back + Edit/Delete) — visible when chat is closed -->
+        <div class="action-bar">
+          <a class="action-bar-back">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            Back
+          </a>
+          <div class="action-bar-actions">
+            <button class="btn-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+            </button>
+            <button class="btn-icon btn-danger">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="bottom-nav">
+          <a class="bottom-nav-item active">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 17 3.5s1 1.5-1 5.5c0 0 2.5-1 4.5-1.5C22 9.5 22 13 22 13s-1.5-1-3.5-1c0 0 1 2.5.5 5-1 2-3 3-5 3"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+            Plants
+          </a>
+          <a class="bottom-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+            Journal
+          </a>
+          <a class="bottom-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+            Settings
+          </a>
+        </div>
+      </div>
+      <span class="mockup-item-label">Plant Detail (with action bar)</span>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         6. MOBILE — BOTTOM SHEET (Empty state)
+         ════════════════════════════════════════════════════════ -->
+    <div class="mockup-item">
+      <div class="frame mobile-frame" style="position: relative;">
+        <div class="mobile-content content-dimmed">
+          <div class="mobile-hero">
+            <div class="mobile-photo"></div>
+            <div class="mobile-info">
+              <div class="detail-name"><h2>Monstera</h2></div>
+            </div>
+          </div>
+        </div>
+        <!-- NO action bar — hidden when bottom sheet is open -->
+        <div class="bottom-sheet-overlay"></div>
+        <div class="bottom-sheet">
+          <div class="drag-handle">
+            <div class="drag-handle-bar"></div>
+          </div>
+          <div class="chat-header" style="padding-top: 0;">
+            <div class="chat-header-left">
+              <span class="chat-header-sparkle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              </span>
+              <span class="chat-header-title">Monstera</span>
+            </div>
+            <button class="chat-close">&times;</button>
+          </div>
+
+          <div class="quick-chips">
+            <span class="quick-chips-label">Quick questions</span>
+            <span class="chip">Health check</span>
+            <span class="chip">Watering advice</span>
+            <span class="chip">When to repot?</span>
+          </div>
+
+          <div class="chat-messages" style="flex: 1; display: flex; align-items: center; justify-content: center;">
+            <div style="text-align: center; color: var(--color-text-muted); font-size: 14px;">
+              <div style="font-size: 28px; margin-bottom: 10px; opacity: 0.4;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              </div>
+              Ask anything about<br>your Monstera's care
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <input class="chat-input" placeholder="Ask about your plant..." readonly>
+            <button class="send-btn disabled">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="bottom-nav" style="position: relative; z-index: 25;">
+          <a class="bottom-nav-item active">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 17 3.5s1 1.5-1 5.5c0 0 2.5-1 4.5-1.5C22 9.5 22 13 22 13s-1.5-1-3.5-1c0 0 1 2.5.5 5-1 2-3 3-5 3"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+            Plants
+          </a>
+          <a class="bottom-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+            Journal
+          </a>
+          <a class="bottom-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+            Settings
+          </a>
+        </div>
+      </div>
+      <span class="mockup-item-label">Bottom Sheet — Empty<br><em style="font-weight: 400; font-size: 11px; color: var(--color-ai);">action bar hidden when chat is open</em></span>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         7. MOBILE — BOTTOM SHEET (With conversation)
+         ════════════════════════════════════════════════════════ -->
+    <div class="mockup-item">
+      <div class="frame mobile-frame" style="position: relative;">
+        <div class="mobile-content content-dimmed">
+          <div class="mobile-hero">
+            <div class="mobile-photo"></div>
+          </div>
+        </div>
+        <!-- NO action bar — hidden when bottom sheet is open -->
+        <div class="bottom-sheet-overlay"></div>
+        <div class="bottom-sheet">
+          <div class="drag-handle">
+            <div class="drag-handle-bar"></div>
+          </div>
+          <div class="chat-header" style="padding-top: 0;">
+            <div class="chat-header-left">
+              <span class="chat-header-sparkle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              </span>
+              <span class="chat-header-title">Monstera</span>
+            </div>
+            <button class="chat-close">&times;</button>
+          </div>
+
+          <div class="chat-messages">
+            <div class="message user">The lower leaves are turning yellow</div>
+            <div class="message assistant">Based on your Monstera's care profile and watering every 10 days, this looks like <strong>overwatering</strong>. The yellowing pattern on lower leaves is typical.<br><br>Try extending to 12-14 days between waterings and ensure the top 2-3 inches of soil dry out first.</div>
+            <div class="message user">Should I cut them off?</div>
+            <div class="message assistant">Yes! Yellow leaves won't recover. Use clean, sharp scissors and cut at the base of the leaf stem. This is a light pruning that helps redirect energy to healthy growth.</div>
+          </div>
+
+          <div class="chat-input-area">
+            <input class="chat-input" placeholder="Ask about your plant..." readonly>
+            <button class="send-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="bottom-nav" style="position: relative; z-index: 25;">
+          <a class="bottom-nav-item active">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 17 3.5s1 1.5-1 5.5c0 0 2.5-1 4.5-1.5C22 9.5 22 13 22 13s-1.5-1-3.5-1c0 0 1 2.5.5 5-1 2-3 3-5 3"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+            Plants
+          </a>
+          <a class="bottom-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+            Journal
+          </a>
+          <a class="bottom-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+            Settings
+          </a>
+        </div>
+      </div>
+      <span class="mockup-item-label">Bottom Sheet — Conversation</span>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ════════════════════════════════════════════════════════
+     8. CONTEXT-AWARE CHIPS VARIATIONS
+     ════════════════════════════════════════════════════════ -->
+<div class="mockup-section">
+  <p class="section-label">6 &middot; Context-Aware Quick Chips — Variations</p>
+
+  <div class="mockup-row">
+    <div class="mockup-item">
+      <div class="state-frame">
+        <div style="padding: 16px;">
+          <div style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 4px;">Plant: Ok — due in 3 days</div>
+          <div class="quick-chips" style="padding: 8px 0;">
+            <span class="chip">Health check</span>
+            <span class="chip">Watering advice</span>
+            <span class="chip">When to repot?</span>
+            <span class="chip">Light requirements</span>
+          </div>
+        </div>
+      </div>
+      <span class="mockup-item-label">Default chips</span>
+    </div>
+
+    <div class="mockup-item">
+      <div class="state-frame">
+        <div style="padding: 16px;">
+          <div style="font-size: 13px; margin-bottom: 4px;">
+            <span style="color: var(--color-danger); font-weight: 500;">Plant: Overdue — 5 days late</span>
+          </div>
+          <div class="quick-chips" style="padding: 8px 0;">
+            <span class="chip" style="border-color: var(--color-danger); color: var(--color-danger); background: color-mix(in srgb, var(--color-danger) 8%, transparent);">Why is it overdue?</span>
+            <span class="chip">Health check</span>
+            <span class="chip">Adjust schedule</span>
+            <span class="chip">Watering tips</span>
+          </div>
+        </div>
+      </div>
+      <span class="mockup-item-label">Overdue plant (contextual chip)</span>
+    </div>
+
+    <div class="mockup-item">
+      <div class="state-frame">
+        <div style="padding: 16px;">
+          <div style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 4px;">Plant: Ok — no species set</div>
+          <div class="quick-chips" style="padding: 8px 0;">
+            <span class="chip">Health check</span>
+            <span class="chip">Help identify</span>
+            <span class="chip">General care tips</span>
+          </div>
+        </div>
+      </div>
+      <span class="mockup-item-label">No species (adapted chips)</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -316,6 +316,22 @@ export const es: Translations = {
 		prevSuggestion: 'Sugerencia anterior',
 		nextSuggestion: 'Siguiente sugerencia'
 	},
+	chat: {
+		askAi: 'Preguntar IA',
+		placeholder: 'Pregunta sobre tu planta...',
+		send: 'Enviar',
+		thinking: 'Pensando...',
+		errorMessage: 'Algo salió mal. Por favor, inténtalo de nuevo.',
+		close: 'Cerrar chat',
+		emptyState: 'Pregunta lo que quieras sobre el cuidado de tu {name}',
+		quickQuestions: 'Preguntas rápidas',
+		healthCheck: 'Chequeo de salud',
+		wateringAdvice: 'Consejos de riego',
+		whenToRepot: '¿Cuándo trasplantar?',
+		lightRequirements: 'Requisitos de luz',
+		whyOverdue: '¿Por qué está atrasada?',
+		helpIdentify: 'Ayuda a identificar'
+	},
 	error: {
 		loadPlants: 'No se pudieron cargar las plantas',
 		loadPlant: 'No se pudo cargar la planta',

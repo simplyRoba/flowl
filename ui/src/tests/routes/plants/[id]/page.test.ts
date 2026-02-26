@@ -3,6 +3,19 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Page from '../../../../routes/plants/[id]/+page.svelte';
 
+// jsdom doesn't implement window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+	writable: true,
+	value: vi.fn().mockImplementation((query: string) => ({
+		matches: false,
+		media: query,
+		onchange: null,
+		addEventListener: vi.fn(),
+		removeEventListener: vi.fn(),
+		dispatchEvent: vi.fn()
+	}))
+});
+
 // jsdom doesn't implement HTMLDialogElement.showModal/close
 HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
 	this.setAttribute('open', '');
@@ -61,6 +74,10 @@ vi.mock('$lib/stores/care', async () => {
 vi.mock('$lib/emoji', () => ({
 	emojiToSvgPath: (emoji: string) => `/emoji/${emoji}.svg`
 }));
+
+import * as api from '$lib/api';
+const mockFetchAiStatus = vi.spyOn(api, 'fetchAiStatus');
+mockFetchAiStatus.mockResolvedValue({ enabled: false, base_url: null, model: null });
 
 import { currentPlant } from '$lib/stores/plants';
 import { careEvents } from '$lib/stores/care';
@@ -278,6 +295,64 @@ describe('plant delete confirmation', () => {
 
 		await new Promise((r) => setTimeout(r, 50));
 		expect(mockDeletePlant).not.toHaveBeenCalled();
+	});
+});
+
+describe('Ask AI button', () => {
+	it('shows Ask AI button when AI is enabled', async () => {
+		mockFetchAiStatus.mockResolvedValue({ enabled: true, base_url: null, model: null });
+		await renderWithPlant();
+		await screen.findByText('Fern');
+		await waitFor(() => {
+			expect(screen.getByText('Ask AI')).toBeTruthy();
+		});
+	});
+
+	it('hides Ask AI button when AI is disabled', async () => {
+		mockFetchAiStatus.mockResolvedValue({ enabled: false, base_url: null, model: null });
+		await renderWithPlant();
+		await screen.findByText('Fern');
+		await new Promise((r) => setTimeout(r, 50));
+		expect(screen.queryByText('Ask AI')).toBeNull();
+	});
+
+	it('hides Ask AI button when AI status check fails', async () => {
+		mockFetchAiStatus.mockRejectedValue(new Error('fail'));
+		await renderWithPlant();
+		await screen.findByText('Fern');
+		await new Promise((r) => setTimeout(r, 50));
+		expect(screen.queryByText('Ask AI')).toBeNull();
+	});
+
+	it('opens chat drawer when Ask AI is clicked', async () => {
+		mockFetchAiStatus.mockResolvedValue({ enabled: true, base_url: null, model: null });
+		await renderWithPlant();
+		await waitFor(() => {
+			expect(screen.getByText('Ask AI')).toBeTruthy();
+		});
+		const user = userEvent.setup();
+		await user.click(screen.getByText('Ask AI'));
+		await waitFor(() => {
+			expect(screen.getByText('Quick questions')).toBeTruthy();
+		});
+	});
+
+	it('closes chat drawer when close button is clicked', async () => {
+		mockFetchAiStatus.mockResolvedValue({ enabled: true, base_url: null, model: null });
+		await renderWithPlant();
+		await waitFor(() => {
+			expect(screen.getByText('Ask AI')).toBeTruthy();
+		});
+		const user = userEvent.setup();
+		await user.click(screen.getByText('Ask AI'));
+		await waitFor(() => {
+			expect(screen.getByText('Quick questions')).toBeTruthy();
+		});
+		const closeBtn = screen.getByRole('button', { name: 'Close chat' });
+		await user.click(closeBtn);
+		await waitFor(() => {
+			expect(screen.queryByText('Quick questions')).toBeNull();
+		});
 	});
 });
 

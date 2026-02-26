@@ -316,6 +316,22 @@ export const de: Translations = {
 		prevSuggestion: 'Vorheriger Vorschlag',
 		nextSuggestion: 'Nächster Vorschlag'
 	},
+	chat: {
+		askAi: 'KI fragen',
+		placeholder: 'Frag etwas über deine Pflanze...',
+		send: 'Senden',
+		thinking: 'Denkt nach...',
+		errorMessage: 'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
+		close: 'Chat schließen',
+		emptyState: 'Frag alles über die Pflege deiner {name}',
+		quickQuestions: 'Schnellfragen',
+		healthCheck: 'Gesundheitscheck',
+		wateringAdvice: 'Gießtipps',
+		whenToRepot: 'Wann umtopfen?',
+		lightRequirements: 'Lichtbedarf',
+		whyOverdue: 'Warum überfällig?',
+		helpIdentify: 'Hilf beim Identifizieren'
+	},
 	error: {
 		loadPlants: 'Pflanzen konnten nicht geladen werden',
 		loadPlant: 'Pflanze konnte nicht geladen werden',

@@ -477,23 +477,23 @@ Return 3 ranked suggestions in a single API call instead of one. Carousel UI to 
 
 Streaming chat endpoint + summarize endpoint. Testable via curl.
 
-- [ ] OpenAI provider: `chat` method (SSE streaming, optional image support)
-- [ ] OpenAI provider: `summarize` method (JSON mode)
-- [ ] `POST /api/ai/chat` endpoint (SSE streaming, accepts text + optional base64 image)
-- [ ] `POST /api/ai/summarize` endpoint
-- [ ] Plant context builder (loads plant + recent care events for system prompt)
+- [x] OpenAI provider: `chat` method (SSE streaming, optional image support)
+- [x] OpenAI provider: `summarize` method (JSON mode)
+- [x] `POST /api/ai/chat` endpoint (SSE streaming, accepts text + optional base64 image)
+- [x] `POST /api/ai/summarize` endpoint
+- [x] Plant context builder (loads plant + recent care events for system prompt)
 
 ### Phase 6 — Chat Drawer UI
 
 Drawer/bottom sheet component with text-only chat. Core chat experience.
 
-- [ ] Chat drawer component (slides from right on desktop)
-- [ ] Bottom sheet component (slides up on mobile, drag to dismiss)
-- [ ] "Ask AI" button on Plant Detail hero section
-- [ ] Chat message list (user messages, AI responses)
-- [ ] Text input + send button
-- [ ] Streaming response rendering with typing indicator
-- [ ] Quick-question chips (context-aware)
+- [x] Chat drawer component (slides from right on desktop)
+- [x] Bottom sheet component (slides up on mobile, drag to dismiss)
+- [x] "Ask AI" button on Plant Detail hero section
+- [x] Chat message list (user messages, AI responses)
+- [x] Text input + send button
+- [x] Streaming response rendering with typing indicator
+- [x] Quick-question chips (context-aware)
 
 ### Phase 7 — Chat Photos + Save Note
 

@@ -314,6 +314,22 @@ const en = {
 		prevSuggestion: 'Previous suggestion',
 		nextSuggestion: 'Next suggestion'
 	},
+	chat: {
+		askAi: 'Ask AI',
+		placeholder: 'Ask about your plant...',
+		send: 'Send',
+		thinking: 'Thinking...',
+		errorMessage: 'Something went wrong. Please try again.',
+		close: 'Close chat',
+		emptyState: 'Ask anything about your {name}\'s care',
+		quickQuestions: 'Quick questions',
+		healthCheck: 'Health check',
+		wateringAdvice: 'Watering advice',
+		whenToRepot: 'When to repot?',
+		lightRequirements: 'Light requirements',
+		whyOverdue: 'Why is it overdue?',
+		helpIdentify: 'Help identify'
+	},
 	error: {
 		loadPlants: 'Failed to load plants',
 		loadPlant: 'Failed to load plant',

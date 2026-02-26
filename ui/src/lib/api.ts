@@ -103,6 +103,11 @@ export interface IdentifyResponse {
 	suggestions: IdentifyResult[];
 }
 
+export interface ChatMessage {
+	role: string;
+	content: string;
+}
+
 class ApiError extends Error {
 	status: number;
 
@@ -332,4 +337,44 @@ export function updateLocation(id: number, name: string): Promise<Location> {
 
 export function deleteLocation(id: number): Promise<void> {
 	return request('DELETE', `/api/locations/${id}`);
+}
+
+// --- AI Chat ---
+
+export async function* chatPlant(
+	plantId: number,
+	message: string,
+	history: ChatMessage[],
+	signal?: AbortSignal
+): AsyncGenerator<string> {
+	const resp = await fetch('/api/ai/chat', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ plant_id: plantId, message, history }),
+		signal
+	});
+
+	if (!resp.ok) {
+		const data = await resp.json().catch(() => ({ message: resp.statusText }));
+		throw new ApiError(resp.status, data.message || resp.statusText);
+	}
+
+	const reader = resp.body!.getReader();
+	const decoder = new TextDecoder();
+	let buf = '';
+
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		buf += decoder.decode(value, { stream: true });
+		const lines = buf.split('\n');
+		buf = lines.pop()!;
+		for (const line of lines) {
+			if (!line.startsWith('data: ')) continue;
+			const data = JSON.parse(line.slice(6));
+			if (data.done) return;
+			if (data.error) throw new Error(data.error);
+			if (data.delta) yield data.delta;
+		}
+	}
 }

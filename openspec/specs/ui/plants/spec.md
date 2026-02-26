@@ -110,6 +110,34 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 - **THEN** the detail page max-width SHALL be 960px (increased from 800px)
 - **AND** the hero photo/icon SHALL be 100px (increased from 80px)
 
+#### Scenario: Ask AI button displayed
+
+- **WHEN** the plant detail view is rendered
+- **AND** `GET /api/ai/status` returns `{ "enabled": true }`
+- **THEN** an "Ask AI" button with a sparkle icon SHALL be displayed in the hero section next to the "Water now" button
+- **AND** the button SHALL use the AI accent color (`--color-ai`)
+
+#### Scenario: Ask AI button hidden when AI disabled
+
+- **WHEN** `GET /api/ai/status` returns `{ "enabled": false }` or fails
+- **THEN** the "Ask AI" button SHALL NOT be rendered
+
+#### Scenario: Ask AI opens chat drawer
+
+- **WHEN** the user clicks the "Ask AI" button
+- **THEN** the `ChatDrawer` component SHALL open with the current plant's data
+
+#### Scenario: Mobile action bar hidden during chat
+
+- **WHEN** the chat drawer is open on mobile (viewport <= 768px)
+- **THEN** the page action bar (Back / Edit / Delete) SHALL be hidden
+- **AND** the bottom sheet SHALL sit directly above the bottom nav bar
+
+#### Scenario: Mobile action bar restored on chat close
+
+- **WHEN** the chat drawer is closed on mobile
+- **THEN** the page action bar SHALL reappear
+
 ### Requirement: Add Plant Form
 
 The route `/plants/new` SHALL display a form to create a new plant.

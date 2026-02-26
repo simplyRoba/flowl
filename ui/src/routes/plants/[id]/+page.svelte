@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { ArrowLeft, Pencil, Trash2, Droplet, Droplets, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, Info, Gauge, PawPrint, TrendingUp, Layers, Repeat, CalendarCheck, CalendarClock } from 'lucide-svelte';
+	import { ArrowLeft, Pencil, Trash2, Droplet, Droplets, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, Info, Gauge, PawPrint, TrendingUp, Layers, Repeat, CalendarCheck, CalendarClock, Sparkles } from 'lucide-svelte';
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
 	import { careEvents, loadCareEvents, addCareEvent, removeCareEvent } from '$lib/stores/care';
 	import { translations } from '$lib/stores/locale';
@@ -11,7 +11,8 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PhotoLightbox from '$lib/components/PhotoLightbox.svelte';
 	import ModalDialog from '$lib/components/ModalDialog.svelte';
-	import type { CareEvent } from '$lib/api';
+	import ChatDrawer from '$lib/components/ChatDrawer.svelte';
+	import { fetchAiStatus, type CareEvent } from '$lib/api';
 
 	let notFound = $state(false);
 	let deleting = $state(false);
@@ -27,6 +28,8 @@
 	let backHref = $state('/');
 	let lightboxOpen = $state(false);
 	let deleteDialogOpen = $state(false);
+	let aiEnabled = $state(false);
+	let chatOpen = $state(false);
 	const BACK_PATHS = new Set(['/', '/care-journal', '/plants', '/settings']);
 
 	const EVENT_LIMIT = 20;
@@ -38,6 +41,12 @@
 			notFound = true;
 		} else {
 			await loadCareEvents(id);
+		}
+		try {
+			const status = await fetchAiStatus();
+			aiEnabled = status.enabled;
+		} catch {
+			aiEnabled = false;
 		}
 	});
 
@@ -209,7 +218,7 @@
 		<a href="/" class="back-link"><ArrowLeft size={16} /> {$translations.plant.backToPlants}</a>
 	</div>
 {:else if $currentPlant}
-	<div class="detail">
+	<div class="detail" class:chat-open={chatOpen}>
 		<PageHeader {backHref} backLabel={$translations.common.back}>
 			<a href="/plants/{$currentPlant.id}/edit" class="btn btn-icon">
 				<Pencil size={16} />
@@ -255,10 +264,18 @@
 				<div class="detail-status">
 					<StatusBadge status={$currentPlant.watering_status} nextDue={$currentPlant.next_due ?? null} />
 				</div>
-				<button class="btn btn-water btn-lg" onclick={handleWater} disabled={watering}>
-					<Droplet size={16} />
-					{watering ? $translations.dashboard.watering : $translations.plant.waterNow}
-				</button>
+				<div class="hero-actions">
+					<button class="btn btn-water btn-lg" onclick={handleWater} disabled={watering}>
+						<Droplet size={16} />
+						{watering ? $translations.dashboard.watering : $translations.plant.waterNow}
+					</button>
+					{#if aiEnabled}
+						<button class="btn btn-ai btn-lg" onclick={() => chatOpen = true}>
+							<Sparkles size={16} />
+							{$translations.chat.askAi}
+						</button>
+					{/if}
+				</div>
 			</div>
 		</div>
 
@@ -436,6 +453,12 @@
 			alt={$currentPlant.name}
 			onclose={closeLightbox}
 		/>
+
+		<ChatDrawer
+			plant={$currentPlant}
+			open={chatOpen}
+			onclose={() => { chatOpen = false; }}
+		/>
 	</div>
 {:else if $plantsError}
 	<p class="error">{$plantsError}</p>
@@ -458,6 +481,28 @@
 	.detail {
 		max-width: var(--content-width-default);
 		margin: 0 auto;
+	}
+
+	.hero-actions {
+		display: flex;
+		gap: 8px;
+		margin-top: 4px;
+	}
+
+	:global(.btn-ai) {
+		background: var(--color-ai);
+		color: white;
+	}
+
+	:global(.btn-ai:hover) {
+		filter: brightness(0.95);
+	}
+
+	/* Hide mobile action bar when chat is open */
+	@media (max-width: 768px) {
+		.detail.chat-open :global(.action-bar) {
+			display: none !important;
+		}
 	}
 
 
