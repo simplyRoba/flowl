@@ -219,6 +219,7 @@
 	</div>
 {:else if $currentPlant}
 	<div class="detail" class:chat-open={chatOpen}>
+		<div class="detail-content">
 		<PageHeader {backHref} backLabel={$translations.common.back}>
 			<a href="/plants/{$currentPlant.id}/edit" class="btn btn-icon">
 				<Pencil size={16} />
@@ -454,6 +455,8 @@
 			onclose={closeLightbox}
 		/>
 
+		</div>
+
 		<ChatDrawer
 			plant={$currentPlant}
 			open={chatOpen}
@@ -481,6 +484,20 @@
 	.detail {
 		max-width: var(--content-width-default);
 		margin: 0 auto;
+	}
+
+	.detail.chat-open {
+		display: flex;
+		max-width: none;
+		height: 100%;
+	}
+
+	.detail-content {
+		flex: 1;
+		min-width: 0;
+		max-width: var(--content-width-default);
+		margin: 0 auto;
+		overflow-y: auto;
 	}
 
 	.hero-actions {
