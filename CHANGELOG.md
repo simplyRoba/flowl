@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.3](https://github.com/simplyRoba/flowl/compare/v0.15.2...v0.15.3) (2026-02-26)
+
+
+### Bug Fixes
+
+* **ui:** hide empty assistant bubble while streaming ([1c0c1ca](https://github.com/simplyRoba/flowl/commit/1c0c1cad8b05c7e68e65e99ec7f5f2ade0d2640e))
+
 ## [0.15.2](https://github.com/simplyRoba/flowl/compare/v0.15.1...v0.15.2) (2026-02-26)
 
 
