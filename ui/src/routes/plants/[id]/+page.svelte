@@ -800,6 +800,10 @@
 			font-size: var(--fs-page-title);
 		}
 
+		.detail-info {
+			width: 100%;
+		}
+
 		.hero-actions :global(.btn) {
 			flex: 1;
 			justify-content: center;
