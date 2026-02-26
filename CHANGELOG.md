@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.15.2](https://github.com/simplyRoba/flowl/compare/v0.15.1...v0.15.2) (2026-02-26)
+
+
+### Bug Fixes
+
+* **ui:** make hero action buttons equal width on mobile ([892a681](https://github.com/simplyRoba/flowl/commit/892a681d38c29286baf72a4bd3afc7cf94059585))
+* **ui:** restore sticky header, add drawer spacing, hide action bar ([3432ef3](https://github.com/simplyRoba/flowl/commit/3432ef3da20098264902aabc5693ea8f4cd207d2))
+
 ## [0.15.1](https://github.com/simplyRoba/flowl/compare/v0.15.0...v0.15.1) (2026-02-26)
 
 
