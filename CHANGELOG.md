@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.5](https://github.com/simplyRoba/flowl/compare/v0.15.4...v0.15.5) (2026-02-27)
+
+
+### Bug Fixes
+
+* **ui:** set theme-color meta tag for iOS Safari browser chrome ([6779164](https://github.com/simplyRoba/flowl/commit/6779164d2a51f3f2ea5b376933f4f2f87950d33e))
+
 ## [0.15.4](https://github.com/simplyRoba/flowl/compare/v0.15.3...v0.15.4) (2026-02-27)
 
 
