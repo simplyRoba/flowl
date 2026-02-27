@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.1](https://github.com/simplyRoba/flowl/compare/v0.16.0...v0.16.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* **ui:** add safe-area-inset-bottom for PWA mode on iPhone ([089d693](https://github.com/simplyRoba/flowl/commit/089d6933986202247d2ab49d94e52d07174813db))
+
 ## [0.16.0](https://github.com/simplyRoba/flowl/compare/v0.15.5...v0.16.0) (2026-02-27)
 
 
