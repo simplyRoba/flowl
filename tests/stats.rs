@@ -45,6 +45,7 @@ async fn stats_returns_counts() {
     assert_eq!(json["plant_count"], 1);
     assert_eq!(json["care_event_count"], 0);
     assert_eq!(json["location_count"], 1);
+    assert_eq!(json["photo_count"], 0);
 }
 
 #[tokio::test]
@@ -67,4 +68,5 @@ async fn stats_empty_database() {
     assert_eq!(json["plant_count"], 0);
     assert_eq!(json["care_event_count"], 0);
     assert_eq!(json["location_count"], 0);
+    assert_eq!(json["photo_count"], 0);
 }

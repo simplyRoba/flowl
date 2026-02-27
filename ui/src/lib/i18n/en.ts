@@ -222,6 +222,7 @@ const en = {
 		statsPlants: { one: '{n} plant', other: '{n} plants' },
 		statsCareEvents: { one: '{n} care journal entry', other: '{n} care journal entries' },
 		statsLocations: { one: '{n} location', other: '{n} locations' },
+		statsPhotos: { one: '{n} photo', other: '{n} photos' },
 		about: 'About',
 		version: 'Version',
 		source: 'Source',

@@ -261,6 +261,10 @@ The settings page Data section SHALL include export and import controls in addit
 - **THEN** an error message is displayed
 - **AND** existing data remains unchanged
 
+#### Scenario: Stats overview
+- **WHEN** the settings page loads and `GET /api/stats` succeeds
+- **THEN** the Data section shows a summary row with the count of plants, photos, care journal entries, and locations
+
 ### Requirement: Language selector
 
 The settings page SHALL include a "Language" section (after Appearance) with a pill toggle showing "English", "Deutsch", "Español".

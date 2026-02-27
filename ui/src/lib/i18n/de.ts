@@ -224,6 +224,7 @@ export const de: Translations = {
 		statsPlants: { one: '{n} Pflanze', other: '{n} Pflanzen' },
 		statsCareEvents: { one: '{n} Pflegetagebuch-Eintrag', other: '{n} Pflegetagebuch-Einträge' },
 		statsLocations: { one: '{n} Standort', other: '{n} Standorte' },
+		statsPhotos: { one: '{n} Foto', other: '{n} Fotos' },
 		about: 'Über',
 		version: 'Version',
 		source: 'Quelle',

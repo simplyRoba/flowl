@@ -433,7 +433,7 @@
 			</div>
 			<div class="about-row">
 				<span class="setting-label">{$translations.settings.statsLabel}</span>
-				<span>{plural($translations.settings.statsPlants, stats.plant_count)}, {plural($translations.settings.statsCareEvents, stats.care_event_count)}, {plural($translations.settings.statsLocations, stats.location_count)}</span>
+				<span>{plural($translations.settings.statsPlants, stats.plant_count)}, {plural($translations.settings.statsPhotos, stats.photo_count)}, {plural($translations.settings.statsCareEvents, stats.care_event_count)}, {plural($translations.settings.statsLocations, stats.location_count)}</span>
 			</div>
 		</section>
 	{/if}

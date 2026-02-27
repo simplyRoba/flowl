@@ -224,6 +224,7 @@ export const es: Translations = {
 		statsPlants: { one: '{n} planta', other: '{n} plantas' },
 		statsCareEvents: { one: '{n} entrada del diario', other: '{n} entradas del diario' },
 		statsLocations: { one: '{n} ubicación', other: '{n} ubicaciones' },
+		statsPhotos: { one: '{n} foto', other: '{n} fotos' },
 		about: 'Acerca de',
 		version: 'Versión',
 		source: 'Código fuente',

@@ -13,6 +13,7 @@ pub struct Stats {
     pub plant_count: i64,
     pub care_event_count: i64,
     pub location_count: i64,
+    pub photo_count: i64,
 }
 
 pub async fn get_stats(State(pool): State<SqlitePool>) -> Result<Json<Stats>, ApiError> {
@@ -28,10 +29,16 @@ pub async fn get_stats(State(pool): State<SqlitePool>) -> Result<Json<Stats>, Ap
         .fetch_one(&pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    let photo_count =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM plants WHERE photo_path IS NOT NULL")
+            .fetch_one(&pool)
+            .await
+            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     Ok(Json(Stats {
         plant_count,
         care_event_count,
         location_count,
+        photo_count,
     }))
 }
