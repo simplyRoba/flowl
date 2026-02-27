@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Sparkles, X, Send } from 'lucide-svelte';
+	import { Sparkles, X, Send, BookOpen, LoaderCircle } from 'lucide-svelte';
 	import { translations } from '$lib/stores/locale';
-	import { chatPlant, type ChatMessage, type Plant } from '$lib/api';
+	import { chatPlant, summarizeChat, createCareEvent, type ChatMessage, type Plant } from '$lib/api';
 
 	let {
 		plant,
@@ -21,6 +21,16 @@
 	let messagesEl: HTMLDivElement | undefined = $state();
 	let inputEl: HTMLInputElement | undefined = $state();
 	let dialogEl: HTMLDialogElement | undefined = $state();
+
+	// Save note state
+	let summarizing = $state(false);
+	let summaryText = $state('');
+	let editingSummary = $state(false);
+	let savingNote = $state(false);
+	let noteSavedMessage = $state('');
+
+	let hasAssistantMessage = $derived(messages.some(m => m.role === 'assistant' && m.content));
+	let showSaveNote = $derived(hasAssistantMessage && !streaming && !editingSummary);
 
 	// Drag-to-dismiss state
 	let dragStartY = $state(0);
@@ -71,6 +81,7 @@
 
 		const userMsg = text.trim();
 		inputText = '';
+		noteSavedMessage = '';
 		messages.push({ role: 'user', content: userMsg });
 		scrollToBottom();
 
@@ -123,6 +134,48 @@
 
 	function handleChipClick(text: string) {
 		sendMessage(text);
+	}
+
+	async function handleSaveNote() {
+		if (summarizing) return;
+		summarizing = true;
+		noteSavedMessage = '';
+		try {
+			const history = getHistory();
+			const summary = await summarizeChat(plant.id, history);
+			summaryText = summary;
+			editingSummary = true;
+		} catch {
+			noteSavedMessage = $translations.chat.noteSaveFailed;
+			scrollToBottom();
+		} finally {
+			summarizing = false;
+		}
+	}
+
+	async function handleConfirmSave() {
+		if (savingNote || !summaryText.trim()) return;
+		savingNote = true;
+		try {
+			await createCareEvent(plant.id, {
+				event_type: 'ai-consultation',
+				notes: summaryText.trim()
+			});
+			editingSummary = false;
+			summaryText = '';
+			noteSavedMessage = $translations.chat.noteSaved;
+			scrollToBottom();
+		} catch {
+			noteSavedMessage = $translations.chat.noteSaveFailed;
+			scrollToBottom();
+		} finally {
+			savingNote = false;
+		}
+	}
+
+	function handleCancelSave() {
+		editingSummary = false;
+		summaryText = '';
 	}
 
 	function handleClose() {
@@ -214,9 +267,20 @@
 			<Sparkles size={18} />
 			<span class="chat-header-title">{plant.name}</span>
 		</div>
-		<button class="chat-close" onclick={handleClose} aria-label={$translations.chat.close}>
-			<X size={18} />
-		</button>
+		<div class="chat-header-right">
+			{#if showSaveNote}
+				<button class="chat-header-btn" onclick={handleSaveNote} disabled={summarizing} aria-label={$translations.chat.saveNote} title={$translations.chat.saveNote}>
+					{#if summarizing}
+						<LoaderCircle size={18} class="spin" />
+					{:else}
+						<BookOpen size={18} />
+					{/if}
+				</button>
+			{/if}
+			<button class="chat-close" onclick={handleClose} aria-label={$translations.chat.close}>
+				<X size={18} />
+			</button>
+		</div>
 	</div>
 
 	{#if showChips}
@@ -255,28 +319,55 @@
 					<span class="typing-dot"></span>
 				</div>
 			{/if}
+			{#if noteSavedMessage}
+				<div class="note-status" class:note-error={noteSavedMessage === $translations.chat.noteSaveFailed}>
+					{noteSavedMessage}
+				</div>
+			{/if}
 		{/if}
 	</div>
 
-	<div class="chat-input-area">
-		<input
-			bind:this={inputEl}
-			class="chat-input"
-			placeholder={$translations.chat.placeholder}
-			bind:value={inputText}
-			onkeydown={handleKeydown}
-			disabled={streaming}
-		/>
-		<button
-			class="send-btn"
-			class:disabled={!inputText.trim() || streaming}
-			onclick={handleSubmit}
-			disabled={!inputText.trim() || streaming}
-			aria-label={$translations.chat.send}
-		>
-			<Send size={16} />
-		</button>
-	</div>
+	{#if editingSummary}
+		<div class="summary-editor">
+			<textarea
+				class="summary-textarea"
+				bind:value={summaryText}
+				placeholder={$translations.chat.summaryPlaceholder}
+				disabled={savingNote}
+			></textarea>
+			<div class="summary-actions">
+				<button class="btn btn-sm" onclick={handleCancelSave} disabled={savingNote}>
+					{$translations.chat.cancelSummary}
+				</button>
+				<button class="btn btn-sm btn-primary" onclick={handleConfirmSave} disabled={savingNote || !summaryText.trim()}>
+					{#if savingNote}
+						<LoaderCircle size={14} class="spin" />
+					{/if}
+					{$translations.chat.saveSummary}
+				</button>
+			</div>
+		</div>
+	{:else}
+		<div class="chat-input-area">
+			<input
+				bind:this={inputEl}
+				class="chat-input"
+				placeholder={$translations.chat.placeholder}
+				bind:value={inputText}
+				onkeydown={handleKeydown}
+				disabled={streaming}
+			/>
+			<button
+				class="send-btn"
+				class:disabled={!inputText.trim() || streaming}
+				onclick={handleSubmit}
+				disabled={!inputText.trim() || streaming}
+				aria-label={$translations.chat.send}
+			>
+				<Send size={16} />
+			</button>
+		</div>
+	{/if}
 {/snippet}
 
 {#if open && !isMobile}
@@ -409,10 +500,38 @@
 		color: var(--color-ai);
 	}
 
+	.chat-header-right {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
 	.chat-header-title {
 		font-size: 16px;
 		font-weight: 600;
 		color: var(--color-text);
+	}
+
+	.chat-header-btn {
+		width: 32px;
+		height: 32px;
+		border-radius: 8px;
+		border: none;
+		background: transparent;
+		color: var(--color-ai);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.chat-header-btn:hover:not(:disabled) {
+		background: var(--color-ai-tint);
+	}
+
+	.chat-header-btn:disabled {
+		opacity: 0.5;
+		cursor: default;
 	}
 
 	.chat-close {
@@ -615,5 +734,61 @@
 	.send-btn:disabled {
 		opacity: 0.4;
 		cursor: default;
+	}
+
+	.note-status {
+		padding: 0 16px 8px;
+		font-size: 13px;
+		color: var(--color-success);
+		text-align: center;
+	}
+
+	.note-status.note-error {
+		color: var(--color-danger);
+	}
+
+	/* ── Summary editor ── */
+	.summary-editor {
+		padding: 12px 16px;
+		border-top: 1px solid var(--color-border);
+		flex-shrink: 0;
+	}
+
+	.summary-textarea {
+		width: 100%;
+		min-height: 80px;
+		padding: 10px 12px;
+		border-radius: 8px;
+		border: 1px solid var(--color-border);
+		background: var(--color-background);
+		font-size: 14px;
+		font-family: inherit;
+		color: var(--color-text);
+		resize: vertical;
+		outline: none;
+	}
+
+	.summary-textarea:focus {
+		border-color: var(--color-ai);
+	}
+
+	.summary-textarea:disabled {
+		opacity: 0.5;
+	}
+
+	.summary-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 8px;
+		margin-top: 8px;
+	}
+
+	:global(.spin) {
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		from { transform: rotate(0deg); }
+		to { transform: rotate(360deg); }
 	}
 </style>

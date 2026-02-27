@@ -15,7 +15,14 @@ use super::plants::{PLANT_SELECT, Plant, PlantRow};
 use crate::mqtt;
 use crate::state::AppState;
 
-const VALID_EVENT_TYPES: &[&str] = &["watered", "fertilized", "repotted", "pruned", "custom"];
+const VALID_EVENT_TYPES: &[&str] = &[
+    "watered",
+    "fertilized",
+    "repotted",
+    "pruned",
+    "custom",
+    "ai-consultation",
+];
 
 #[derive(Serialize, sqlx::FromRow)]
 pub struct CareEvent {

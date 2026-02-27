@@ -379,3 +379,11 @@ export async function* chatPlant(
 		}
 	}
 }
+
+export async function summarizeChat(plantId: number, history: ChatMessage[]): Promise<string> {
+	const data: { summary: string } = await request('POST', '/api/ai/summarize', {
+		plant_id: plantId,
+		history
+	});
+	return data.summary;
+}

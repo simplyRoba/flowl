@@ -159,6 +159,7 @@ export const de: Translations = {
 		repotted: 'Umgetopft',
 		pruned: 'Geschnitten',
 		custom: 'Eigenes',
+		aiConsultation: 'KI-Beratung',
 		noCareEvents: 'Noch keine Pflegeereignisse verzeichnet.',
 		today: 'Heute',
 		yesterday: 'Gestern',
@@ -332,7 +333,14 @@ export const de: Translations = {
 		whenToRepot: 'Wann umtopfen?',
 		lightRequirements: 'Lichtbedarf',
 		whyOverdue: 'Warum überfällig?',
-		helpIdentify: 'Hilf beim Identifizieren'
+		helpIdentify: 'Hilf beim Identifizieren',
+		saveNote: 'Notiz speichern',
+		savingNote: 'Zusammenfassung...',
+		summaryPlaceholder: 'Zusammenfassung vor dem Speichern bearbeiten...',
+		saveSummary: 'Speichern',
+		cancelSummary: 'Abbrechen',
+		noteSaved: 'Im Pflegetagebuch gespeichert',
+		noteSaveFailed: 'Notiz konnte nicht gespeichert werden'
 	},
 	error: {
 		loadPlants: 'Pflanzen konnten nicht geladen werden',

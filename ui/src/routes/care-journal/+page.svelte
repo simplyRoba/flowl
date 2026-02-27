@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Droplet, Leaf, Shovel, Scissors, Pencil } from 'lucide-svelte';
+	import { Droplet, Leaf, Shovel, Scissors, Pencil, Sparkles } from 'lucide-svelte';
 	import type { CareEvent } from '$lib/api';
 	import { fetchAllCareEvents } from '$lib/api';
 	import { translations } from '$lib/stores/locale';
@@ -14,7 +14,7 @@
 	let activeFilter = $state('');
 	let sentinel: HTMLElement;
 
-	const FILTER_VALUES = ['', 'watered', 'fertilized', 'repotted', 'pruned', 'custom'] as const;
+	const FILTER_VALUES = ['', 'watered', 'fertilized', 'repotted', 'pruned', 'custom', 'ai-consultation'] as const;
 
 	async function loadPage(reset = false) {
 		if (loading) return;
@@ -72,6 +72,7 @@
 		if (type === 'fertilized') return $translations.care.fertilized;
 		if (type === 'repotted') return $translations.care.repotted;
 		if (type === 'pruned') return $translations.care.pruned;
+		if (type === 'ai-consultation') return $translations.care.aiConsultation;
 		return $translations.care.custom;
 	}
 
@@ -147,6 +148,8 @@
 					<Scissors size={14} />
 				{:else if value === 'custom'}
 					<Pencil size={14} />
+				{:else if value === 'ai-consultation'}
+					<Sparkles size={14} />
 				{/if}
 				{filterLabel(value)}
 			</button>
@@ -172,7 +175,8 @@
 									{event.event_type === 'fertilized' ? 'fertilize-icon' : ''}
 									{event.event_type === 'repotted' ? 'repot-icon' : ''}
 									{event.event_type === 'pruned' ? 'prune-icon' : ''}
-									{event.event_type === 'custom' ? 'custom-icon' : ''}"
+									{event.event_type === 'custom' ? 'custom-icon' : ''}
+								{event.event_type === 'ai-consultation' ? 'ai-icon' : ''}"
 							>
 								{#if event.event_type === 'watered'}
 									<Droplet size={14} />
@@ -182,6 +186,8 @@
 									<Shovel size={14} />
 								{:else if event.event_type === 'pruned'}
 									<Scissors size={14} />
+								{:else if event.event_type === 'ai-consultation'}
+									<Sparkles size={14} />
 								{:else}
 									<Pencil size={14} />
 								{/if}
@@ -289,6 +295,7 @@
 	.log-entry-icon.repot-icon { background: color-mix(in srgb, var(--color-success) 15%, transparent); }
 	.log-entry-icon.prune-icon { background: color-mix(in srgb, var(--color-text-muted) 15%, transparent); }
 	.log-entry-icon.custom-icon { background: color-mix(in srgb, var(--color-warning) 15%, transparent); }
+	.log-entry-icon.ai-icon { background: color-mix(in srgb, var(--color-ai) 15%, transparent); }
 
 	.log-entry-content {
 		flex: 1;

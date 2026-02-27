@@ -157,6 +157,7 @@ const en = {
 		repotted: 'Repotted',
 		pruned: 'Pruned',
 		custom: 'Custom',
+		aiConsultation: 'AI Consultation',
 		noCareEvents: 'No care events recorded yet.',
 		today: 'Today',
 		yesterday: 'Yesterday',
@@ -330,7 +331,14 @@ const en = {
 		whenToRepot: 'When to repot?',
 		lightRequirements: 'Light requirements',
 		whyOverdue: 'Why is it overdue?',
-		helpIdentify: 'Help identify'
+		helpIdentify: 'Help identify',
+		saveNote: 'Save note',
+		savingNote: 'Summarizing...',
+		summaryPlaceholder: 'Edit the summary before saving...',
+		saveSummary: 'Save',
+		cancelSummary: 'Cancel',
+		noteSaved: 'Saved to care journal',
+		noteSaveFailed: 'Failed to save note'
 	},
 	error: {
 		loadPlants: 'Failed to load plants',

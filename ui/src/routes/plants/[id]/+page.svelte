@@ -102,6 +102,7 @@
 		if (type === 'fertilized') return $translations.care.fertilized;
 		if (type === 'repotted') return $translations.care.repotted;
 		if (type === 'pruned') return $translations.care.pruned;
+		if (type === 'ai-consultation') return $translations.care.aiConsultation;
 		return $translations.care.custom;
 	}
 
@@ -356,6 +357,8 @@
 										<Shovel size={14} />
 									{:else if event.event_type === 'pruned'}
 										<Scissors size={14} />
+									{:else if event.event_type === 'ai-consultation'}
+										<Sparkles size={14} />
 									{:else}
 										<PencilIcon size={14} />
 									{/if}

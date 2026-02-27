@@ -593,6 +593,54 @@ async fn non_watered_event_does_not_affect_last_watered() {
     assert!(json["last_watered"].is_null());
 }
 
+// --- AI consultation event type ---
+
+#[tokio::test]
+async fn create_ai_consultation_event() {
+    let app = app().await;
+    let id = create_plant(&app).await;
+
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{id}/care"),
+            Some(r#"{"event_type":"ai-consultation","notes":"Diagnosed overwatering"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::CREATED);
+    let json = body_json(resp).await;
+    assert_eq!(json["event_type"], "ai-consultation");
+    assert_eq!(json["notes"], "Diagnosed overwatering");
+}
+
+#[tokio::test]
+async fn ai_consultation_does_not_affect_last_watered() {
+    let app = app().await;
+    let plant_id = create_plant(&app).await;
+
+    app.clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"ai-consultation","notes":"Summary"}"#),
+        ))
+        .await
+        .unwrap();
+
+    let resp = app
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/plants/{plant_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    assert!(json["last_watered"].is_null());
+}
+
 // --- Cascade delete ---
 
 #[tokio::test]

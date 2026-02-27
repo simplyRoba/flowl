@@ -25,7 +25,7 @@ The plant detail view SHALL display a care journal section showing a chronologic
 #### Scenario: Event type icons
 
 - **WHEN** a care event is displayed
-- **THEN** the icon corresponds to the event type: droplet for `watered`, leaf for `fertilized`, shovel for `repotted`, scissors for `pruned`, pencil for `custom`
+- **THEN** the icon corresponds to the event type: droplet for `watered`, leaf for `fertilized`, shovel for `repotted`, scissors for `pruned`, pencil for `custom`, sparkles for `ai-consultation`
 
 #### Scenario: Event limit
 
@@ -88,7 +88,7 @@ The route `/care-journal` SHALL display a paginated feed of care events across a
 
 #### Scenario: Filter by event type
 
-- **WHEN** the user clicks a filter chip (All, Watered, Fertilized, Repotted, Pruned, Custom)
+- **WHEN** the user clicks a filter chip (All, Watered, Fertilized, Repotted, Pruned, Custom, AI Consultation)
 - **THEN** the event list reloads showing only events of the selected type
 - **AND** the "All" chip shows all event types
 
@@ -154,3 +154,22 @@ The frontend SHALL provide a care events store that manages care event state for
 
 - **WHEN** `removeCareEvent(plantId, eventId)` is called
 - **THEN** the API is called and the event is removed from the store
+
+### Requirement: AI consultation event styling
+
+The `ai-consultation` event type SHALL have distinct visual treatment in both the plant detail timeline and global care journal.
+
+#### Scenario: AI consultation icon
+
+- **WHEN** an `ai-consultation` care event is displayed in any timeline
+- **THEN** the event icon SHALL be `Sparkles` (from lucide-svelte)
+
+#### Scenario: AI consultation color
+
+- **WHEN** an `ai-consultation` care event is displayed in the global care journal
+- **THEN** the icon background SHALL use `var(--color-ai)` as its accent color
+
+#### Scenario: AI consultation label
+
+- **WHEN** an `ai-consultation` care event is displayed
+- **THEN** the event type label SHALL be "AI Consultation"

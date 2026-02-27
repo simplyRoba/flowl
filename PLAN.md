@@ -495,18 +495,34 @@ Drawer/bottom sheet component with text-only chat. Core chat experience.
 - [x] Streaming response rendering with typing indicator
 - [x] Quick-question chips (context-aware)
 
-### Phase 7 — Chat Photos + Save Note
+### Phase 7 — Chat Summary + Save Note
 
-Photo attachments in chat messages and journal save flow.
+AI-generated conversation summaries saved as care journal entries.
+
+- [wontfix] ~~Markdown rendering for AI responses~~
+- [x] New care event type `ai-consultation` (icon, color, i18n)
+- [x] "Save note" button in chat
+- [x] AI summary generation → editable text field → save as care journal entry
+
+### Phase 8 — Chat Photo Upload
+
+Photo attachments in chat messages for visual plant diagnostics.
 
 - [ ] Inline photo upload in chat (file picker + camera capture on mobile)
 - [ ] Photo preview in sent messages
-- [ ] Markdown rendering for AI responses
-- [ ] New care event type `ai-consultation` (icon, color, i18n)
-- [ ] "Save note" button in chat
-- [ ] AI summary generation → editable text field → save as care journal entry
 
-### Future — Additional Providers
+### Phase 9 — Care Entry Photos
+
+Optional photo attachment on care journal entries. Enables visual documentation of plant health over time.
+
+- [ ] Database: add `photo_path` column to `care_events` table
+- [ ] Backend: photo upload/delete endpoints for care events (mirror plant photo pattern)
+- [ ] Backend: include `photo_url` in care event API responses
+- [ ] UI: photo upload in care entry form (watering, fertilizing, repotting, etc.)
+- [ ] UI: photo display in care journal timeline
+- [ ] AI summary save: attach chat photo (if any) to the `ai-consultation` care entry
+
+### Future — Additional Providers (Phase 10+)
 
 - [ ] Ollama provider implementation (behind the same trait)
 - [ ] Provider selection via env var or Settings UI

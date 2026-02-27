@@ -159,6 +159,7 @@ export const es: Translations = {
 		repotted: 'Trasplantada',
 		pruned: 'Podada',
 		custom: 'Personalizado',
+		aiConsultation: 'Consulta IA',
 		noCareEvents: 'Aún no hay eventos de cuidado registrados.',
 		today: 'Hoy',
 		yesterday: 'Ayer',
@@ -332,7 +333,14 @@ export const es: Translations = {
 		whenToRepot: '¿Cuándo trasplantar?',
 		lightRequirements: 'Requisitos de luz',
 		whyOverdue: '¿Por qué está atrasada?',
-		helpIdentify: 'Ayuda a identificar'
+		helpIdentify: 'Ayuda a identificar',
+		saveNote: 'Guardar nota',
+		savingNote: 'Resumiendo...',
+		summaryPlaceholder: 'Edita el resumen antes de guardar...',
+		saveSummary: 'Guardar',
+		cancelSummary: 'Cancelar',
+		noteSaved: 'Guardado en el diario de cuidados',
+		noteSaveFailed: 'No se pudo guardar la nota'
 	},
 	error: {
 		loadPlants: 'No se pudieron cargar las plantas',
