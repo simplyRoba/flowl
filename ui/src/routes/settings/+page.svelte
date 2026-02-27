@@ -467,6 +467,7 @@
 			? $translations.settings.deleteLocationConfirmPlants
 				.replace('{name}', deleteTarget.name)
 				.replace('{count}', plural($translations.settings.plantCount, deleteTarget.plantCount))
+				.replace('{verb}', deleteTarget.plantCount === 1 ? $translations.settings.deleteLocationVerb.one : $translations.settings.deleteLocationVerb.other)
 				.replace('{pronoun}', deleteTarget.plantCount === 1 ? $translations.settings.deleteLocationPronoun.one : $translations.settings.deleteLocationPronoun.other)
 			: $translations.settings.deleteLocationConfirm.replace('{name}', deleteTarget.name)
 		: ''}
