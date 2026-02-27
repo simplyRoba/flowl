@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.16.5](https://github.com/simplyRoba/flowl/compare/v0.16.4...v0.16.5) (2026-02-27)
+
+
+### Bug Fixes
+
+* **ui:** add bottom spacing between content and mobile nav bar ([8b00957](https://github.com/simplyRoba/flowl/commit/8b0095787080e7d85f62fcc7ce8497c33d9c6d43))
+* **ui:** use border-box on chat drawer sheet for safe-area padding ([6d62062](https://github.com/simplyRoba/flowl/commit/6d62062dacc1dd8a19f84c05d73c2fc301059446))
+
 ## [0.16.4](https://github.com/simplyRoba/flowl/compare/v0.16.3...v0.16.4) (2026-02-27)
 
 
