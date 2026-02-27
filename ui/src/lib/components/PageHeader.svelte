@@ -50,7 +50,7 @@
 		margin: -24px -24px 16px;
 		padding: 12px 24px;
 		position: sticky;
-		top: -24px;
+		top: 0;
 		z-index: 10;
 		background: var(--color-background);
 	}
@@ -59,7 +59,7 @@
 		.page-header-inline {
 			margin: -32px -32px 16px;
 			padding: 12px 32px;
-			top: -32px;
+			top: 0;
 		}
 	}
 
@@ -118,7 +118,7 @@
 			align-items: center;
 			justify-content: space-between;
 			position: fixed;
-			bottom: 56px;
+			bottom: var(--nav-bottom-height);
 			left: 0;
 			right: 0;
 			z-index: 10;

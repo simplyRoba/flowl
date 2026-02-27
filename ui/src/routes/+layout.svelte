@@ -93,6 +93,9 @@
 		/* Motion */
 		--transition-speed: 0.15s;
 
+		/* Layout */
+		--nav-bottom-height: 56px;
+
 		/* Content widths */
 		--content-width-narrow: 640px;
 		--content-width-default: 800px;
@@ -129,22 +132,22 @@
 	:global(html, body) {
 		margin: 0;
 		min-width: 320px;
-		height: 100%;
-		overflow: hidden;
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 		background: var(--color-background);
 		color: var(--color-text);
 	}
 
 	.app {
-		display: flex;
-		height: 100vh;
-		height: 100dvh;
+		display: block;
 	}
 
 	.sidebar {
+		position: fixed;
+		top: 0;
+		left: 0;
+		bottom: 0;
+		z-index: 100;
 		width: 64px;
-		flex-shrink: 0;
 		background: var(--color-surface);
 		border-right: 1px solid var(--color-border);
 		display: flex;
@@ -191,8 +194,7 @@
 	}
 
 	.content {
-		flex: 1;
-		overflow-y: auto;
+		margin-left: 64px;
 		padding: 24px;
 	}
 
@@ -236,21 +238,21 @@
 		}
 
 		.content {
+			margin-left: 200px;
 			padding: 32px;
 		}
 	}
 
 	@media (max-width: 768px) {
-		.app {
-			flex-direction: column;
-		}
-
 		.sidebar {
+			top: auto;
+			left: 0;
+			right: 0;
+			bottom: 0;
 			width: 100%;
-			height: 56px;
+			height: var(--nav-bottom-height);
 			flex-direction: row;
 			justify-content: space-around;
-			order: 1;
 			border-right: none;
 			border-top: 1px solid var(--color-border);
 			padding: 0;
@@ -292,8 +294,9 @@
 		}
 
 		.content {
-			order: 0;
+			margin-left: 0;
 			padding: 16px;
+			padding-bottom: var(--nav-bottom-height);
 		}
 	}
 </style>

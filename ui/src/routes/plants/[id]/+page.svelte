@@ -218,7 +218,7 @@
 		<a href="/" class="back-link"><ArrowLeft size={16} /> {$translations.plant.backToPlants}</a>
 	</div>
 {:else if $currentPlant}
-	<div class="detail" class:chat-open={chatOpen}>
+	<div class="detail">
 		<div class="detail-content">
 		<PageHeader {backHref} backLabel={$translations.common.back}>
 			<a href="/plants/{$currentPlant.id}/edit" class="btn btn-icon">
@@ -486,26 +486,8 @@
 		margin: 0 auto;
 	}
 
-	.detail.chat-open {
-		display: flex;
-		max-width: none;
-		height: 100%;
-		gap: 24px;
-	}
-
-	.detail.chat-open :global(.page-header-inline),
-	.detail.chat-open :global(.action-bar) {
-		display: none !important;
-	}
-
 	.detail-content {
-		flex: 1;
 		min-width: 0;
-	}
-
-	.detail.chat-open .detail-content {
-		max-width: var(--content-width-default);
-		overflow-y: auto;
 	}
 
 	.hero-actions {
@@ -812,6 +794,5 @@
 		.detail-grid {
 			grid-template-columns: 1fr;
 		}
-
 	}
 </style>

@@ -6,19 +6,20 @@ Chat drawer UI component — conversational AI chat interface on the Plant Detai
 
 ### Requirement: Chat drawer component
 
-A `ChatDrawer.svelte` component SHALL provide a conversational AI chat interface on the Plant Detail page. On desktop (>768px) it SHALL render as a 400px-wide right-side panel. On mobile (<=768px) it SHALL render as a bottom sheet with a drag handle.
+A `ChatDrawer.svelte` component SHALL provide a conversational AI chat interface on the Plant Detail page. On desktop (>768px) it SHALL render as a 400px-wide right-side panel using `position: fixed`. On mobile (<=768px) it SHALL render as a bottom sheet with a drag handle.
 
 #### Scenario: Desktop drawer open
 
 - **WHEN** the chat drawer is opened on desktop (viewport > 768px)
-- **THEN** a 400px panel SHALL slide in from the right
-- **AND** the main content area SHALL flex to fill the remaining width
-- **AND** the panel SHALL NOT block interaction with the page content behind it
+- **THEN** a 400px panel SHALL be `position: fixed` anchored to the right edge, spanning the full viewport height
+- **AND** the panel SHALL have `z-index: 90`
+- **AND** the panel SHALL overlay the page content without shifting it
 
 #### Scenario: Mobile bottom sheet open
 
 - **WHEN** the chat drawer is opened on mobile (viewport <= 768px)
-- **THEN** a bottom sheet SHALL slide up from above the bottom nav bar (56px)
+- **THEN** a bottom sheet SHALL slide up covering the full viewport width, from `bottom: 0` to `top: 60px`
+- **AND** the sheet SHALL overlay the bottom nav bar
 - **AND** a semi-transparent backdrop SHALL overlay the page content
 - **AND** a drag handle bar SHALL be visible at the top of the sheet
 

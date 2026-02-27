@@ -70,7 +70,7 @@ Run two terminals:
 cd ui && npm run dev
 
 # Terminal 2: Rust backend with auto-restart on code changes
-FLOWL_DB_PATH=/tmp/flowl.db FLOWL_MQTT_DISABLED=true SKIP_UI_BUILD=1 cargo watch -x run
+FLOWL_DB_PATH=/tmp/flowl.db FLOWL_AI_API_KEY=ENABLE-AI-UI FLOWL_MQTT_DISABLED=true SKIP_UI_BUILD=1 cargo watch -x run
 ```
 
 Open `http://localhost:5173`. Vite proxies `/api`, `/uploads`, and `/health` to the Rust backend on port 4100.

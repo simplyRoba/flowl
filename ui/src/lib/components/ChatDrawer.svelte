@@ -164,6 +164,18 @@
 		}
 	});
 
+	// Lock body scroll when mobile dialog is open
+	let savedOverflow = '';
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		if (open && isMobile) {
+			savedOverflow = document.body.style.overflow;
+			document.body.style.overflow = 'hidden';
+		} else {
+			document.body.style.overflow = savedOverflow;
+		}
+	});
+
 	// Focus input when opened
 	$effect(() => {
 		if (open && inputEl) {
@@ -292,13 +304,16 @@
 <style>
 	/* ── Desktop drawer ── */
 	.chat-drawer {
+		position: fixed;
+		top: 0;
+		right: 0;
+		bottom: 0;
 		width: 400px;
-		flex-shrink: 0;
+		z-index: 90;
 		background: var(--color-surface);
 		border-left: 1px solid var(--color-border);
 		display: flex;
 		flex-direction: column;
-		height: 100%;
 		animation: slideInRight 0.2s ease-out;
 	}
 
@@ -466,6 +481,7 @@
 	.chat-messages {
 		flex: 1;
 		overflow-y: auto;
+		overscroll-behavior: contain;
 		padding: 16px 20px;
 		display: flex;
 		flex-direction: column;
