@@ -458,6 +458,7 @@
 		border-radius: 16px 16px 0 0;
 		box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
 		overflow: hidden;
+		padding-bottom: var(--safe-area-bottom);
 	}
 
 	/* ── Drag handle (mobile only) ── */
