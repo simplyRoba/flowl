@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.15.4](https://github.com/simplyRoba/flowl/compare/v0.15.3...v0.15.4) (2026-02-27)
+
+
+### Bug Fixes
+
+* **ci:** bump actions/download-artifact from 7 to 8 ([32cb6ae](https://github.com/simplyRoba/flowl/commit/32cb6ae965fa32327f1fa700bf9d88c2b56296df))
+* **ci:** bump actions/upload-artifact from 6 to 7 ([3298e70](https://github.com/simplyRoba/flowl/commit/3298e704370fab2676e71a5920108d81c1edfafc))
+* **deps:** bump @sveltejs/kit from 2.53.2 to 2.53.3 in /ui ([18b5833](https://github.com/simplyRoba/flowl/commit/18b5833a02be88ea3e94c280d188927999ed9374))
+* **deps:** bump svelte-check from 4.4.3 to 4.4.4 in /ui ([e1955b9](https://github.com/simplyRoba/flowl/commit/e1955b9e9af238b16bb8e02add77d33d6d45faf9))
+* **ui:** add spacing between identify section and name field ([b1949ba](https://github.com/simplyRoba/flowl/commit/b1949badc8d6b335ba0ffad2aec1805bbcb5aa7f))
+* **ui:** ensure detail-info takes full width on mobile ([6d1784e](https://github.com/simplyRoba/flowl/commit/6d1784e22d1ff77d3b622829d8d5656269249fc1))
+* **ui:** migrate to body scroll for iOS Safari chrome collapse ([ff6a06c](https://github.com/simplyRoba/flowl/commit/ff6a06cad112b6cc69cfbb85e08720f7bf1cebd5))
+
 ## [0.15.3](https://github.com/simplyRoba/flowl/compare/v0.15.2...v0.15.3) (2026-02-26)
 
 
