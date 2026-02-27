@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.3](https://github.com/simplyRoba/flowl/compare/v0.16.2...v0.16.3) (2026-02-27)
+
+
+### Bug Fixes
+
+* **ui:** use content-height for nav bar, let padding-bottom add safe area ([87e39a4](https://github.com/simplyRoba/flowl/commit/87e39a4462a81e3c4162e6fa5e990c59b3502605))
+
 ## [0.16.2](https://github.com/simplyRoba/flowl/compare/v0.16.1...v0.16.2) (2026-02-27)
 
 
