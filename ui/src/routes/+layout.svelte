@@ -250,12 +250,13 @@
 			right: 0;
 			bottom: 0;
 			width: 100%;
-			height: var(--nav-bottom-height);
+			height: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 0px));
 			flex-direction: row;
 			justify-content: space-around;
 			border-right: none;
 			border-top: 1px solid var(--color-border);
 			padding: 0;
+			padding-bottom: env(safe-area-inset-bottom, 0px);
 			gap: 0;
 		}
 
@@ -296,7 +297,7 @@
 		.content {
 			margin-left: 0;
 			padding: 16px;
-			padding-bottom: var(--nav-bottom-height);
+			padding-bottom: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 0px));
 		}
 	}
 </style>

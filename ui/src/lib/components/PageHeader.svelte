@@ -118,7 +118,7 @@
 			align-items: center;
 			justify-content: space-between;
 			position: fixed;
-			bottom: var(--nav-bottom-height);
+			bottom: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 0px));
 			left: 0;
 			right: 0;
 			z-index: 10;
