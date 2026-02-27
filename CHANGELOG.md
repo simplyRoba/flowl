@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.4](https://github.com/simplyRoba/flowl/compare/v0.16.3...v0.16.4) (2026-02-27)
+
+
+### Bug Fixes
+
+* **ui:** add safe-area padding to mobile chat drawer ([ef55989](https://github.com/simplyRoba/flowl/commit/ef55989d2b2c027e6ae401354d5fe58eb7106a9a))
+
 ## [0.16.3](https://github.com/simplyRoba/flowl/compare/v0.16.2...v0.16.3) (2026-02-27)
 
 
