@@ -729,6 +729,7 @@
 	.backup-actions {
 		display: flex;
 		align-items: center;
+		justify-content: flex-end;
 		gap: 8px;
 		flex-wrap: wrap;
 	}
@@ -759,6 +760,26 @@
 	@media (max-width: 768px) {
 		.settings-section {
 			padding: 16px;
+		}
+
+		.about-row {
+			flex-direction: column;
+			gap: 4px;
+		}
+
+		.about-row > span:not(.setting-label),
+		.about-row a {
+			overflow-wrap: break-word;
+		}
+
+		.backup-actions,
+		.repair-actions {
+			width: 100%;
+			justify-content: flex-end;
+		}
+
+		.theme-option {
+			padding: 6px 10px;
 		}
 	}
 </style>
