@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.2](https://github.com/simplyRoba/flowl/compare/v0.16.1...v0.16.2) (2026-02-27)
+
+
+### Bug Fixes
+
+* **ui:** centralize safe-area-bottom into global CSS variables ([c942149](https://github.com/simplyRoba/flowl/commit/c9421491432b52a7f393c2de421d08603cecf801))
+
 ## [0.16.1](https://github.com/simplyRoba/flowl/compare/v0.16.0...v0.16.1) (2026-02-27)
 
 
