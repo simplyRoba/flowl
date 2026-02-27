@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.16.0](https://github.com/simplyRoba/flowl/compare/v0.15.5...v0.16.0) (2026-02-27)
+
+
+### Features
+
+* add chat summary save-note flow with ai-consultation event type ([d850f65](https://github.com/simplyRoba/flowl/commit/d850f65954c78730d12211d436159430d6e24e2c))
+* add photo count to settings data stats ([f12ba15](https://github.com/simplyRoba/flowl/commit/f12ba157de416e32dc1ed0e8c3c778dc52bf9d82))
+* **ui:** add PWA web app manifest for home screen installability ([c32ff1d](https://github.com/simplyRoba/flowl/commit/c32ff1df137c6557fe418421426ec09bdcd6548d))
+
+
+### Bug Fixes
+
+* **i18n:** use proper plural forms for delete location verb ([641032d](https://github.com/simplyRoba/flowl/commit/641032da92e0508694057c4da6870cab753747d8))
+* **ui:** improve settings page mobile layout ([15d3149](https://github.com/simplyRoba/flowl/commit/15d31490d0d242d41e6097ca4f7edc1f1ea67bfa))
+
 ## [0.15.5](https://github.com/simplyRoba/flowl/compare/v0.15.4...v0.15.5) (2026-02-27)
 
 
