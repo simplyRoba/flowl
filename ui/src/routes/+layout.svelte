@@ -95,6 +95,8 @@
 
 		/* Layout */
 		--nav-bottom-height: 56px;
+		--safe-area-bottom: env(safe-area-inset-bottom, 0px);
+		--nav-bottom-total: calc(var(--nav-bottom-height) + var(--safe-area-bottom));
 
 		/* Content widths */
 		--content-width-narrow: 640px;
@@ -250,13 +252,13 @@
 			right: 0;
 			bottom: 0;
 			width: 100%;
-			height: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 0px));
+			height: var(--nav-bottom-total);
 			flex-direction: row;
 			justify-content: space-around;
 			border-right: none;
 			border-top: 1px solid var(--color-border);
 			padding: 0;
-			padding-bottom: env(safe-area-inset-bottom, 0px);
+			padding-bottom: var(--safe-area-bottom);
 			gap: 0;
 		}
 
@@ -297,7 +299,7 @@
 		.content {
 			margin-left: 0;
 			padding: 16px;
-			padding-bottom: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 0px));
+			padding-bottom: var(--nav-bottom-total);
 		}
 	}
 </style>
