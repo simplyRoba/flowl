@@ -252,7 +252,7 @@
 			right: 0;
 			bottom: 0;
 			width: 100%;
-			height: var(--nav-bottom-total);
+			height: var(--nav-bottom-height);
 			flex-direction: row;
 			justify-content: space-around;
 			border-right: none;
