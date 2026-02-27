@@ -299,7 +299,7 @@
 		.content {
 			margin-left: 0;
 			padding: 16px;
-			padding-bottom: var(--nav-bottom-total);
+			padding-bottom: calc(var(--nav-bottom-total) + 16px);
 		}
 	}
 </style>
