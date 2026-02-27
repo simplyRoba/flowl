@@ -63,9 +63,21 @@ function getStorage(): Storage | null {
 	}
 }
 
+const THEME_COLORS: Record<ThemeMode, string> = {
+	light: '#FAF6F1',
+	dark: '#1A1612'
+};
+
 function applyTheme(theme: ThemeMode): void {
 	if (typeof document === 'undefined') return;
 	document.documentElement.dataset.theme = theme;
+	let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+	if (!meta) {
+		meta = document.createElement('meta');
+		meta.name = 'theme-color';
+		document.head.appendChild(meta);
+	}
+	meta.content = THEME_COLORS[theme];
 }
 
 let initialized = false;

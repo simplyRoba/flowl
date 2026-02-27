@@ -19,6 +19,10 @@
 				const prefersDark = supportsMatchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 				const resolved = preference === 'system' ? (prefersDark ? 'dark' : 'light') : preference;
 				document.documentElement.dataset.theme = resolved;
+				const m = document.createElement('meta');
+				m.name = 'theme-color';
+				m.content = resolved === 'dark' ? '#1A1612' : '#FAF6F1';
+				document.head.appendChild(m);
 			})();
 		</script>
 		%sveltekit.head%
