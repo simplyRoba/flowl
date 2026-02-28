@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.18.1](https://github.com/simplyRoba/flowl/compare/v0.18.0...v0.18.1) (2026-02-28)
+
+
+### Bug Fixes
+
+* **ui:** add inline icons to care entry type chips ([27ea19e](https://github.com/simplyRoba/flowl/commit/27ea19ec6e53723a3fe1383a4b097ffe9deb6513))
+* **ui:** align timeline icon, text, and delete button vertically ([39e4888](https://github.com/simplyRoba/flowl/commit/39e4888203775f3534e3fe3eec6cddec9d7f029b))
+* **ui:** care journal mobile improvements ([d149bb1](https://github.com/simplyRoba/flowl/commit/d149bb14ae46dcf4ba17d3e0bd2d6b2592f628bb))
+* **ui:** pin lightbox dialog to viewport for PWA safe-area offset ([82333fe](https://github.com/simplyRoba/flowl/commit/82333fe72438a99d2c2b369d732826387302ffac))
+
 ## [0.18.0](https://github.com/simplyRoba/flowl/compare/v0.17.0...v0.18.0) (2026-02-28)
 
 
