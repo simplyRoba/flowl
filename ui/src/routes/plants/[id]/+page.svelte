@@ -765,6 +765,7 @@
 		justify-content: space-between;
 		align-items: center;
 		gap: 12px;
+		min-height: 24px;
 		margin-bottom: 2px;
 	}
 
@@ -801,7 +802,8 @@
 
 	.timeline-actions {
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
+		min-height: 24px;
 	}
 
 	.event-delete {
