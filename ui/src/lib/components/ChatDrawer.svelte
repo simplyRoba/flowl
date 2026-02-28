@@ -944,6 +944,7 @@
 
 	.summary-textarea {
 		width: 100%;
+		box-sizing: border-box;
 		min-height: 80px;
 		padding: 10px 12px;
 		border-radius: 8px;
