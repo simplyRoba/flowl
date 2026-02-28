@@ -366,7 +366,7 @@
 				<span class="setting-label">{$translations.settings.status}</span>
 				<span class="status-value">
 					{#if aiStatus.enabled}
-						<span class="status-dot status-connected"></span> {$translations.settings.aiEnabled}
+						<span class="status-dot status-ai"></span> {$translations.settings.aiEnabled}
 					{:else}
 						{$translations.settings.aiDisabled}
 					{/if}
@@ -704,6 +704,10 @@
 
 	.status-disconnected {
 		background-color: var(--color-text-muted);
+	}
+
+	.status-ai {
+		background-color: var(--color-ai);
 	}
 
 	.ai-hint {
