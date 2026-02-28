@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.18.0](https://github.com/simplyRoba/flowl/compare/v0.17.0...v0.18.0) (2026-02-28)
+
+
+### Features
+
+* add care event photo support with shared ImageStore ([40dcd99](https://github.com/simplyRoba/flowl/commit/40dcd9971bfb46e3b7700aae8db56c430b54afc7))
+* add care event photo support with shared ImageStore ([e0523a2](https://github.com/simplyRoba/flowl/commit/e0523a2c3c57399ea8fa56308de736c26e7f6639))
+
+
+### Bug Fixes
+
+* **ui:** offset photobox close button by safe-area inset in PWA mode ([5650296](https://github.com/simplyRoba/flowl/commit/565029630d7155fdc9ac71f128ca12a8111fa1a1))
+* **ui:** use AI accent color for enabled status dot on settings page ([d1e97a6](https://github.com/simplyRoba/flowl/commit/d1e97a69d280c16c986b2f436f976bfa3d0751c5))
+* **ui:** widen chat drawer on large desktop screens ([f085b7b](https://github.com/simplyRoba/flowl/commit/f085b7be72a274b9894138088b301da5e617c114))
+
 ## [0.17.0](https://github.com/simplyRoba/flowl/compare/v0.16.5...v0.17.0) (2026-02-28)
 
 
