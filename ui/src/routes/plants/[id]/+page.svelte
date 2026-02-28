@@ -432,16 +432,17 @@
 				<div class="log-form">
 					<div class="type-chips">
 						{#each [
-							{ value: 'fertilized', label: $translations.care.fertilized },
-							{ value: 'repotted', label: $translations.care.repotted },
-							{ value: 'pruned', label: $translations.care.pruned },
-							{ value: 'custom', label: $translations.care.custom }
+							{ value: 'fertilized', label: $translations.care.fertilized, icon: Leaf },
+							{ value: 'repotted', label: $translations.care.repotted, icon: Shovel },
+							{ value: 'pruned', label: $translations.care.pruned, icon: Scissors },
+							{ value: 'custom', label: $translations.care.custom, icon: PencilIcon }
 						] as chip}
 							<button
 								class="chip chip-solid"
 								class:active={logEventType === chip.value}
 								onclick={() => logEventType = chip.value}
 							>
+								<chip.icon size={14} />
 								{chip.label}
 							</button>
 						{/each}
