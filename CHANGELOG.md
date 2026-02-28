@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.17.0](https://github.com/simplyRoba/flowl/compare/v0.16.5...v0.17.0) (2026-02-28)
+
+
+### Features
+
+* **ui:** add photo attachment to AI chat ([7680dd2](https://github.com/simplyRoba/flowl/commit/7680dd270831842230ff1f4a062ea05be59c0ac4))
+
+
+### Bug Fixes
+
+* **api:** replace missing_errors_doc suppressions with proper doc comments ([5ea9221](https://github.com/simplyRoba/flowl/commit/5ea9221dbd206dd90a9aadb317a2ebf312ddbc1e))
+* **ui:** close drawer after saving note and reload care events ([095b5a5](https://github.com/simplyRoba/flowl/commit/095b5a5e4110489f3208c37440ee03d00a06bd76))
+* **ui:** prevent summary textarea overflow on mobile ([65634c3](https://github.com/simplyRoba/flowl/commit/65634c33d1760b680d9b589871891404f862e98b))
+* **ui:** show water button label on mobile and add spacing to status badge ([f402ca8](https://github.com/simplyRoba/flowl/commit/f402ca87840fe06038b5f923d4cdf56d0b8f029c))
+
 ## [0.16.5](https://github.com/simplyRoba/flowl/compare/v0.16.4...v0.16.5) (2026-02-27)
 
 
