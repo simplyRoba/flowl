@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { Sparkles, X, Send, BookOpen, Camera } from 'lucide-svelte';
 	import { translations } from '$lib/stores/locale';
-	import { chatPlant, summarizeChat, createCareEvent, type ChatMessage, type Plant } from '$lib/api';
+	import { chatPlant, summarizeChat, createCareEvent, uploadCareEventPhoto, type ChatMessage, type Plant } from '$lib/api';
 
 	let {
 		plant,
@@ -35,6 +35,11 @@
 	let attachedPhoto: File | null = $state(null);
 	let attachedPreview: string | null = $state(null);
 	let isDraggingFile = $state(false);
+
+	// Last user-sent photo (for save-note attachment)
+	let lastUserPhoto: File | null = $state(null);
+	let lastUserPhotoPreview: string | null = $state(null);
+	let saveNotePhoto = $state(true); // whether to attach photo on save
 
 
 	let hasAssistantMessage = $derived(messages.some(m => m.role === 'assistant' && m.content));
@@ -143,6 +148,12 @@
 
 		const userMsg = text.trim();
 		const photo = attachedPhoto;
+		if (photo) {
+			lastUserPhoto = photo;
+			if (lastUserPhotoPreview) URL.revokeObjectURL(lastUserPhotoPreview);
+			lastUserPhotoPreview = URL.createObjectURL(photo);
+			saveNotePhoto = true;
+		}
 		inputText = '';
 		clearPhoto();
 		noteSavedMessage = '';
@@ -229,12 +240,18 @@
 		if (savingNote || !summaryText.trim()) return;
 		savingNote = true;
 		try {
-			await createCareEvent(plant.id, {
+			const event = await createCareEvent(plant.id, {
 				event_type: 'ai-consultation',
 				notes: summaryText.trim()
 			});
+			if (lastUserPhoto && saveNotePhoto && event) {
+				await uploadCareEventPhoto(plant.id, event.id, lastUserPhoto);
+			}
 			editingSummary = false;
 			summaryText = '';
+			lastUserPhoto = null;
+			if (lastUserPhotoPreview) URL.revokeObjectURL(lastUserPhotoPreview);
+			lastUserPhotoPreview = null;
 			onsave?.();
 			handleClose();
 		} catch {
@@ -321,6 +338,9 @@
 			}
 			if (attachedPreview) {
 				URL.revokeObjectURL(attachedPreview);
+			}
+			if (lastUserPhotoPreview) {
+				URL.revokeObjectURL(lastUserPhotoPreview);
 			}
 		};
 	});
@@ -419,6 +439,17 @@
 				placeholder={$translations.chat.summaryPlaceholder}
 				disabled={savingNote}
 			></textarea>
+			{#if lastUserPhotoPreview && saveNotePhoto}
+				<div class="summary-photo-preview">
+					<div class="photo-preview-thumb">
+						<img src={lastUserPhotoPreview} alt="" />
+						<button class="photo-preview-remove" onclick={() => { saveNotePhoto = false; }} aria-label={$translations.chat.removePhoto}>
+							<X size={12} />
+						</button>
+					</div>
+					<span class="summary-photo-label">{$translations.chat.attachChatPhoto}</span>
+				</div>
+			{/if}
 			<div class="summary-actions">
 				<button class="btn btn-sm" onclick={handleCancelSave} disabled={savingNote}>
 					{$translations.chat.cancelSummary}
@@ -965,6 +996,18 @@
 
 	.summary-textarea:disabled {
 		opacity: 0.5;
+	}
+
+	.summary-photo-preview {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-top: 8px;
+	}
+
+	.summary-photo-label {
+		font-size: 13px;
+		color: var(--color-text-muted);
 	}
 
 	.summary-actions {

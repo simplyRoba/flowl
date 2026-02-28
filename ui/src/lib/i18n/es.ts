@@ -149,7 +149,8 @@ export const es: Translations = {
 		soilStandard: 'Estándar',
 		soilCactus: 'Mezcla de cactus',
 		soilOrchid: 'Corteza de orquídea',
-		soilPeat: 'Turba'
+		soilPeat: 'Turba',
+		addLogPhoto: 'Añadir foto'
 	},
 	care: {
 		title: 'Diario de cuidados',
@@ -342,7 +343,8 @@ export const es: Translations = {
 		noteSaved: 'Guardado en el diario de cuidados',
 		noteSaveFailed: 'No se pudo guardar la nota',
 		attachPhoto: 'Adjuntar foto',
-		removePhoto: 'Eliminar foto'
+		removePhoto: 'Eliminar foto',
+		attachChatPhoto: 'Adjuntar foto del chat'
 	},
 	error: {
 		loadPlants: 'No se pudieron cargar las plantas',

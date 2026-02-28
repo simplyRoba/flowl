@@ -12,7 +12,8 @@
 	import PhotoLightbox from '$lib/components/PhotoLightbox.svelte';
 	import ModalDialog from '$lib/components/ModalDialog.svelte';
 	import ChatDrawer from '$lib/components/ChatDrawer.svelte';
-	import { fetchAiStatus, type CareEvent } from '$lib/api';
+	import { Camera, X as XIcon } from 'lucide-svelte';
+	import { fetchAiStatus, uploadCareEventPhoto, type CareEvent } from '$lib/api';
 
 	let notFound = $state(false);
 	let deleting = $state(false);
@@ -30,6 +31,9 @@
 	let deleteDialogOpen = $state(false);
 	let aiEnabled = $state(false);
 	let chatOpen = $state(false);
+	let logPhoto = $state<File | null>(null);
+	let logPhotoPreview = $state<string | null>(null);
+	let lightboxSrc = $state('');
 	const BACK_PATHS = new Set(['/', '/care-journal', '/plants', '/settings']);
 
 	const EVENT_LIMIT = 20;
@@ -117,6 +121,27 @@
 		return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
 	}
 
+	function stageLogPhoto(file: File) {
+		const valid = ['image/jpeg', 'image/png', 'image/webp'];
+		if (!valid.includes(file.type)) return;
+		if (logPhotoPreview) URL.revokeObjectURL(logPhotoPreview);
+		logPhoto = file;
+		logPhotoPreview = URL.createObjectURL(file);
+	}
+
+	function clearLogPhoto() {
+		if (logPhotoPreview) URL.revokeObjectURL(logPhotoPreview);
+		logPhoto = null;
+		logPhotoPreview = null;
+	}
+
+	function handleLogPhotoSelect(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (file) stageLogPhoto(file);
+		input.value = '';
+	}
+
 	async function handleLogSubmit() {
 		if (!$currentPlant || !logEventType || logSubmitting) return;
 		logSubmitting = true;
@@ -125,11 +150,17 @@
 		const occurredAtIso = occurredAtDate && !isNaN(occurredAtDate.getTime())
 			? occurredAtDate.toISOString()
 			: undefined;
-		await addCareEvent($currentPlant.id, {
+		const photo = logPhoto;
+		const event = await addCareEvent($currentPlant.id, {
 			event_type: logEventType,
 			notes: logNotes.trim() || undefined,
 			occurred_at: occurredAtIso
 		});
+		if (event && photo) {
+			await uploadCareEventPhoto($currentPlant.id, event.id, photo);
+			await loadCareEvents($currentPlant.id);
+		}
+		clearLogPhoto();
 		logEventType = '';
 		logNotes = '';
 		logOccurredAt = '';
@@ -147,6 +178,7 @@
 	}
 
 	function handleLogCancel() {
+		clearLogPhoto();
 		showLogForm = false;
 		logEventType = '';
 		logNotes = '';
@@ -201,8 +233,10 @@
 		return $translations.plant.soilPeat;
 	}
 
-	function openLightbox() {
-		if (!$currentPlant?.photo_url) return;
+	function openLightbox(src?: string) {
+		const url = src || $currentPlant?.photo_url;
+		if (!url) return;
+		lightboxSrc = url;
 		lightboxOpen = true;
 	}
 
@@ -237,7 +271,7 @@
 						type="button"
 						class="detail-photo-button"
 						aria-label={$translations.plant.openPhoto}
-						onclick={openLightbox}
+						onclick={() => openLightbox()}
 					>
 						<img
 							src={$currentPlant.photo_url}
@@ -347,24 +381,31 @@
 					<ul class="timeline">
 						{#each displayEvents as event}
 							<li class="timeline-item">
-								<span class="timeline-date">{formatShortDate(event.occurred_at)}</span>
 								<span class="timeline-icon">
 									{#if event.event_type === 'watered'}
-										<Droplet size={14} />
+										<Droplet size={12} />
 									{:else if event.event_type === 'fertilized'}
-										<Leaf size={14} />
+										<Leaf size={12} />
 									{:else if event.event_type === 'repotted'}
-										<Shovel size={14} />
+										<Shovel size={12} />
 									{:else if event.event_type === 'pruned'}
-										<Scissors size={14} />
+										<Scissors size={12} />
 									{:else if event.event_type === 'ai-consultation'}
-										<Sparkles size={14} />
+										<Sparkles size={12} />
 									{:else}
-										<PencilIcon size={14} />
+										<PencilIcon size={12} />
 									{/if}
 								</span>
 								<span class="timeline-text">
-									{eventTypeLabel(event.event_type)}
+									<span class="timeline-top">
+										<span class="timeline-label">{eventTypeLabel(event.event_type)}</span>
+										<span class="timeline-date">{formatShortDate(event.occurred_at)}</span>
+									</span>
+									{#if event.photo_url}
+										<button class="timeline-photo" onclick={() => openLightbox(event.photo_url!)}>
+											<img src={event.photo_url} alt="" />
+										</button>
+									{/if}
 									{#if event.notes}
 										<span class="timeline-sub">{event.notes}</span>
 									{/if}
@@ -411,6 +452,27 @@
 						bind:value={logNotes}
 						rows="2"
 					></textarea>
+					<div class="log-photo">
+						{#if logPhotoPreview}
+							<div class="log-photo-preview">
+								<img src={logPhotoPreview} alt="" />
+								<button class="log-photo-remove" onclick={clearLogPhoto} aria-label={$translations.chat.removePhoto}>
+									<XIcon size={12} />
+								</button>
+							</div>
+						{:else}
+							<label class="log-photo-upload">
+								<Camera size={16} />
+								<span>{$translations.plant.addLogPhoto}</span>
+								<input
+									type="file"
+									accept="image/jpeg,image/png,image/webp"
+									onchange={handleLogPhotoSelect}
+									class="file-input-hidden"
+								/>
+							</label>
+						{/if}
+					</div>
 					<div class="log-when">
 						{#if showLogOccurredAt}
 							<label class="log-label">
@@ -453,7 +515,7 @@
 
 		<PhotoLightbox
 			open={lightboxOpen}
-			src={$currentPlant.photo_url ?? ''}
+			src={lightboxSrc}
 			alt={$currentPlant.name}
 			onclose={closeLightbox}
 		/>
@@ -668,27 +730,28 @@
 
 	.timeline-item {
 		display: flex;
-		gap: 12px;
+		gap: 10px;
 		padding: 8px 0;
 		font-size: 14px;
 		border-bottom: 1px solid var(--color-border);
+		align-items: flex-start;
 	}
 
 	.timeline-item:last-child {
 		border-bottom: none;
 	}
 
-	.timeline-date {
-		color: var(--color-text-muted);
-		font-size: 13px;
-		min-width: 72px;
-		flex-shrink: 0;
-		text-align: end;
-	}
-
 	.timeline-icon {
-		font-size: 16px;
+		width: 24px;
+		height: 24px;
+		border-radius: 6px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 12px;
 		flex-shrink: 0;
+		background: var(--color-surface-muted);
+		color: var(--color-text-muted);
 	}
 
 	.timeline-text {
@@ -696,10 +759,51 @@
 		min-width: 0;
 	}
 
+	.timeline-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 12px;
+		margin-bottom: 2px;
+	}
+
+	.timeline-label {
+		font-weight: 500;
+	}
+
+	.timeline-date {
+		font-size: 12px;
+		color: var(--color-text-muted);
+		flex-shrink: 0;
+	}
+
+	.timeline-photo {
+		float: right;
+		width: 72px;
+		height: 72px;
+		border-radius: 8px;
+		overflow: hidden;
+		border: none;
+		padding: 0;
+		background: none;
+		cursor: zoom-in;
+		margin-left: 12px;
+		margin-bottom: 4px;
+	}
+
+	.timeline-photo img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
 	.timeline-actions {
 		display: flex;
 		align-items: flex-start;
-	}	.event-delete {
+	}
+
+	.event-delete {
 		color: var(--color-text-muted);
 	}
 
@@ -715,7 +819,7 @@
 		margin-top: 2px;
 	}
 
-	.btn-ghost {
+	.btn-ghost:not(.event-delete) {
 		margin-top: 8px;
 	}
 
@@ -752,6 +856,69 @@
 		width: 100%;
 		resize: vertical;
 		margin-bottom: 10px;
+	}
+
+	.log-photo {
+		margin-bottom: 10px;
+	}
+
+	.log-photo-upload {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px;
+		border-radius: 8px;
+		border: 1px dashed var(--color-border);
+		background: transparent;
+		color: var(--color-text-muted);
+		font-size: 13px;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+
+	.log-photo-upload:hover {
+		border-color: var(--color-text-muted);
+		background: var(--color-surface-muted);
+	}
+
+	.log-photo-preview {
+		position: relative;
+		display: inline-block;
+	}
+
+	.log-photo-preview img {
+		width: 64px;
+		height: 64px;
+		object-fit: cover;
+		border-radius: 8px;
+		border: 1px solid var(--color-border);
+	}
+
+	.log-photo-remove {
+		position: absolute;
+		top: -6px;
+		right: -6px;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		color: var(--color-danger);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	}
+
+	.log-photo-remove:hover {
+		background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+		border-color: var(--color-danger);
+	}
+
+	.file-input-hidden {
+		display: none;
 	}
 
 	.log-actions {

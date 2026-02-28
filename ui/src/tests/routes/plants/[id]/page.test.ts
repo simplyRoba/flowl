@@ -80,6 +80,7 @@ const mockFetchAiStatus = vi.spyOn(api, 'fetchAiStatus');
 mockFetchAiStatus.mockResolvedValue({ enabled: false, base_url: null, model: null });
 const mockSummarizeChat = vi.spyOn(api, 'summarizeChat');
 const mockCreateCareEvent = vi.spyOn(api, 'createCareEvent');
+const mockUploadCareEventPhoto = vi.spyOn(api, 'uploadCareEventPhoto');
 
 import { currentPlant } from '$lib/stores/plants';
 import { careEvents } from '$lib/stores/care';
@@ -374,6 +375,7 @@ describe('care event delete reloads plant', () => {
 				plant_name: 'Fern',
 				event_type: 'watered',
 				notes: null,
+				photo_url: null,
 				occurred_at: '2025-01-01T10:00:00Z',
 				created_at: '2025-01-01T10:00:00Z'
 			}
@@ -444,5 +446,192 @@ describe('chat drawer save note', () => {
 			{ role: 'user', content: 'How is my plant?' },
 			{ role: 'assistant', content: 'Your plant looks healthy!' }
 		]);
+	});
+});
+
+describe('care event photo in timeline', () => {
+	it('renders a thumbnail when a care event has a photo_url', async () => {
+		await renderWithPlant();
+		careEvents.set([
+			{
+				id: 20,
+				plant_id: 1,
+				plant_name: 'Fern',
+				event_type: 'fertilized',
+				notes: 'Fed with liquid fertilizer',
+				photo_url: '/uploads/care/20.jpg',
+				occurred_at: '2025-02-01T10:00:00Z',
+				created_at: '2025-02-01T10:00:00Z'
+			}
+		]);
+
+		await waitFor(() => {
+			const img = document.querySelector('.timeline-photo img') as HTMLImageElement;
+			expect(img).toBeTruthy();
+			expect(img.src).toContain('/uploads/care/20.jpg');
+		});
+	});
+
+	it('does not render a thumbnail when care event has no photo_url', async () => {
+		await renderWithPlant();
+		careEvents.set([
+			{
+				id: 21,
+				plant_id: 1,
+				plant_name: 'Fern',
+				event_type: 'watered',
+				notes: null,
+				photo_url: null,
+				occurred_at: '2025-02-01T10:00:00Z',
+				created_at: '2025-02-01T10:00:00Z'
+			}
+		]);
+
+		await waitFor(() => {
+			expect(screen.getByText('Watered')).toBeTruthy();
+		});
+		expect(document.querySelector('.timeline-photo')).toBeNull();
+	});
+
+	it('opens lightbox when clicking a care event thumbnail', async () => {
+		await renderWithPlant();
+		careEvents.set([
+			{
+				id: 22,
+				plant_id: 1,
+				plant_name: 'Fern',
+				event_type: 'repotted',
+				notes: null,
+				photo_url: '/uploads/care/22.jpg',
+				occurred_at: '2025-02-01T10:00:00Z',
+				created_at: '2025-02-01T10:00:00Z'
+			}
+		]);
+
+		await waitFor(() => {
+			expect(document.querySelector('.timeline-photo')).toBeTruthy();
+		});
+		const photoBtn = document.querySelector('.timeline-photo') as HTMLButtonElement;
+		await fireEvent.click(photoBtn);
+		expect(getLightbox().hasAttribute('open')).toBe(true);
+	});
+});
+
+describe('log form photo upload', () => {
+	it('shows the photo upload control when log form is open', async () => {
+		await renderWithPlant();
+		await screen.findByText('Fern');
+		const addLogBtn = screen.getByText('+ Add log entry');
+		await fireEvent.click(addLogBtn);
+
+		await waitFor(() => {
+			expect(screen.getByText('Add photo')).toBeTruthy();
+		});
+	});
+
+	it('shows a preview after selecting a photo and clears it on remove', async () => {
+		await renderWithPlant();
+		await screen.findByText('Fern');
+		const addLogBtn = screen.getByText('+ Add log entry');
+		await fireEvent.click(addLogBtn);
+
+		await waitFor(() => {
+			expect(screen.getByText('Add photo')).toBeTruthy();
+		});
+
+		const fileInput = document.querySelector('.log-photo input[type="file"]') as HTMLInputElement;
+		expect(fileInput).toBeTruthy();
+
+		const file = new File(['img'], 'test.jpg', { type: 'image/jpeg' });
+		Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+		await fireEvent.change(fileInput);
+
+		await waitFor(() => {
+			const preview = document.querySelector('.log-photo-preview img') as HTMLImageElement;
+			expect(preview).toBeTruthy();
+		});
+
+		const removeBtn = document.querySelector('.log-photo-remove') as HTMLButtonElement;
+		await fireEvent.click(removeBtn);
+
+		await waitFor(() => {
+			expect(document.querySelector('.log-photo-preview')).toBeNull();
+			expect(screen.getByText('Add photo')).toBeTruthy();
+		});
+	});
+
+	it('uploads photo after creating care event on submit', async () => {
+		const createdEvent = {
+			id: 30,
+			plant_id: 1,
+			plant_name: 'Fern',
+			event_type: 'fertilized',
+			notes: '',
+			photo_url: null,
+			occurred_at: '2025-02-01T10:00:00Z',
+			created_at: '2025-02-01T10:00:00Z'
+		};
+		mockAddCareEvent.mockResolvedValue(createdEvent);
+		mockUploadCareEventPhoto.mockResolvedValue({ ...createdEvent, photo_url: '/uploads/care/30.jpg' });
+
+		await renderWithPlant();
+		await screen.findByText('Fern');
+		const addLogBtn = screen.getByText('+ Add log entry');
+		await fireEvent.click(addLogBtn);
+
+		await waitFor(() => {
+			expect(screen.getByText('Fertilized')).toBeTruthy();
+		});
+		await fireEvent.click(screen.getByText('Fertilized'));
+
+		const fileInput = document.querySelector('.log-photo input[type="file"]') as HTMLInputElement;
+		const file = new File(['img'], 'test.jpg', { type: 'image/jpeg' });
+		Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+		await fireEvent.change(fileInput);
+
+		await waitFor(() => {
+			expect(document.querySelector('.log-photo-preview')).toBeTruthy();
+		});
+
+		const saveBtn = screen.getByText('Save');
+		await fireEvent.click(saveBtn);
+
+		await waitFor(() => {
+			expect(mockAddCareEvent).toHaveBeenCalledWith(1, expect.objectContaining({ event_type: 'fertilized' }));
+			expect(mockUploadCareEventPhoto).toHaveBeenCalledWith(1, 30, file);
+		});
+	});
+
+	it('clears photo when form is cancelled', async () => {
+		await renderWithPlant();
+		await screen.findByText('Fern');
+		const addLogBtn = screen.getByText('+ Add log entry');
+		await fireEvent.click(addLogBtn);
+
+		await waitFor(() => {
+			expect(screen.getByText('Add photo')).toBeTruthy();
+		});
+
+		const fileInput = document.querySelector('.log-photo input[type="file"]') as HTMLInputElement;
+		const file = new File(['img'], 'test.jpg', { type: 'image/jpeg' });
+		Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+		await fireEvent.change(fileInput);
+
+		await waitFor(() => {
+			expect(document.querySelector('.log-photo-preview')).toBeTruthy();
+		});
+
+		const cancelBtns = screen.getAllByText('Cancel');
+		const logFormCancel = cancelBtns.find(
+			(btn) => btn.closest('.log-form') !== null
+		)!;
+		await fireEvent.click(logFormCancel);
+
+		// Re-open log form — photo should be gone
+		await fireEvent.click(screen.getByText('+ Add log entry'));
+		await waitFor(() => {
+			expect(document.querySelector('.log-photo-preview')).toBeNull();
+			expect(screen.getByText('Add photo')).toBeTruthy();
+		});
 	});
 });

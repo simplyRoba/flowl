@@ -23,6 +23,7 @@ const mockEvent: CareEvent = {
 	plant_name: 'Fern',
 	event_type: 'watering',
 	notes: null,
+	photo_url: null,
 	occurred_at: '2025-01-10T10:00:00Z',
 	created_at: '2025-01-10T10:00:00Z'
 };

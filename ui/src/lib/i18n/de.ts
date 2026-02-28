@@ -149,7 +149,8 @@ export const de: Translations = {
 		soilStandard: 'Standard',
 		soilCactus: 'Kakteenerde',
 		soilOrchid: 'Orchideensubstrat',
-		soilPeat: 'Torfmoos'
+		soilPeat: 'Torfmoos',
+		addLogPhoto: 'Foto hinzufügen'
 	},
 	care: {
 		title: 'Tagebuch',
@@ -342,7 +343,8 @@ export const de: Translations = {
 		noteSaved: 'Im Pflegetagebuch gespeichert',
 		noteSaveFailed: 'Notiz konnte nicht gespeichert werden',
 		attachPhoto: 'Foto anhängen',
-		removePhoto: 'Foto entfernen'
+		removePhoto: 'Foto entfernen',
+		attachChatPhoto: 'Foto aus dem Chat anhängen'
 	},
 	error: {
 		loadPlants: 'Pflanzen konnten nicht geladen werden',

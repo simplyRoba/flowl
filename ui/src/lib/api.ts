@@ -283,6 +283,7 @@ export interface CareEvent {
 	plant_name: string;
 	event_type: string;
 	notes: string | null;
+	photo_url: string | null;
 	occurred_at: string;
 	created_at: string;
 }
@@ -321,6 +322,32 @@ export function createCareEvent(plantId: number, data: CreateCareEvent): Promise
 
 export function deleteCareEvent(plantId: number, eventId: number): Promise<void> {
 	return request('DELETE', `/api/plants/${plantId}/care/${eventId}`);
+}
+
+export async function uploadCareEventPhoto(plantId: number, eventId: number, file: File): Promise<CareEvent> {
+	const formData = new FormData();
+	formData.append('file', file);
+
+	const resp = await fetch(`/api/plants/${plantId}/care/${eventId}/photo`, {
+		method: 'POST',
+		body: formData
+	});
+
+	if (!resp.ok) {
+		const data = await resp.json().catch(() => ({ message: resp.statusText }));
+		throw new ApiError(resp.status, data.message || resp.statusText);
+	}
+
+	return resp.json();
+}
+
+export async function deleteCareEventPhoto(plantId: number, eventId: number): Promise<void> {
+	const resp = await fetch(`/api/plants/${plantId}/care/${eventId}/photo`, { method: 'DELETE' });
+
+	if (!resp.ok) {
+		const data = await resp.json().catch(() => ({ message: resp.statusText }));
+		throw new ApiError(resp.status, data.message || resp.statusText);
+	}
 }
 
 // --- Locations ---

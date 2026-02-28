@@ -4,6 +4,10 @@
 	import type { CareEvent } from '$lib/api';
 	import { fetchAllCareEvents } from '$lib/api';
 	import { translations } from '$lib/stores/locale';
+	import PhotoLightbox from '$lib/components/PhotoLightbox.svelte';
+
+	let lightboxOpen = $state(false);
+	let lightboxSrc = $state('');
 
 	const PAGE_SIZE = 20;
 
@@ -169,34 +173,39 @@
 					<div class="log-day-header">{group.label}</div>
 					{#each group.events as event}
 						<div class="log-entry">
-							<div
-								class="log-entry-icon
-									{event.event_type === 'watered' ? 'water-icon' : ''}
-									{event.event_type === 'fertilized' ? 'fertilize-icon' : ''}
-									{event.event_type === 'repotted' ? 'repot-icon' : ''}
-									{event.event_type === 'pruned' ? 'prune-icon' : ''}
-									{event.event_type === 'custom' ? 'custom-icon' : ''}
-								{event.event_type === 'ai-consultation' ? 'ai-icon' : ''}"
-							>
-								{#if event.event_type === 'watered'}
-									<Droplet size={14} />
-								{:else if event.event_type === 'fertilized'}
-									<Leaf size={14} />
-								{:else if event.event_type === 'repotted'}
-									<Shovel size={14} />
-								{:else if event.event_type === 'pruned'}
-									<Scissors size={14} />
-								{:else if event.event_type === 'ai-consultation'}
-									<Sparkles size={14} />
-								{:else}
-									<Pencil size={14} />
-								{/if}
+							<div class="log-entry-left">
+								<div
+									class="log-entry-icon
+										{event.event_type === 'watered' ? 'water-icon' : ''}
+										{event.event_type === 'fertilized' ? 'fertilize-icon' : ''}
+										{event.event_type === 'repotted' ? 'repot-icon' : ''}
+										{event.event_type === 'pruned' ? 'prune-icon' : ''}
+										{event.event_type === 'custom' ? 'custom-icon' : ''}
+									{event.event_type === 'ai-consultation' ? 'ai-icon' : ''}"
+								>
+									{#if event.event_type === 'watered'}
+										<Droplet size={14} />
+									{:else if event.event_type === 'fertilized'}
+										<Leaf size={14} />
+									{:else if event.event_type === 'repotted'}
+										<Shovel size={14} />
+									{:else if event.event_type === 'pruned'}
+										<Scissors size={14} />
+									{:else if event.event_type === 'ai-consultation'}
+										<Sparkles size={14} />
+									{:else}
+										<Pencil size={14} />
+									{/if}
+								</div>
+								<span class="log-entry-time">{formatTime(event.occurred_at)}</span>
 							</div>
 							<div class="log-entry-content">
-								<div class="log-entry-top">
-									<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry-plant">{event.plant_name}</a>
-									<span class="log-entry-time">{formatTime(event.occurred_at)}</span>
-								</div>
+								<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry-plant">{event.plant_name}</a>
+								{#if event.photo_url}
+									<button class="log-entry-photo" onclick={() => { lightboxSrc = event.photo_url!; lightboxOpen = true; }}>
+										<img src={event.photo_url} alt="" />
+									</button>
+								{/if}
 								<div class="log-entry-action">{eventTypeLabel(event.event_type)}</div>
 								{#if event.notes}
 									<div class="log-entry-note">{event.notes}</div>
@@ -215,6 +224,13 @@
 
 	<div bind:this={sentinel} class="sentinel"></div>
 </div>
+
+<PhotoLightbox
+	open={lightboxOpen}
+	src={lightboxSrc}
+	alt=""
+	onclose={() => { lightboxOpen = false; }}
+/>
 
 <style>
 	.log-page {
@@ -277,6 +293,14 @@
 		border-bottom: none;
 	}
 
+	.log-entry-left {
+		flex-shrink: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+	}
+
 	.log-entry-icon {
 		width: 36px;
 		height: 36px;
@@ -302,12 +326,25 @@
 		min-width: 0;
 	}
 
-	.log-entry-top {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 2px;
-		gap: 8px;
+	.log-entry-photo {
+		float: right;
+		width: 80px;
+		height: 80px;
+		border-radius: 8px;
+		overflow: hidden;
+		border: none;
+		padding: 0;
+		background: none;
+		cursor: zoom-in;
+		margin-left: 10px;
+		margin-bottom: 4px;
+	}
+
+	.log-entry-photo img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
 	}
 
 	.log-entry-plant {
@@ -322,9 +359,9 @@
 	}
 
 	.log-entry-time {
-		font-size: 12px;
+		font-size: 11px;
 		color: var(--color-text-muted);
-		flex-shrink: 0;
+		white-space: nowrap;
 	}
 
 	.log-entry-action {

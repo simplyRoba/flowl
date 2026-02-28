@@ -147,7 +147,8 @@ const en = {
 		soilStandard: 'Standard',
 		soilCactus: 'Cactus mix',
 		soilOrchid: 'Orchid bark',
-		soilPeat: 'Peat moss'
+		soilPeat: 'Peat moss',
+		addLogPhoto: 'Add photo'
 	},
 	care: {
 		title: 'Care Journal',
@@ -340,7 +341,8 @@ const en = {
 		noteSaved: 'Saved to care journal',
 		noteSaveFailed: 'Failed to save note',
 		attachPhoto: 'Attach photo',
-		removePhoto: 'Remove photo'
+		removePhoto: 'Remove photo',
+		attachChatPhoto: 'Attach photo from chat'
 	},
 	error: {
 		loadPlants: 'Failed to load plants',
