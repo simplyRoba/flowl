@@ -500,7 +500,7 @@
 		top: 0;
 		right: 0;
 		bottom: 0;
-		width: 400px;
+		width: clamp(400px, 30vw, 560px);
 		z-index: 90;
 		background: var(--color-surface);
 		border-left: 1px solid var(--color-border);
