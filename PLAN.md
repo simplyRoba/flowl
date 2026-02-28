@@ -522,7 +522,3 @@ Optional photo attachment on care journal entries. Enables visual documentation 
 - [ ] UI: photo display in care journal timeline
 - [ ] AI summary save: attach chat photo (if any) to the `ai-consultation` care entry
 
-### Future — Additional Providers (Phase 10+)
-
-- [ ] Ollama provider implementation (behind the same trait)
-- [ ] Provider selection via env var or Settings UI

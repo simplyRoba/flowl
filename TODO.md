@@ -16,7 +16,12 @@
 - Watering reminders via push notifications
 - Requires backend support for web push subscriptions (VAPID keys, push endpoint storage)
 
-### Enhanced Install Experience
+## AI — Additional Providers
+
+- Ollama provider implementation (behind the same trait)
+- Provider selection via env var or Settings UI
+
+## PWA Level 2 — Enhanced Install Experience
 - Add `beforeinstallprompt` handler for a custom in-app install banner (Android/Chrome only)
 - Add Apple-specific meta tags (`apple-mobile-web-app-capable`, `apple-touch-icon`) for better iOS integration
 - Add maskable icon variant for Android adaptive icons
