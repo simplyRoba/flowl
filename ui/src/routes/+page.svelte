@@ -422,6 +422,7 @@
 		align-self: stretch;
 		justify-content: flex-end;
 		margin-top: auto;
+		padding-top: 8px;
 	}
 
 
@@ -458,9 +459,6 @@
 			font-size: 18px;
 		}
 
-		.water-btn-label {
-			display: none;
-		}
 
 		.plant-grid {
 			grid-template-columns: 1fr;
