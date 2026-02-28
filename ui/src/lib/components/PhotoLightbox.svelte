@@ -190,6 +190,8 @@
 		border: none;
 		background: transparent;
 		padding: 0;
+		margin: 0;
+		inset: 0;
 		max-width: none;
 		max-height: none;
 		width: 100vw;
@@ -207,7 +209,7 @@
 	}
 
 	.lightbox-close {
-		position: absolute;
+		position: fixed;
 		top: calc(16px + env(safe-area-inset-top, 0px));
 		right: calc(16px + env(safe-area-inset-right, 0px));
 		width: 40px;
