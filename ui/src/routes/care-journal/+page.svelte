@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { Droplet, Leaf, Shovel, Scissors, Pencil, Sparkles } from 'lucide-svelte';
 	import type { CareEvent } from '$lib/api';
 	import { fetchAllCareEvents } from '$lib/api';
@@ -173,7 +174,11 @@
 				<div class="log-day-group">
 					<div class="log-day-header">{group.label}</div>
 					{#each group.events as event}
-						<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry">
+						<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+						<div
+							class="log-entry"
+							onclick={() => { if (!window.getSelection()?.toString()) goto(`/plants/${event.plant_id}?from=/care-journal`); }}
+						>
 							<div class="log-entry-left">
 								<div
 									class="log-entry-icon
@@ -201,25 +206,18 @@
 								<span class="log-entry-time">{formatTime(event.occurred_at)}</span>
 							</div>
 							<div class="log-entry-content">
-								<span class="log-entry-plant">{event.plant_name}</span>
+								<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry-plant" onclick={(e) => e.stopPropagation()}>{event.plant_name}</a>
 								{#if event.photo_url}
-									<!-- svelte-ignore a11y_no_static_element_interactions -->
-									<span
-										class="log-entry-photo"
-										role="button"
-										tabindex="-1"
-										onclick={(e) => { e.preventDefault(); e.stopPropagation(); lightboxSrc = event.photo_url!; lightboxOpen = true; }}
-										onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); lightboxSrc = event.photo_url!; lightboxOpen = true; } }}
-									>
+									<button class="log-entry-photo" onclick={(e) => { e.stopPropagation(); lightboxSrc = event.photo_url!; lightboxOpen = true; }}>
 										<img src={event.photo_url} alt="" />
-									</span>
+									</button>
 								{/if}
 								<div class="log-entry-action">{eventTypeLabel(event.event_type)}</div>
 								{#if event.notes}
 									<div class="log-entry-note">{event.notes}</div>
 								{/if}
 							</div>
-						</a>
+						</div>
 					{/each}
 				</div>
 			{/each}
@@ -295,8 +293,7 @@
 		padding: 10px 0;
 		border-bottom: 1px solid var(--color-border);
 		align-items: flex-start;
-		text-decoration: none;
-		color: inherit;
+		cursor: pointer;
 	}
 
 	.log-entry:last-child {
@@ -338,11 +335,13 @@
 
 	.log-entry-photo {
 		float: right;
-		display: block;
 		width: 80px;
 		height: 80px;
 		border-radius: 8px;
 		overflow: hidden;
+		border: none;
+		padding: 0;
+		background: none;
 		cursor: zoom-in;
 		margin-left: 10px;
 		margin-bottom: 4px;
@@ -359,6 +358,11 @@
 		font-size: 14px;
 		font-weight: 600;
 		color: var(--color-text);
+		text-decoration: none;
+	}
+
+	.log-entry-plant:hover {
+		text-decoration: underline;
 	}
 
 	.log-entry-time {
