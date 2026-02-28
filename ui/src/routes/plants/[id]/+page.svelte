@@ -26,6 +26,7 @@
 	let logSubmitting = $state(false);
 	let showAllEvents = $state(false);
 	let deletingEventId = $state<number | null>(null);
+	let deleteEventDialogTarget = $state<CareEvent | null>(null);
 	let backHref = $state('/');
 	let lightboxOpen = $state(false);
 	let deleteDialogOpen = $state(false);
@@ -169,8 +170,14 @@
 		logSubmitting = false;
 	}
 
-	async function handleEventDelete(event: CareEvent) {
-		if (!$currentPlant || deletingEventId === event.id) return;
+	function handleEventDelete(event: CareEvent) {
+		deleteEventDialogTarget = event;
+	}
+
+	async function handleEventDeleteConfirm() {
+		const event = deleteEventDialogTarget;
+		deleteEventDialogTarget = null;
+		if (!$currentPlant || !event || deletingEventId === event.id) return;
 		deletingEventId = event.id;
 		await removeCareEvent($currentPlant.id, event.id);
 		await loadPlant($currentPlant.id);
@@ -545,6 +552,17 @@
 	confirmLabel={$translations.common.delete}
 	onconfirm={handleDeleteConfirm}
 	oncancel={() => { deleteDialogOpen = false; }}
+/>
+
+<ModalDialog
+	open={deleteEventDialogTarget !== null}
+	title={$translations.plant.deleteLogEntry}
+	message={$translations.plant.deleteLogEntryConfirm}
+	mode="confirm"
+	variant="danger"
+	confirmLabel={$translations.common.delete}
+	onconfirm={handleEventDeleteConfirm}
+	oncancel={() => { deleteEventDialogTarget = null; }}
 />
 
 <style>

@@ -131,6 +131,7 @@ export const de: Translations = {
 		notesOptional: 'Notizen (optional)',
 		openPhoto: 'Foto öffnen',
 		deleteLogEntry: 'Eintrag löschen',
+		deleteLogEntryConfirm: 'Diesen Pflegeeintrag löschen? Dies kann nicht rückgängig gemacht werden.',
 		lightDirect: 'Direktes Sonnenlicht',
 		lightLow: 'Wenig Licht',
 		lightIndirect: 'Indirektes Licht',

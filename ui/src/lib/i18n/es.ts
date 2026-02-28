@@ -131,6 +131,7 @@ export const es: Translations = {
 		notesOptional: 'Notas (opcional)',
 		openPhoto: 'Abrir foto',
 		deleteLogEntry: 'Eliminar entrada',
+		deleteLogEntryConfirm: '¿Eliminar esta entrada de cuidado? Esto no se puede deshacer.',
 		lightDirect: 'Luz solar directa',
 		lightLow: 'Poca luz',
 		lightIndirect: 'Luz indirecta',

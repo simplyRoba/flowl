@@ -129,6 +129,7 @@ const en = {
 		notesOptional: 'Notes (optional)',
 		openPhoto: 'Open photo',
 		deleteLogEntry: 'Delete log entry',
+		deleteLogEntryConfirm: 'Delete this care entry? This cannot be undone.',
 		lightDirect: 'Direct sunlight',
 		lightLow: 'Low light',
 		lightIndirect: 'Indirect light',
