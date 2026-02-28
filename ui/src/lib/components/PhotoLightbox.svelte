@@ -208,8 +208,8 @@
 
 	.lightbox-close {
 		position: absolute;
-		top: 16px;
-		right: 16px;
+		top: calc(16px + env(safe-area-inset-top, 0px));
+		right: calc(16px + env(safe-area-inset-right, 0px));
 		width: 40px;
 		height: 40px;
 		display: flex;
