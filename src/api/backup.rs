@@ -54,6 +54,7 @@ pub struct ExportCareEvent {
     pub plant_id: i64,
     pub event_type: String,
     pub notes: Option<String>,
+    pub photo_path: Option<String>,
     pub occurred_at: String,
     pub created_at: String,
 }
@@ -78,7 +79,7 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
     .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     let care_events = sqlx::query_as::<_, ExportCareEvent>(
-        "SELECT id, plant_id, event_type, notes, occurred_at, created_at FROM care_events",
+        "SELECT id, plant_id, event_type, notes, photo_path, occurred_at, created_at FROM care_events",
     )
     .fetch_all(&state.pool)
     .await
@@ -112,17 +113,26 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
         zip.write_all(json.as_bytes())
             .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
-        // Add photo files
-        for plant in &data.plants {
-            if let Some(ref photo_path) = plant.photo_path {
-                let file_path = state.upload_dir.join(photo_path);
-                if let Ok(photo_data) = tokio::fs::read(&file_path).await {
-                    let archive_path = format!("photos/{photo_path}");
-                    zip.start_file(&archive_path, options)
-                        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
-                    zip.write_all(&photo_data)
-                        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
-                }
+        // Add photo files (plants + care events)
+        let photo_paths: Vec<&str> = data
+            .plants
+            .iter()
+            .filter_map(|p| p.photo_path.as_deref())
+            .chain(
+                data.care_events
+                    .iter()
+                    .filter_map(|e| e.photo_path.as_deref()),
+            )
+            .collect();
+
+        for photo_path in photo_paths {
+            let file_path = state.image_store.upload_dir().join(photo_path);
+            if let Ok(photo_data) = tokio::fs::read(&file_path).await {
+                let archive_path = format!("photos/{photo_path}");
+                zip.start_file(&archive_path, options)
+                    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+                zip.write_all(&photo_data)
+                    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
             }
         }
 

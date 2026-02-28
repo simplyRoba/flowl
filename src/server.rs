@@ -17,7 +17,7 @@ use crate::embedded::static_handler;
 use crate::state::AppState;
 
 pub fn router(state: AppState) -> Router {
-    let uploads = ServeDir::new(&state.upload_dir);
+    let uploads = ServeDir::new(state.image_store.upload_dir());
     Router::new()
         .route("/health", get(health))
         .route("/api/info", get(info))

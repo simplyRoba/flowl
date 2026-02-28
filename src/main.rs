@@ -3,6 +3,7 @@ mod api;
 mod config;
 mod db;
 mod embedded;
+mod images;
 mod mqtt;
 mod server;
 mod state;
@@ -65,6 +66,9 @@ async fn main() {
         .expect("Failed to create upload directory");
     info!("Upload directory at {}", upload_dir.display());
 
+    let image_store = images::ImageStore::new(upload_dir);
+    image_store.cleanup_orphans(&pool).await;
+
     let ai_provider: Option<Arc<dyn AiProvider>> = config.ai_api_key.as_ref().map(|key| {
         info!(
             "AI provider enabled (model: {}, base: {})",
@@ -82,7 +86,7 @@ async fn main() {
 
     let state = AppState {
         pool: pool.clone(),
-        upload_dir,
+        image_store,
         mqtt_client: mqtt_client.clone(),
         mqtt_prefix: mqtt_prefix.clone(),
         mqtt_connected: mqtt_connected.clone(),

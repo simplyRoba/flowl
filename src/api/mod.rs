@@ -63,6 +63,12 @@ pub fn router(state: AppState) -> Router {
                 .layer(DefaultBodyLimit::max(10 * 1024 * 1024)),
         )
         .route(
+            "/plants/{id}/care/{event_id}/photo",
+            axum::routing::post(care_events::upload_care_event_photo)
+                .delete(care_events::delete_care_event_photo)
+                .layer(DefaultBodyLimit::max(10 * 1024 * 1024)),
+        )
+        .route(
             "/settings",
             get(settings::get_settings).put(settings::update_settings),
         )

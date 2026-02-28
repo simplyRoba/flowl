@@ -2,13 +2,12 @@ use axum::Json;
 use axum::extract::{Multipart, Path, State};
 use axum::http::StatusCode;
 
-use tracing::{info, warn};
+use tracing::info;
 
 use super::error::ApiError;
 use super::plants::{PLANT_SELECT, Plant, PlantRow};
+use crate::images::ImageError;
 use crate::state::AppState;
-
-const MAX_FILE_SIZE: usize = 5 * 1024 * 1024; // 5 MB
 
 /// # Errors
 /// Returns `ApiError::NotFound` if the plant does not exist,
@@ -19,7 +18,6 @@ pub async fn upload_photo(
     Path(id): Path<i64>,
     mut multipart: Multipart,
 ) -> Result<Json<Plant>, ApiError> {
-    // Verify plant exists, get current photo_path
     let current_photo =
         sqlx::query_scalar::<_, Option<String>>("SELECT photo_path FROM plants WHERE id = ?")
             .bind(id)
@@ -28,56 +26,33 @@ pub async fn upload_photo(
             .map_err(|e| ApiError::BadRequest(e.to_string()))?
             .ok_or_else(|| ApiError::NotFound("Plant not found".to_string()))?;
 
-    // Extract file field
     let field = multipart
         .next_field()
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?
         .ok_or_else(|| ApiError::Validation("No file provided".to_string()))?;
 
-    // Validate content type
     let content_type = field.content_type().unwrap_or("").to_string();
-
-    let ext = match content_type.as_str() {
-        "image/jpeg" => "jpg",
-        "image/png" => "png",
-        "image/webp" => "webp",
-        _ => {
-            return Err(ApiError::Validation(
-                "Invalid file type. Allowed: JPEG, PNG, WebP".to_string(),
-            ));
-        }
-    };
-
-    // Read file data
     let data = field
         .bytes()
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
-    // Validate size
-    if data.len() > MAX_FILE_SIZE {
-        return Err(ApiError::Validation(
-            "File too large. Maximum size is 5 MB".to_string(),
-        ));
-    }
-
-    // Generate filename and write to disk
-    let filename = format!("{}.{ext}", uuid::Uuid::new_v4());
-    let file_path = state.upload_dir.join(&filename);
-    tokio::fs::write(&file_path, &data)
+    let filename = state
+        .image_store
+        .save(&data, &content_type)
         .await
-        .map_err(|e| ApiError::BadRequest(format!("Failed to save file: {e}")))?;
+        .map_err(|e| match e {
+            ImageError::InvalidContentType | ImageError::TooLarge => {
+                ApiError::Validation(e.to_string())
+            }
+            ImageError::Io(_) => ApiError::BadRequest(format!("Failed to save file: {e}")),
+        })?;
 
-    // Delete old photo if replacing
     if let Some(ref old_filename) = current_photo {
-        let old_path = state.upload_dir.join(old_filename);
-        if let Err(e) = tokio::fs::remove_file(&old_path).await {
-            warn!(plant_id = id, filename = %old_filename, error = %e, "Failed to remove old photo file");
-        }
+        state.image_store.delete(old_filename).await;
     }
 
-    // Update photo_path in DB
     sqlx::query("UPDATE plants SET photo_path = ?, updated_at = datetime('now') WHERE id = ?")
         .bind(&filename)
         .bind(id)
@@ -87,7 +62,6 @@ pub async fn upload_photo(
 
     info!(plant_id = id, filename = %filename, "Photo uploaded");
 
-    // Return updated plant
     let query = format!("{PLANT_SELECT} WHERE p.id = ?");
     let row = sqlx::query_as::<_, PlantRow>(&query)
         .bind(id)
@@ -105,7 +79,6 @@ pub async fn delete_photo(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, ApiError> {
-    // Verify plant exists and has a photo
     let photo_path =
         sqlx::query_scalar::<_, Option<String>>("SELECT photo_path FROM plants WHERE id = ?")
             .bind(id)
@@ -117,18 +90,13 @@ pub async fn delete_photo(
     let filename =
         photo_path.ok_or_else(|| ApiError::NotFound("Plant has no photo".to_string()))?;
 
-    // Set photo_path = NULL in DB
     sqlx::query("UPDATE plants SET photo_path = NULL, updated_at = datetime('now') WHERE id = ?")
         .bind(id)
         .execute(&state.pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
-    // Delete file from disk
-    let file_path = state.upload_dir.join(&filename);
-    if let Err(e) = tokio::fs::remove_file(&file_path).await {
-        warn!(plant_id = id, filename = %filename, error = %e, "Failed to remove photo file");
-    }
+    state.image_store.delete(&filename).await;
 
     info!(plant_id = id, "Photo deleted");
     Ok(StatusCode::NO_CONTENT)

@@ -22,7 +22,7 @@ async fn test_app_ai_enabled() -> Router {
 
     let state = AppState {
         pool,
-        upload_dir,
+        image_store: flowl::images::ImageStore::new(upload_dir),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,

@@ -143,7 +143,7 @@ async fn export_populated_database_with_photo() {
     let pool = common::test_pool().await;
     let state = flowl::state::AppState {
         pool: pool.clone(),
-        upload_dir: upload_dir.clone(),
+        image_store: flowl::images::ImageStore::new(upload_dir.clone()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,
@@ -388,7 +388,7 @@ async fn round_trip_export_import_export() {
 
     let state = flowl::state::AppState {
         pool: pool.clone(),
-        upload_dir: upload_dir.clone(),
+        image_store: flowl::images::ImageStore::new(upload_dir.clone()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,
@@ -437,7 +437,7 @@ async fn round_trip_export_import_export() {
 
     let state2 = flowl::state::AppState {
         pool: pool2,
-        upload_dir: upload_dir2.clone(),
+        image_store: flowl::images::ImageStore::new(upload_dir2.clone()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,

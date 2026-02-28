@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
@@ -7,11 +6,12 @@ use rumqttc::AsyncClient;
 use sqlx::SqlitePool;
 
 use crate::ai::provider::AiProvider;
+use crate::images::ImageStore;
 
 #[derive(Clone)]
 pub struct AppState {
     pub pool: SqlitePool,
-    pub upload_dir: PathBuf,
+    pub image_store: ImageStore,
     pub mqtt_client: Option<AsyncClient>,
     pub mqtt_prefix: String,
     pub mqtt_connected: Option<Arc<AtomicBool>>,

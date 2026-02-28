@@ -1,15 +1,16 @@
 use std::fmt::Write;
 
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::{Multipart, Path, Query, State};
 use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
-use tracing::debug;
+use tracing::{debug, info};
 
 use super::error::{ApiError, JsonBody};
 use super::plants::{PLANT_SELECT, Plant, PlantRow};
+use crate::images::ImageError;
 use crate::mqtt;
 use crate::state::AppState;
 
@@ -29,6 +30,7 @@ pub struct CareEvent {
     pub plant_name: String,
     pub event_type: String,
     pub notes: Option<String>,
+    pub photo_url: Option<String>,
     pub occurred_at: String,
     pub created_at: String,
 }
@@ -55,7 +57,9 @@ pub struct CareEventsPage {
 }
 
 const CARE_EVENT_SELECT: &str = "SELECT ce.id, ce.plant_id, p.name AS plant_name, \
-    ce.event_type, ce.notes, ce.occurred_at, ce.created_at \
+    ce.event_type, ce.notes, \
+    CASE WHEN ce.photo_path IS NOT NULL THEN '/uploads/' || ce.photo_path END AS photo_url, \
+    ce.occurred_at, ce.created_at \
     FROM care_events ce JOIN plants p ON ce.plant_id = p.id";
 
 fn validate_event_type(event_type: &str) -> Result<(), ApiError> {
@@ -185,18 +189,18 @@ pub async fn delete_care_event(
     State(state): State<AppState>,
     Path((plant_id, event_id)): Path<(i64, i64)>,
 ) -> Result<StatusCode, ApiError> {
-    // Read event type before deleting so we know whether to publish MQTT
-    let event_type = sqlx::query_scalar::<_, String>(
-        "SELECT event_type FROM care_events WHERE id = ? AND plant_id = ?",
+    // Read event type + photo before deleting
+    let row = sqlx::query_as::<_, (String, Option<String>)>(
+        "SELECT event_type, photo_path FROM care_events WHERE id = ? AND plant_id = ?",
     )
     .bind(event_id)
     .bind(plant_id)
     .fetch_optional(&state.pool)
     .await
-    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    .map_err(|e| ApiError::BadRequest(e.to_string()))?
+    .ok_or_else(|| ApiError::NotFound("Care event not found".to_string()))?;
 
-    let event_type =
-        event_type.ok_or_else(|| ApiError::NotFound("Care event not found".to_string()))?;
+    let (event_type, photo_path) = row;
 
     sqlx::query("DELETE FROM care_events WHERE id = ? AND plant_id = ?")
         .bind(event_id)
@@ -204,6 +208,10 @@ pub async fn delete_care_event(
         .execute(&state.pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    if let Some(filename) = photo_path {
+        state.image_store.delete(&filename).await;
+    }
 
     if event_type == "watered" {
         publish_plant_watering_mqtt(&state, plant_id).await;
@@ -258,4 +266,105 @@ pub async fn list_all_care_events(
     }
 
     Ok(Json(CareEventsPage { events, has_more }))
+}
+
+// --- Care event photo handlers ---
+
+/// # Errors
+/// Returns `ApiError::NotFound` if the care event does not exist,
+/// `ApiError::Validation` for invalid file types or oversized files, or
+/// `ApiError::BadRequest` on multipart parsing or database failures.
+pub async fn upload_care_event_photo(
+    State(state): State<AppState>,
+    Path((plant_id, event_id)): Path<(i64, i64)>,
+    mut multipart: Multipart,
+) -> Result<Json<CareEvent>, ApiError> {
+    let current_photo = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT photo_path FROM care_events WHERE id = ? AND plant_id = ?",
+    )
+    .bind(event_id)
+    .bind(plant_id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| ApiError::BadRequest(e.to_string()))?
+    .ok_or_else(|| ApiError::NotFound("Care event not found".to_string()))?;
+
+    let field = multipart
+        .next_field()
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?
+        .ok_or_else(|| ApiError::Validation("No file provided".to_string()))?;
+
+    let content_type = field.content_type().unwrap_or("").to_string();
+    let data = field
+        .bytes()
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    let filename = state
+        .image_store
+        .save(&data, &content_type)
+        .await
+        .map_err(|e| match e {
+            ImageError::InvalidContentType | ImageError::TooLarge => {
+                ApiError::Validation(e.to_string())
+            }
+            ImageError::Io(_) => ApiError::BadRequest(format!("Failed to save file: {e}")),
+        })?;
+
+    if let Some(ref old_filename) = current_photo {
+        state.image_store.delete(old_filename).await;
+    }
+
+    sqlx::query("UPDATE care_events SET photo_path = ? WHERE id = ? AND plant_id = ?")
+        .bind(&filename)
+        .bind(event_id)
+        .bind(plant_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    info!(plant_id, event_id, filename = %filename, "Care event photo uploaded");
+
+    let query = format!("{CARE_EVENT_SELECT} WHERE ce.id = ?");
+    let event = sqlx::query_as::<_, CareEvent>(&query)
+        .bind(event_id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    Ok(Json(event))
+}
+
+/// # Errors
+/// Returns `ApiError::NotFound` if the care event does not exist or has no photo, or
+/// `ApiError::BadRequest` on database failures.
+pub async fn delete_care_event_photo(
+    State(state): State<AppState>,
+    Path((plant_id, event_id)): Path<(i64, i64)>,
+) -> Result<StatusCode, ApiError> {
+    let photo_path = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT photo_path FROM care_events WHERE id = ? AND plant_id = ?",
+    )
+    .bind(event_id)
+    .bind(plant_id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| ApiError::BadRequest(e.to_string()))?
+    .ok_or_else(|| ApiError::NotFound("Care event not found".to_string()))?;
+
+    let filename =
+        photo_path.ok_or_else(|| ApiError::NotFound("Care event has no photo".to_string()))?;
+
+    sqlx::query("UPDATE care_events SET photo_path = NULL WHERE id = ? AND plant_id = ?")
+        .bind(event_id)
+        .bind(plant_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    state.image_store.delete(&filename).await;
+
+    info!(plant_id, event_id, "Care event photo deleted");
+    Ok(StatusCode::NO_CONTENT)
 }

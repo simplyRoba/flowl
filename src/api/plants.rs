@@ -5,7 +5,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use super::error::{ApiError, JsonBody};
 use crate::mqtt;
@@ -522,10 +522,7 @@ pub async fn delete_plant(
 
     // Delete photo file if exists
     if let Some(filename) = photo_path {
-        let file_path = state.upload_dir.join(&filename);
-        if let Err(e) = tokio::fs::remove_file(&file_path).await {
-            warn!(plant_id = id, error = %e, "Failed to remove photo file during plant deletion");
-        }
+        state.image_store.delete(&filename).await;
     }
 
     mqtt::remove_plant(state.mqtt_client.as_ref(), &state.mqtt_prefix, id).await;

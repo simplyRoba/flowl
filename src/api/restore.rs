@@ -51,6 +51,8 @@ struct ImportCareEvent {
     plant_id: i64,
     event_type: String,
     notes: Option<String>,
+    #[serde(default)]
+    photo_path: Option<String>,
     occurred_at: String,
     created_at: String,
 }
@@ -207,13 +209,14 @@ async fn replace_database(pool: &sqlx::SqlitePool, data: &ImportData) -> Result<
 
     for event in &data.care_events {
         sqlx::query(
-            "INSERT INTO care_events (id, plant_id, event_type, notes, occurred_at, created_at) \
-             VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO care_events (id, plant_id, event_type, notes, photo_path, occurred_at, created_at) \
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(event.id)
         .bind(event.plant_id)
         .bind(&event.event_type)
         .bind(&event.notes)
+        .bind(&event.photo_path)
         .bind(&event.occurred_at)
         .bind(&event.created_at)
         .execute(&mut *tx)
@@ -266,7 +269,7 @@ pub async fn import_data(
 
     // Phase 3: Replace photos on disk
     // Clear uploads directory
-    let mut entries = tokio::fs::read_dir(&state.upload_dir)
+    let mut entries = tokio::fs::read_dir(state.image_store.upload_dir())
         .await
         .map_err(|e| ApiError::BadRequest(format!("Failed to read uploads dir: {e}")))?;
 
@@ -285,7 +288,7 @@ pub async fn import_data(
     // Write extracted photos to disk
     let photos_count = photos.len();
     for (filename, contents) in &photos {
-        let dest = state.upload_dir.join(filename);
+        let dest = state.image_store.upload_dir().join(filename);
         tokio::fs::write(&dest, contents)
             .await
             .map_err(|e| ApiError::BadRequest(format!("Failed to write {filename}: {e}")))?;

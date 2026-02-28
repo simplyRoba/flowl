@@ -34,7 +34,7 @@ pub async fn test_app() -> Router {
     std::fs::create_dir_all(&upload_dir).expect("Failed to create test upload dir");
     let state = AppState {
         pool,
-        upload_dir,
+        image_store: flowl::images::ImageStore::new(upload_dir),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,
@@ -54,7 +54,7 @@ pub async fn test_app_with_uploads() -> (Router, PathBuf) {
     std::fs::create_dir_all(&upload_dir).expect("Failed to create test upload dir");
     let state = AppState {
         pool,
-        upload_dir: upload_dir.clone(),
+        image_store: flowl::images::ImageStore::new(upload_dir.clone()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,

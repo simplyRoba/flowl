@@ -16,7 +16,7 @@ async fn test_app_mqtt_enabled(connected: bool) -> Router {
     let flag = Arc::new(AtomicBool::new(connected));
     let state = AppState {
         pool,
-        upload_dir,
+        image_store: flowl::images::ImageStore::new(upload_dir),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: Some(flag),

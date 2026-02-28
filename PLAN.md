@@ -508,16 +508,21 @@ AI-generated conversation summaries saved as care journal entries.
 
 Photo attachments in chat messages for visual plant diagnostics.
 
-- [ ] Inline photo upload in chat (file picker + camera capture on mobile)
-- [ ] Photo preview in sent messages
+- [x] Inline photo upload in chat (file picker + camera capture on mobile)
+- [x] Photo preview in sent messages
 
-### Phase 9 — Care Entry Photos
+### Phase 9a — Care Entry Photos: Backend
 
-Optional photo attachment on care journal entries. Enables visual documentation of plant health over time.
+Database and API support for photo attachments on care journal entries.
 
-- [ ] Database: add `photo_path` column to `care_events` table
-- [ ] Backend: photo upload/delete endpoints for care events (mirror plant photo pattern)
-- [ ] Backend: include `photo_url` in care event API responses
+- [x] Database: add `photo_path` column to `care_events` table
+- [x] Backend: photo upload/delete endpoints for care events (mirror plant photo pattern)
+- [x] Backend: include `photo_url` in care event API responses
+
+### Phase 9b — Care Entry Photos: UI
+
+Frontend photo upload and display for care journal entries.
+
 - [ ] UI: photo upload in care entry form (watering, fertilizing, repotting, etc.)
 - [ ] UI: photo display in care journal timeline
 - [ ] AI summary save: attach chat photo (if any) to the `ai-consultation` care entry

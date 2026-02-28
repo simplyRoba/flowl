@@ -3,6 +3,7 @@ pub mod api;
 pub mod config;
 pub mod db;
 pub mod embedded;
+pub mod images;
 pub mod mqtt;
 pub mod server;
 pub mod state;
