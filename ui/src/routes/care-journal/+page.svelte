@@ -141,6 +141,7 @@
 				class="chip chip-solid"
 				class:active={activeFilter === value}
 				onclick={() => setFilter(value)}
+				aria-label={filterLabel(value)}
 			>
 				{#if value === 'watered'}
 					<Droplet size={14} />
@@ -155,7 +156,7 @@
 				{:else if value === 'ai-consultation'}
 					<Sparkles size={14} />
 				{/if}
-				{filterLabel(value)}
+				<span class="filter-label" class:icon-has-label={value !== ''}>{filterLabel(value)}</span>
 			</button>
 		{/each}
 	</div>
@@ -172,7 +173,7 @@
 				<div class="log-day-group">
 					<div class="log-day-header">{group.label}</div>
 					{#each group.events as event}
-						<div class="log-entry">
+						<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry">
 							<div class="log-entry-left">
 								<div
 									class="log-entry-icon
@@ -200,18 +201,25 @@
 								<span class="log-entry-time">{formatTime(event.occurred_at)}</span>
 							</div>
 							<div class="log-entry-content">
-								<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry-plant">{event.plant_name}</a>
+								<span class="log-entry-plant">{event.plant_name}</span>
 								{#if event.photo_url}
-									<button class="log-entry-photo" onclick={() => { lightboxSrc = event.photo_url!; lightboxOpen = true; }}>
+									<!-- svelte-ignore a11y_no_static_element_interactions -->
+									<span
+										class="log-entry-photo"
+										role="button"
+										tabindex="-1"
+										onclick={(e) => { e.preventDefault(); e.stopPropagation(); lightboxSrc = event.photo_url!; lightboxOpen = true; }}
+										onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); lightboxSrc = event.photo_url!; lightboxOpen = true; } }}
+									>
 										<img src={event.photo_url} alt="" />
-									</button>
+									</span>
 								{/if}
 								<div class="log-entry-action">{eventTypeLabel(event.event_type)}</div>
 								{#if event.notes}
 									<div class="log-entry-note">{event.notes}</div>
 								{/if}
 							</div>
-						</div>
+						</a>
 					{/each}
 				</div>
 			{/each}
@@ -287,6 +295,8 @@
 		padding: 10px 0;
 		border-bottom: 1px solid var(--color-border);
 		align-items: flex-start;
+		text-decoration: none;
+		color: inherit;
 	}
 
 	.log-entry:last-child {
@@ -328,13 +338,11 @@
 
 	.log-entry-photo {
 		float: right;
+		display: block;
 		width: 80px;
 		height: 80px;
 		border-radius: 8px;
 		overflow: hidden;
-		border: none;
-		padding: 0;
-		background: none;
 		cursor: zoom-in;
 		margin-left: 10px;
 		margin-bottom: 4px;
@@ -351,11 +359,6 @@
 		font-size: 14px;
 		font-weight: 600;
 		color: var(--color-text);
-		text-decoration: none;
-	}
-
-	.log-entry-plant:hover {
-		text-decoration: underline;
 	}
 
 	.log-entry-time {
@@ -401,6 +404,10 @@
 	@media (max-width: 768px) {
 		.page-header h1 {
 			font-size: 18px;
+		}
+
+		.filter-label.icon-has-label {
+			display: none;
 		}
 	}
 </style>
