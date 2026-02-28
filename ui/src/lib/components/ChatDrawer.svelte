@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Sparkles, X, Send, BookOpen, LoaderCircle, Camera } from 'lucide-svelte';
+	import { Sparkles, X, Send, BookOpen, Camera } from 'lucide-svelte';
 	import { translations } from '$lib/stores/locale';
 	import { chatPlant, summarizeChat, createCareEvent, type ChatMessage, type Plant } from '$lib/api';
 
@@ -342,12 +342,9 @@
 		</div>
 		<div class="chat-header-right">
 			{#if showSaveNote}
-				<button class="chat-header-btn" onclick={handleSaveNote} disabled={summarizing} aria-label={$translations.chat.saveNote} title={$translations.chat.saveNote}>
-					{#if summarizing}
-						<LoaderCircle size={18} class="spin" />
-					{:else}
-						<BookOpen size={18} />
-					{/if}
+				<button class="btn btn-sm chat-save-note-btn" onclick={handleSaveNote} disabled={summarizing}>
+					<BookOpen size={14} />
+					{summarizing ? $translations.chat.savingNote : $translations.chat.saveNote}
 				</button>
 			{/if}
 			<button class="chat-close" onclick={handleClose} aria-label={$translations.chat.close}>
@@ -425,10 +422,7 @@
 					{$translations.chat.cancelSummary}
 				</button>
 				<button class="btn btn-sm btn-primary" onclick={handleConfirmSave} disabled={savingNote || !summaryText.trim()}>
-					{#if savingNote}
-						<LoaderCircle size={14} class="spin" />
-					{/if}
-					{$translations.chat.saveSummary}
+					{savingNote ? $translations.common.saving : $translations.chat.saveSummary}
 				</button>
 			</div>
 		</div>
@@ -619,26 +613,16 @@
 		color: var(--color-text);
 	}
 
-	.chat-header-btn {
-		width: 32px;
-		height: 32px;
-		border-radius: 8px;
-		border: none;
-		background: transparent;
-		color: var(--color-ai);
-		cursor: pointer;
+	.chat-save-note-btn {
 		display: flex;
 		align-items: center;
-		justify-content: center;
+		gap: 4px;
+		color: var(--color-ai);
+		border-color: var(--color-ai);
 	}
 
-	.chat-header-btn:hover:not(:disabled) {
+	.chat-save-note-btn:hover:not(:disabled) {
 		background: var(--color-ai-tint);
-	}
-
-	.chat-header-btn:disabled {
-		opacity: 0.5;
-		cursor: default;
 	}
 
 	.chat-close {
@@ -656,6 +640,12 @@
 
 	.chat-close:hover {
 		background: var(--color-ai-tint);
+	}
+
+	@media (max-width: 768px) {
+		.chat-close {
+			display: none;
+		}
 	}
 
 	/* ── Quick chips ── */
@@ -981,12 +971,4 @@
 		margin-top: 8px;
 	}
 
-	:global(.spin) {
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		from { transform: rotate(0deg); }
-		to { transform: rotate(360deg); }
-	}
 </style>
