@@ -6,6 +6,7 @@ use serde_json::{Value, json};
 use tokio_stream::StreamExt as _;
 use tracing::{debug, warn};
 
+use super::prompts;
 use super::provider::AiProvider;
 use super::types::{ChatMessage, ChatResponseStream, IdentifyResponse};
 
@@ -38,16 +39,11 @@ impl AiProvider for OpenAiProvider {
         images: &[&[u8]],
         locale: &str,
     ) -> Result<IdentifyResponse, Box<dyn std::error::Error + Send + Sync>> {
-        let lang_instruction = match locale {
-            "en" => "Respond in English.".to_string(),
-            _ => format!(
-                "Respond in the language with locale code \"{locale}\". Use that language for the common_name and summary fields. Keep scientific_name in Latin."
-            ),
-        };
+        let prompt_text = prompts::build_identify_prompt(locale);
 
         let mut content: Vec<Value> = vec![json!({
             "type": "text",
-            "text": format!("Identify this plant from the photo(s). Provide your top 3 most likely identifications, ranked by confidence (highest first). For each, include the common name, scientific name, your confidence level, a short summary of the species, and a care profile with typical care requirements. {lang_instruction}")
+            "text": prompt_text
         })];
 
         for image_data in images {
@@ -225,7 +221,21 @@ impl AiProvider for OpenAiProvider {
         let body = json!({
             "model": self.model,
             "messages": api_messages,
-            "response_format": { "type": "json_object" }
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "summarize_response",
+                    "strict": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "summary": { "type": "string" }
+                        },
+                        "required": ["summary"],
+                        "additionalProperties": false
+                    }
+                }
+            }
         });
 
         let response = self

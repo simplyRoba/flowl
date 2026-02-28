@@ -28,9 +28,9 @@ The system SHALL expose `POST /api/ai/summarize` accepting a JSON body with fiel
 - **WHEN** `POST /api/ai/summarize` is called with an empty `history` array
 - **THEN** the endpoint SHALL return HTTP 422 with a validation error
 
-### Requirement: Summarize uses JSON mode
+### Requirement: Summarize uses structured output
 
-The `summarize` provider method SHALL use `response_format: { "type": "json_object" }` to guarantee valid JSON output. The system prompt SHALL instruct the model to return `{"summary":"..."}`. The response SHALL be deserialized and the `summary` field extracted.
+The `summarize` provider method SHALL use `response_format: { "type": "json_schema" }` with `strict: true` and a schema requiring a single `summary` string field. The response SHALL be deserialized and the `summary` field extracted.
 
 #### Scenario: Valid JSON response
 
