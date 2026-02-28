@@ -403,13 +403,11 @@ The "Needs Attention" section SHALL adapt to the viewport width following the mo
 
 - **WHEN** the viewport width is > 768px
 - **THEN** attention cards SHALL display in a 2-column grid
-- **AND** the Water button SHALL show a droplet icon and the label "Water"
 
 #### Scenario: Mobile layout
 
 - **WHEN** the viewport width is <= 768px
 - **THEN** attention cards SHALL stack in a single column
-- **AND** the Water button SHALL show only the droplet icon (no label)
 
 ### Requirement: Care Info Form Section
 

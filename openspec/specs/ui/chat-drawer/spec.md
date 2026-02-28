@@ -23,11 +23,17 @@ A `ChatDrawer.svelte` component SHALL provide a conversational AI chat interface
 - **AND** a semi-transparent backdrop SHALL overlay the page content
 - **AND** a drag handle bar SHALL be visible at the top of the sheet
 
-#### Scenario: Close drawer
+#### Scenario: Close drawer on desktop
 
-- **WHEN** the user clicks the close button (X) in the chat header
-- **THEN** the drawer/sheet SHALL close with a slide-out animation
+- **WHEN** the user clicks the close button (X) in the chat header on desktop
+- **THEN** the drawer SHALL close with a slide-out animation
 - **AND** the page layout SHALL return to normal
+
+#### Scenario: Close button hidden on mobile
+
+- **WHEN** the chat drawer is open on mobile (viewport <= 768px)
+- **THEN** the close button (X) SHALL be hidden
+- **AND** the user SHALL dismiss via drag-to-dismiss or the Escape key
 
 #### Scenario: Mobile drag to dismiss
 
@@ -208,15 +214,14 @@ The frontend API client SHALL provide a `chatPlant` async generator function.
 
 ### Requirement: Save note button
 
-The chat drawer SHALL display a "Save note" icon button in the header that allows saving the conversation as a care journal entry.
+The chat drawer SHALL display a "Save note" button in the header that allows saving the conversation as a care journal entry.
 
 #### Scenario: Button visible after assistant response
 
 - **WHEN** the chat contains at least one assistant message
 - **AND** streaming is not in progress
 - **AND** the summary editor is not open
-- **THEN** a "Save note" icon button (`BookOpen`) SHALL be visible in the chat header, left of the close button
-- **AND** the button SHALL have a native tooltip (`title`) with the save note label
+- **THEN** a "Save note" button with a `BookOpen` icon and text label SHALL be visible in the chat header, left of the close button
 
 #### Scenario: Button hidden when no assistant messages
 
@@ -249,8 +254,8 @@ The chat drawer SHALL provide a save-note flow that summarizes the conversation 
 
 #### Scenario: Summarize initiated
 
-- **WHEN** the user clicks the "Save note" icon button
-- **THEN** the icon SHALL change to a spinner to indicate loading
+- **WHEN** the user clicks the "Save note" button
+- **THEN** the button text SHALL change to indicate loading and the button SHALL be disabled
 - **AND** a `POST /api/ai/summarize` request SHALL be sent with the current plant ID and chat history
 
 #### Scenario: Summary editing
@@ -263,8 +268,8 @@ The chat drawer SHALL provide a save-note flow that summarizes the conversation 
 
 - **WHEN** the user clicks "Save" on the summary editor
 - **THEN** a `POST /api/plants/:id/care` request SHALL be sent with `event_type: "ai-consultation"` and the textarea content as `notes`
-- **AND** a success message SHALL be shown inside the chat messages area
-- **AND** the input area SHALL return to its normal state
+- **AND** the `onsave` callback SHALL be invoked to notify the parent component
+- **AND** the drawer SHALL close
 
 #### Scenario: Save cancelled
 

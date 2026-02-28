@@ -464,6 +464,7 @@
 			plant={$currentPlant}
 			open={chatOpen}
 			onclose={() => { chatOpen = false; }}
+		onsave={() => loadCareEvents($currentPlant.id)}
 		/>
 	</div>
 {:else if $plantsError}

@@ -7,11 +7,13 @@
 	let {
 		plant,
 		open = false,
-		onclose
+		onclose,
+		onsave
 	}: {
 		plant: Plant;
 		open: boolean;
 		onclose: () => void;
+		onsave?: () => void;
 	} = $props();
 
 	let messages: { role: string; content: string; image?: string }[] = $state([]);
@@ -233,8 +235,8 @@
 			});
 			editingSummary = false;
 			summaryText = '';
-			noteSavedMessage = $translations.chat.noteSaved;
-			scrollToBottom();
+			onsave?.();
+			handleClose();
 		} catch {
 			noteSavedMessage = $translations.chat.noteSaveFailed;
 			scrollToBottom();
