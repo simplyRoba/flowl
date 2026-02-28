@@ -340,7 +340,9 @@ export const de: Translations = {
 		saveSummary: 'Speichern',
 		cancelSummary: 'Abbrechen',
 		noteSaved: 'Im Pflegetagebuch gespeichert',
-		noteSaveFailed: 'Notiz konnte nicht gespeichert werden'
+		noteSaveFailed: 'Notiz konnte nicht gespeichert werden',
+		attachPhoto: 'Foto anhängen',
+		removePhoto: 'Foto entfernen'
 	},
 	error: {
 		loadPlants: 'Pflanzen konnten nicht geladen werden',

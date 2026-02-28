@@ -338,7 +338,9 @@ const en = {
 		saveSummary: 'Save',
 		cancelSummary: 'Cancel',
 		noteSaved: 'Saved to care journal',
-		noteSaveFailed: 'Failed to save note'
+		noteSaveFailed: 'Failed to save note',
+		attachPhoto: 'Attach photo',
+		removePhoto: 'Remove photo'
 	},
 	error: {
 		loadPlants: 'Failed to load plants',

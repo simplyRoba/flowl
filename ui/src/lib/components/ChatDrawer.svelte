@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Sparkles, X, Send, BookOpen, LoaderCircle } from 'lucide-svelte';
+	import { Sparkles, X, Send, BookOpen, LoaderCircle, Camera } from 'lucide-svelte';
 	import { translations } from '$lib/stores/locale';
 	import { chatPlant, summarizeChat, createCareEvent, type ChatMessage, type Plant } from '$lib/api';
 
@@ -14,7 +14,7 @@
 		onclose: () => void;
 	} = $props();
 
-	let messages: { role: string; content: string }[] = $state([]);
+	let messages: { role: string; content: string; image?: string }[] = $state([]);
 	let inputText = $state('');
 	let streaming = $state(false);
 	let abortController: AbortController | null = $state(null);
@@ -28,6 +28,12 @@
 	let editingSummary = $state(false);
 	let savingNote = $state(false);
 	let noteSavedMessage = $state('');
+
+	// Photo attachment state
+	let attachedPhoto: File | null = $state(null);
+	let attachedPreview: string | null = $state(null);
+	let isDraggingFile = $state(false);
+
 
 	let hasAssistantMessage = $derived(messages.some(m => m.role === 'assistant' && m.content));
 	let showSaveNote = $derived(hasAssistantMessage && !streaming && !editingSummary);
@@ -76,13 +82,77 @@
 		return hist;
 	}
 
+	const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+	function stagePhoto(file: File) {
+		if (!VALID_IMAGE_TYPES.includes(file.type)) return;
+		if (attachedPreview) URL.revokeObjectURL(attachedPreview);
+		attachedPhoto = file;
+		attachedPreview = URL.createObjectURL(file);
+	}
+
+	function clearPhoto() {
+		if (attachedPreview) URL.revokeObjectURL(attachedPreview);
+		attachedPhoto = null;
+		attachedPreview = null;
+	}
+
+	function fileToBase64(file: File): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => {
+				const dataUrl = reader.result as string;
+				resolve(dataUrl.split(',')[1]);
+			};
+			reader.onerror = reject;
+			reader.readAsDataURL(file);
+		});
+	}
+
+	function handlePhotoSelect(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (file) stagePhoto(file);
+		input.value = '';
+	}
+
+	function handleFileDragEnter(e: DragEvent) {
+		e.preventDefault();
+		isDraggingFile = true;
+	}
+
+	function handleFileDragLeave(e: DragEvent) {
+		if (e.currentTarget === e.target) {
+			isDraggingFile = false;
+		}
+	}
+
+	function handleFileDrop(e: DragEvent) {
+		e.preventDefault();
+		isDraggingFile = false;
+		const file = e.dataTransfer?.files?.[0];
+		if (file && VALID_IMAGE_TYPES.includes(file.type)) {
+			stagePhoto(file);
+		}
+	}
+
 	async function sendMessage(text: string) {
 		if (!text.trim() || streaming) return;
 
 		const userMsg = text.trim();
+		const photo = attachedPhoto;
 		inputText = '';
+		clearPhoto();
 		noteSavedMessage = '';
-		messages.push({ role: 'user', content: userMsg });
+
+		let imageBase64: string | undefined;
+		let imageDataUrl: string | undefined;
+		if (photo) {
+			imageBase64 = await fileToBase64(photo);
+			imageDataUrl = `data:${photo.type};base64,${imageBase64}`;
+		}
+
+		messages.push({ role: 'user', content: userMsg, image: imageDataUrl });
 		scrollToBottom();
 
 		streaming = true;
@@ -98,7 +168,7 @@
 			// Also exclude the user message we just added — it goes as the `message` param
 			const historyWithoutCurrent = history.slice(0, -1);
 
-			for await (const delta of chatPlant(plant.id, userMsg, historyWithoutCurrent, controller.signal)) {
+			for await (const delta of chatPlant(plant.id, userMsg, historyWithoutCurrent, controller.signal, imageBase64)) {
 				messages[messages.length - 1].content += delta;
 				scrollToBottom();
 			}
@@ -247,6 +317,9 @@
 			if (abortController) {
 				abortController.abort();
 			}
+			if (attachedPreview) {
+				URL.revokeObjectURL(attachedPreview);
+			}
 		};
 	});
 </script>
@@ -298,7 +371,16 @@
 		</div>
 	{/if}
 
-	<div class="chat-messages" bind:this={messagesEl}>
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="chat-messages"
+		class:dragging-file={isDraggingFile}
+		bind:this={messagesEl}
+		ondragenter={handleFileDragEnter}
+		ondragover={handleFileDragEnter}
+		ondragleave={handleFileDragLeave}
+		ondrop={handleFileDrop}
+	>
 		{#if messages.length === 0}
 			<div class="empty-state">
 				<Sparkles size={32} />
@@ -308,6 +390,9 @@
 			{#each messages as msg}
 				{#if msg.content}
 				<div class="message" class:user={msg.role === 'user'} class:assistant={msg.role === 'assistant'}>
+					{#if msg.image && msg.role === 'user'}
+						<img class="message-photo" src={msg.image} alt="" />
+					{/if}
 					{msg.content}
 				</div>
 				{/if}
@@ -348,7 +433,27 @@
 			</div>
 		</div>
 	{:else}
+		{#if attachedPreview}
+			<div class="photo-preview-strip">
+				<div class="photo-preview-thumb">
+					<img src={attachedPreview} alt="" />
+					<button class="photo-preview-remove" onclick={clearPhoto} aria-label={$translations.chat.removePhoto}>
+						<X size={12} />
+					</button>
+				</div>
+			</div>
+		{/if}
 		<div class="chat-input-area">
+			<label class="attach-btn" class:disabled={streaming} title={$translations.chat.attachPhoto}>
+				<Camera size={16} />
+				<input
+					type="file"
+					accept="image/jpeg,image/png,image/webp"
+					onchange={handlePhotoSelect}
+					disabled={streaming}
+					class="file-input"
+				/>
+			</label>
 			<input
 				bind:this={inputEl}
 				class="chat-input"
@@ -677,6 +782,97 @@
 	@keyframes typing {
 		0%, 60%, 100% { opacity: 0.4; transform: translateY(0); }
 		30% { opacity: 1; transform: translateY(-4px); }
+	}
+
+	/* ── Drag-and-drop overlay ── */
+	.chat-messages.dragging-file {
+		outline: 2px dashed var(--color-ai);
+		outline-offset: -4px;
+		background: color-mix(in srgb, var(--color-ai) 5%, transparent);
+	}
+
+	/* ── Message photo ── */
+	.message-photo {
+		display: block;
+		max-width: 200px;
+		border-radius: 8px;
+		margin-bottom: 6px;
+	}
+
+	/* ── Photo preview strip ── */
+	.photo-preview-strip {
+		padding: 8px 16px 0;
+		flex-shrink: 0;
+	}
+
+	.photo-preview-thumb {
+		position: relative;
+		display: inline-block;
+	}
+
+	.photo-preview-thumb img {
+		width: 48px;
+		height: 48px;
+		object-fit: cover;
+		border-radius: 8px;
+		border: 1px solid var(--color-border);
+	}
+
+	.photo-preview-remove {
+		position: absolute;
+		top: -6px;
+		right: -6px;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		color: var(--color-danger);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		transition: all var(--transition-speed);
+	}
+
+	.photo-preview-remove:hover {
+		background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+		border-color: var(--color-danger);
+		transform: scale(1.15);
+	}
+
+	/* ── Attach button ── */
+	.attach-btn {
+		width: 38px;
+		height: 38px;
+		border-radius: 50%;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		color: var(--color-text-muted);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		transition: all 0.15s;
+	}
+
+	.attach-btn:hover:not(.disabled) {
+		border-color: var(--color-ai);
+		color: var(--color-ai);
+		background: var(--color-ai-tint);
+	}
+
+	.attach-btn.disabled {
+		opacity: 0.4;
+		cursor: default;
+		pointer-events: none;
+	}
+
+	.file-input {
+		display: none;
 	}
 
 	/* ── Input area ── */

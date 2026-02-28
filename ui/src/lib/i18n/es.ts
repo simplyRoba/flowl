@@ -340,7 +340,9 @@ export const es: Translations = {
 		saveSummary: 'Guardar',
 		cancelSummary: 'Cancelar',
 		noteSaved: 'Guardado en el diario de cuidados',
-		noteSaveFailed: 'No se pudo guardar la nota'
+		noteSaveFailed: 'No se pudo guardar la nota',
+		attachPhoto: 'Adjuntar foto',
+		removePhoto: 'Eliminar foto'
 	},
 	error: {
 		loadPlants: 'No se pudieron cargar las plantas',

@@ -107,6 +107,7 @@ export interface IdentifyResponse {
 export interface ChatMessage {
 	role: string;
 	content: string;
+	image?: string;
 }
 
 class ApiError extends Error {
@@ -346,12 +347,16 @@ export async function* chatPlant(
 	plantId: number,
 	message: string,
 	history: ChatMessage[],
-	signal?: AbortSignal
+	signal?: AbortSignal,
+	image?: string
 ): AsyncGenerator<string> {
+	const historyClean = history.map(({ role, content }) => ({ role, content }));
+	const body: Record<string, unknown> = { plant_id: plantId, message, history: historyClean };
+	if (image) body.image = image;
 	const resp = await fetch('/api/ai/chat', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ plant_id: plantId, message, history }),
+		body: JSON.stringify(body),
 		signal
 	});
 

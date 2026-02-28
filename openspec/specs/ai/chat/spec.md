@@ -6,7 +6,7 @@ AI chat capability: streaming chat endpoint, plant context assembly, system prom
 
 ### Requirement: Chat endpoint
 
-The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `plant_id` (integer, required), `message` (string, required), `image` (base64-encoded string, optional), and `history` (array of `{ role, content }` objects, optional). The endpoint SHALL return an SSE stream (`text/event-stream`). A `DefaultBodyLimit` of 30 MB SHALL be applied to the route.
+The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `plant_id` (integer, required), `message` (string, required), `image` (base64-encoded string, optional), and `history` (array of `{ role, content }` objects, optional). The `history` objects SHALL NOT include image data. The endpoint SHALL return an SSE stream (`text/event-stream`). A `DefaultBodyLimit` of 30 MB SHALL be applied to the route.
 
 #### Scenario: Successful chat request without image
 
@@ -26,6 +26,7 @@ The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `p
 - **WHEN** a valid JSON body includes a `history` array of prior messages
 - **THEN** all history messages SHALL be included in the AI request as prior conversation turns
 - **AND** the current `message` SHALL be appended as the latest user turn
+- **AND** image data SHALL NOT be included in history entries
 
 #### Scenario: AI provider not configured
 
