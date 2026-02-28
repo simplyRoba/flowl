@@ -1,5 +1,3 @@
-#![allow(clippy::missing_errors_doc)]
-
 use axum::Json;
 use axum::extract::State;
 use serde::Serialize;
@@ -16,6 +14,8 @@ pub struct Stats {
     pub photo_count: i64,
 }
 
+/// # Errors
+/// Returns `ApiError::BadRequest` on database failures.
 pub async fn get_stats(State(pool): State<SqlitePool>) -> Result<Json<Stats>, ApiError> {
     let plant_count = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM plants")
         .fetch_one(&pool)

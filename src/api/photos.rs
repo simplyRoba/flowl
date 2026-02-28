@@ -1,5 +1,3 @@
-#![allow(clippy::missing_errors_doc)]
-
 use axum::Json;
 use axum::extract::{Multipart, Path, State};
 use axum::http::StatusCode;
@@ -12,6 +10,10 @@ use crate::state::AppState;
 
 const MAX_FILE_SIZE: usize = 5 * 1024 * 1024; // 5 MB
 
+/// # Errors
+/// Returns `ApiError::NotFound` if the plant does not exist,
+/// `ApiError::Validation` for invalid file types or oversized files, or
+/// `ApiError::BadRequest` on multipart parsing or database failures.
 pub async fn upload_photo(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -96,6 +98,9 @@ pub async fn upload_photo(
     Ok(Json(Plant::from(row)))
 }
 
+/// # Errors
+/// Returns `ApiError::NotFound` if the plant does not exist or has no photo, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn delete_photo(
     State(state): State<AppState>,
     Path(id): Path<i64>,

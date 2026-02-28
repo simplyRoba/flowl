@@ -1,5 +1,3 @@
-#![allow(clippy::missing_errors_doc)]
-
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -34,6 +32,8 @@ pub struct UpdateLocation {
     pub name: Option<String>,
 }
 
+/// # Errors
+/// Returns `ApiError::BadRequest` on database failures.
 pub async fn list_locations(
     State(pool): State<SqlitePool>,
 ) -> Result<Json<Vec<Location>>, ApiError> {
@@ -57,6 +57,10 @@ pub async fn list_locations(
     ))
 }
 
+/// # Errors
+/// Returns `ApiError::Validation` if name is missing,
+/// `ApiError::Conflict` if a location with the same name exists, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn create_location(
     State(pool): State<SqlitePool>,
     JsonBody(body): JsonBody<CreateLocation>,
@@ -99,6 +103,11 @@ pub async fn create_location(
     ))
 }
 
+/// # Errors
+/// Returns `ApiError::NotFound` if the location does not exist,
+/// `ApiError::Validation` if name is missing,
+/// `ApiError::Conflict` if a location with the same name exists, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn update_location(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
@@ -158,6 +167,9 @@ pub async fn update_location(
     }))
 }
 
+/// # Errors
+/// Returns `ApiError::NotFound` if the location does not exist, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn delete_location(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,

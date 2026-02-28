@@ -1,5 +1,3 @@
-#![allow(clippy::missing_errors_doc)]
-
 use std::sync::atomic::Ordering;
 
 use axum::Json;
@@ -42,6 +40,10 @@ pub async fn get_mqtt_status(State(state): State<AppState>) -> Json<MqttStatus> 
     })
 }
 
+/// # Errors
+/// Returns `ApiError::Conflict` if MQTT is disabled,
+/// `ApiError::ServiceUnavailable` if MQTT is not connected, or
+/// `ApiError::InternalError` if the repair operation fails.
 pub async fn post_mqtt_repair(
     State(state): State<AppState>,
 ) -> Result<Json<mqtt::RepairResult>, ApiError> {

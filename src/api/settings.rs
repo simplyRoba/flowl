@@ -1,5 +1,3 @@
-#![allow(clippy::missing_errors_doc)]
-
 use axum::Json;
 use axum::extract::State;
 use serde::{Deserialize, Serialize};
@@ -22,6 +20,8 @@ pub struct UpdateSettings {
     pub locale: Option<String>,
 }
 
+/// # Errors
+/// Returns `ApiError::BadRequest` on database failures.
 pub async fn get_settings(State(pool): State<SqlitePool>) -> Result<Json<UserSettings>, ApiError> {
     let row =
         sqlx::query_as::<_, UserSettings>("SELECT theme, locale FROM user_settings WHERE id = 1")
@@ -32,6 +32,9 @@ pub async fn get_settings(State(pool): State<SqlitePool>) -> Result<Json<UserSet
     Ok(Json(row))
 }
 
+/// # Errors
+/// Returns `ApiError::Validation` for invalid theme or locale values, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn update_settings(
     State(pool): State<SqlitePool>,
     JsonBody(body): JsonBody<UpdateSettings>,

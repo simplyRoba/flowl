@@ -1,5 +1,3 @@
-#![allow(clippy::missing_errors_doc)]
-
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -105,6 +103,8 @@ const VALID_GROWTH_SPEED: &[&str] = &["slow", "moderate", "fast"];
 const VALID_SOIL_TYPE: &[&str] = &["standard", "cactus-mix", "orchid-bark", "peat-moss"];
 const VALID_SOIL_MOISTURE: &[&str] = &["dry", "moderate", "moist"];
 
+/// # Errors
+/// Returns `ApiError::Validation` if the value is not in the allowed set.
 pub fn validate_care_info(
     field: &str,
     value: Option<&str>,
@@ -220,6 +220,8 @@ pub struct UpdatePlant {
     pub notes: Option<Option<String>>,
 }
 
+/// # Errors
+/// Returns `ApiError::BadRequest` on database failures.
 pub async fn list_plants(State(pool): State<SqlitePool>) -> Result<Json<Vec<Plant>>, ApiError> {
     let query = format!("{PLANT_SELECT} ORDER BY p.name");
     let rows = sqlx::query_as::<_, PlantRow>(&query)
@@ -230,6 +232,9 @@ pub async fn list_plants(State(pool): State<SqlitePool>) -> Result<Json<Vec<Plan
     Ok(Json(rows.into_iter().map(Plant::from).collect()))
 }
 
+/// # Errors
+/// Returns `ApiError::NotFound` if the plant does not exist, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn get_plant(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
@@ -245,6 +250,9 @@ pub async fn get_plant(
     Ok(Json(Plant::from(row)))
 }
 
+/// # Errors
+/// Returns `ApiError::Validation` if name is missing or care info values are invalid, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn create_plant(
     State(state): State<AppState>,
     JsonBody(body): JsonBody<CreatePlant>,
@@ -331,6 +339,10 @@ pub async fn create_plant(
     Ok((StatusCode::CREATED, Json(plant)))
 }
 
+/// # Errors
+/// Returns `ApiError::NotFound` if the plant does not exist,
+/// `ApiError::Validation` if care info values are invalid, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn update_plant(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -426,6 +438,9 @@ pub async fn update_plant(
     Ok(Json(plant))
 }
 
+/// # Errors
+/// Returns `ApiError::NotFound` if the plant does not exist, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn water_plant(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -479,6 +494,9 @@ pub async fn water_plant(
     Ok(Json(plant))
 }
 
+/// # Errors
+/// Returns `ApiError::NotFound` if the plant does not exist, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn delete_plant(
     State(state): State<AppState>,
     Path(id): Path<i64>,

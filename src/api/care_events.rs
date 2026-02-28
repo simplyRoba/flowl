@@ -1,5 +1,3 @@
-#![allow(clippy::missing_errors_doc)]
-
 use std::fmt::Write;
 
 use axum::Json;
@@ -112,6 +110,9 @@ async fn publish_plant_watering_mqtt(state: &AppState, plant_id: i64) {
     .await;
 }
 
+/// # Errors
+/// Returns `ApiError::NotFound` if the plant does not exist, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn list_care_events(
     State(pool): State<SqlitePool>,
     Path(plant_id): Path<i64>,
@@ -128,6 +129,10 @@ pub async fn list_care_events(
     Ok(Json(events))
 }
 
+/// # Errors
+/// Returns `ApiError::NotFound` if the plant does not exist,
+/// `ApiError::Validation` if `event_type` is missing or invalid, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn create_care_event(
     State(state): State<AppState>,
     Path(plant_id): Path<i64>,
@@ -173,6 +178,9 @@ pub async fn create_care_event(
     Ok((StatusCode::CREATED, Json(event)))
 }
 
+/// # Errors
+/// Returns `ApiError::NotFound` if the care event does not exist, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn delete_care_event(
     State(state): State<AppState>,
     Path((plant_id, event_id)): Path<(i64, i64)>,
@@ -205,6 +213,9 @@ pub async fn delete_care_event(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// # Errors
+/// Returns `ApiError::Validation` if event type filter is invalid, or
+/// `ApiError::BadRequest` on database failures.
 pub async fn list_all_care_events(
     State(pool): State<SqlitePool>,
     Query(params): Query<GlobalCareQuery>,

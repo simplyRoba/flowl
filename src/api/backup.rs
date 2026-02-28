@@ -1,5 +1,3 @@
-#![allow(clippy::missing_errors_doc)]
-
 use std::io::Write;
 
 use axum::extract::State;
@@ -60,6 +58,9 @@ pub struct ExportCareEvent {
     pub created_at: String,
 }
 
+/// # Errors
+/// Returns `ApiError::BadRequest` on database failures, or
+/// `ApiError::InternalError` if the ZIP archive cannot be created.
 pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiError> {
     let locations = sqlx::query_as::<_, ExportLocation>("SELECT id, name FROM locations")
         .fetch_all(&state.pool)

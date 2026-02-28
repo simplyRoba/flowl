@@ -1,5 +1,3 @@
-#![allow(clippy::missing_errors_doc)]
-
 use std::io::Read;
 use std::sync::atomic::Ordering;
 
@@ -230,6 +228,9 @@ async fn replace_database(pool: &sqlx::SqlitePool, data: &ImportData) -> Result<
     Ok(())
 }
 
+/// # Errors
+/// Returns `ApiError::BadRequest` for malformed uploads, invalid archives,
+/// or version mismatches, or on database failures.
 pub async fn import_data(
     State(state): State<AppState>,
     mut multipart: Multipart,
