@@ -394,6 +394,12 @@ describe('care event delete reloads plant', () => {
 		const user = userEvent.setup();
 		await user.click(deleteButton);
 
+		// Confirm the delete dialog
+		await waitFor(() => {
+			expect(screen.getByText(/Delete this care entry/)).toBeTruthy();
+		});
+		await user.click(screen.getByRole('button', { name: 'Delete' }));
+
 		await waitFor(() => {
 			expect(mockRemoveCareEvent).toHaveBeenCalledWith(1, 10);
 			expect(mockLoadPlant).toHaveBeenCalledWith(1);

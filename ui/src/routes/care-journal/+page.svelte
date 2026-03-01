@@ -174,10 +174,12 @@
 				<div class="log-day-group">
 					<div class="log-day-header">{group.label}</div>
 					{#each group.events as event}
-						<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 						<div
 							class="log-entry"
+							role="link"
+							tabindex="0"
 							onclick={() => { if (!window.getSelection()?.toString()) goto(`/plants/${event.plant_id}?from=/care-journal`); }}
+							onkeydown={(e) => { if (e.key === 'Enter') goto(`/plants/${event.plant_id}?from=/care-journal`); }}
 						>
 							<div class="log-entry-left">
 								<div
