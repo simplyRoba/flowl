@@ -531,7 +531,7 @@ describe('log form photo upload', () => {
 		await fireEvent.click(addLogBtn);
 
 		await waitFor(() => {
-			expect(screen.getByText('Add photo')).toBeTruthy();
+			expect(screen.getByLabelText('Add photo')).toBeTruthy();
 		});
 	});
 
@@ -542,10 +542,10 @@ describe('log form photo upload', () => {
 		await fireEvent.click(addLogBtn);
 
 		await waitFor(() => {
-			expect(screen.getByText('Add photo')).toBeTruthy();
+			expect(screen.getByLabelText('Add photo')).toBeTruthy();
 		});
 
-		const fileInput = document.querySelector('.log-photo input[type="file"]') as HTMLInputElement;
+		const fileInput = document.querySelector('.care-entry-form input[type="file"]') as HTMLInputElement;
 		expect(fileInput).toBeTruthy();
 
 		const file = new File(['img'], 'test.jpg', { type: 'image/jpeg' });
@@ -553,16 +553,16 @@ describe('log form photo upload', () => {
 		await fireEvent.change(fileInput);
 
 		await waitFor(() => {
-			const preview = document.querySelector('.log-photo-preview img') as HTMLImageElement;
+			const preview = document.querySelector('.toolbar-thumb img') as HTMLImageElement;
 			expect(preview).toBeTruthy();
 		});
 
-		const removeBtn = document.querySelector('.log-photo-remove') as HTMLButtonElement;
+		const removeBtn = document.querySelector('.toolbar-dismiss') as HTMLButtonElement;
 		await fireEvent.click(removeBtn);
 
 		await waitFor(() => {
-			expect(document.querySelector('.log-photo-preview')).toBeNull();
-			expect(screen.getByText('Add photo')).toBeTruthy();
+			expect(document.querySelector('.toolbar-thumb')).toBeNull();
+			expect(screen.getByLabelText('Add photo')).toBeTruthy();
 		});
 	});
 
@@ -590,13 +590,13 @@ describe('log form photo upload', () => {
 		});
 		await fireEvent.click(screen.getByText('Fertilized'));
 
-		const fileInput = document.querySelector('.log-photo input[type="file"]') as HTMLInputElement;
+		const fileInput = document.querySelector('.care-entry-form input[type="file"]') as HTMLInputElement;
 		const file = new File(['img'], 'test.jpg', { type: 'image/jpeg' });
 		Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
 		await fireEvent.change(fileInput);
 
 		await waitFor(() => {
-			expect(document.querySelector('.log-photo-preview')).toBeTruthy();
+			expect(document.querySelector('.toolbar-thumb')).toBeTruthy();
 		});
 
 		const saveBtn = screen.getByText('Save');
@@ -615,29 +615,29 @@ describe('log form photo upload', () => {
 		await fireEvent.click(addLogBtn);
 
 		await waitFor(() => {
-			expect(screen.getByText('Add photo')).toBeTruthy();
+			expect(screen.getByLabelText('Add photo')).toBeTruthy();
 		});
 
-		const fileInput = document.querySelector('.log-photo input[type="file"]') as HTMLInputElement;
+		const fileInput = document.querySelector('.care-entry-form input[type="file"]') as HTMLInputElement;
 		const file = new File(['img'], 'test.jpg', { type: 'image/jpeg' });
 		Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
 		await fireEvent.change(fileInput);
 
 		await waitFor(() => {
-			expect(document.querySelector('.log-photo-preview')).toBeTruthy();
+			expect(document.querySelector('.toolbar-thumb')).toBeTruthy();
 		});
 
 		const cancelBtns = screen.getAllByText('Cancel');
 		const logFormCancel = cancelBtns.find(
-			(btn) => btn.closest('.log-form') !== null
+			(btn) => btn.closest('.care-entry-form') !== null
 		)!;
 		await fireEvent.click(logFormCancel);
 
 		// Re-open log form — photo should be gone
 		await fireEvent.click(screen.getByText('+ Add log entry'));
 		await waitFor(() => {
-			expect(document.querySelector('.log-photo-preview')).toBeNull();
-			expect(screen.getByText('Add photo')).toBeTruthy();
+			expect(document.querySelector('.toolbar-thumb')).toBeNull();
+			expect(screen.getByLabelText('Add photo')).toBeTruthy();
 		});
 	});
 });
