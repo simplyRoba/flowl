@@ -23,18 +23,9 @@ docker run -p 4100:4100 -v flowl-data:/data \
 
 Open `http://localhost:4100`. Data is persisted in the `flowl-data` volume.
 
-To enable AI features, add your API key:
-
-```bash
-docker run -p 4100:4100 -v flowl-data:/data \
-  -e FLOWL_MQTT_DISABLED=true \
-  -e FLOWL_AI_API_KEY=your-api-key \
-  ghcr.io/simplyroba/flowl:latest
-```
-
 ### Docker Compose
 
-A `docker-compose.yml` is included in the repository. Uncomment the AI environment variables to enable AI features.
+A `docker-compose.yml` is included in the repository. Uncomment the environment variables to enable all features.
 
 ```bash
 docker compose up -d
