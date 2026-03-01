@@ -16,6 +16,16 @@
 - Watering reminders via push notifications
 - Requires backend support for web push subscriptions (VAPID keys, push endpoint storage)
 
+## UI — Refactor Add Care Entry Form
+
+The inline care entry form on the plant detail page has grown organically and needs a redesign:
+
+- Buttons overflow on mobile (too wide, wrapping awkwardly)
+- Photo upload is placed arbitrarily after the textarea with no visual grouping
+- No consistent layout structure — elements are just stacked as they were added
+- Type chips, notes, photo, backdate toggle, and action buttons need a cohesive compact layout
+- Consider extracting into its own component (currently inline in `plants/[id]/+page.svelte`)
+
 ## AI — Additional Providers
 
 - Ollama provider implementation (behind the same trait)
