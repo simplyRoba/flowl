@@ -1,5 +1,3 @@
-use std::fmt::Write;
-
 use axum::Json;
 use axum::extract::{Multipart, Path, Query, State};
 use axum::http::StatusCode;
@@ -236,13 +234,13 @@ pub async fn list_all_care_events(
     }
 
     let mut query = String::from(CARE_EVENT_SELECT);
-    let mut conditions: Vec<String> = Vec::new();
+    let mut conditions: Vec<&str> = Vec::new();
 
-    if let Some(before) = params.before {
-        conditions.push(format!("ce.id < {before}"));
+    if params.before.is_some() {
+        conditions.push("ce.id < ?");
     }
-    if let Some(ref event_type) = params.event_type {
-        conditions.push(format!("ce.event_type = '{event_type}'"));
+    if params.event_type.is_some() {
+        conditions.push("ce.event_type = ?");
     }
 
     if !conditions.is_empty() {
@@ -250,12 +248,18 @@ pub async fn list_all_care_events(
         query.push_str(&conditions.join(" AND "));
     }
 
-    let _ = write!(
-        query,
-        " ORDER BY ce.occurred_at DESC, ce.id DESC LIMIT {fetch_count}"
-    );
+    query.push_str(" ORDER BY ce.occurred_at DESC, ce.id DESC LIMIT ?");
 
-    let mut events = sqlx::query_as::<_, CareEvent>(&query)
+    let mut q = sqlx::query_as::<_, CareEvent>(&query);
+    if let Some(before) = params.before {
+        q = q.bind(before);
+    }
+    if let Some(ref event_type) = params.event_type {
+        q = q.bind(event_type);
+    }
+    q = q.bind(fetch_count);
+
+    let mut events = q
         .fetch_all(&pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
