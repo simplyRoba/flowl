@@ -101,7 +101,7 @@ automation:
               | selectattr('state', 'in', ['due', 'overdue'])
               | list %}
             {{ thirsty | count }} {{ 'plant needs' if thirsty | count == 1 else 'plants need' }} water:
-            {{ thirsty | map(attribute='name') | join(', ') }}
+            {{ thirsty | map(attribute='name') | map('replace', 'flowl ', '') | join(', ') }}
 ```
 
 ---
