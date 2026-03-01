@@ -61,11 +61,14 @@
 		deleteDialogOpen = false;
 		if (!$currentPlant) return;
 		deleting = true;
-		const success = await deletePlant($currentPlant.id);
-		if (success) {
-			goto('/');
+		try {
+			const success = await deletePlant($currentPlant.id);
+			if (success) {
+				goto('/');
+			}
+		} finally {
+			deleting = false;
 		}
-		deleting = false;
 	}
 
 	function lightLabel(needs: string) {
@@ -83,9 +86,12 @@
 	async function handleWater() {
 		if (!$currentPlant || watering) return;
 		watering = true;
-		await waterPlant($currentPlant.id);
-		await loadCareEvents($currentPlant.id);
-		watering = false;
+		try {
+			await waterPlant($currentPlant.id);
+			await loadCareEvents($currentPlant.id);
+		} finally {
+			watering = false;
+		}
 	}
 
 	function formatDate(dateStr: string | null): string {

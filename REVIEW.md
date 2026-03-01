@@ -78,7 +78,7 @@ conditions.push(format!("ce.event_type = '{event_type}'"));
 ```
 While `event_type` is validated against `VALID_EVENT_TYPES` a few lines above, the validation and interpolation are separated — a refactor could easily break the guard. Use a bound parameter instead. The `before` and `LIMIT` interpolations (type-safe `i64`) should also be converted for consistency.
 
-### 2. `handleDeleteConfirm` and `handleWater` freeze on error
+### ~~2. `handleDeleteConfirm` and `handleWater` freeze on error~~ DONE
 
 **File:** `ui/src/routes/plants/[id]/+page.svelte:60-69, 83-89`
 
