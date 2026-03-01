@@ -1,0 +1,15 @@
+services:
+  flowl:
+    image: ghcr.io/simplyroba/flowl:latest
+    ports:
+      - "4100:4100"
+    volumes:
+      - flowl-data:/data
+    environment:
+      # FLOWL_MQTT_HOST: "your-mqtt-broker"
+      # FLOWL_AI_API_KEY: "your-api-key"
+      # FLOWL_AI_BASE_URL: "https://api.openai.com/v1"
+      # FLOWL_AI_MODEL: "gpt-4.1-mini"
+
+volumes:
+  flowl-data:
