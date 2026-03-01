@@ -11,10 +11,9 @@ The system SHALL provide a `POST /api/data/import` endpoint that replaces all ex
 - **WHEN** a POST request is made to `/api/data/import` with a valid export ZIP archive
 - **THEN** the ZIP is fully validated before any existing data is modified (valid ZIP, valid JSON, valid version, valid filenames)
 - **AND** all existing locations, plants, and care events are deleted from the database
-- **AND** all existing photos are removed from the uploads directory
-- **AND** the locations, plants, and care events from `data.json` are inserted
-- **AND** care events with `photo_path` values have their photo files restored from the ZIP
-- **AND** photo files from the `photos/` directory in the ZIP are extracted to the uploads directory
+- **AND** photo files from the `photos/` directory in the ZIP are extracted to the uploads directory before the database is modified
+- **AND** all existing locations, plants, and care events from `data.json` are inserted
+- **AND** photos no longer referenced after the import are cleaned up from the uploads directory
 - **AND** original timestamps (`created_at`, `updated_at`, `occurred_at`) are preserved
 - **AND** the response has status 200 with a summary of imported counts
 - **AND** MQTT repair is triggered to clear orphaned retained topics from pre-import plants and republish fresh state for all imported plants
@@ -23,6 +22,7 @@ The system SHALL provide a `POST /api/data/import` endpoint that replaces all ex
 - **WHEN** an import is in progress and a database error occurs mid-way
 - **THEN** the database changes are rolled back
 - **AND** the existing data remains unchanged
+- **AND** newly written photo files are cleaned up on next startup via orphan cleanup
 
 #### Scenario: Import body size
 - **WHEN** a POST request is made to `/api/data/import`

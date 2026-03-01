@@ -5,7 +5,7 @@ use axum::Json;
 use axum::extract::{Multipart, State};
 use serde::{Deserialize, Serialize};
 
-use tracing::{info, warn};
+use tracing::info;
 
 use super::error::ApiError;
 use crate::mqtt;
@@ -264,28 +264,9 @@ pub async fn import_data(
         "Archive parsed, replacing database"
     );
 
-    // Phase 2: Replace database data in a transaction
-    replace_database(&state.pool, &data).await?;
-
-    // Phase 3: Replace photos on disk
-    // Clear uploads directory
-    let mut entries = tokio::fs::read_dir(state.image_store.upload_dir())
-        .await
-        .map_err(|e| ApiError::BadRequest(format!("Failed to read uploads dir: {e}")))?;
-
-    while let Some(entry) = entries
-        .next_entry()
-        .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?
-    {
-        if entry.path().is_file()
-            && let Err(e) = tokio::fs::remove_file(entry.path()).await
-        {
-            warn!(path = %entry.path().display(), error = %e, "Failed to remove old upload file");
-        }
-    }
-
-    // Write extracted photos to disk
+    // Phase 2: Write new photos to disk first (before DB commit)
+    // Photo filenames are UUIDs, so they won't conflict with existing files.
+    // Writing first ensures the DB never references files that don't exist.
     let photos_count = photos.len();
     for (filename, contents) in &photos {
         let dest = state.image_store.upload_dir().join(filename);
@@ -294,7 +275,13 @@ pub async fn import_data(
             .map_err(|e| ApiError::BadRequest(format!("Failed to write {filename}: {e}")))?;
     }
 
-    // Phase 4: Trigger MQTT repair
+    // Phase 3: Replace database data in a transaction
+    replace_database(&state.pool, &data).await?;
+
+    // Phase 4: Clean up old photos that are no longer referenced
+    state.image_store.cleanup_orphans(&state.pool).await;
+
+    // Phase 5: Trigger MQTT repair
     if !state.mqtt_disabled {
         let connected = state
             .mqtt_connected

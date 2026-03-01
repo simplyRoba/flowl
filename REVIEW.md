@@ -86,7 +86,7 @@ Both functions set a loading flag (`deleting = true`, `watering = true`) but hav
 
 **Fix:** Wrap in `try/finally` to always reset the flag.
 
-### 3. Non-atomic data restore — DB commits before disk ops
+### ~~3. Non-atomic data restore — DB commits before disk ops~~ DONE
 
 **File:** `src/api/restore.rs:227-295`
 
