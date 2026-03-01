@@ -72,6 +72,38 @@ To use Mistral, set `FLOWL_AI_BASE_URL=https://api.mistral.ai/v1` and `FLOWL_AI_
 
 Any other provider exposing an OpenAI-compatible `/v1/chat/completions` endpoint (LM Studio, vLLM, Ollama with OpenAI shim, etc.) should also work as long as the model supports the capabilities above.
 
+## Home Assistant
+
+With MQTT enabled, each plant appears as a sensor entity (`sensor.flowl_plant_<id>`) via auto-discovery. The state is `ok`, `due`, or `overdue`. Attributes include `last_watered`, `next_due`, and `watering_interval_days`.
+
+### Example: thirsty plants notification
+
+```yaml
+automation:
+  - alias: "Thirsty plants notification"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    condition:
+      - condition: template
+        value_template: >
+          {{ states.sensor
+            | selectattr('entity_id', 'match', 'sensor.flowl_plant_')
+            | selectattr('state', 'in', ['due', 'overdue'])
+            | list | count > 0 }}
+    action:
+      - service: notify.mobile_app_your_phone
+        data:
+          title: "Plants need water"
+          message: >
+            {% set thirsty = states.sensor
+              | selectattr('entity_id', 'match', 'sensor.flowl_plant_')
+              | selectattr('state', 'in', ['due', 'overdue'])
+              | list %}
+            {{ thirsty | count }} plant(s) need water:
+            {{ thirsty | map(attribute='name') | join(', ') }}
+```
+
 ---
 
 **This project is developed spec-driven with AI assistance, reviewed by a critical human.**
