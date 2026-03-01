@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.19.0](https://github.com/simplyRoba/flowl/compare/v0.18.1...v0.19.0) (2026-03-01)
+
+
+### Features
+
+* **ui:** add confirm dialog before deleting a care entry ([5e5b920](https://github.com/simplyRoba/flowl/commit/5e5b92056a825a61d58760758dbc572590bdc208))
+
+
+### Bug Fixes
+
+* make data restore atomic by writing photos before DB commit ([b478fbc](https://github.com/simplyRoba/flowl/commit/b478fbc710423b0c01694d3d389472a086623aa1))
+* prevent frozen buttons on API error in plant detail ([f7396b1](https://github.com/simplyRoba/flowl/commit/f7396b1a4ac24d67ac702959a100f16e4b8c8b0d))
+* **ui:** allow text selection on care journal entries ([9fc86f4](https://github.com/simplyRoba/flowl/commit/9fc86f42019170cbb7ae2e6962216fbe0508fefc))
+* update care entry delete test for confirm dialog and fix a11y ([1df81d0](https://github.com/simplyRoba/flowl/commit/1df81d07022f2c0af0dc4a431a6522790754b5b2))
+* update care entry form tests to match refactored component ([9510ba1](https://github.com/simplyRoba/flowl/commit/9510ba112f3381d7be7fa2e94309085d0fc2199e))
+* use bound parameters for event_type in list_all_care_events ([79202b3](https://github.com/simplyRoba/flowl/commit/79202b3641008c0b110d6dec5ee0bfb117a47904))
+
 ## [0.18.1](https://github.com/simplyRoba/flowl/compare/v0.18.0...v0.18.1) (2026-02-28)
 
 
