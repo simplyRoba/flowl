@@ -4,7 +4,7 @@
 	import { page } from '$app/stores';
 	import { ArrowLeft, Pencil, Trash2, Droplet, Droplets, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, Info, Gauge, PawPrint, TrendingUp, Layers, Repeat, CalendarCheck, CalendarClock, Sparkles } from 'lucide-svelte';
 	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
-	import { careEvents, loadCareEvents, addCareEvent, removeCareEvent } from '$lib/stores/care';
+	import { careEvents, loadCareEvents, removeCareEvent } from '$lib/stores/care';
 	import { translations } from '$lib/stores/locale';
 	import { emojiToSvgPath } from '$lib/emoji';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -12,18 +12,13 @@
 	import PhotoLightbox from '$lib/components/PhotoLightbox.svelte';
 	import ModalDialog from '$lib/components/ModalDialog.svelte';
 	import ChatDrawer from '$lib/components/ChatDrawer.svelte';
-	import { Camera, X as XIcon } from 'lucide-svelte';
-	import { fetchAiStatus, uploadCareEventPhoto, type CareEvent } from '$lib/api';
+	import CareEntryForm from '$lib/components/CareEntryForm.svelte';
+	import { fetchAiStatus, type CareEvent } from '$lib/api';
 
 	let notFound = $state(false);
 	let deleting = $state(false);
 	let watering = $state(false);
 	let showLogForm = $state(false);
-	let logEventType = $state('');
-	let logNotes = $state('');
-	let logOccurredAt = $state('');
-	let showLogOccurredAt = $state(false);
-	let logSubmitting = $state(false);
 	let showAllEvents = $state(false);
 	let deletingEventId = $state<number | null>(null);
 	let deleteEventDialogTarget = $state<CareEvent | null>(null);
@@ -32,8 +27,6 @@
 	let deleteDialogOpen = $state(false);
 	let aiEnabled = $state(false);
 	let chatOpen = $state(false);
-	let logPhoto = $state<File | null>(null);
-	let logPhotoPreview = $state<string | null>(null);
 	let lightboxSrc = $state('');
 	const BACK_PATHS = new Set(['/', '/care-journal', '/plants', '/settings']);
 
@@ -122,54 +115,6 @@
 		return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
 	}
 
-	function stageLogPhoto(file: File) {
-		const valid = ['image/jpeg', 'image/png', 'image/webp'];
-		if (!valid.includes(file.type)) return;
-		if (logPhotoPreview) URL.revokeObjectURL(logPhotoPreview);
-		logPhoto = file;
-		logPhotoPreview = URL.createObjectURL(file);
-	}
-
-	function clearLogPhoto() {
-		if (logPhotoPreview) URL.revokeObjectURL(logPhotoPreview);
-		logPhoto = null;
-		logPhotoPreview = null;
-	}
-
-	function handleLogPhotoSelect(e: Event) {
-		const input = e.target as HTMLInputElement;
-		const file = input.files?.[0];
-		if (file) stageLogPhoto(file);
-		input.value = '';
-	}
-
-	async function handleLogSubmit() {
-		if (!$currentPlant || !logEventType || logSubmitting) return;
-		logSubmitting = true;
-		const occurredAt = showLogOccurredAt ? logOccurredAt.trim() : '';
-		const occurredAtDate = occurredAt ? new Date(occurredAt) : null;
-		const occurredAtIso = occurredAtDate && !isNaN(occurredAtDate.getTime())
-			? occurredAtDate.toISOString()
-			: undefined;
-		const photo = logPhoto;
-		const event = await addCareEvent($currentPlant.id, {
-			event_type: logEventType,
-			notes: logNotes.trim() || undefined,
-			occurred_at: occurredAtIso
-		});
-		if (event && photo) {
-			await uploadCareEventPhoto($currentPlant.id, event.id, photo);
-			await loadCareEvents($currentPlant.id);
-		}
-		clearLogPhoto();
-		logEventType = '';
-		logNotes = '';
-		logOccurredAt = '';
-		showLogOccurredAt = false;
-		showLogForm = false;
-		logSubmitting = false;
-	}
-
 	function handleEventDelete(event: CareEvent) {
 		deleteEventDialogTarget = event;
 	}
@@ -182,21 +127,6 @@
 		await removeCareEvent($currentPlant.id, event.id);
 		await loadPlant($currentPlant.id);
 		deletingEventId = null;
-	}
-
-	function handleLogCancel() {
-		clearLogPhoto();
-		showLogForm = false;
-		logEventType = '';
-		logNotes = '';
-		logOccurredAt = '';
-		showLogOccurredAt = false;
-	}
-
-	function nowLocalInputValue(): string {
-		const now = new Date();
-		const pad = (n: number) => String(n).padStart(2, '0');
-		return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 	}
 
 	let displayEvents = $derived(
@@ -436,83 +366,11 @@
 			{/if}
 
 			{#if showLogForm}
-				<div class="log-form">
-					<div class="type-chips">
-						{#each [
-							{ value: 'fertilized', label: $translations.care.fertilized, icon: Leaf },
-							{ value: 'repotted', label: $translations.care.repotted, icon: Shovel },
-							{ value: 'pruned', label: $translations.care.pruned, icon: Scissors },
-							{ value: 'custom', label: $translations.care.custom, icon: PencilIcon }
-						] as chip}
-							<button
-								class="chip chip-solid"
-								class:active={logEventType === chip.value}
-								onclick={() => logEventType = chip.value}
-							>
-								<chip.icon size={14} />
-								{chip.label}
-							</button>
-						{/each}
-					</div>
-					<textarea
-						class="input log-notes"
-						placeholder={$translations.plant.notesOptional}
-						bind:value={logNotes}
-						rows="2"
-					></textarea>
-					<div class="log-photo">
-						{#if logPhotoPreview}
-							<div class="log-photo-preview">
-								<img src={logPhotoPreview} alt="" />
-								<button class="log-photo-remove" onclick={clearLogPhoto} aria-label={$translations.chat.removePhoto}>
-									<XIcon size={12} />
-								</button>
-							</div>
-						{:else}
-							<label class="log-photo-upload">
-								<Camera size={16} />
-								<span>{$translations.plant.addLogPhoto}</span>
-								<input
-									type="file"
-									accept="image/jpeg,image/png,image/webp"
-									onchange={handleLogPhotoSelect}
-									class="file-input-hidden"
-								/>
-							</label>
-						{/if}
-					</div>
-					<div class="log-when">
-						{#if showLogOccurredAt}
-							<label class="log-label">
-								{$translations.plant.when}
-								<input
-									class="input log-input"
-									type="datetime-local"
-									max={nowLocalInputValue()}
-									bind:value={logOccurredAt}
-								/>
-							</label>
-						{/if}
-					</div>
-					<div class="log-actions">
-						<button class="btn btn-primary" onclick={handleLogSubmit} disabled={!logEventType || logSubmitting}>
-							{logSubmitting ? $translations.common.saving : $translations.common.save}
-						</button>
-						<button
-							type="button"
-							class="btn btn-outline btn-sm"
-							onclick={() => {
-								showLogOccurredAt = !showLogOccurredAt;
-								if (showLogOccurredAt && !logOccurredAt) {
-									logOccurredAt = nowLocalInputValue();
-								}
-							}}
-						>
-							{$translations.plant.backdate}
-						</button>
-						<button class="btn btn-outline" onclick={handleLogCancel}>{$translations.common.cancel}</button>
-					</div>
-				</div>
+				<CareEntryForm
+					plantId={$currentPlant.id}
+					onsubmit={() => { loadCareEvents($currentPlant.id); showLogForm = false; }}
+					oncancel={() => { showLogForm = false; }}
+				/>
 			{:else}
 				<button class="btn btn-ghost" onclick={() => showLogForm = true}>
 					{$translations.plant.addLogEntry}
@@ -843,110 +701,6 @@
 	.btn-ghost:not(.event-delete) {
 		margin-top: 8px;
 	}
-
-	.log-form {
-		margin-top: 12px;
-		padding-top: 12px;
-		border-top: 1px solid var(--color-border-subtle);
-	}
-
-	.log-when {
-		margin: 8px 0 10px;
-	}
-
-	.log-label {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		font-size: 13px;
-		font-weight: 600;
-		color: var(--color-text-muted);
-		margin-bottom: 10px;
-	}
-
-
-	.type-chips {
-		display: flex;
-		gap: 8px;
-		flex-wrap: wrap;
-		margin-bottom: 10px;
-	}
-
-
-	.log-notes {
-		width: 100%;
-		resize: vertical;
-		margin-bottom: 10px;
-	}
-
-	.log-photo {
-		margin-bottom: 10px;
-	}
-
-	.log-photo-upload {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 6px 12px;
-		border-radius: 8px;
-		border: 1px dashed var(--color-border);
-		background: transparent;
-		color: var(--color-text-muted);
-		font-size: 13px;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.log-photo-upload:hover {
-		border-color: var(--color-text-muted);
-		background: var(--color-surface-muted);
-	}
-
-	.log-photo-preview {
-		position: relative;
-		display: inline-block;
-	}
-
-	.log-photo-preview img {
-		width: 64px;
-		height: 64px;
-		object-fit: cover;
-		border-radius: 8px;
-		border: 1px solid var(--color-border);
-	}
-
-	.log-photo-remove {
-		position: absolute;
-		top: -6px;
-		right: -6px;
-		width: 20px;
-		height: 20px;
-		border-radius: 50%;
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
-		color: var(--color-danger);
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-	}
-
-	.log-photo-remove:hover {
-		background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
-		border-color: var(--color-danger);
-	}
-
-	.file-input-hidden {
-		display: none;
-	}
-
-	.log-actions {
-		display: flex;
-		gap: 8px;
-	}
-
 
 	@media (min-width: 1280px) {
 		.detail-photo {
