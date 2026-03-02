@@ -221,7 +221,7 @@
 							src={thumbUrl($currentPlant.photo_url, 600)}
 							alt={$currentPlant.name}
 							class="detail-photo-img"
-							onerror={(e) => { (e.currentTarget as HTMLImageElement).src = $currentPlant!.photo_url!; }}
+							onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = $currentPlant!.photo_url!; }}
 						/>
 					</button>
 				{:else}
@@ -348,7 +348,7 @@
 									</span>
 									{#if event.photo_url}
 										<button class="timeline-photo" onclick={() => openLightbox(event.photo_url!)}>
-											<img src={thumbUrl(event.photo_url, 200)} alt="" onerror={(e) => { (e.currentTarget as HTMLImageElement).src = event.photo_url!; }} />
+											<img src={thumbUrl(event.photo_url, 200)} alt="" onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = event.photo_url!; }} />
 										</button>
 									{/if}
 									{#if event.notes}

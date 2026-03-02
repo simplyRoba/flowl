@@ -212,7 +212,7 @@
 								<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry-plant" onclick={(e) => e.stopPropagation()}>{event.plant_name}</a>
 								{#if event.photo_url}
 									<button class="log-entry-photo" onclick={(e) => { e.stopPropagation(); lightboxSrc = event.photo_url!; lightboxOpen = true; }}>
-										<img src={thumbUrl(event.photo_url, 200)} alt="" onerror={(e) => { (e.currentTarget as HTMLImageElement).src = event.photo_url!; }} />
+										<img src={thumbUrl(event.photo_url, 200)} alt="" onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = event.photo_url!; }} />
 									</button>
 								{/if}
 								<div class="log-entry-action">{eventTypeLabel(event.event_type)}</div>

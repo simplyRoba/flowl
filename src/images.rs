@@ -152,11 +152,13 @@ impl ImageStore {
             .map_err(ImageError::Io)?;
 
         let path_for_thumbs = original_path.clone();
-        tokio::task::spawn_blocking(move || {
+        if let Err(e) = tokio::task::spawn_blocking(move || {
             generate_thumbnails(&path_for_thumbs);
         })
         .await
-        .ok();
+        {
+            warn!(error = %e, "Thumbnail generation task failed");
+        }
 
         Ok(filename)
     }
@@ -259,11 +261,13 @@ impl ImageStore {
             }
 
             let path = original_path.clone();
-            tokio::task::spawn_blocking(move || {
+            if let Err(e) = tokio::task::spawn_blocking(move || {
                 generate_thumbnails(&path);
             })
             .await
-            .ok();
+            {
+                warn!(filename = %filename, error = %e, "Thumbnail generation task failed");
+            }
 
             generated += 1;
 
