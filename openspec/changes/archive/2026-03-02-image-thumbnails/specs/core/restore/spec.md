@@ -1,8 +1,4 @@
-## Purpose
-
-Import user data and photos from a previously exported ZIP archive, replacing all existing data.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Import data from ZIP
 

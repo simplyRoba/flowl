@@ -133,6 +133,26 @@ function getLightbox() {
 	return document.querySelector('dialog.lightbox') as HTMLDialogElement;
 }
 
+describe('hero thumbnail', () => {
+	it('uses 600px thumbnail for hero photo', async () => {
+		await renderWithPlant({ photo_url: '/uploads/fern.jpg' });
+		await screen.findByText('Fern');
+		const img = document.querySelector('.detail-photo-img') as HTMLImageElement;
+		expect(img).toBeTruthy();
+		expect(img.src).toContain('/uploads/fern_600.jpg');
+	});
+
+	it('falls back to original photo_url on hero thumbnail error', async () => {
+		await renderWithPlant({ photo_url: '/uploads/fern.jpg' });
+		await screen.findByText('Fern');
+		const img = document.querySelector('.detail-photo-img') as HTMLImageElement;
+		expect(img.src).toContain('/uploads/fern_600.jpg');
+		await fireEvent.error(img);
+		expect(img.src).toContain('/uploads/fern.jpg');
+		expect(img.src).not.toContain('_600');
+	});
+});
+
 describe('plant detail lightbox', () => {
 	it('opens and closes the lightbox for a photo', async () => {
 		await renderWithPlant();
@@ -474,7 +494,7 @@ describe('care event photo in timeline', () => {
 		await waitFor(() => {
 			const img = document.querySelector('.timeline-photo img') as HTMLImageElement;
 			expect(img).toBeTruthy();
-			expect(img.src).toContain('/uploads/care/20.jpg');
+			expect(img.src).toContain('/uploads/care/20_200.jpg');
 		});
 	});
 
@@ -520,6 +540,47 @@ describe('care event photo in timeline', () => {
 		const photoBtn = document.querySelector('.timeline-photo') as HTMLButtonElement;
 		await fireEvent.click(photoBtn);
 		expect(getLightbox().hasAttribute('open')).toBe(true);
+
+		const lightboxImg = getLightbox().querySelector('img') as HTMLImageElement;
+		expect(lightboxImg.src).toContain('/uploads/care/22.jpg');
+		expect(lightboxImg.src).not.toContain('_200');
+	});
+
+	it('lightbox uses original photo_url for hero photo', async () => {
+		await renderWithPlant({ photo_url: '/uploads/fern.jpg' });
+		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		await fireEvent.click(openButton);
+		expect(getLightbox().hasAttribute('open')).toBe(true);
+
+		const lightboxImg = getLightbox().querySelector('img') as HTMLImageElement;
+		expect(lightboxImg.src).toContain('/uploads/fern.jpg');
+		expect(lightboxImg.src).not.toContain('_600');
+	});
+
+	it('falls back to original photo_url on timeline thumbnail error', async () => {
+		await renderWithPlant();
+		careEvents.set([
+			{
+				id: 23,
+				plant_id: 1,
+				plant_name: 'Fern',
+				event_type: 'watered',
+				notes: null,
+				photo_url: '/uploads/care/23.png',
+				occurred_at: '2025-02-01T10:00:00Z',
+				created_at: '2025-02-01T10:00:00Z'
+			}
+		]);
+
+		await waitFor(() => {
+			const img = document.querySelector('.timeline-photo img') as HTMLImageElement;
+			expect(img).toBeTruthy();
+			expect(img.src).toContain('/uploads/care/23_200.jpg');
+		});
+		const img = document.querySelector('.timeline-photo img') as HTMLImageElement;
+		await fireEvent.error(img);
+		expect(img.src).toContain('/uploads/care/23.png');
+		expect(img.src).not.toContain('_200');
 	});
 });
 

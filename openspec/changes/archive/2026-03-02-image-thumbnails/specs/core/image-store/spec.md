@@ -1,8 +1,103 @@
-## Purpose
+## ADDED Requirements
 
-Shared image storage service — validate content-type/size, save with UUID filename, generate thumbnails, delete from disk, startup orphan cleanup and thumbnail migration.
+### Requirement: Thumbnail generation on save
 
-## Requirements
+After writing an original image to disk, `ImageStore::save()` SHALL decode the image and generate two JPEG thumbnail variants (quality 80) with the longest edge fitting within 200px and 600px, preserving aspect ratio. Thumbnails SHALL be written alongside the original using the naming convention `{stem}_{size}.jpg`.
+
+Thumbnail generation SHALL run on `spawn_blocking` to avoid blocking the Tokio runtime. If generation fails (e.g., corrupt or unsupported image data), the error SHALL be logged as a warning and the original save SHALL still succeed.
+
+#### Scenario: Save generates 200px and 600px thumbnails
+
+- **WHEN** `save` is called with a valid image and produces filename `a1b2c3.jpg`
+- **THEN** the original file SHALL be written as `a1b2c3.jpg`
+- **AND** a 200px thumbnail SHALL be written as `a1b2c3_200.jpg` (JPEG, quality 80, longest edge <= 200px)
+- **AND** a 600px thumbnail SHALL be written as `a1b2c3_600.jpg` (JPEG, quality 80, longest edge <= 600px)
+
+#### Scenario: PNG original produces JPEG thumbnails
+
+- **WHEN** `save` is called with a valid PNG image producing filename `d4e5f6.png`
+- **THEN** the original file SHALL be written as `d4e5f6.png`
+- **AND** thumbnails SHALL be written as `d4e5f6_200.jpg` and `d4e5f6_600.jpg` (JPEG format)
+
+#### Scenario: Aspect ratio preserved
+
+- **WHEN** the original image is 3000x2000 pixels
+- **THEN** the 600px thumbnail SHALL be 600x400 pixels
+- **AND** the 200px thumbnail SHALL be 200x133 pixels
+
+#### Scenario: Thumbnail generation fails gracefully
+
+- **WHEN** `save` is called with image data the `image` crate cannot decode
+- **THEN** the original file SHALL still be saved successfully
+- **AND** a warning SHALL be logged
+- **AND** no thumbnail files SHALL be created
+
+### Requirement: Startup thumbnail migration
+
+On application startup, after orphan cleanup, the system SHALL scan all `photo_path` values referenced in the database and generate any missing thumbnail variants.
+
+#### Scenario: Missing thumbnails generated on startup
+
+- **WHEN** the application starts
+- **AND** `plants.photo_path` references `abc.jpg` but `abc_200.jpg` does not exist on disk
+- **THEN** `abc_200.jpg` and `abc_600.jpg` SHALL be generated from `abc.jpg`
+
+#### Scenario: Existing thumbnails skipped
+
+- **WHEN** the application starts
+- **AND** `abc_200.jpg` and `abc_600.jpg` already exist alongside `abc.jpg`
+- **THEN** no regeneration SHALL occur for `abc.jpg`
+
+#### Scenario: Original missing on disk
+
+- **WHEN** the application starts
+- **AND** `plants.photo_path` references `missing.jpg` but the file does not exist on disk
+- **THEN** thumbnail generation SHALL be skipped for that entry
+- **AND** a warning SHALL be logged
+
+## MODIFIED Requirements
+
+### Requirement: Startup orphan cleanup
+
+On application startup, after database migrations have run, the `ImageStore` SHALL scan the uploads directory and delete any files not referenced by `plants.photo_path` or `care_events.photo_path`. Thumbnail files (`{stem}_200.{ext}` and `{stem}_600.{ext}`) whose corresponding original stem matches a referenced `photo_path` SHALL NOT be treated as orphans. This provides self-healing cleanup for files orphaned by crashes or CASCADE deletes.
+
+#### Scenario: Orphaned file removed
+
+- **WHEN** the application starts
+- **AND** the uploads directory contains a file `abc.jpg` not referenced by any `plants.photo_path` or `care_events.photo_path`
+- **THEN** the file SHALL be deleted from disk
+
+#### Scenario: Referenced file preserved
+
+- **WHEN** the application starts
+- **AND** the uploads directory contains a file `def.jpg` referenced by a plant's `photo_path`
+- **THEN** the file SHALL NOT be deleted
+
+#### Scenario: Thumbnail of referenced file preserved
+
+- **WHEN** the application starts
+- **AND** the uploads directory contains `def_200.jpg` and `def_600.jpg`
+- **AND** `def.jpg` is referenced by a `photo_path` in the database
+- **THEN** `def_200.jpg` and `def_600.jpg` SHALL NOT be deleted
+
+#### Scenario: Thumbnail of orphaned file removed
+
+- **WHEN** the application starts
+- **AND** the uploads directory contains `orphan_200.jpg` and `orphan_600.jpg`
+- **AND** no `photo_path` references `orphan.jpg`
+- **THEN** `orphan_200.jpg` and `orphan_600.jpg` SHALL be deleted as orphans
+
+#### Scenario: No orphans
+
+- **WHEN** the application starts
+- **AND** all files in the uploads directory are referenced by database records or are thumbnails of referenced files
+- **THEN** no files SHALL be deleted
+
+#### Scenario: Empty uploads directory
+
+- **WHEN** the application starts
+- **AND** the uploads directory is empty
+- **THEN** the cleanup completes without error
 
 ### Requirement: Image store service
 
@@ -53,100 +148,3 @@ The system SHALL provide an `ImageStore` service that manages image file storage
 - **AND** `abc.jpg` exists but `abc_200.jpg` does not
 - **THEN** `abc.jpg` SHALL be deleted
 - **AND** the missing thumbnail SHALL be silently ignored
-
-### Requirement: Thumbnail generation on save
-
-After writing an original image to disk, `ImageStore::save()` SHALL decode the image and generate two JPEG thumbnail variants (quality 80) with the longest edge fitting within 200px and 600px, preserving aspect ratio. Thumbnails SHALL be written alongside the original using the naming convention `{stem}_{size}.jpg`.
-
-Thumbnail generation SHALL run on `spawn_blocking` to avoid blocking the Tokio runtime. If generation fails (e.g., corrupt or unsupported image data), the error SHALL be logged as a warning and the original save SHALL still succeed.
-
-#### Scenario: Save generates 200px and 600px thumbnails
-
-- **WHEN** `save` is called with a valid image and produces filename `a1b2c3.jpg`
-- **THEN** the original file SHALL be written as `a1b2c3.jpg`
-- **AND** a 200px thumbnail SHALL be written as `a1b2c3_200.jpg` (JPEG, quality 80, longest edge <= 200px)
-- **AND** a 600px thumbnail SHALL be written as `a1b2c3_600.jpg` (JPEG, quality 80, longest edge <= 600px)
-
-#### Scenario: PNG original produces JPEG thumbnails
-
-- **WHEN** `save` is called with a valid PNG image producing filename `d4e5f6.png`
-- **THEN** the original file SHALL be written as `d4e5f6.png`
-- **AND** thumbnails SHALL be written as `d4e5f6_200.jpg` and `d4e5f6_600.jpg` (JPEG format)
-
-#### Scenario: Aspect ratio preserved
-
-- **WHEN** the original image is 3000x2000 pixels
-- **THEN** the 600px thumbnail SHALL be 600x400 pixels
-- **AND** the 200px thumbnail SHALL be 200x133 pixels
-
-#### Scenario: Thumbnail generation fails gracefully
-
-- **WHEN** `save` is called with image data the `image` crate cannot decode
-- **THEN** the original file SHALL still be saved successfully
-- **AND** a warning SHALL be logged
-- **AND** no thumbnail files SHALL be created
-
-### Requirement: Startup orphan cleanup
-
-On application startup, after database migrations have run, the `ImageStore` SHALL scan the uploads directory and delete any files not referenced by `plants.photo_path` or `care_events.photo_path`. Thumbnail files (`{stem}_200.{ext}` and `{stem}_600.{ext}`) whose corresponding original stem matches a referenced `photo_path` SHALL NOT be treated as orphans. This provides self-healing cleanup for files orphaned by crashes or CASCADE deletes.
-
-#### Scenario: Orphaned file removed
-
-- **WHEN** the application starts
-- **AND** the uploads directory contains a file `abc.jpg` not referenced by any `plants.photo_path` or `care_events.photo_path`
-- **THEN** the file SHALL be deleted from disk
-
-#### Scenario: Referenced file preserved
-
-- **WHEN** the application starts
-- **AND** the uploads directory contains a file `def.jpg` referenced by a plant's `photo_path`
-- **THEN** the file SHALL NOT be deleted
-
-#### Scenario: Thumbnail of referenced file preserved
-
-- **WHEN** the application starts
-- **AND** the uploads directory contains `def_200.jpg` and `def_600.jpg`
-- **AND** `def.jpg` is referenced by a `photo_path` in the database
-- **THEN** `def_200.jpg` and `def_600.jpg` SHALL NOT be deleted
-
-#### Scenario: Thumbnail of orphaned file removed
-
-- **WHEN** the application starts
-- **AND** the uploads directory contains `orphan_200.jpg` and `orphan_600.jpg`
-- **AND** no `photo_path` references `orphan.jpg`
-- **THEN** `orphan_200.jpg` and `orphan_600.jpg` SHALL be deleted as orphans
-
-#### Scenario: No orphans
-
-- **WHEN** the application starts
-- **AND** all files in the uploads directory are referenced by database records or are thumbnails of referenced files
-- **THEN** no files SHALL be deleted
-
-#### Scenario: Empty uploads directory
-
-- **WHEN** the application starts
-- **AND** the uploads directory is empty
-- **THEN** the cleanup completes without error
-
-### Requirement: Startup thumbnail migration
-
-On application startup, after orphan cleanup, the system SHALL scan all `photo_path` values referenced in the database and generate any missing thumbnail variants.
-
-#### Scenario: Missing thumbnails generated on startup
-
-- **WHEN** the application starts
-- **AND** `plants.photo_path` references `abc.jpg` but `abc_200.jpg` does not exist on disk
-- **THEN** `abc_200.jpg` and `abc_600.jpg` SHALL be generated from `abc.jpg`
-
-#### Scenario: Existing thumbnails skipped
-
-- **WHEN** the application starts
-- **AND** `abc_200.jpg` and `abc_600.jpg` already exist alongside `abc.jpg`
-- **THEN** no regeneration SHALL occur for `abc.jpg`
-
-#### Scenario: Original missing on disk
-
-- **WHEN** the application starts
-- **AND** `plants.photo_path` references `missing.jpg` but the file does not exist on disk
-- **THEN** thumbnail generation SHALL be skipped for that entry
-- **AND** a warning SHALL be logged

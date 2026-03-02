@@ -7,6 +7,7 @@
 	import { careEvents, loadCareEvents, removeCareEvent } from '$lib/stores/care';
 	import { translations } from '$lib/stores/locale';
 	import { emojiToSvgPath } from '$lib/emoji';
+	import { thumbUrl } from '$lib/thumbUrl';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PhotoLightbox from '$lib/components/PhotoLightbox.svelte';
@@ -217,9 +218,10 @@
 						onclick={() => openLightbox()}
 					>
 						<img
-							src={$currentPlant.photo_url}
+							src={thumbUrl($currentPlant.photo_url, 600)}
 							alt={$currentPlant.name}
 							class="detail-photo-img"
+							onerror={(e) => { (e.currentTarget as HTMLImageElement).src = $currentPlant!.photo_url!; }}
 						/>
 					</button>
 				{:else}
@@ -346,7 +348,7 @@
 									</span>
 									{#if event.photo_url}
 										<button class="timeline-photo" onclick={() => openLightbox(event.photo_url!)}>
-											<img src={event.photo_url} alt="" />
+											<img src={thumbUrl(event.photo_url, 200)} alt="" onerror={(e) => { (e.currentTarget as HTMLImageElement).src = event.photo_url!; }} />
 										</button>
 									{/if}
 									{#if event.notes}

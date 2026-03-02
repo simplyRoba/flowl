@@ -59,9 +59,9 @@ The toolbar-left group SHALL contain a photo tool button that morphs between ina
 #### Scenario: Photo button active (compound group)
 
 - **WHEN** a photo is attached
-- **THEN** the camera icon button SHALL be replaced by a compound group: `[thumbnail | ✕]`
+- **THEN** the camera icon button SHALL be replaced by a compound group: `[thumbnail | x]`
 - **AND** the compound group SHALL have a shared border with `border-radius: var(--radius-btn)`
-- **AND** the thumbnail SHALL show the selected image as `object-fit: cover`
+- **AND** the thumbnail SHALL show the selected image as `object-fit: cover` using a local object URL (not a server thumbnail, since the photo has not been uploaded yet)
 - **AND** the dismiss button SHALL use XIcon at size 12
 - **AND** the compound group SHALL NOT show a camera icon (no redundant icon)
 

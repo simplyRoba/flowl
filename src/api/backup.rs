@@ -10,6 +10,7 @@ use zip::write::SimpleFileOptions;
 use tracing::info;
 
 use super::error::ApiError;
+use crate::images::is_thumbnail_filename;
 use crate::state::AppState;
 
 #[derive(Serialize)]
@@ -113,7 +114,7 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
         zip.write_all(json.as_bytes())
             .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
-        // Add photo files (plants + care events)
+        // Add original photo files (plants + care events), excluding thumbnails
         let photo_paths: Vec<&str> = data
             .plants
             .iter()
@@ -123,6 +124,7 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
                     .iter()
                     .filter_map(|e| e.photo_path.as_deref()),
             )
+            .filter(|p| !is_thumbnail_filename(p))
             .collect();
 
         for photo_path in photo_paths {
@@ -151,4 +153,36 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
         buf,
     )
         .into_response())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::images::is_thumbnail_filename;
+
+    #[test]
+    fn export_photo_filter_excludes_thumbnails() {
+        let all_paths = vec![
+            "abc.jpg",
+            "abc_200.jpg",
+            "abc_600.jpg",
+            "def.png",
+            "def_200.jpg",
+            "def_600.jpg",
+            "ghi.webp",
+        ];
+
+        let exported: Vec<&&str> = all_paths
+            .iter()
+            .filter(|p| !is_thumbnail_filename(p))
+            .collect();
+
+        assert_eq!(exported, vec![&"abc.jpg", &"def.png", &"ghi.webp"]);
+    }
+
+    #[test]
+    fn export_photo_filter_keeps_all_when_no_thumbnails() {
+        let paths = vec!["photo1.jpg", "photo2.png"];
+        let exported: Vec<&&str> = paths.iter().filter(|p| !is_thumbnail_filename(p)).collect();
+        assert_eq!(exported, vec![&"photo1.jpg", &"photo2.png"]);
+    }
 }

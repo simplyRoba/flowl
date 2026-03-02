@@ -281,6 +281,12 @@ pub async fn import_data(
     // Phase 4: Clean up old photos that are no longer referenced
     state.image_store.cleanup_orphans(&state.pool).await;
 
+    // Phase 4b: Generate thumbnails for imported photos
+    state
+        .image_store
+        .generate_missing_thumbnails(&state.pool)
+        .await;
+
     // Phase 5: Trigger MQTT repair
     if !state.mqtt_disabled {
         let connected = state
@@ -314,4 +320,98 @@ pub async fn import_data(
         care_events: data.care_events.len(),
         photos: photos_count,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use crate::images::ImageStore;
+
+    fn tiny_jpeg() -> Vec<u8> {
+        let img = image::RgbImage::from_pixel(100, 80, image::Rgb([0, 128, 0]));
+        let mut buf = std::io::Cursor::new(Vec::new());
+        img.write_to(&mut buf, image::ImageFormat::Jpeg).unwrap();
+        buf.into_inner()
+    }
+
+    async fn test_pool() -> sqlx::SqlitePool {
+        let pool = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        sqlx::query("CREATE TABLE plants (id INTEGER PRIMARY KEY, photo_path TEXT)")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query("CREATE TABLE care_events (id INTEGER PRIMARY KEY, photo_path TEXT)")
+            .execute(&pool)
+            .await
+            .unwrap();
+        pool
+    }
+
+    #[tokio::test]
+    async fn restore_generates_thumbnails_for_imported_photos() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = ImageStore::new(dir.path().to_path_buf());
+        let pool = test_pool().await;
+
+        // Simulate restored photo on disk
+        let photo_data = tiny_jpeg();
+        let photo_name = "restored.jpg";
+        std::fs::write(dir.path().join(photo_name), &photo_data).unwrap();
+
+        // Simulate DB reference (as restore would insert)
+        sqlx::query("INSERT INTO plants (id, photo_path) VALUES (1, ?)")
+            .bind(photo_name)
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        // This is what restore calls after extracting photos
+        store.generate_missing_thumbnails(&pool).await;
+
+        assert!(dir.path().join("restored_200.jpg").exists());
+        assert!(dir.path().join("restored_600.jpg").exists());
+    }
+
+    #[test]
+    fn parse_archive_extracts_photos_from_zip() {
+        let jpeg_data = tiny_jpeg();
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+            let options = zip::write::SimpleFileOptions::default();
+
+            let data_json = serde_json::json!({
+                "version": env!("CARGO_PKG_VERSION"),
+                "locations": [],
+                "plants": [{
+                    "id": 1, "name": "Fern", "species": null, "icon": "🌿",
+                    "photo_path": "test.jpg", "location_id": null,
+                    "watering_interval_days": 7, "light_needs": "medium",
+                    "difficulty": null, "pet_safety": null, "growth_speed": null,
+                    "soil_type": null, "soil_moisture": null, "notes": null,
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z"
+                }],
+                "care_events": []
+            });
+
+            zip.start_file("data.json", options).unwrap();
+            zip.write_all(data_json.to_string().as_bytes()).unwrap();
+
+            zip.start_file("photos/test.jpg", options).unwrap();
+            zip.write_all(&jpeg_data).unwrap();
+
+            zip.finish().unwrap();
+        }
+
+        let (data, photos) = match super::parse_archive(&buf) {
+            Ok(v) => v,
+            Err(_) => panic!("parse_archive failed"),
+        };
+        assert_eq!(data.plants.len(), 1);
+        assert_eq!(photos.len(), 1);
+        assert_eq!(photos[0].0, "test.jpg");
+        assert_eq!(photos[0].1, jpeg_data);
+    }
 }

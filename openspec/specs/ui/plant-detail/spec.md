@@ -98,12 +98,12 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 
 ### Requirement: Photo Display on Detail View
 
-The plant detail hero section SHALL display the plant's photo when available.
+The plant detail hero section SHALL display the plant's photo when available, using a thumbnail variant sized for the display context.
 
 #### Scenario: Plant has photo
 
 - **WHEN** a plant has a `photo_url`
-- **THEN** the detail hero shows the photo instead of the emoji icon
+- **THEN** the detail hero shows the 600px thumbnail (derived via `thumbUrl(photo_url, 600)`) instead of the original
 
 #### Scenario: Plant has no photo
 
@@ -112,12 +112,12 @@ The plant detail hero section SHALL display the plant's photo when available.
 
 ### Requirement: Detail image lightbox
 
-The plant detail view SHALL allow opening a lightbox overlay for the hero photo when a photo is available.
+The plant detail view SHALL allow opening a lightbox overlay for the hero photo when a photo is available. The lightbox SHALL display the full-resolution original image.
 
 #### Scenario: Open lightbox from detail photo
 
 - **WHEN** the user clicks or taps the hero photo on `/plants/[id]`
-- **THEN** a lightbox overlay opens displaying the same photo at an enlarged size
+- **THEN** a lightbox overlay opens displaying the original `photo_url` at full resolution
 - **AND** the background content is visually dimmed
 - **AND** page scrolling is disabled while the lightbox is open
 
@@ -228,3 +228,19 @@ The plant detail view SHALL render the care entry form using the `CareEntryForm`
 
 - **WHEN** the `CareEntryForm` emits `oncancel`
 - **THEN** the form SHALL be hidden
+
+### Requirement: Care event photo in plant detail timeline
+
+Care events with a `photo_url` SHALL display a clickable thumbnail in the plant detail timeline, using a thumbnail variant sized for the display context.
+
+#### Scenario: Event with photo
+
+- **WHEN** a care event in the plant detail timeline has a `photo_url`
+- **THEN** a 72px rounded thumbnail (`object-fit: cover`) SHALL be displayed using the 200px thumbnail (derived via `thumbUrl(photo_url, 200)`)
+- **AND** the thumbnail SHALL float to the right of the text content, with text wrapping beside it on wider viewports
+- **AND** clicking the thumbnail SHALL open the PhotoLightbox with the original `photo_url` at full resolution
+
+#### Scenario: Event without photo
+
+- **WHEN** a care event has no `photo_url`
+- **THEN** no thumbnail space SHALL be rendered

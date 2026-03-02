@@ -4,6 +4,7 @@
 	import { plants, plantsError, loadPlants, waterPlant } from '$lib/stores/plants';
 	import { translations } from '$lib/stores/locale';
 	import { emojiToSvgPath } from '$lib/emoji';
+	import { thumbUrl } from '$lib/thumbUrl';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
 	function getTimeOfDay(): string {
@@ -88,7 +89,7 @@
 						<div class="attention-card-accent" class:accent-overdue={plant.watering_status === 'overdue'} class:accent-due={plant.watering_status === 'due'}></div>
 						{#if plant.photo_url}
 							<div class="attention-card-photo">
-								<img src={plant.photo_url} alt={plant.name} class="attention-photo-img" />
+								<img src={thumbUrl(plant.photo_url, 200)} alt={plant.name} class="attention-photo-img" onerror={(e) => { (e.currentTarget as HTMLImageElement).src = plant.photo_url!; }} />
 							</div>
 						{:else}
 							<div class="attention-card-photo attention-card-photo-emoji" style:background={cardBg(plant.id)}>
@@ -148,7 +149,7 @@
 				<a href="/plants/{plant.id}?from=/" class="plant-card">
 					{#if plant.photo_url}
 						<div class="plant-card-photo">
-							<img src={plant.photo_url} alt={plant.name} class="photo-img" />
+							<img src={thumbUrl(plant.photo_url, 600)} alt={plant.name} class="photo-img" onerror={(e) => { (e.currentTarget as HTMLImageElement).src = plant.photo_url!; }} />
 						</div>
 					{:else}
 						<div class="plant-card-photo" style:background={cardBg(plant.id)}>

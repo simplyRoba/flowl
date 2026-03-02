@@ -1,8 +1,4 @@
-## Purpose
-
-Export all user data and photos as a downloadable ZIP archive for backup purposes.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Export all data as ZIP
 
