@@ -102,7 +102,7 @@ Imported plants and care events bypass all API-level validation. A crafted backu
 
 **Fix:** Apply the same validation rules used by the normal create endpoints.
 
-### 5. `PlantForm` `$effect` resets user edits on parent re-render
+### ~~5. `PlantForm` `$effect` resets user edits on parent re-render~~ DONE
 
 **File:** `ui/src/lib/components/PlantForm.svelte:80-95`
 

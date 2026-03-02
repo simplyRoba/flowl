@@ -76,8 +76,8 @@
 		}
 	});
 
-	// Initialize/re-initialize from initial prop (for edit form)
-	$effect(() => {
+	onMount(() => {
+		// Initialize from initial prop once (for edit form)
 		if (initial) {
 			name = initial.name;
 			species = initial.species ?? '';
@@ -92,9 +92,7 @@
 			soilMoisture = initial.soil_moisture;
 			notes = initial.notes ?? '';
 		}
-	});
 
-	onMount(() => {
 		loadLocations();
 		fetchAiStatus()
 			.then((s) => { aiEnabled = s.enabled; })
