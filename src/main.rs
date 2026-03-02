@@ -68,6 +68,7 @@ async fn main() {
 
     let image_store = images::ImageStore::new(upload_dir);
     image_store.cleanup_orphans(&pool).await;
+    image_store.generate_missing_thumbnails(&pool).await;
 
     let ai_provider: Option<Arc<dyn AiProvider>> = config.ai_api_key.as_ref().map(|key| {
         info!(
