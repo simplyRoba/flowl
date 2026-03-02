@@ -30,6 +30,7 @@
 	let editingSummary = $state(false);
 	let savingNote = $state(false);
 	let noteSavedMessage = $state('');
+	let noteError = $state(false);
 
 	// Photo attachment state
 	let attachedPhoto: File | null = $state(null);
@@ -157,6 +158,7 @@
 		inputText = '';
 		clearPhoto();
 		noteSavedMessage = '';
+		noteError = false;
 
 		let imageBase64: string | undefined;
 		let imageDataUrl: string | undefined;
@@ -223,6 +225,7 @@
 		if (summarizing) return;
 		summarizing = true;
 		noteSavedMessage = '';
+		noteError = false;
 		try {
 			const history = getHistory();
 			const summary = await summarizeChat(plant.id, history);
@@ -230,6 +233,7 @@
 			editingSummary = true;
 		} catch {
 			noteSavedMessage = $translations.chat.noteSaveFailed;
+			noteError = true;
 			scrollToBottom();
 		} finally {
 			summarizing = false;
@@ -256,6 +260,7 @@
 			handleClose();
 		} catch {
 			noteSavedMessage = $translations.chat.noteSaveFailed;
+			noteError = true;
 			scrollToBottom();
 		} finally {
 			savingNote = false;
@@ -424,7 +429,7 @@
 				</div>
 			{/if}
 			{#if noteSavedMessage}
-				<div class="note-status" class:note-error={noteSavedMessage === $translations.chat.noteSaveFailed}>
+				<div class="note-status" class:note-error={noteError}>
 					{noteSavedMessage}
 				</div>
 			{/if}

@@ -116,7 +116,7 @@ The `$effect` that initializes form fields from the `initial` prop re-runs whene
 
 These are real problems that affect reliability, maintainability, or user experience but are not immediately dangerous.
 
-### 6. Error detection by string comparison in ChatDrawer
+### ~~6. Error detection by string comparison in ChatDrawer~~ DONE
 
 **File:** `ui/src/lib/components/ChatDrawer.svelte:427`
 
