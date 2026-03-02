@@ -7,6 +7,7 @@ use sqlx::SqlitePool;
 use tracing::debug;
 
 use super::error::{ApiError, JsonBody};
+use super::plants::validate_required_name;
 
 #[derive(Serialize)]
 pub struct Location {
@@ -67,8 +68,8 @@ pub async fn create_location(
 ) -> Result<(StatusCode, Json<Location>), ApiError> {
     let name = body
         .name
-        .filter(|n| !n.trim().is_empty())
-        .ok_or_else(|| ApiError::Validation("Name is required".to_string()))?;
+        .ok_or_else(|| ApiError::Validation("Location name is required".to_string()))?;
+    validate_required_name("Location", &name)?;
     let name = name.trim().to_string();
 
     // Check for duplicate
@@ -126,8 +127,8 @@ pub async fn update_location(
 
     let name = body
         .name
-        .filter(|n| !n.trim().is_empty())
-        .ok_or_else(|| ApiError::Validation("Name is required".to_string()))?;
+        .ok_or_else(|| ApiError::Validation("Location name is required".to_string()))?;
+    validate_required_name("Location", &name)?;
     let name = name.trim().to_string();
 
     // Check for duplicate (different id)

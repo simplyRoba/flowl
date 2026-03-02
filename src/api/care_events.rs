@@ -60,7 +60,7 @@ const CARE_EVENT_SELECT: &str = "SELECT ce.id, ce.plant_id, p.name AS plant_name
     ce.occurred_at, ce.created_at \
     FROM care_events ce JOIN plants p ON ce.plant_id = p.id";
 
-fn validate_event_type(event_type: &str) -> Result<(), ApiError> {
+pub fn validate_event_type(event_type: &str) -> Result<(), ApiError> {
     if VALID_EVENT_TYPES.contains(&event_type) {
         Ok(())
     } else {

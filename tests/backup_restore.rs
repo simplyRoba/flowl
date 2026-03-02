@@ -378,6 +378,130 @@ async fn import_path_traversal_rejected() {
     );
 }
 
+// --- Validation tests ---
+
+#[tokio::test]
+async fn import_rejects_empty_location_name() {
+    let json = format!(
+        r#"{{
+            "version": "{}",
+            "locations": [{{"id": 1, "name": " "}}],
+            "plants": [],
+            "care_events": []
+        }}"#,
+        env!("CARGO_PKG_VERSION")
+    );
+    let zip_bytes = build_export_zip(&json);
+    let app = common::test_app().await;
+
+    let response = app
+        .oneshot(multipart_import_request(&zip_bytes))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let body = common::body_json(response).await;
+    assert!(body["message"].as_str().unwrap().contains("name is required"));
+}
+
+#[tokio::test]
+async fn import_rejects_empty_plant_name() {
+    let json = format!(
+        r#"{{
+            "version": "{}",
+            "locations": [],
+            "plants": [{{
+                "id": 1, "name": "  ", "species": null, "icon": "🪴",
+                "photo_path": null, "location_id": null, "watering_interval_days": 7,
+                "light_needs": "indirect", "difficulty": null, "pet_safety": null,
+                "growth_speed": null, "soil_type": null, "soil_moisture": null,
+                "notes": null, "created_at": "2026-01-01T00:00:00",
+                "updated_at": "2026-01-01T00:00:00"
+            }}],
+            "care_events": []
+        }}"#,
+        env!("CARGO_PKG_VERSION")
+    );
+    let zip_bytes = build_export_zip(&json);
+    let app = common::test_app().await;
+
+    let response = app
+        .oneshot(multipart_import_request(&zip_bytes))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let body = common::body_json(response).await;
+    assert!(body["message"].as_str().unwrap().contains("name is required"));
+}
+
+#[tokio::test]
+async fn import_rejects_invalid_event_type() {
+    let json = format!(
+        r#"{{
+            "version": "{}",
+            "locations": [],
+            "plants": [{{
+                "id": 1, "name": "Fern", "species": null, "icon": "🪴",
+                "photo_path": null, "location_id": null, "watering_interval_days": 7,
+                "light_needs": "indirect", "difficulty": null, "pet_safety": null,
+                "growth_speed": null, "soil_type": null, "soil_moisture": null,
+                "notes": null, "created_at": "2026-01-01T00:00:00",
+                "updated_at": "2026-01-01T00:00:00"
+            }}],
+            "care_events": [{{
+                "id": 1, "plant_id": 1, "event_type": "bogus",
+                "notes": null, "occurred_at": "2026-01-01T00:00:00Z",
+                "created_at": "2026-01-01T00:00:00"
+            }}]
+        }}"#,
+        env!("CARGO_PKG_VERSION")
+    );
+    let zip_bytes = build_export_zip(&json);
+    let app = common::test_app().await;
+
+    let response = app
+        .oneshot(multipart_import_request(&zip_bytes))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let body = common::body_json(response).await;
+    assert!(body["message"].as_str().unwrap().contains("Invalid event_type"));
+}
+
+#[tokio::test]
+async fn import_rejects_invalid_care_info() {
+    let json = format!(
+        r#"{{
+            "version": "{}",
+            "locations": [],
+            "plants": [{{
+                "id": 1, "name": "Fern", "species": null, "icon": "🪴",
+                "photo_path": null, "location_id": null, "watering_interval_days": 7,
+                "light_needs": "indirect", "difficulty": "impossible",
+                "pet_safety": null, "growth_speed": null, "soil_type": null,
+                "soil_moisture": null, "notes": null,
+                "created_at": "2026-01-01T00:00:00",
+                "updated_at": "2026-01-01T00:00:00"
+            }}],
+            "care_events": []
+        }}"#,
+        env!("CARGO_PKG_VERSION")
+    );
+    let zip_bytes = build_export_zip(&json);
+    let app = common::test_app().await;
+
+    let response = app
+        .oneshot(multipart_import_request(&zip_bytes))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let body = common::body_json(response).await;
+    assert!(body["message"].as_str().unwrap().contains("difficulty"));
+}
+
 // --- Round-trip test ---
 
 #[tokio::test]

@@ -104,6 +104,17 @@ const VALID_SOIL_TYPE: &[&str] = &["standard", "cactus-mix", "orchid-bark", "pea
 const VALID_SOIL_MOISTURE: &[&str] = &["dry", "moderate", "moist"];
 
 /// # Errors
+/// Returns `ApiError::Validation` if the name is empty or whitespace-only.
+pub fn validate_required_name(entity: &str, name: &str) -> Result<(), ApiError> {
+    if name.trim().is_empty() {
+        return Err(ApiError::Validation(format!(
+            "{entity} name is required"
+        )));
+    }
+    Ok(())
+}
+
+/// # Errors
 /// Returns `ApiError::Validation` if the value is not in the allowed set.
 pub fn validate_care_info(
     field: &str,
@@ -120,7 +131,7 @@ pub fn validate_care_info(
     Ok(())
 }
 
-fn validate_all_care_info(
+pub fn validate_all_care_info(
     difficulty: Option<&str>,
     pet_safety: Option<&str>,
     growth_speed: Option<&str>,
@@ -259,8 +270,8 @@ pub async fn create_plant(
 ) -> Result<(StatusCode, Json<Plant>), ApiError> {
     let name = body
         .name
-        .filter(|n| !n.trim().is_empty())
-        .ok_or_else(|| ApiError::Validation("Name is required".to_string()))?;
+        .ok_or_else(|| ApiError::Validation("Plant name is required".to_string()))?;
+    validate_required_name("Plant", &name)?;
     let name = name.trim().to_string();
 
     let icon = body

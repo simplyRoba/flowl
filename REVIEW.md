@@ -94,7 +94,7 @@ The import flow commits the database transaction, then deletes old photos, then 
 
 **Fix:** Write new photos to a staging directory first, commit the DB transaction, then atomically swap directories.
 
-### 4. No field validation on imported data
+### ~~4. No field validation on imported data~~ DONE
 
 **File:** `src/api/restore.rs:182-225`
 

@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 
 use tracing::info;
 
+use super::care_events::validate_event_type;
 use super::error::ApiError;
+use super::plants::{validate_all_care_info, validate_required_name};
 use crate::mqtt;
 use crate::state::AppState;
 
@@ -171,6 +173,8 @@ async fn replace_database(pool: &sqlx::SqlitePool, data: &ImportData) -> Result<
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
 
     for loc in &data.locations {
+        validate_required_name("Location", &loc.name)?;
+
         sqlx::query("INSERT INTO locations (id, name) VALUES (?, ?)")
             .bind(loc.id)
             .bind(&loc.name)
@@ -180,6 +184,15 @@ async fn replace_database(pool: &sqlx::SqlitePool, data: &ImportData) -> Result<
     }
 
     for plant in &data.plants {
+        validate_required_name("Plant", &plant.name)?;
+        validate_all_care_info(
+            plant.difficulty.as_deref(),
+            plant.pet_safety.as_deref(),
+            plant.growth_speed.as_deref(),
+            plant.soil_type.as_deref(),
+            plant.soil_moisture.as_deref(),
+        )?;
+
         sqlx::query(
             "INSERT INTO plants (id, name, species, icon, photo_path, location_id, \
              watering_interval_days, light_needs, difficulty, pet_safety, \
@@ -208,6 +221,8 @@ async fn replace_database(pool: &sqlx::SqlitePool, data: &ImportData) -> Result<
     }
 
     for event in &data.care_events {
+        validate_event_type(&event.event_type)?;
+
         sqlx::query(
             "INSERT INTO care_events (id, plant_id, event_type, notes, photo_path, occurred_at, created_at) \
              VALUES (?, ?, ?, ?, ?, ?, ?)",
