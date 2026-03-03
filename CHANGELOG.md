@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.1](https://github.com/simplyRoba/flowl/compare/v0.20.0...v0.20.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* apply EXIF orientation when generating thumbnails ([23589f5](https://github.com/simplyRoba/flowl/commit/23589f52ba6d5e9c8eeac87778a2ab40817372e6))
+
 ## [0.20.0](https://github.com/simplyRoba/flowl/compare/v0.19.0...v0.20.0) (2026-03-03)
 
 
