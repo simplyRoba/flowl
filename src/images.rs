@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+use image::ImageDecoder;
 use sqlx::SqlitePool;
 use tracing::{info, warn};
 
@@ -29,8 +30,28 @@ impl std::fmt::Display for ImageError {
 
 /// Generate thumbnail variants for an image file on disk.
 /// Writes `{stem}_{size}.jpg` for each size in `THUMBNAIL_SIZES`.
+/// Applies EXIF orientation so thumbnails match the visual orientation of the original.
 fn generate_thumbnails(original_path: &Path) {
-    let img = match image::open(original_path) {
+    let reader = match image::ImageReader::open(original_path)
+        .and_then(image::ImageReader::with_guessed_format)
+    {
+        Ok(r) => r,
+        Err(e) => {
+            warn!(
+                path = %original_path.display(),
+                error = %e,
+                "Failed to open image for thumbnail generation"
+            );
+            return;
+        }
+    };
+
+    let orientation = reader
+        .into_decoder()
+        .and_then(|mut d| d.orientation())
+        .unwrap_or(image::metadata::Orientation::NoTransforms);
+
+    let mut img = match image::open(original_path) {
         Ok(img) => img,
         Err(e) => {
             warn!(
@@ -41,6 +62,8 @@ fn generate_thumbnails(original_path: &Path) {
             return;
         }
     };
+
+    img.apply_orientation(orientation);
 
     let stem = original_path
         .file_stem()
