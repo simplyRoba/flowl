@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.2](https://github.com/simplyRoba/flowl/compare/v0.20.1...v0.20.2) (2026-03-03)
+
+
+### Bug Fixes
+
+* clear uploads directory on restore before writing new photos ([f7ab8ec](https://github.com/simplyRoba/flowl/commit/f7ab8ec7f436af858555f2699dbf9302710bfe1f))
+
 ## [0.20.1](https://github.com/simplyRoba/flowl/compare/v0.20.0...v0.20.1) (2026-03-03)
 
 
