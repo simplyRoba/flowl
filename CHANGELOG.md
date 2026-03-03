@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.20.0](https://github.com/simplyRoba/flowl/compare/v0.19.0...v0.20.0) (2026-03-03)
+
+
+### Features
+
+* add image thumbnail generation for optimized photo display ([9c4d60f](https://github.com/simplyRoba/flowl/commit/9c4d60fc5b9cd71067f81532ec23c3fa411daac3))
+
+
+### Bug Fixes
+
+* add missing doc comments for clippy pedantic ([7fdd95b](https://github.com/simplyRoba/flowl/commit/7fdd95b1db4cc3f5c907f2879a4b12b9b75316c0))
+* **deps:** bump @sveltejs/kit from 2.53.3 to 2.53.4 in /ui ([14a4e98](https://github.com/simplyRoba/flowl/commit/14a4e983b176cd413c785cfd1c556035fd45beee))
+* **deps:** bump lucide-svelte from 0.575.0 to 0.576.0 in /ui ([04ead3b](https://github.com/simplyRoba/flowl/commit/04ead3b7e007987df6e1374870385e92d57c17c4))
+* **deps:** bump svelte from 5.53.5 to 5.53.6 in /ui ([346b25a](https://github.com/simplyRoba/flowl/commit/346b25a9c3ad743cf810383ddbd22968942dead0))
+* **deps:** bump zip from 8.1.0 to 8.2.0 ([a26f0e7](https://github.com/simplyRoba/flowl/commit/a26f0e76ccf6004b04f615011cd57b722cfab510))
+* log spawn_blocking errors and prevent onerror loops on thumbnails ([54a6845](https://github.com/simplyRoba/flowl/commit/54a684500b4260d01eaf7c5ff335876430d98dd6))
+* move PlantForm prop initialization from $effect to onMount ([0a8feaa](https://github.com/simplyRoba/flowl/commit/0a8feaadc68bb0f8c4c63cd78074d682285d8147))
+* use boolean flag for note error styling instead of string comparison ([f84f08d](https://github.com/simplyRoba/flowl/commit/f84f08ddb4919bd2cdc144a358ae408179172bcb))
+* validate imported data in restore path using shared validators ([69f029c](https://github.com/simplyRoba/flowl/commit/69f029cb77fadc66057d1e8b12e6755813be9dd0))
+
 ## [0.19.0](https://github.com/simplyRoba/flowl/compare/v0.18.1...v0.19.0) (2026-03-01)
 
 
