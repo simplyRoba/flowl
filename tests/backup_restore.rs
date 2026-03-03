@@ -401,7 +401,12 @@ async fn import_rejects_empty_location_name() {
 
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     let body = common::body_json(response).await;
-    assert!(body["message"].as_str().unwrap().contains("name is required"));
+    assert!(
+        body["message"]
+            .as_str()
+            .unwrap()
+            .contains("name is required")
+    );
 }
 
 #[tokio::test]
@@ -432,7 +437,12 @@ async fn import_rejects_empty_plant_name() {
 
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     let body = common::body_json(response).await;
-    assert!(body["message"].as_str().unwrap().contains("name is required"));
+    assert!(
+        body["message"]
+            .as_str()
+            .unwrap()
+            .contains("name is required")
+    );
 }
 
 #[tokio::test]
@@ -467,7 +477,12 @@ async fn import_rejects_invalid_event_type() {
 
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     let body = common::body_json(response).await;
-    assert!(body["message"].as_str().unwrap().contains("Invalid event_type"));
+    assert!(
+        body["message"]
+            .as_str()
+            .unwrap()
+            .contains("Invalid event_type")
+    );
 }
 
 #[tokio::test]

@@ -107,9 +107,7 @@ const VALID_SOIL_MOISTURE: &[&str] = &["dry", "moderate", "moist"];
 /// Returns `ApiError::Validation` if the name is empty or whitespace-only.
 pub fn validate_required_name(entity: &str, name: &str) -> Result<(), ApiError> {
     if name.trim().is_empty() {
-        return Err(ApiError::Validation(format!(
-            "{entity} name is required"
-        )));
+        return Err(ApiError::Validation(format!("{entity} name is required")));
     }
     Ok(())
 }
