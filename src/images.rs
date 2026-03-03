@@ -454,6 +454,70 @@ mod tests {
         assert_eq!(thumb_600.height(), 400);
     }
 
+    /// Build a minimal JPEG with EXIF orientation tag.
+    /// Creates a `width`x`height` image with the given EXIF orientation value.
+    fn jpeg_with_orientation(width: u32, height: u32, orientation: u16) -> Vec<u8> {
+        let img = image::RgbImage::from_pixel(width, height, image::Rgb([128, 128, 128]));
+        let mut buf = std::io::Cursor::new(Vec::new());
+        img.write_to(&mut buf, image::ImageFormat::Jpeg).unwrap();
+        let jpeg = buf.into_inner();
+
+        // Build a minimal EXIF APP1 segment with orientation tag
+        let mut tiff = Vec::new();
+        tiff.extend_from_slice(b"II"); // little-endian
+        tiff.extend_from_slice(&42u16.to_le_bytes()); // TIFF magic
+        tiff.extend_from_slice(&8u32.to_le_bytes()); // IFD offset
+        tiff.extend_from_slice(&1u16.to_le_bytes()); // 1 IFD entry
+        // Tag 0x0112 (Orientation), type SHORT(3), count 1
+        tiff.extend_from_slice(&0x0112u16.to_le_bytes());
+        tiff.extend_from_slice(&3u16.to_le_bytes());
+        tiff.extend_from_slice(&1u32.to_le_bytes());
+        tiff.extend_from_slice(&orientation.to_le_bytes());
+        tiff.extend_from_slice(&0u16.to_le_bytes()); // padding
+        tiff.extend_from_slice(&0u32.to_le_bytes()); // next IFD
+
+        let mut app1_payload = b"Exif\x00\x00".to_vec();
+        app1_payload.extend_from_slice(&tiff);
+
+        let app1_len = (app1_payload.len() + 2) as u16;
+        let mut out = Vec::new();
+        out.extend_from_slice(&jpeg[..2]); // SOI (FF D8)
+        out.push(0xFF);
+        out.push(0xE1); // APP1 marker
+        out.extend_from_slice(&app1_len.to_be_bytes());
+        out.extend_from_slice(&app1_payload);
+        out.extend_from_slice(&jpeg[2..]); // rest of JPEG
+        out
+    }
+
+    #[tokio::test]
+    async fn save_applies_exif_orientation_to_thumbnails() {
+        let (store, _dir) = temp_store();
+        // Create a 400x200 (landscape) image with orientation=6 (rotate 90 CW)
+        // After applying orientation, the image should be 200x400 (portrait)
+        let data = jpeg_with_orientation(400, 200, 6);
+
+        let filename = store.save(&data, "image/jpeg").await.unwrap();
+        let stem = Path::new(&filename).file_stem().unwrap().to_str().unwrap();
+
+        let thumb_200 = image::open(store.upload_dir.join(format!("{stem}_200.jpg"))).unwrap();
+        // Should be portrait (taller than wide) after orientation is applied
+        assert!(
+            thumb_200.height() > thumb_200.width(),
+            "Thumbnail should be portrait after EXIF orientation: {}x{}",
+            thumb_200.width(),
+            thumb_200.height()
+        );
+
+        let thumb_600 = image::open(store.upload_dir.join(format!("{stem}_600.jpg"))).unwrap();
+        assert!(
+            thumb_600.height() > thumb_600.width(),
+            "Thumbnail should be portrait after EXIF orientation: {}x{}",
+            thumb_600.width(),
+            thumb_600.height()
+        );
+    }
+
     #[tokio::test]
     async fn save_with_corrupt_image_still_saves_original() {
         let (store, _dir) = temp_store();
