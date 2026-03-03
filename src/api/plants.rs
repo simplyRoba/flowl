@@ -131,6 +131,8 @@ pub fn validate_care_info(
     Ok(())
 }
 
+/// # Errors
+/// Returns `ApiError::Validation` if any care info value is not in its allowed set.
 pub fn validate_all_care_info(
     difficulty: Option<&str>,
     pet_safety: Option<&str>,
