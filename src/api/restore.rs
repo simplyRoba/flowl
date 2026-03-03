@@ -279,9 +279,9 @@ pub async fn import_data(
         "Archive parsed, replacing database"
     );
 
-    // Phase 2: Write new photos to disk first (before DB commit)
-    // Photo filenames are UUIDs, so they won't conflict with existing files.
+    // Phase 2: Clear existing uploads and write new photos (before DB commit)
     // Writing first ensures the DB never references files that don't exist.
+    state.image_store.clear().await;
     let photos_count = photos.len();
     for (filename, contents) in &photos {
         let dest = state.image_store.upload_dir().join(filename);
