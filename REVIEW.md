@@ -156,7 +156,7 @@ The dashboard attention section has a water button. If `waterPlant` fails, the e
 
 **Fix:** Show an inline error near the attention card, or use a toast notification.
 
-### 11. Button nested inside `<a>` on dashboard
+### ~~11. Button nested inside `<a>` on dashboard~~ DONE
 
 **File:** `ui/src/routes/+page.svelte:105-114`
 

@@ -87,7 +87,7 @@
 			</div>
 			<div class="attention-cards">
 				{#each attentionPlants as plant (plant.id)}
-						<a href="/plants/{plant.id}?from=/" class="attention-card">
+					<div class="attention-card">
 						<div class="attention-card-accent" class:accent-overdue={plant.watering_status === 'overdue'} class:accent-due={plant.watering_status === 'due'}></div>
 						{#if plant.photo_url}
 							<div class="attention-card-photo">
@@ -99,7 +99,7 @@
 							</div>
 						{/if}
 						<div class="attention-card-body">
-							<div class="attention-card-name">{plant.name}</div>
+							<a href="/plants/{plant.id}?from=/" class="attention-card-name">{plant.name}</a>
 							{#if plant.location_name}
 								<span class="attention-card-location">{plant.location_name}</span>
 							{/if}
@@ -108,7 +108,7 @@
 								<button
 									class="btn btn-water btn-sm"
 									disabled={wateringIds.has(plant.id)}
-									onclick={(e) => { e.preventDefault(); handleWater(plant.id); }}
+									onclick={() => handleWater(plant.id)}
 								>
 									<Droplet size={16} />
 									<span class="water-btn-label">
@@ -117,7 +117,7 @@
 								</button>
 							</div>
 						</div>
-					</a>
+					</div>
 				{/each}
 			</div>
 		</div>
@@ -343,14 +343,13 @@
 	}
 
 	.attention-card {
+		position: relative;
 		display: flex;
 		align-items: stretch;
 		border-radius: var(--radius-card);
 		overflow: hidden;
 		border: 1px solid var(--color-border);
 		background: var(--color-surface);
-		text-decoration: none;
-		color: inherit;
 		cursor: pointer;
 		transition: transform var(--transition-speed), box-shadow var(--transition-speed);
 	}
@@ -411,9 +410,16 @@
 		font-size: 15px;
 		font-weight: 600;
 		color: var(--color-text);
+		text-decoration: none;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+
+	.attention-card-name::after {
+		content: '';
+		position: absolute;
+		inset: 0;
 	}
 
 	.attention-card-location {
@@ -422,6 +428,8 @@
 	}
 
 	.attention-card-actions {
+		position: relative;
+		z-index: 1;
 		display: flex;
 		align-items: flex-end;
 		align-self: stretch;
