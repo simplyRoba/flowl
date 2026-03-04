@@ -96,22 +96,26 @@ fn validate_filename(name: &str) -> Result<(), ApiError> {
     Ok(())
 }
 
-fn validate_dest_path(dest: &std::path::Path, upload_dir: &std::path::Path) -> Result<(), ApiError> {
+fn validate_dest_path(
+    dest: &std::path::Path,
+    upload_dir: &std::path::Path,
+) -> Result<(), ApiError> {
     let canonical_dir = upload_dir
         .canonicalize()
         .map_err(|e| ApiError::InternalError(format!("Failed to resolve upload dir: {e}")))?;
-    let canonical_dest = dest
-        .canonicalize()
-        .or_else(|_| {
-            // File doesn't exist yet — canonicalize the parent and append the filename
-            let parent = dest.parent().unwrap_or(dest);
-            let name = dest.file_name().ok_or_else(|| {
-                ApiError::BadRequest("Invalid destination filename".to_string())
-            })?;
-            Ok::<_, ApiError>(parent.canonicalize().map_err(|e| {
-                ApiError::InternalError(format!("Failed to resolve path: {e}"))
-            })?.join(name))
-        })?;
+    let canonical_dest = dest.canonicalize().or_else(|_| {
+        // File doesn't exist yet — canonicalize the parent and append the filename
+        let parent = dest.parent().unwrap_or(dest);
+        let name = dest
+            .file_name()
+            .ok_or_else(|| ApiError::BadRequest("Invalid destination filename".to_string()))?;
+        Ok::<_, ApiError>(
+            parent
+                .canonicalize()
+                .map_err(|e| ApiError::InternalError(format!("Failed to resolve path: {e}")))?
+                .join(name),
+        )
+    })?;
     if !canonical_dest.starts_with(&canonical_dir) {
         return Err(ApiError::BadRequest(format!(
             "Path traversal detected: {}",
