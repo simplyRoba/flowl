@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
+
 	import { Droplet, Leaf, Shovel, Scissors, Pencil, Sparkles } from 'lucide-svelte';
 	import type { CareEvent } from '$lib/api';
 	import { fetchAllCareEvents } from '$lib/api';
@@ -175,13 +175,7 @@
 				<div class="log-day-group">
 					<div class="log-day-header">{group.label}</div>
 					{#each group.events as event}
-						<div
-							class="log-entry"
-							role="link"
-							tabindex="0"
-							onclick={() => { if (!window.getSelection()?.toString()) goto(`/plants/${event.plant_id}?from=/care-journal`); }}
-							onkeydown={(e) => { if (e.key === 'Enter') goto(`/plants/${event.plant_id}?from=/care-journal`); }}
-						>
+						<div class="log-entry">
 							<div class="log-entry-left">
 								<div
 									class="log-entry-icon
@@ -209,7 +203,7 @@
 								<span class="log-entry-time">{formatTime(event.occurred_at)}</span>
 							</div>
 							<div class="log-entry-content">
-								<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry-plant" onclick={(e) => e.stopPropagation()}>{event.plant_name}</a>
+								<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry-plant">{event.plant_name}</a>
 								{#if event.photo_url}
 									<button class="log-entry-photo" onclick={(e) => { e.stopPropagation(); lightboxSrc = event.photo_url!; lightboxOpen = true; }}>
 										<img src={thumbUrl(event.photo_url, 200)} srcset={thumbSrcset(event.photo_url)} sizes="80px" alt="" onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = event.photo_url!; }} />
@@ -296,7 +290,6 @@
 		padding: 10px 0;
 		border-bottom: 1px solid var(--color-border);
 		align-items: flex-start;
-		cursor: pointer;
 	}
 
 	.log-entry:last-child {

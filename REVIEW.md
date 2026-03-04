@@ -162,7 +162,7 @@ The dashboard attention section has a water button. If `waterPlant` fails, the e
 
 A `<button>` inside an `<a>` is invalid HTML. Screen readers handle this inconsistently. Restructure the attention card layout to avoid nesting interactive elements.
 
-### 12. `div role="link"` in care journal
+### ~~12. `div role="link"` in care journal~~ DONE
 
 **File:** `ui/src/routes/care-journal/+page.svelte:179`
 
