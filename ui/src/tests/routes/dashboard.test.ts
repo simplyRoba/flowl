@@ -212,7 +212,7 @@ describe('needs attention section', () => {
 		expect(img.src).toContain('/uploads/fern_200.jpg');
 	});
 
-	it('shows 600px thumbnail on grid card when plant has photo_url', () => {
+	it('shows 200px thumbnail on grid card when plant has photo_url', () => {
 		plants.set([
 			makePlant({ id: 1, name: 'Fern', watering_status: 'ok', photo_url: '/uploads/fern.jpg' })
 		]);
@@ -220,7 +220,7 @@ describe('needs attention section', () => {
 		const gridCard = document.querySelector('.plant-card');
 		const img = gridCard!.querySelector('.photo-img') as HTMLImageElement;
 		expect(img).toBeTruthy();
-		expect(img.src).toContain('/uploads/fern_600.jpg');
+		expect(img.src).toContain('/uploads/fern_200.jpg');
 	});
 
 	it('falls back to original photo_url on grid card thumbnail error', async () => {
@@ -229,10 +229,10 @@ describe('needs attention section', () => {
 		]);
 		render(Page);
 		const img = document.querySelector('.plant-card .photo-img') as HTMLImageElement;
-		expect(img.src).toContain('/uploads/fern_600.jpg');
+		expect(img.src).toContain('/uploads/fern_200.jpg');
 		await fireEvent.error(img);
 		expect(img.src).toContain('/uploads/fern.jpg');
-		expect(img.src).not.toContain('_600');
+		expect(img.src).not.toContain('_200');
 	});
 
 	it('falls back to original photo_url on attention card thumbnail error', async () => {

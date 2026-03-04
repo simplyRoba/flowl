@@ -134,22 +134,22 @@ function getLightbox() {
 }
 
 describe('hero thumbnail', () => {
-	it('uses 600px thumbnail for hero photo', async () => {
+	it('uses 200px thumbnail for hero photo', async () => {
 		await renderWithPlant({ photo_url: '/uploads/fern.jpg' });
 		await screen.findByText('Fern');
 		const img = document.querySelector('.detail-photo-img') as HTMLImageElement;
 		expect(img).toBeTruthy();
-		expect(img.src).toContain('/uploads/fern_600.jpg');
+		expect(img.src).toContain('/uploads/fern_200.jpg');
 	});
 
 	it('falls back to original photo_url on hero thumbnail error', async () => {
 		await renderWithPlant({ photo_url: '/uploads/fern.jpg' });
 		await screen.findByText('Fern');
 		const img = document.querySelector('.detail-photo-img') as HTMLImageElement;
-		expect(img.src).toContain('/uploads/fern_600.jpg');
+		expect(img.src).toContain('/uploads/fern_200.jpg');
 		await fireEvent.error(img);
 		expect(img.src).toContain('/uploads/fern.jpg');
-		expect(img.src).not.toContain('_600');
+		expect(img.src).not.toContain('_200');
 	});
 });
 
