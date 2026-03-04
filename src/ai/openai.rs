@@ -24,6 +24,8 @@ pub struct OpenAiProvider {
 }
 
 impl OpenAiProvider {
+    /// # Panics
+    /// Panics if the HTTP client builder fails (should never happen with default TLS).
     pub fn new(api_key: String, base_url: String, model: String) -> Self {
         Self {
             client: Client::builder()
