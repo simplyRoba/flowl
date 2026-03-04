@@ -96,6 +96,31 @@ fn validate_filename(name: &str) -> Result<(), ApiError> {
     Ok(())
 }
 
+fn validate_dest_path(dest: &std::path::Path, upload_dir: &std::path::Path) -> Result<(), ApiError> {
+    let canonical_dir = upload_dir
+        .canonicalize()
+        .map_err(|e| ApiError::InternalError(format!("Failed to resolve upload dir: {e}")))?;
+    let canonical_dest = dest
+        .canonicalize()
+        .or_else(|_| {
+            // File doesn't exist yet — canonicalize the parent and append the filename
+            let parent = dest.parent().unwrap_or(dest);
+            let name = dest.file_name().ok_or_else(|| {
+                ApiError::BadRequest("Invalid destination filename".to_string())
+            })?;
+            Ok::<_, ApiError>(parent.canonicalize().map_err(|e| {
+                ApiError::InternalError(format!("Failed to resolve path: {e}"))
+            })?.join(name))
+        })?;
+    if !canonical_dest.starts_with(&canonical_dir) {
+        return Err(ApiError::BadRequest(format!(
+            "Path traversal detected: {}",
+            dest.display()
+        )));
+    }
+    Ok(())
+}
+
 type PhotoEntry = (String, Vec<u8>);
 
 /// Parse and validate the ZIP archive synchronously, returning the data and extracted photos.
@@ -284,8 +309,10 @@ pub async fn import_data(
     // Writing first ensures the DB never references files that don't exist.
     state.image_store.clear().await;
     let photos_count = photos.len();
+    let upload_dir = state.image_store.upload_dir();
     for (filename, contents) in &photos {
-        let dest = state.image_store.upload_dir().join(filename);
+        let dest = upload_dir.join(filename);
+        validate_dest_path(&dest, upload_dir)?;
         tokio::fs::write(&dest, contents)
             .await
             .map_err(|e| ApiError::BadRequest(format!("Failed to write {filename}: {e}")))?;
@@ -429,5 +456,32 @@ mod tests {
         assert_eq!(photos.len(), 1);
         assert_eq!(photos[0].0, "test.jpg");
         assert_eq!(photos[0].1, jpeg_data);
+    }
+
+    #[test]
+    fn validate_dest_path_allows_file_inside_upload_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        let dest = dir.path().join("photo.jpg");
+        std::fs::write(&dest, b"test").unwrap();
+        assert!(super::validate_dest_path(&dest, dir.path()).is_ok());
+    }
+
+    #[test]
+    fn validate_dest_path_rejects_traversal() {
+        let dir = tempfile::tempdir().unwrap();
+        let dest = dir.path().join("..").join("escaped.jpg");
+        // Create the file so canonicalize can resolve it
+        std::fs::write(&dest, b"test").unwrap();
+        assert!(super::validate_dest_path(&dest, dir.path()).is_err());
+        // Clean up the escaped file
+        let _ = std::fs::remove_file(&dest);
+    }
+
+    #[test]
+    fn validate_dest_path_works_for_nonexistent_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let dest = dir.path().join("new_photo.jpg");
+        // File doesn't exist yet — should still validate via parent
+        assert!(super::validate_dest_path(&dest, dir.path()).is_ok());
     }
 }

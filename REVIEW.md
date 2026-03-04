@@ -200,7 +200,7 @@ The SSE line accumulator `buf` has no size cap. A misbehaving upstream can cause
 
 **Fix:** Add a `MAX_LINE_LENGTH` check and error if exceeded.
 
-### 17. Path traversal check in restore is weak
+### ~~17. Path traversal check in restore is weak~~ DONE
 
 **File:** `src/api/restore.rs:88-95`
 
