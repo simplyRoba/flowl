@@ -134,7 +134,7 @@ Callers cannot do `e instanceof ApiError` for status-code-specific error handlin
 
 **Decision:** Skipped — no caller currently needs status-code-specific handling. Every catch block treats all errors the same (show message to user), and the backend's error messages are descriptive enough. The only HTTP client beyond AI integration is the frontend-to-backend `api.ts`, and for a self-hosted single-user app the realistic error scenarios don't warrant branching by status code. Can revisit if a use case arises.
 
-### 8. Three copy-paste file upload handlers in `api.ts`
+### ~~8. Three copy-paste file upload handlers in `api.ts`~~ DONE
 
 **File:** `ui/src/lib/api.ts:215-226, 246-261, 328-342`
 

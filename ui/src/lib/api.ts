@@ -121,7 +121,9 @@ class ApiError extends Error {
 
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
 	const init: RequestInit = { method };
-	if (body !== undefined) {
+	if (body instanceof FormData) {
+		init.body = body;
+	} else if (body !== undefined) {
 		init.headers = { 'Content-Type': 'application/json' };
 		init.body = JSON.stringify(body);
 	}
@@ -208,30 +210,14 @@ export function waterPlant(id: number): Promise<Plant> {
 	return request('POST', `/api/plants/${id}/water`);
 }
 
-export async function uploadPlantPhoto(plantId: number, file: File): Promise<Plant> {
-	const formData = new FormData();
-	formData.append('file', file);
-
-	const resp = await fetch(`/api/plants/${plantId}/photo`, {
-		method: 'POST',
-		body: formData
-	});
-
-	if (!resp.ok) {
-		const data = await resp.json().catch(() => ({ message: resp.statusText }));
-		throw new ApiError(resp.status, data.message || resp.statusText);
-	}
-
-	return resp.json();
+export function uploadPlantPhoto(plantId: number, file: File): Promise<Plant> {
+	const body = new FormData();
+	body.append('file', file);
+	return request('POST', `/api/plants/${plantId}/photo`, body);
 }
 
-export async function deletePlantPhoto(plantId: number): Promise<void> {
-	const resp = await fetch(`/api/plants/${plantId}/photo`, { method: 'DELETE' });
-
-	if (!resp.ok) {
-		const data = await resp.json().catch(() => ({ message: resp.statusText }));
-		throw new ApiError(resp.status, data.message || resp.statusText);
-	}
+export function deletePlantPhoto(plantId: number): Promise<void> {
+	return request('DELETE', `/api/plants/${plantId}/photo`);
 }
 
 // --- Import/Export ---
@@ -243,21 +229,10 @@ export interface ImportResult {
 	photos: number;
 }
 
-export async function importData(file: File): Promise<ImportResult> {
-	const formData = new FormData();
-	formData.append('file', file);
-
-	const resp = await fetch('/api/data/import', {
-		method: 'POST',
-		body: formData
-	});
-
-	if (!resp.ok) {
-		const data = await resp.json().catch(() => ({ message: resp.statusText }));
-		throw new ApiError(resp.status, data.message || resp.statusText);
-	}
-
-	return resp.json();
+export function importData(file: File): Promise<ImportResult> {
+	const body = new FormData();
+	body.append('file', file);
+	return request('POST', '/api/data/import', body);
 }
 
 // --- Settings ---
@@ -324,30 +299,14 @@ export function deleteCareEvent(plantId: number, eventId: number): Promise<void>
 	return request('DELETE', `/api/plants/${plantId}/care/${eventId}`);
 }
 
-export async function uploadCareEventPhoto(plantId: number, eventId: number, file: File): Promise<CareEvent> {
-	const formData = new FormData();
-	formData.append('file', file);
-
-	const resp = await fetch(`/api/plants/${plantId}/care/${eventId}/photo`, {
-		method: 'POST',
-		body: formData
-	});
-
-	if (!resp.ok) {
-		const data = await resp.json().catch(() => ({ message: resp.statusText }));
-		throw new ApiError(resp.status, data.message || resp.statusText);
-	}
-
-	return resp.json();
+export function uploadCareEventPhoto(plantId: number, eventId: number, file: File): Promise<CareEvent> {
+	const body = new FormData();
+	body.append('file', file);
+	return request('POST', `/api/plants/${plantId}/care/${eventId}/photo`, body);
 }
 
-export async function deleteCareEventPhoto(plantId: number, eventId: number): Promise<void> {
-	const resp = await fetch(`/api/plants/${plantId}/care/${eventId}/photo`, { method: 'DELETE' });
-
-	if (!resp.ok) {
-		const data = await resp.json().catch(() => ({ message: resp.statusText }));
-		throw new ApiError(resp.status, data.message || resp.statusText);
-	}
+export function deleteCareEventPhoto(plantId: number, eventId: number): Promise<void> {
+	return request('DELETE', `/api/plants/${plantId}/care/${eventId}/photo`);
 }
 
 // --- Locations ---
