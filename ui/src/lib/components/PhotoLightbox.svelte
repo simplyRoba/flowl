@@ -194,8 +194,8 @@
 		inset: 0;
 		max-width: none;
 		max-height: none;
-		width: 100vw;
-		height: 100vh;
+		width: 100dvw;
+		height: 100dvh;
 	}
 
 	.lightbox[open] {
@@ -231,8 +231,8 @@
 	}
 
 	.lightbox-content {
-		max-width: 90vw;
-		max-height: 90vh;
+		max-width: 90dvw;
+		max-height: 90dvh;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -241,8 +241,8 @@
 	}
 
 	.lightbox-image {
-		max-width: 90vw;
-		max-height: 90vh;
+		max-width: 90dvw;
+		max-height: 90dvh;
 		object-fit: contain;
 		cursor: grab;
 		user-select: none;
