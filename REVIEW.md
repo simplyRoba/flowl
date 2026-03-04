@@ -126,11 +126,13 @@ class:note-error={noteSavedMessage === $translations.chat.noteSaveFailed}
 
 Whether a message is an error is determined by comparing its string value to a translation key. If the translation changes, error styling silently breaks. Use a separate `noteError: boolean` state variable.
 
-### 7. `ApiError` class not exported from `api.ts`
+### ~~7. `ApiError` class not exported from `api.ts`~~ SKIPPED
 
 **File:** `ui/src/lib/api.ts:113`
 
 Callers cannot do `e instanceof ApiError` for status-code-specific error handling. All error discrimination must go through string parsing. Export the class.
+
+**Decision:** Skipped — no caller currently needs status-code-specific handling. Every catch block treats all errors the same (show message to user), and the backend's error messages are descriptive enough. The only HTTP client beyond AI integration is the frontend-to-backend `api.ts`, and for a self-hosted single-user app the realistic error scenarios don't warrant branching by status code. Can revisit if a use case arises.
 
 ### 8. Three copy-paste file upload handlers in `api.ts`
 
