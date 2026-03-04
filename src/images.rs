@@ -6,7 +6,7 @@ use sqlx::SqlitePool;
 use tracing::{info, warn};
 
 const MAX_FILE_SIZE: usize = 5 * 1024 * 1024; // 5 MB
-const THUMBNAIL_SIZES: [u32; 2] = [200, 600];
+const THUMBNAIL_SIZES: [u32; 3] = [200, 600, 1000];
 const JPEG_QUALITY: u8 = 80;
 
 #[derive(Debug)]
@@ -112,7 +112,7 @@ fn thumbnail_paths(filename: &str) -> Vec<String> {
         .collect()
 }
 
-/// Check if a filename is a generated thumbnail (has `_200` or `_600` suffix and `.jpg` extension).
+/// Check if a filename is a generated thumbnail (has a `_{size}` suffix matching `THUMBNAIL_SIZES` and `.jpg` extension).
 pub fn is_thumbnail_filename(filename: &str) -> bool {
     thumbnail_base_stem(filename).is_some()
         && Path::new(filename)
@@ -120,7 +120,7 @@ pub fn is_thumbnail_filename(filename: &str) -> bool {
             .is_some_and(|ext| ext.eq_ignore_ascii_case("jpg"))
 }
 
-/// Check if a filename looks like a thumbnail (ends with `_200` or `_600` before extension).
+/// Check if a filename looks like a thumbnail (ends with `_{size}` for any size in `THUMBNAIL_SIZES`).
 /// If so, return the base stem (without the size suffix).
 fn thumbnail_base_stem(filename: &str) -> Option<String> {
     let path = Path::new(filename);
@@ -150,7 +150,7 @@ impl ImageStore {
 
     /// Save image bytes to disk after validating content-type and size.
     /// Returns the generated filename (e.g. `<uuid>.jpg`).
-    /// Also generates 200px and 600px JPEG thumbnails alongside the original.
+    /// Also generates 200px, 600px, and 1000px JPEG thumbnails alongside the original.
     ///
     /// # Errors
     /// Returns `ImageError::InvalidContentType` if the content-type is not
@@ -434,6 +434,7 @@ mod tests {
 
         assert!(store.upload_dir.join(format!("{stem}_200.jpg")).exists());
         assert!(store.upload_dir.join(format!("{stem}_600.jpg")).exists());
+        assert!(store.upload_dir.join(format!("{stem}_1000.jpg")).exists());
     }
 
     #[tokio::test]
@@ -446,6 +447,7 @@ mod tests {
         // Thumbnails are always JPEG
         assert!(store.upload_dir.join(format!("{stem}_200.jpg")).exists());
         assert!(store.upload_dir.join(format!("{stem}_600.jpg")).exists());
+        assert!(store.upload_dir.join(format!("{stem}_1000.jpg")).exists());
     }
 
     #[tokio::test]
@@ -470,6 +472,10 @@ mod tests {
         let thumb_600 = image::open(store.upload_dir.join(format!("{stem}_600.jpg"))).unwrap();
         assert_eq!(thumb_600.width(), 600);
         assert_eq!(thumb_600.height(), 400);
+
+        let thumb_1000 = image::open(store.upload_dir.join(format!("{stem}_1000.jpg"))).unwrap();
+        assert_eq!(thumb_1000.width(), 1000);
+        assert_eq!(thumb_1000.height(), 667);
     }
 
     /// Build a minimal JPEG with EXIF orientation tag.
@@ -534,6 +540,14 @@ mod tests {
             thumb_600.width(),
             thumb_600.height()
         );
+
+        let thumb_1000 = image::open(store.upload_dir.join(format!("{stem}_1000.jpg"))).unwrap();
+        assert!(
+            thumb_1000.height() > thumb_1000.width(),
+            "Thumbnail should be portrait after EXIF orientation: {}x{}",
+            thumb_1000.width(),
+            thumb_1000.height()
+        );
     }
 
     #[tokio::test]
@@ -547,6 +561,7 @@ mod tests {
         let stem = Path::new(&filename).file_stem().unwrap().to_str().unwrap();
         assert!(!store.upload_dir.join(format!("{stem}_200.jpg")).exists());
         assert!(!store.upload_dir.join(format!("{stem}_600.jpg")).exists());
+        assert!(!store.upload_dir.join(format!("{stem}_1000.jpg")).exists());
     }
 
     #[tokio::test]
@@ -567,12 +582,14 @@ mod tests {
 
         assert!(store.upload_dir.join(format!("{stem}_200.jpg")).exists());
         assert!(store.upload_dir.join(format!("{stem}_600.jpg")).exists());
+        assert!(store.upload_dir.join(format!("{stem}_1000.jpg")).exists());
 
         store.delete(&filename).await;
 
         assert!(!store.upload_dir.join(&filename).exists());
         assert!(!store.upload_dir.join(format!("{stem}_200.jpg")).exists());
         assert!(!store.upload_dir.join(format!("{stem}_600.jpg")).exists());
+        assert!(!store.upload_dir.join(format!("{stem}_1000.jpg")).exists());
     }
 
     #[tokio::test]
@@ -648,6 +665,7 @@ mod tests {
         assert!(store.upload_dir.join(&filename).exists());
         assert!(store.upload_dir.join(format!("{stem}_200.jpg")).exists());
         assert!(store.upload_dir.join(format!("{stem}_600.jpg")).exists());
+        assert!(store.upload_dir.join(format!("{stem}_1000.jpg")).exists());
     }
 
     #[tokio::test]
@@ -665,6 +683,7 @@ mod tests {
         assert!(!store.upload_dir.join(&filename).exists());
         assert!(!store.upload_dir.join(format!("{stem}_200.jpg")).exists());
         assert!(!store.upload_dir.join(format!("{stem}_600.jpg")).exists());
+        assert!(!store.upload_dir.join(format!("{stem}_1000.jpg")).exists());
     }
 
     #[tokio::test]
@@ -694,6 +713,7 @@ mod tests {
 
         assert!(store.upload_dir.join(format!("{stem}_200.jpg")).exists());
         assert!(store.upload_dir.join(format!("{stem}_600.jpg")).exists());
+        assert!(store.upload_dir.join(format!("{stem}_1000.jpg")).exists());
     }
 
     #[tokio::test]
@@ -743,6 +763,11 @@ mod tests {
     #[test]
     fn is_thumbnail_filename_detects_600() {
         assert!(is_thumbnail_filename("abc_600.jpg"));
+    }
+
+    #[test]
+    fn is_thumbnail_filename_detects_1000() {
+        assert!(is_thumbnail_filename("abc_1000.jpg"));
     }
 
     #[test]

@@ -1,8 +1,4 @@
-## Purpose
-
-Shared image storage service — validate content-type/size, save with UUID filename, generate thumbnails, delete from disk, startup orphan cleanup and thumbnail migration.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Image store service
 

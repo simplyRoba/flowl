@@ -1,22 +1,4 @@
-## Purpose
-
-Shared thumbnail URL utility and fallback behavior for image thumbnails across the frontend.
-
-## Requirements
-
-### Requirement: Thumbnail URL utility
-
-The frontend SHALL provide a shared `thumbUrl(photoUrl: string, size: number): string` utility that derives a thumbnail URL from a `photo_url` by inserting a size suffix before the file extension.
-
-#### Scenario: Derive thumbnail URL
-
-- **WHEN** `thumbUrl('/uploads/a1b2c3.jpg', 200)` is called
-- **THEN** the return value SHALL be `'/uploads/a1b2c3_200.jpg'`
-
-#### Scenario: Derive thumbnail URL for PNG original
-
-- **WHEN** `thumbUrl('/uploads/d4e5f6.png', 600)` is called
-- **THEN** the return value SHALL be `'/uploads/d4e5f6_600.jpg'`
+## ADDED Requirements
 
 ### Requirement: Thumbnail srcset utility
 
@@ -59,6 +41,8 @@ All `<img>` elements that display stored photo thumbnails SHALL use `srcset` wit
 - **WHEN** a care timeline or care journal entry displays a photo thumbnail in a small container (72–80px)
 - **THEN** the `<img>` SHALL include `srcset` with 200w, 600w, and 1000w variants
 - **AND** the `sizes` attribute SHALL match the container width
+
+## MODIFIED Requirements
 
 ### Requirement: Thumbnail image fallback
 

@@ -7,7 +7,7 @@
 	import { careEvents, loadCareEvents, removeCareEvent } from '$lib/stores/care';
 	import { translations } from '$lib/stores/locale';
 	import { emojiToSvgPath } from '$lib/emoji';
-	import { thumbUrl } from '$lib/thumbUrl';
+	import { thumbUrl, thumbSrcset } from '$lib/thumbUrl';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PhotoLightbox from '$lib/components/PhotoLightbox.svelte';
@@ -218,7 +218,9 @@
 						onclick={() => openLightbox()}
 					>
 						<img
-							src={thumbUrl($currentPlant.photo_url, 600)}
+							src={thumbUrl($currentPlant.photo_url, 200)}
+							srcset={thumbSrcset($currentPlant.photo_url)}
+							sizes="(max-width: 768px) 100vw, (min-width: 1280px) 300px, 260px"
 							alt={$currentPlant.name}
 							class="detail-photo-img"
 							onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = $currentPlant!.photo_url!; }}
@@ -348,7 +350,7 @@
 									</span>
 									{#if event.photo_url}
 										<button class="timeline-photo" onclick={() => openLightbox(event.photo_url!)}>
-											<img src={thumbUrl(event.photo_url, 200)} alt="" onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = event.photo_url!; }} />
+											<img src={thumbUrl(event.photo_url, 200)} srcset={thumbSrcset(event.photo_url)} sizes="72px" alt="" onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = event.photo_url!; }} />
 										</button>
 									{/if}
 									{#if event.notes}

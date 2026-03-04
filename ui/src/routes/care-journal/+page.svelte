@@ -5,7 +5,7 @@
 	import type { CareEvent } from '$lib/api';
 	import { fetchAllCareEvents } from '$lib/api';
 	import { translations } from '$lib/stores/locale';
-	import { thumbUrl } from '$lib/thumbUrl';
+	import { thumbUrl, thumbSrcset } from '$lib/thumbUrl';
 	import PhotoLightbox from '$lib/components/PhotoLightbox.svelte';
 
 	let lightboxOpen = $state(false);
@@ -212,7 +212,7 @@
 								<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry-plant" onclick={(e) => e.stopPropagation()}>{event.plant_name}</a>
 								{#if event.photo_url}
 									<button class="log-entry-photo" onclick={(e) => { e.stopPropagation(); lightboxSrc = event.photo_url!; lightboxOpen = true; }}>
-										<img src={thumbUrl(event.photo_url, 200)} alt="" onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = event.photo_url!; }} />
+										<img src={thumbUrl(event.photo_url, 200)} srcset={thumbSrcset(event.photo_url)} sizes="80px" alt="" onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = event.photo_url!; }} />
 									</button>
 								{/if}
 								<div class="log-entry-action">{eventTypeLabel(event.event_type)}</div>
