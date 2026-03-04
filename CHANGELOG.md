@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.21.0](https://github.com/simplyRoba/flowl/compare/v0.20.2...v0.21.0) (2026-03-04)
+
+
+### Features
+
+* add 1000px thumbnail tier and srcset for retina displays ([b2516f2](https://github.com/simplyRoba/flowl/commit/b2516f29d32f8885fe1492c487f4bc366a4c2045))
+
+
+### Bug Fixes
+
+* add missing panics doc to satisfy clippy pedantic ([cfdf8e4](https://github.com/simplyRoba/flowl/commit/cfdf8e4deb07154ad425404d8d5f36b90608c452))
+* add timeouts and SSE buffer cap to AI HTTP client ([cf41c73](https://github.com/simplyRoba/flowl/commit/cf41c73af9a3f4d2a284fecad6b9b179084c1ec6))
+* **deps:** bump svelte from 5.53.6 to 5.53.7 in /ui ([d0297b3](https://github.com/simplyRoba/flowl/commit/d0297b34a7b58a41163686790ceb850ab0998899))
+* **deps:** bump tokio from 1.49.0 to 1.50.0 ([00b444b](https://github.com/simplyRoba/flowl/commit/00b444bb00681fad5440290ad45fb4ca13ea6b81))
+* format ([7ee21ef](https://github.com/simplyRoba/flowl/commit/7ee21ef65f06c44624601a2218179253ed93565d))
+* prevent empty-state flash on dashboard while plants load ([f96679f](https://github.com/simplyRoba/flowl/commit/f96679f806574cbbeb02a7234b763f15a5cf7f6d))
+* remove fake div role=link from care journal entries ([f361874](https://github.com/simplyRoba/flowl/commit/f361874c024cf74e8ec3f718187999ef3f6ae82e))
+* replace nested button-in-link with stretched-link pattern on dashboard ([2075025](https://github.com/simplyRoba/flowl/commit/20750259664ff723b2c41659375d0ee69ab81c17))
+* strengthen path traversal check in restore with canonicalization ([675cf18](https://github.com/simplyRoba/flowl/commit/675cf1885f3343b2597364b988aebe2f33c929fd))
+* update thumbnail tests to match srcset fallback src change ([65963d5](https://github.com/simplyRoba/flowl/commit/65963d5b572299181386b4bd6a378c3792d405a1))
+* use dynamic viewport units in lightbox to prevent iOS overflow ([6595d85](https://github.com/simplyRoba/flowl/commit/6595d8596f1fc5eb13ec2193bf9daa03bc19577f))
+* validate watering_interval_days is between 1 and 365 ([2752924](https://github.com/simplyRoba/flowl/commit/2752924ac78770c536c6be5731e07246afd83ab3))
+
 ## [0.20.2](https://github.com/simplyRoba/flowl/compare/v0.20.1...v0.20.2) (2026-03-03)
 
 
