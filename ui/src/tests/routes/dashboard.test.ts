@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Page from '../../routes/+page.svelte';
 
-const mockLoadPlants = vi.fn();
+const mockLoadPlants = vi.fn().mockResolvedValue(undefined);
 const mockWaterPlant = vi.fn();
 
 vi.mock('$lib/stores/plants', async () => {
@@ -66,14 +66,19 @@ describe('dashboard page', () => {
 		expect(mockLoadPlants).toHaveBeenCalled();
 	});
 
-	it('shows empty state when no plants', () => {
+	it('shows empty state when no plants', async () => {
 		render(Page);
-		expect(screen.getByText('No plants yet')).toBeTruthy();
+		await vi.waitFor(() => {
+			expect(screen.getByText('No plants yet')).toBeTruthy();
+		});
 		expect(screen.getByText('Add your first plant to get started.')).toBeTruthy();
 	});
 
-	it('shows Add Plant link in empty state', () => {
+	it('shows Add Plant link in empty state', async () => {
 		render(Page);
+		await vi.waitFor(() => {
+			expect(screen.getByText('Add Plant')).toBeTruthy();
+		});
 		const addLink = screen.getByText('Add Plant').closest('a');
 		expect(addLink?.getAttribute('href')).toBe('/plants/new');
 	});
@@ -84,20 +89,25 @@ describe('dashboard page', () => {
 		expect(screen.getByText('Server error')).toBeTruthy();
 	});
 
-	it('renders plant cards with mocked data', () => {
+	it('renders plant cards with mocked data', async () => {
 		plants.set([
 			makePlant({ id: 1, name: 'Fern', watering_status: 'ok', location_name: 'Bedroom' }),
 			makePlant({ id: 2, name: 'Cactus', watering_status: 'due', location_name: null })
 		]);
 		render(Page);
-		expect(screen.getAllByText('Fern').length).toBeGreaterThanOrEqual(1);
+		await vi.waitFor(() => {
+			expect(screen.getAllByText('Fern').length).toBeGreaterThanOrEqual(1);
+		});
 		expect(screen.getAllByText('Cactus').length).toBeGreaterThanOrEqual(1);
 		expect(screen.getByText('Bedroom')).toBeTruthy();
 	});
 
-	it('links plant cards to plant detail page', () => {
+	it('links plant cards to plant detail page', async () => {
 		plants.set([makePlant({ id: 42, name: 'Fern' })]);
 		render(Page);
+		await vi.waitFor(() => {
+			expect(screen.getByText('Fern')).toBeTruthy();
+		});
 		const link = screen.getByText('Fern').closest('a');
 		expect(link?.getAttribute('href')).toBe('/plants/42?from=/');
 	});
@@ -212,13 +222,15 @@ describe('needs attention section', () => {
 		expect(img.src).toContain('/uploads/fern_200.jpg');
 	});
 
-	it('shows 200px thumbnail on grid card when plant has photo_url', () => {
+	it('shows 200px thumbnail on grid card when plant has photo_url', async () => {
 		plants.set([
 			makePlant({ id: 1, name: 'Fern', watering_status: 'ok', photo_url: '/uploads/fern.jpg' })
 		]);
 		render(Page);
-		const gridCard = document.querySelector('.plant-card');
-		const img = gridCard!.querySelector('.photo-img') as HTMLImageElement;
+		await vi.waitFor(() => {
+			expect(document.querySelector('.plant-card')).toBeTruthy();
+		});
+		const img = document.querySelector('.plant-card .photo-img') as HTMLImageElement;
 		expect(img).toBeTruthy();
 		expect(img.src).toContain('/uploads/fern_200.jpg');
 	});
@@ -228,6 +240,9 @@ describe('needs attention section', () => {
 			makePlant({ id: 1, name: 'Fern', watering_status: 'ok', photo_url: '/uploads/fern.jpg' })
 		]);
 		render(Page);
+		await vi.waitFor(() => {
+			expect(document.querySelector('.plant-card .photo-img')).toBeTruthy();
+		});
 		const img = document.querySelector('.plant-card .photo-img') as HTMLImageElement;
 		expect(img.src).toContain('/uploads/fern_200.jpg');
 		await fireEvent.error(img);

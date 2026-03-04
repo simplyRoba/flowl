@@ -45,6 +45,7 @@
 				: $translations.dashboard.attentionPlural[attentionMsgIndex].replace('{n}', String(attentionPlants.length))
 	);
 
+	let loading = $state(true);
 	let wateringIds: Set<number> = $state(new Set());
 
 	async function handleWater(plantId: number) {
@@ -66,8 +67,9 @@
 		return BG_GRADIENTS[id % BG_GRADIENTS.length];
 	}
 
-	onMount(() => {
-		loadPlants();
+	onMount(async () => {
+		await loadPlants();
+		loading = false;
 	});
 </script>
 
@@ -133,6 +135,8 @@
 
 	{#if $plantsError}
 		<p class="error">{$plantsError}</p>
+	{:else if loading}
+		<!-- prevent empty-state flash while plants are loading -->
 	{:else if $plants.length === 0}
 		<div class="empty-state">
 			<img src={emojiToSvgPath('🪴')} alt={$translations.dashboard.emptyIconAlt} class="empty-icon" />

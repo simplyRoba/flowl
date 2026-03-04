@@ -140,7 +140,7 @@ Callers cannot do `e instanceof ApiError` for status-code-specific error handlin
 
 `uploadPlantPhoto`, `uploadCareEventPhoto`, and `importData` duplicate the same fetch + error-handling logic. Extract a `requestFormData<T>()` helper.
 
-### 9. No loading state on dashboard — empty-state flash
+### ~~9. No loading state on dashboard — empty-state flash~~ DONE
 
 **File:** `ui/src/routes/+page.svelte:68-70`
 
