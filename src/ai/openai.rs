@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use async_trait::async_trait;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
@@ -5,6 +7,10 @@ use reqwest::Client;
 use serde_json::{Value, json};
 use tokio_stream::StreamExt as _;
 use tracing::{debug, warn};
+
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
+const MAX_SSE_LINE_LEN: usize = 64 * 1024;
 
 use super::prompts;
 use super::provider::AiProvider;
@@ -20,7 +26,10 @@ pub struct OpenAiProvider {
 impl OpenAiProvider {
     pub fn new(api_key: String, base_url: String, model: String) -> Self {
         Self {
-            client: Client::new(),
+            client: Client::builder()
+                .connect_timeout(CONNECT_TIMEOUT)
+                .build()
+                .expect("failed to build HTTP client"),
             api_key,
             base_url,
             model,
@@ -117,6 +126,7 @@ impl AiProvider for OpenAiProvider {
             .client
             .post(self.completions_url())
             .bearer_auth(&self.api_key)
+            .timeout(REQUEST_TIMEOUT)
             .json(&body)
             .send()
             .await?
@@ -242,6 +252,7 @@ impl AiProvider for OpenAiProvider {
             .client
             .post(self.completions_url())
             .bearer_auth(&self.api_key)
+            .timeout(REQUEST_TIMEOUT)
             .json(&body)
             .send()
             .await?
@@ -275,6 +286,10 @@ async fn stream_sse_deltas(
         match chunk {
             Ok(bytes) => {
                 buf.push_str(&String::from_utf8_lossy(&bytes));
+                if buf.len() > MAX_SSE_LINE_LEN {
+                    let _ = tx.send(Err("SSE line too long".to_string())).await;
+                    return;
+                }
                 while let Some(pos) = buf.find('\n') {
                     if let Some(delta) = parse_sse_line(&buf[..pos])
                         && tx.send(Ok(delta)).await.is_err()

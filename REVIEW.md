@@ -184,7 +184,7 @@ A client can submit 0 or negative values. Zero makes every plant permanently "du
 
 **Fix:** Add a minimum (1) and maximum (365 or similar) bound.
 
-### 15. No timeout on AI HTTP requests
+### ~~15. No timeout on AI HTTP requests~~ DONE
 
 **File:** `src/ai/openai.rs` (client creation)
 
@@ -192,7 +192,7 @@ A client can submit 0 or negative values. Zero makes every plant permanently "du
 
 **Fix:** Set `timeout` and `connect_timeout` on the `ClientBuilder`.
 
-### 16. SSE buffer grows unboundedly
+### ~~16. SSE buffer grows unboundedly~~ DONE
 
 **File:** `src/ai/openai.rs:272-293`
 
