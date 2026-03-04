@@ -176,7 +176,7 @@ If `loadPlant` fails (e.g., transient network error), `currentPlant` is set to `
 
 **Fix:** Keep stale data on error and show an error overlay instead.
 
-### 14. `watering_interval_days` not validated
+### ~~14. `watering_interval_days` not validated~~ DONE
 
 **File:** `src/api/plants.rs:270`
 

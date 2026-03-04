@@ -9,7 +9,7 @@ use tracing::info;
 
 use super::care_events::validate_event_type;
 use super::error::ApiError;
-use super::plants::{validate_all_care_info, validate_required_name};
+use super::plants::{validate_all_care_info, validate_required_name, validate_watering_interval};
 use crate::mqtt;
 use crate::state::AppState;
 
@@ -185,6 +185,7 @@ async fn replace_database(pool: &sqlx::SqlitePool, data: &ImportData) -> Result<
 
     for plant in &data.plants {
         validate_required_name("Plant", &plant.name)?;
+        validate_watering_interval(plant.watering_interval_days)?;
         validate_all_care_info(
             plant.difficulty.as_deref(),
             plant.pet_safety.as_deref(),

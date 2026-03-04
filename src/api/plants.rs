@@ -113,6 +113,17 @@ pub fn validate_required_name(entity: &str, name: &str) -> Result<(), ApiError> 
 }
 
 /// # Errors
+/// Returns `ApiError::Validation` if the value is outside the 1–365 range.
+pub fn validate_watering_interval(days: i64) -> Result<(), ApiError> {
+    if !(1..=365).contains(&days) {
+        return Err(ApiError::Validation(
+            "watering_interval_days must be between 1 and 365".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+/// # Errors
 /// Returns `ApiError::Validation` if the value is not in the allowed set.
 pub fn validate_care_info(
     field: &str,
@@ -279,6 +290,7 @@ pub async fn create_plant(
         .filter(|i| !i.trim().is_empty())
         .unwrap_or_else(|| "\u{1fab4}".to_string());
     let watering_interval_days = body.watering_interval_days.unwrap_or(7);
+    validate_watering_interval(watering_interval_days)?;
     let light_needs = body
         .light_needs
         .filter(|l| !l.trim().is_empty())
@@ -374,6 +386,7 @@ pub async fn update_plant(
     let watering_interval_days = body
         .watering_interval_days
         .unwrap_or(current.watering_interval_days);
+    validate_watering_interval(watering_interval_days)?;
     let light_needs = body.light_needs.unwrap_or(current.light_needs);
     let difficulty = body.difficulty.unwrap_or(current.difficulty);
     let pet_safety = body.pet_safety.unwrap_or(current.pet_safety);
