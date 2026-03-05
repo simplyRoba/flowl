@@ -130,6 +130,9 @@ type PhotoEntry = (String, Vec<u8>);
 /// Parse and validate the ZIP archive synchronously, returning the data and extracted photos.
 /// This keeps all `ZipArchive` usage in a non-async context so the future remains Send.
 fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError> {
+    const MAX_JSON_SIZE: u64 = 50 * 1024 * 1024; // 50 MB
+    const MAX_PHOTO_SIZE: usize = 5 * 1024 * 1024; // 5 MB — matches upload limit
+
     let cursor = std::io::Cursor::new(bytes);
     let mut archive = zip::ZipArchive::new(cursor)
         .map_err(|e| ApiError::BadRequest(format!("Invalid ZIP archive: {e}")))?;
@@ -148,7 +151,6 @@ fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError
             .by_name("data.json")
             .map_err(|_| ApiError::BadRequest("Archive missing data.json".to_string()))?;
 
-        const MAX_JSON_SIZE: u64 = 50 * 1024 * 1024; // 50 MB
         let mut json_bytes = Vec::new();
         data_file
             .take(MAX_JSON_SIZE + 1)
@@ -180,7 +182,6 @@ fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError
             if filename.is_empty() {
                 continue;
             }
-            const MAX_PHOTO_SIZE: usize = 5 * 1024 * 1024; // 5 MB — matches upload limit
             let mut contents = Vec::new();
             file.take(MAX_PHOTO_SIZE as u64 + 1)
                 .read_to_end(&mut contents)

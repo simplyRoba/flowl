@@ -6,7 +6,7 @@ Care events entity — database schema, CRUD API, validation, and global paginat
 
 ### Requirement: Care Events Database Schema
 
-A `care_events` table SHALL store care event records with the following columns: `id` (integer primary key), `plant_id` (integer, NOT NULL, foreign key to `plants.id` with ON DELETE CASCADE), `event_type` (text, NOT NULL), `notes` (text, nullable), `photo_path` (text, nullable), `occurred_at` (text, NOT NULL, ISO 8601 datetime), `created_at` (text, NOT NULL, default `datetime('now')`).
+A `care_events` table SHALL store care event records with the following columns: `id` (integer primary key), `plant_id` (integer, NOT NULL, foreign key to `plants.id` with ON DELETE CASCADE), `event_type` (text, NOT NULL), `notes` (text, nullable), `photo_path` (text, nullable), `occurred_at` (text, NOT NULL, ISO 8601 datetime), `created_at` (text, NOT NULL, ISO 8601 datetime).
 
 #### Scenario: Migration creates care_events table
 

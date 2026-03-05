@@ -49,8 +49,10 @@ pub async fn upload_photo(
             ImageError::Io(_) => ApiError::BadRequest(format!("Failed to save file: {e}")),
         })?;
 
-    sqlx::query("UPDATE plants SET photo_path = ?, updated_at = datetime('now') WHERE id = ?")
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    sqlx::query("UPDATE plants SET photo_path = ?, updated_at = ? WHERE id = ?")
         .bind(&filename)
+        .bind(&now)
         .bind(id)
         .execute(&state.pool)
         .await
@@ -90,7 +92,9 @@ pub async fn delete_photo(
     let filename =
         photo_path.ok_or_else(|| ApiError::NotFound("Plant has no photo".to_string()))?;
 
-    sqlx::query("UPDATE plants SET photo_path = NULL, updated_at = datetime('now') WHERE id = ?")
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    sqlx::query("UPDATE plants SET photo_path = NULL, updated_at = ? WHERE id = ?")
+        .bind(&now)
         .bind(id)
         .execute(&state.pool)
         .await

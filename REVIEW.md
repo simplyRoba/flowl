@@ -236,27 +236,31 @@ Three independent `fetchAiStatus()` calls with no shared cache. Creates redundan
 
 These are code quality, maintainability, and UX improvements that make the codebase healthier long-term.
 
-### 21. ChatDrawer is 1021 lines with 6 responsibilities
+### ~~21. ChatDrawer is 1021 lines with 6 responsibilities~~ WONTFIX
 
 **File:** `ui/src/lib/components/ChatDrawer.svelte`
 
 Handles: mobile/desktop rendering, body scroll lock, drag-to-dismiss gestures, SSE streaming chat state, photo attachment + base64 encoding, and AI summary save flow. Each could be a separate component or composable.
 
-### 22. Seven parallel label-mapping functions on plant detail
+**WONTFIX:** ~470 lines are CSS, script is ~350 lines with tightly coupled state (sendMessage touches messages, photos, streaming, scroll). Splitting would add interface glue without reducing complexity — no other consumer reuses these pieces independently.
+
+### ~~22. Seven parallel label-mapping functions on plant detail~~ WONTFIX
 
 **File:** `ui/src/routes/plants/[id]/+page.svelte:71-171`
 
 `lightLabel`, `difficultyLabel`, `petSafetyLabel`, etc. are all structurally identical `if/else if` chains. Replace with lookup objects (`Record<string, string>`).
 
-### 23. Duplicated utility functions across files
+**WONTFIX:** Functions are 3-4 lines each, immediately readable, and only used in this file. Lookup objects would eagerly evaluate all translations and add nullish-coalescing fallback logic for no real gain.
+
+### ~~23. Duplicated utility functions across files~~ DONE
 
 | Function | Duplicated In |
 |---|---|
 | `eventTypeLabel` | `plants/[id]/+page.svelte`, `care-journal/+page.svelte` |
-| `parseEventDate` | `plants/[id]/+page.svelte`, `care-journal/+page.svelte` |
+| ~~`parseEventDate`~~ | ~~`plants/[id]/+page.svelte`, `care-journal/+page.svelte`~~ |
 | `formatDate/formatShortDate/formatTime` | Scattered across 3 files |
 
-Extract into a shared `$lib/utils/date.ts` and `$lib/utils/care.ts`.
+`parseEventDate` removed — root cause fixed by making backend timestamps consistently ISO 8601 with timezone. `eventTypeLabel` still duplicated across 2 files (same argument as #22). `formatDate/formatShortDate/formatTime` are different functions, not duplicates.
 
 ### 24. Photo rendering pattern duplicated
 
