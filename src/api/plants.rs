@@ -304,10 +304,12 @@ pub async fn create_plant(
         body.soil_moisture.as_deref(),
     )?;
 
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+
     let id = sqlx::query_scalar::<_, i64>(
         "INSERT INTO plants (name, species, icon, location_id, watering_interval_days, light_needs, \
-         difficulty, pet_safety, growth_speed, soil_type, soil_moisture, notes) \
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+         difficulty, pet_safety, growth_speed, soil_type, soil_moisture, notes, created_at, updated_at) \
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
     )
     .bind(&name)
     .bind(&body.species)
@@ -321,6 +323,8 @@ pub async fn create_plant(
     .bind(&body.soil_type)
     .bind(&body.soil_moisture)
     .bind(&body.notes)
+    .bind(&now)
+    .bind(&now)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| ApiError::BadRequest(e.to_string()))?;
@@ -403,11 +407,12 @@ pub async fn update_plant(
         soil_moisture.as_deref(),
     )?;
 
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
     sqlx::query(
         "UPDATE plants SET name = ?, species = ?, icon = ?, location_id = ?, \
          watering_interval_days = ?, light_needs = ?, \
          difficulty = ?, pet_safety = ?, growth_speed = ?, soil_type = ?, \
-         soil_moisture = ?, notes = ?, updated_at = datetime('now') WHERE id = ?",
+         soil_moisture = ?, notes = ?, updated_at = ? WHERE id = ?",
     )
     .bind(&name)
     .bind(&species)
@@ -421,6 +426,7 @@ pub async fn update_plant(
     .bind(&soil_type)
     .bind(&soil_moisture)
     .bind(&notes)
+    .bind(&now)
     .bind(id)
     .execute(&state.pool)
     .await
@@ -470,7 +476,9 @@ pub async fn water_plant(
     Path(id): Path<i64>,
 ) -> Result<Json<Plant>, ApiError> {
     // Verify the plant exists
-    let result = sqlx::query("UPDATE plants SET updated_at = datetime('now') WHERE id = ?")
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let result = sqlx::query("UPDATE plants SET updated_at = ? WHERE id = ?")
+        .bind(&now)
         .bind(id)
         .execute(&state.pool)
         .await
@@ -482,9 +490,11 @@ pub async fn water_plant(
 
     // Record the watering care event — last_watered is computed from this
     sqlx::query(
-        "INSERT INTO care_events (plant_id, event_type, occurred_at) VALUES (?, 'watered', strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))",
+        "INSERT INTO care_events (plant_id, event_type, occurred_at, created_at) VALUES (?, 'watered', ?, ?)",
     )
     .bind(id)
+    .bind(&now)
+    .bind(&now)
     .execute(&state.pool)
     .await
     .map_err(|e| ApiError::BadRequest(e.to_string()))?;

@@ -102,8 +102,8 @@ async fn test_app_with_provider(provider: Arc<dyn AiProvider>) -> (Router, sqlx:
 
 async fn insert_test_plant(pool: &sqlx::SqlitePool) -> i64 {
     sqlx::query_scalar::<_, i64>(
-        "INSERT INTO plants (name, light_needs, watering_interval_days) \
-         VALUES ('TestPlant', 'indirect', 7) RETURNING id",
+        "INSERT INTO plants (name, light_needs, watering_interval_days, created_at, updated_at) \
+         VALUES ('TestPlant', 'indirect', 7, '2025-01-01T00:00:00Z', '2025-01-01T00:00:00Z') RETURNING id",
     )
     .fetch_one(pool)
     .await

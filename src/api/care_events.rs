@@ -151,18 +151,18 @@ pub async fn create_care_event(
 
     validate_event_type(&event_type)?;
 
-    let occurred_at = body
-        .occurred_at
-        .unwrap_or_else(|| chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let occurred_at = body.occurred_at.unwrap_or_else(|| now.clone());
 
     let id = sqlx::query_scalar::<_, i64>(
-        "INSERT INTO care_events (plant_id, event_type, notes, occurred_at) \
-         VALUES (?, ?, ?, ?) RETURNING id",
+        "INSERT INTO care_events (plant_id, event_type, notes, occurred_at, created_at) \
+         VALUES (?, ?, ?, ?, ?) RETURNING id",
     )
     .bind(plant_id)
     .bind(&event_type)
     .bind(&body.notes)
     .bind(&occurred_at)
+    .bind(&now)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| ApiError::BadRequest(e.to_string()))?;
