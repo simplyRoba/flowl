@@ -318,10 +318,6 @@ pub async fn upload_care_event_photo(
             ImageError::Io(_) => ApiError::BadRequest(format!("Failed to save file: {e}")),
         })?;
 
-    if let Some(ref old_filename) = current_photo {
-        state.image_store.delete(old_filename).await;
-    }
-
     sqlx::query("UPDATE care_events SET photo_path = ? WHERE id = ? AND plant_id = ?")
         .bind(&filename)
         .bind(event_id)
@@ -329,6 +325,10 @@ pub async fn upload_care_event_photo(
         .execute(&state.pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    if let Some(ref old_filename) = current_photo {
+        state.image_store.delete(old_filename).await;
+    }
 
     info!(plant_id, event_id, filename = %filename, "Care event photo uploaded");
 

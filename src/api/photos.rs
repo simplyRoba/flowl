@@ -49,16 +49,16 @@ pub async fn upload_photo(
             ImageError::Io(_) => ApiError::BadRequest(format!("Failed to save file: {e}")),
         })?;
 
-    if let Some(ref old_filename) = current_photo {
-        state.image_store.delete(old_filename).await;
-    }
-
     sqlx::query("UPDATE plants SET photo_path = ?, updated_at = datetime('now') WHERE id = ?")
         .bind(&filename)
         .bind(id)
         .execute(&state.pool)
         .await
         .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    if let Some(ref old_filename) = current_photo {
+        state.image_store.delete(old_filename).await;
+    }
 
     info!(plant_id = id, filename = %filename, "Photo uploaded");
 

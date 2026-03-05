@@ -214,7 +214,7 @@ ZIP file contents are read into `Vec<u8>` without per-file size validation. A zi
 
 **Fix:** Apply `MAX_FILE_SIZE` from `images.rs` to each extracted file.
 
-### 19. Photo file orphaned if DB update fails
+### ~~19. Photo file orphaned if DB update fails~~ DONE
 
 **File:** `src/api/care_events.rs:304-325`, `src/api/photos.rs:52-61`
 
