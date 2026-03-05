@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.21.1](https://github.com/simplyRoba/flowl/compare/v0.21.0...v0.21.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* add per-file size limits during restore to prevent zip bombs ([96f88d6](https://github.com/simplyRoba/flowl/commit/96f88d6d99d428825a2fd82cb6b108a91a2562b0))
+* **ci:** bump docker/login-action from 3 to 4 ([996d0e4](https://github.com/simplyRoba/flowl/commit/996d0e41ee117f0fea4e39819d3b3e2b400b7278))
+* **ci:** bump docker/setup-buildx-action from 3 to 4 ([356efb6](https://github.com/simplyRoba/flowl/commit/356efb65674b456e65067b2f002506db4516bac1))
+* deduplicate fetchAiStatus calls with shared aiStatus store ([380e185](https://github.com/simplyRoba/flowl/commit/380e18590891bb0c5e5dc818f18a349a3889ed6f))
+* **deps:** bump lucide-svelte from 0.576.0 to 0.577.0 in /ui ([495eca8](https://github.com/simplyRoba/flowl/commit/495eca8812b1a1e6b877c072d29c404a85a7e385))
+* distribute mobile nav items evenly to prevent layout jumps on language change ([b57b2a3](https://github.com/simplyRoba/flowl/commit/b57b2a3a94fe25479a6b33e05f9ae3c3e5eed291))
+* enforce consistent ISO 8601 timestamps from Rust, remove SQL defaults ([9cdac64](https://github.com/simplyRoba/flowl/commit/9cdac64577c337372dc938edfa968d62548f786c))
+* improve summary editor styling in chat drawer ([310dd25](https://github.com/simplyRoba/flowl/commit/310dd25978b768741b70aa3392773e64282f0e62))
+* update DB before deleting old photo to prevent data loss on failure ([a9345ea](https://github.com/simplyRoba/flowl/commit/a9345ea562c466d03c9b941f19d92392e416498c))
+
 ## [0.21.0](https://github.com/simplyRoba/flowl/compare/v0.20.2...v0.21.0) (2026-03-04)
 
 
