@@ -2,7 +2,8 @@
 	import { onMount } from 'svelte';
 	import { Sun, CloudSun, Cloud, Camera, X, Gauge, PawPrint, TrendingUp, Layers, Droplets, Sparkles, Check, TriangleAlert, ChevronLeft, ChevronRight } from 'lucide-svelte';
 	import type { Plant, CreatePlant, Location, IdentifyResult } from '$lib/api';
-	import { fetchAiStatus, identifyPlant } from '$lib/api';
+	import { identifyPlant } from '$lib/api';
+	import { aiStatus, loadAiStatus } from '$lib/stores/ai';
 	import { locations, loadLocations, createLocation } from '$lib/stores/locations';
 	import { translations } from '$lib/stores/locale';
 	import IconPicker from './IconPicker.svelte';
@@ -51,7 +52,7 @@
 	let hasPhoto = $derived(photoPreview !== null || (initial?.photo_url != null && photoFile === null));
 
 	// AI Identify state
-	let aiEnabled = $state(false);
+	let aiEnabled = $derived($aiStatus?.enabled ?? false);
 	let identifyState = $state<'idle' | 'loading' | 'result' | 'applied' | 'error'>('idle');
 	let identifyResults = $state<IdentifyResult[]>([]);
 	let currentSuggestion = $state(0);
@@ -94,9 +95,7 @@
 		}
 
 		loadLocations();
-		fetchAiStatus()
-			.then((s) => { aiEnabled = s.enabled; })
-			.catch(() => { aiEnabled = false; });
+		loadAiStatus();
 	});
 
 	function handlePhotoSelect(e: Event) {

@@ -11,7 +11,8 @@
 	} from '$lib/stores/theme';
 	import { translations, locale, setLocale, type Locale } from '$lib/stores/locale';
 	import { plural } from '$lib/i18n';
-	import { fetchAppInfo, fetchStats, fetchMqttStatus, fetchAiStatus, repairMqtt, importData, type AppInfo, type Stats, type MqttStatus, type AiStatus } from '$lib/api';
+	import { fetchAppInfo, fetchStats, fetchMqttStatus, repairMqtt, importData, type AppInfo, type Stats, type MqttStatus } from '$lib/api';
+	import { aiStatus as aiStatusStore, loadAiStatus } from '$lib/stores/ai';
 	import ModalDialog from '$lib/components/ModalDialog.svelte';
 
 	const themeOptions: { value: ThemePreference; labelKey: 'themeLight' | 'themeDark' | 'themeSystem' }[] = [
@@ -32,7 +33,7 @@
 	let appInfo: AppInfo | null = $state(null);
 	let stats: Stats | null = $state(null);
 	let mqttStatus: MqttStatus | null = $state(null);
-	let aiStatus: AiStatus | null = $state(null);
+	let aiStatus = $derived($aiStatusStore);
 	let repairLoading = $state(false);
 	let repairMessage = $state('');
 	let repairError = $state('');
@@ -59,9 +60,7 @@
 		fetchMqttStatus()
 			.then((m) => { mqttStatus = m; })
 			.catch(() => { /* hide MQTT section on failure */ });
-		fetchAiStatus()
-			.then((s) => { aiStatus = s; })
-			.catch(() => { /* hide AI section on failure */ });
+		loadAiStatus();
 	});
 
 	async function startEditing(id: number, name: string) {

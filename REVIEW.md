@@ -222,7 +222,7 @@ During photo upload/replace: the new file is saved, the old file is deleted, the
 
 **Fix:** Update the DB first (in a transaction), then do file operations. Or reverse the order: save new file, update DB, then delete old file.
 
-### 20. `fetchAiStatus` called redundantly
+### ~~20. `fetchAiStatus` called redundantly~~ DONE
 
 **Files:** `plants/[id]/+page.svelte`, `PlantForm.svelte`, `ChatDrawer.svelte`
 

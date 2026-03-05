@@ -14,7 +14,8 @@
 	import ModalDialog from '$lib/components/ModalDialog.svelte';
 	import ChatDrawer from '$lib/components/ChatDrawer.svelte';
 	import CareEntryForm from '$lib/components/CareEntryForm.svelte';
-	import { fetchAiStatus, type CareEvent } from '$lib/api';
+	import type { CareEvent } from '$lib/api';
+	import { aiStatus, loadAiStatus } from '$lib/stores/ai';
 
 	let notFound = $state(false);
 	let deleting = $state(false);
@@ -26,7 +27,7 @@
 	let backHref = $state('/');
 	let lightboxOpen = $state(false);
 	let deleteDialogOpen = $state(false);
-	let aiEnabled = $state(false);
+	let aiEnabled = $derived($aiStatus?.enabled ?? false);
 	let chatOpen = $state(false);
 	let lightboxSrc = $state('');
 	const BACK_PATHS = new Set(['/', '/care-journal', '/plants', '/settings']);
@@ -41,12 +42,7 @@
 		} else {
 			await loadCareEvents(id);
 		}
-		try {
-			const status = await fetchAiStatus();
-			aiEnabled = status.enabled;
-		} catch {
-			aiEnabled = false;
-		}
+		loadAiStatus();
 	});
 
 	$effect(() => {

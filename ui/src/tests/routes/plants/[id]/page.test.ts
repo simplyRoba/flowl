@@ -76,12 +76,22 @@ vi.mock('$lib/emoji', () => ({
 }));
 
 import * as api from '$lib/api';
-const mockFetchAiStatus = vi.spyOn(api, 'fetchAiStatus');
-mockFetchAiStatus.mockResolvedValue({ enabled: false, base_url: null, model: null });
 const mockSummarizeChat = vi.spyOn(api, 'summarizeChat');
 const mockCreateCareEvent = vi.spyOn(api, 'createCareEvent');
 const mockUploadCareEventPhoto = vi.spyOn(api, 'uploadCareEventPhoto');
 
+const mockLoadAiStatus = vi.fn();
+
+vi.mock('$lib/stores/ai', async () => {
+	const { writable } = await import('svelte/store');
+	const aiStatus = writable<any>(null);
+	return {
+		aiStatus,
+		loadAiStatus: (...args: any[]) => mockLoadAiStatus(...args)
+	};
+});
+
+import { aiStatus } from '$lib/stores/ai';
 import { currentPlant } from '$lib/stores/plants';
 import { careEvents } from '$lib/stores/care';
 
@@ -122,6 +132,7 @@ async function renderWithPlant(plantOverrides: Partial<any> = {}) {
 
 beforeEach(() => {
 	currentPlant.set(null);
+	aiStatus.set(null);
 	vi.clearAllMocks();
 });
 
@@ -323,7 +334,7 @@ describe('plant delete confirmation', () => {
 
 describe('Ask AI button', () => {
 	it('shows Ask AI button when AI is enabled', async () => {
-		mockFetchAiStatus.mockResolvedValue({ enabled: true, base_url: null, model: null });
+		aiStatus.set({ enabled: true, base_url: null, model: null });
 		await renderWithPlant();
 		await screen.findByText('Fern');
 		await waitFor(() => {
@@ -332,15 +343,15 @@ describe('Ask AI button', () => {
 	});
 
 	it('hides Ask AI button when AI is disabled', async () => {
-		mockFetchAiStatus.mockResolvedValue({ enabled: false, base_url: null, model: null });
+		aiStatus.set({ enabled: false, base_url: null, model: null });
 		await renderWithPlant();
 		await screen.findByText('Fern');
 		await new Promise((r) => setTimeout(r, 50));
 		expect(screen.queryByText('Ask AI')).toBeNull();
 	});
 
-	it('hides Ask AI button when AI status check fails', async () => {
-		mockFetchAiStatus.mockRejectedValue(new Error('fail'));
+	it('hides Ask AI button when AI status is null (fetch failed)', async () => {
+		aiStatus.set(null);
 		await renderWithPlant();
 		await screen.findByText('Fern');
 		await new Promise((r) => setTimeout(r, 50));
@@ -348,7 +359,7 @@ describe('Ask AI button', () => {
 	});
 
 	it('opens chat drawer when Ask AI is clicked', async () => {
-		mockFetchAiStatus.mockResolvedValue({ enabled: true, base_url: null, model: null });
+		aiStatus.set({ enabled: true, base_url: null, model: null });
 		await renderWithPlant();
 		await waitFor(() => {
 			expect(screen.getByText('Ask AI')).toBeTruthy();
@@ -361,7 +372,7 @@ describe('Ask AI button', () => {
 	});
 
 	it('closes chat drawer when close button is clicked', async () => {
-		mockFetchAiStatus.mockResolvedValue({ enabled: true, base_url: null, model: null });
+		aiStatus.set({ enabled: true, base_url: null, model: null });
 		await renderWithPlant();
 		await waitFor(() => {
 			expect(screen.getByText('Ask AI')).toBeTruthy();
@@ -429,7 +440,7 @@ describe('care event delete reloads plant', () => {
 
 describe('chat drawer save note', () => {
 	beforeEach(() => {
-		mockFetchAiStatus.mockResolvedValue({ enabled: true, base_url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' });
+		aiStatus.set({ enabled: true, base_url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' });
 	});
 
 	async function openChatAndSendMessage() {
