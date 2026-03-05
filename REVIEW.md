@@ -206,7 +206,7 @@ The SSE line accumulator `buf` has no size cap. A misbehaving upstream can cause
 
 The blocklist approach (`contains ".."`, `starts_with "/"`) misses edge cases. Canonicalize the resolved path and assert it starts with the upload directory.
 
-### 18. No per-file size limit during restore (zip bomb potential)
+### ~~18. No per-file size limit during restore (zip bomb potential)~~ DONE
 
 **File:** `src/api/restore.rs:131-148`
 

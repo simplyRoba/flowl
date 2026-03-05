@@ -144,14 +144,23 @@ fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError
 
     // Read and parse data.json
     let data: ImportData = {
-        let mut data_file = archive
+        let data_file = archive
             .by_name("data.json")
             .map_err(|_| ApiError::BadRequest("Archive missing data.json".to_string()))?;
 
-        let mut json_str = String::new();
+        const MAX_JSON_SIZE: u64 = 50 * 1024 * 1024; // 50 MB
+        let mut json_bytes = Vec::new();
         data_file
-            .read_to_string(&mut json_str)
+            .take(MAX_JSON_SIZE + 1)
+            .read_to_end(&mut json_bytes)
             .map_err(|e| ApiError::BadRequest(format!("Failed to read data.json: {e}")))?;
+        if json_bytes.len() as u64 > MAX_JSON_SIZE {
+            return Err(ApiError::BadRequest(
+                "data.json exceeds maximum size".to_string(),
+            ));
+        }
+        let json_str = String::from_utf8(json_bytes)
+            .map_err(|e| ApiError::BadRequest(format!("data.json is not valid UTF-8: {e}")))?;
 
         serde_json::from_str(&json_str)
             .map_err(|e| ApiError::BadRequest(format!("Invalid data.json: {e}")))?
@@ -162,7 +171,7 @@ fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError
     // Extract photo files into memory
     let mut photos = Vec::new();
     for i in 0..archive.len() {
-        let mut file = archive
+        let file = archive
             .by_index(i)
             .map_err(|e| ApiError::BadRequest(format!("Invalid archive entry: {e}")))?;
 
@@ -171,9 +180,16 @@ fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError
             if filename.is_empty() {
                 continue;
             }
+            const MAX_PHOTO_SIZE: usize = 5 * 1024 * 1024; // 5 MB — matches upload limit
             let mut contents = Vec::new();
-            file.read_to_end(&mut contents)
+            file.take(MAX_PHOTO_SIZE as u64 + 1)
+                .read_to_end(&mut contents)
                 .map_err(|e| ApiError::BadRequest(format!("Failed to read {name}: {e}")))?;
+            if contents.len() > MAX_PHOTO_SIZE {
+                return Err(ApiError::BadRequest(format!(
+                    "File {name} exceeds maximum size of {MAX_PHOTO_SIZE} bytes"
+                )));
+            }
             photos.push((filename.to_string(), contents));
         }
     }
