@@ -456,10 +456,10 @@
 				</div>
 			{/if}
 			<div class="summary-actions">
-				<button class="btn btn-sm" onclick={handleCancelSave} disabled={savingNote}>
+				<button class="btn btn-outline" onclick={handleCancelSave} disabled={savingNote}>
 					{$translations.chat.cancelSummary}
 				</button>
-				<button class="btn btn-sm btn-primary" onclick={handleConfirmSave} disabled={savingNote || !summaryText.trim()}>
+				<button class="btn btn-primary" onclick={handleConfirmSave} disabled={savingNote || !summaryText.trim()}>
 					{savingNote ? $translations.common.saving : $translations.chat.saveSummary}
 				</button>
 			</div>
@@ -983,7 +983,7 @@
 	.summary-textarea {
 		width: 100%;
 		box-sizing: border-box;
-		min-height: 80px;
+		min-height: 160px;
 		padding: 10px 12px;
 		border-radius: 8px;
 		border: 1px solid var(--color-border);
@@ -1017,9 +1017,12 @@
 
 	.summary-actions {
 		display: flex;
-		justify-content: flex-end;
 		gap: 8px;
-		margin-top: 8px;
+		margin-top: 12px;
+	}
+
+	.summary-actions .btn {
+		flex: 1;
 	}
 
 </style>
