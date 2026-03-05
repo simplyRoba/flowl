@@ -267,7 +267,7 @@
 		}
 
 		.nav-item {
-			width: auto;
+			flex: 1;
 			height: auto;
 			flex-direction: column;
 			gap: 2px;
