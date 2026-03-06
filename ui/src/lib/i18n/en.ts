@@ -245,6 +245,7 @@ const en = {
 		nameLabel: 'Name *',
 		nameRequired: 'Name is required',
 		speciesLabel: 'Species (optional)',
+		speciesShort: 'Species',
 		namePlaceholder: 'e.g. Monstera Deliciosa',
 		speciesPlaceholder: 'e.g. Monstera',
 		notesPlaceholder: 'Care tips, observations, anything useful...',

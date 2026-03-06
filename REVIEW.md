@@ -294,7 +294,7 @@ Malformed SSE lines cause `SyntaxError` that propagates to the caller. Catch par
 
 Unlike ChatDrawer which checks `VALID_IMAGE_TYPES`, PlantForm accepts any dropped file. A user can drop a PDF and it will be staged as a photo.
 
-### 28. `willFillChips` strips i18n strings with hardcoded substrings
+### ~~28. `willFillChips` strips i18n strings with hardcoded substrings~~ DONE
 
 **File:** `ui/src/lib/components/PlantForm.svelte:229`
 

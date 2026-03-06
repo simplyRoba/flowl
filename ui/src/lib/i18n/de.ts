@@ -247,6 +247,7 @@ export const de: Translations = {
 		nameLabel: 'Name *',
 		nameRequired: 'Name ist erforderlich',
 		speciesLabel: 'Art (optional)',
+		speciesShort: 'Art',
 		namePlaceholder: 'z. B. Monstera Deliciosa',
 		speciesPlaceholder: 'z. B. Monstera',
 		notesPlaceholder: 'Pflegetipps, Beobachtungen, alles Nützliche...',

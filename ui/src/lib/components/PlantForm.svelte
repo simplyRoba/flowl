@@ -225,7 +225,7 @@
 		if (!activeSuggestion) return [];
 		const t = $translations;
 		const chips: FillChip[] = [];
-		chips.push({ label: t.form.speciesLabel.replace(' (optional)', '').replace(' (opcional)', ''), value: activeSuggestion.scientific_name });
+		chips.push({ label: t.form.speciesShort, value: activeSuggestion.scientific_name });
 		const cp = activeSuggestion.care_profile;
 		if (cp) {
 			if (cp.watering_interval_days != null) chips.push({ label: t.form.watering, value: `${cp.watering_interval_days}d` });
