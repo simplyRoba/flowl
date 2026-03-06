@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { plural } from './index';
+import { plural } from './plural';
 
 describe('plural', () => {
 	it('returns the singular form for one', () => {

@@ -1,6 +1,8 @@
 import { get } from 'svelte/store';
-import { beforeEach, describe, expect, it } from 'vitest';
-import { de, en, es } from '$lib/i18n';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { de } from '$lib/i18n/de';
+import { en } from '$lib/i18n/en';
+import { es } from '$lib/i18n/es';
 import {
 	DEFAULT_LOCALE,
 	LOCALE_STORAGE_KEY,
@@ -65,13 +67,19 @@ describe('locale persistence', () => {
 });
 
 describe('translations store', () => {
-	it('resolves dictionaries based on locale', () => {
+	it('resolves dictionaries based on locale', async () => {
 		locale.set('en');
 		expect(get(translations)).toBe(en);
+
 		locale.set('de');
-		expect(get(translations)).toBe(de);
+		await vi.waitFor(() => {
+			expect(get(translations)).toBe(de);
+		});
+
 		locale.set('es');
-		expect(get(translations)).toBe(es);
+		await vi.waitFor(() => {
+			expect(get(translations)).toBe(es);
+		});
 	});
 });
 

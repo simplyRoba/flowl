@@ -1,7 +1,5 @@
-import { derived, writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import { en } from '$lib/i18n/en';
-import { de } from '$lib/i18n/de';
-import { es } from '$lib/i18n/es';
 import type { Translations } from '$lib/i18n/en';
 
 export type Locale = 'en' | 'de' | 'es';
@@ -9,7 +7,8 @@ export type Locale = 'en' | 'de' | 'es';
 export const LOCALE_STORAGE_KEY = 'flowl.locale';
 export const DEFAULT_LOCALE: Locale = 'en';
 
-const dictionaries: Record<Locale, Translations> = { en, de, es };
+const dictionaries = new Map<Locale, Translations>([['en', en]]);
+const loadingDictionaries = new Map<Locale, Promise<Translations>>();
 
 export function isLocale(value: unknown): value is Locale {
 	return value === 'en' || value === 'de' || value === 'es';
@@ -43,9 +42,62 @@ export function writeLocale(storage: Storage | null, locale: Locale): void {
 	}
 }
 
-export const locale = writable<Locale>(readLocale(getStorage()));
+async function loadDictionary(target: Locale): Promise<Translations> {
+	if (target === 'en') return en;
+	if (target === 'de') {
+		const module = await import('$lib/i18n/de');
+		return module.de;
+	}
+	const module = await import('$lib/i18n/es');
+	return module.es;
+}
 
-export const translations = derived(locale, ($locale) => dictionaries[$locale]);
+function ensureDictionary(target: Locale): Promise<Translations> {
+	const cached = dictionaries.get(target);
+	if (cached) return Promise.resolve(cached);
+
+	const inFlight = loadingDictionaries.get(target);
+	if (inFlight) return inFlight;
+
+	const promise = loadDictionary(target)
+		.then((dictionary) => {
+			dictionaries.set(target, dictionary);
+			loadingDictionaries.delete(target);
+			return dictionary;
+		})
+		.catch((error: unknown) => {
+			loadingDictionaries.delete(target);
+			throw error;
+		});
+
+	loadingDictionaries.set(target, promise);
+	return promise;
+}
+
+const initialLocale = readLocale(getStorage());
+
+export const locale = writable<Locale>(initialLocale);
+export const translations = writable<Translations>(en);
+
+locale.subscribe((target) => {
+	const cached = dictionaries.get(target);
+	if (cached) {
+		translations.set(cached);
+		return;
+	}
+
+	void ensureDictionary(target)
+		.then((dictionary) => {
+			if (get(locale) === target) {
+				translations.set(dictionary);
+			}
+		})
+		.catch(() => {
+			if (get(locale) === target) {
+				translations.set(en);
+			}
+		});
+});
 
 let initialized = false;
 

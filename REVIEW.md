@@ -377,19 +377,23 @@ Animations (slide-in, hover lifts, typing indicator) are not conditionally disab
 
 `.btn-ai` styles defined with `:global()` inside a scoped component's `<style>` block, leaking globally. Move to a shared stylesheet.
 
-### 40. Settings delete without confirmation for empty locations
+### ~~40. Settings delete without confirmation for empty locations~~ SKIPPED
 
 **File:** `ui/src/routes/settings/+page.svelte:183-190`
 
 Locations with no plants are deleted immediately — no confirmation. A misclick loses the location with no undo. Should be consistent: either always confirm or provide undo.
 
-### 41. `onMount` fetches not cancelled on settings page destroy
+**SKIPPED:** No it shouldn't.
+
+### ~~41. `onMount` fetches not cancelled on settings page destroy~~ SKIPPED
 
 **File:** `ui/src/routes/settings/+page.svelte:51-65`
 
 Four independent fetch calls fire on mount. If the user navigates away quickly, all promises resolve and set state on a destroyed component. Add an AbortController.
 
-### 42. IIFE in settings template
+**SKIPPED:** These calls are lightweight and complete quickly in normal local-network use. The extra API plumbing for `AbortSignal` does not provide meaningful UX or performance benefit right now.
+
+### ~~42. IIFE in settings template~~ DONE
 
 **File:** `ui/src/routes/settings/+page.svelte:379`
 
@@ -409,19 +413,23 @@ These are improvements that would polish the product but are not urgent.
 
 The UI has `svelte-check` for types but no linting or formatting enforcement. Inconsistent formatting is already visible (e.g., `onsave` at column 0 in plant detail). Consider adding `eslint-plugin-svelte` and `prettier-plugin-svelte`.
 
-### 44. All three i18n dictionaries are bundled
+### ~~44. All three i18n dictionaries are bundled~~ DONE
 
 All translation files are imported statically. For 3 languages this is fine, but as languages are added, consider lazy-loading non-default locales.
 
-### 45. English-centric pluralization
+### ~~45. English-centric pluralization~~ SKIPPED
 
 The `plural()` helper only supports `one/other` forms. Languages like Polish, Arabic, and Russian need additional plural categories. Not urgent for en/de/es but limits future language support.
 
-### 46. No skeleton/shimmer loading states
+**SKIPPED:** Current locales are en/de/es and all required copy works with existing `one/other` handling. Expanding plural categories is deferred until a language that requires additional CLDR categories is added.
+
+### ~~46. No skeleton/shimmer loading states~~ SKIPPED
 
 Loading states are plain text ("Loading...") with no skeleton UI. Skeleton screens reduce perceived load time and prevent layout shifts.
 
-### 47. Care journal: no "no results for this filter" message
+**SKIPPED:** Existing loading durations are short and already communicated; adding skeleton/shimmer components now would increase UI complexity without meaningful user benefit.
+
+### ~~47. Care journal: no "no results for this filter" message~~ DONE
 
 When a filter returns zero results, the empty state says "No care events" with no mention of the active filter. Users might think their data is missing.
 

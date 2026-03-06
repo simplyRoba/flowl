@@ -10,7 +10,7 @@
 		type ThemePreference
 	} from '$lib/stores/theme';
 	import { translations, locale, setLocale, type Locale } from '$lib/stores/locale';
-	import { plural } from '$lib/i18n';
+	import { plural } from '$lib/i18n/plural';
 	import { fetchAppInfo, fetchStats, fetchMqttStatus, repairMqtt, importData, type AppInfo, type Stats, type MqttStatus } from '$lib/api';
 	import { aiStatus as aiStatusStore, loadAiStatus } from '$lib/stores/ai';
 	import ModalDialog from '$lib/components/ModalDialog.svelte';
@@ -34,6 +34,14 @@
 	let stats: Stats | null = $state(null);
 	let mqttStatus: MqttStatus | null = $state(null);
 	let aiStatus = $derived($aiStatusStore);
+	let aiProviderHost = $derived.by(() => {
+		if (!aiStatus?.base_url) return '';
+		try {
+			return new URL(aiStatus.base_url).hostname;
+		} catch {
+			return aiStatus.base_url;
+		}
+	});
 	let repairLoading = $state(false);
 	let repairMessage = $state('');
 	let repairError = $state('');
@@ -374,7 +382,7 @@
 				{#if aiStatus.base_url}
 					<div class="about-row">
 						<span class="setting-label">{$translations.settings.provider}</span>
-						<span>{(() => { try { return new URL(aiStatus.base_url).hostname; } catch { return aiStatus.base_url; } })()}</span>
+						<span>{aiProviderHost}</span>
 					</div>
 				{/if}
 				{#if aiStatus.model}
