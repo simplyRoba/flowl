@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.22.0](https://github.com/simplyRoba/flowl/compare/v0.21.1...v0.22.0) (2026-03-06)
+
+
+### Features
+
+* add multi-select type filtering with URL persistence to care journal ([1081e7c](https://github.com/simplyRoba/flowl/commit/1081e7c7dbcf025bb8dbdf6314c7fd335dbeb550))
+
+
+### Bug Fixes
+
+* add error boundary to SSE JSON parsing in chatPlant ([73e9606](https://github.com/simplyRoba/flowl/commit/73e9606d20efb2ee02acbe79c445ae22df38fa71))
+* add exponential backoff to MQTT reconnect ([f865c87](https://github.com/simplyRoba/flowl/commit/f865c87abfb16204aecb68ad209ac8537ba63e40))
+* **ci:** bump docker/build-push-action from 6 to 7 ([cb60842](https://github.com/simplyRoba/flowl/commit/cb60842b302415f37703d6b4fc7472ba5ea8c6df))
+* **ci:** bump docker/metadata-action from 5 to 6 ([7ebff01](https://github.com/simplyRoba/flowl/commit/7ebff018f4934ecd4291ce6519e6c2c887838fc2))
+* **deps:** bump uuid from 1.21.0 to 1.22.0 ([91acfb2](https://github.com/simplyRoba/flowl/commit/91acfb22c48e3d6fd467a9a8b059998799c3c1ff))
+* **i18n:** replace hardcoded string stripping with speciesShort key ([9fa92ba](https://github.com/simplyRoba/flowl/commit/9fa92badc3ec775281db33235008de8506d60cc7))
+* init theme and locale stores from localStorage to prevent flash on reload ([bc5e899](https://github.com/simplyRoba/flowl/commit/bc5e899a4f07bf49b921e737196bca8e1e33c0be))
+* move btn-ai to global buttons.css and fix dark mode text color ([9b341fe](https://github.com/simplyRoba/flowl/commit/9b341fe3e377f58074991e601ece7571f4df9fd8))
+* remove time from care journal ([f0e625f](https://github.com/simplyRoba/flowl/commit/f0e625f9e3c3639cafa8a60188bb66aed6ec631d))
+* validate file type on photo drag-and-drop in PlantForm ([16015a3](https://github.com/simplyRoba/flowl/commit/16015a373a2e302b3ee11796333fd5cef2934c6f))
+* validate image uploads by magic bytes instead of Content-Type header ([ef9536e](https://github.com/simplyRoba/flowl/commit/ef9536eb3ddccd28ea6a369449455dad6de53b06))
+
 ## [0.21.1](https://github.com/simplyRoba/flowl/compare/v0.21.0...v0.21.1) (2026-03-05)
 
 
