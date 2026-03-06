@@ -223,11 +223,10 @@
 		color: var(--color-text-muted);
 		cursor: pointer;
 		z-index: 1;
-		transition: color var(--transition-speed);
 	}
 
 	.lightbox-close:hover {
-		color: var(--color-text);
+		opacity: 0.6;
 	}
 
 	.lightbox-content {
