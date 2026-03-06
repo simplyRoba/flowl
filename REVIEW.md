@@ -304,11 +304,13 @@ label: t.form.speciesLabel.replace(' (optional)', '').replace(' (opcional)', '')
 
 Breaks for German and future languages. Add a separate short-label translation key.
 
-### 29. `cancelled` flag is shared module state in settings
+### ~~29. `cancelled` flag is shared module state in settings~~ SKIPPED
 
 **File:** `ui/src/routes/settings/+page.svelte:76-96`
 
 A single `cancelled` boolean tracks edit cancellation. If two edits overlap (quick tabbing), the flag misattributes which edit was cancelled.
+
+**SKIPPED:** `editingId` ensures only one location can be in edit mode at a time. The `cancelled` flag is a synchronization mechanism between `cancelEdit` and the blur-triggered `commitEdit` — it works correctly because concurrent edits can't happen.
 
 ### 30. Settings reads error from store side-channel
 
