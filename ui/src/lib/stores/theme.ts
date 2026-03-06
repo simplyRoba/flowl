@@ -46,7 +46,7 @@ export function createSystemPreferenceListener(
 	return () => media.removeEventListener('change', handler);
 }
 
-export const themePreference = writable<ThemePreference>(DEFAULT_THEME_PREFERENCE);
+export const themePreference = writable<ThemePreference>(readThemePreference(getStorage()));
 export const systemPrefersDark = writable(false);
 export const effectiveTheme = derived(
 	[themePreference, systemPrefersDark],

@@ -43,7 +43,7 @@ export function writeLocale(storage: Storage | null, locale: Locale): void {
 	}
 }
 
-export const locale = writable<Locale>(DEFAULT_LOCALE);
+export const locale = writable<Locale>(readLocale(getStorage()));
 
 export const translations = derived(locale, ($locale) => dictionaries[$locale]);
 
