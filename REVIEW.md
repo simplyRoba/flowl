@@ -288,7 +288,7 @@ Malformed SSE lines cause `SyntaxError` that propagates to the caller. Catch par
 
 **SKIPPED:** The preceding `!resp.ok` check (line 351) already throws for any non-2xx response. A successful SSE/chunked streaming response always has a body. The only null scenario would be an exotic browser bug — not worth guarding against.
 
-### 27. PlantForm photo drop does not validate file type
+### ~~27. PlantForm photo drop does not validate file type~~ DONE
 
 **File:** `ui/src/lib/components/PlantForm.svelte:121-129`
 

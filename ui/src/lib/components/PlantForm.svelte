@@ -115,11 +115,13 @@
 		photoPreview = URL.createObjectURL(file);
 	}
 
+	const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 	function handlePhotoDrop(e: DragEvent) {
 		e.preventDefault();
 		isDraggingPhoto = false;
 		const file = e.dataTransfer?.files?.[0];
-		if (!file) return;
+		if (!file || !VALID_IMAGE_TYPES.includes(file.type)) return;
 		setPhotoFile(file);
 		mediaMode = 'photo';
 		mediaTouched = true;
