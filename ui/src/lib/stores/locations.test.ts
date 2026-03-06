@@ -76,7 +76,7 @@ describe('updateLocation', () => {
 		const updated = { ...mockLocation, name: 'Patio' };
 		vi.mocked(api.updateLocation).mockResolvedValue(updated);
 		const result = await updateLocation(1, 'Patio');
-		expect(result).toEqual(updated);
+		expect(result).toEqual({ location: updated });
 		const list = get(locations);
 		expect(list[0].name).toBe('Kitchen');
 		expect(list[1].name).toBe('Patio');
@@ -85,7 +85,7 @@ describe('updateLocation', () => {
 	it('sets error on failure', async () => {
 		vi.mocked(api.updateLocation).mockRejectedValue(new Error('Update failed'));
 		const result = await updateLocation(1, 'New Name');
-		expect(result).toBeNull();
+		expect(result).toEqual({ error: 'Update failed' });
 		expect(get(locationsError)).toBe('Update failed');
 	});
 });

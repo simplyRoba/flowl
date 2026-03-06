@@ -312,7 +312,7 @@ A single `cancelled` boolean tracks edit cancellation. If two edits overlap (qui
 
 **SKIPPED:** `editingId` ensures only one location can be in edit mode at a time. The `cancelled` flag is a synchronization mechanism between `cancelEdit` and the blur-triggered `commitEdit` — it works correctly because concurrent edits can't happen.
 
-### 30. Settings reads error from store side-channel
+### ~~30. Settings reads error from store side-channel~~ DONE
 
 **File:** `ui/src/routes/settings/+page.svelte:89-96`
 

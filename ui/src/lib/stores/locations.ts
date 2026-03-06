@@ -28,17 +28,18 @@ export async function createLocation(name: string): Promise<Location | null> {
 	}
 }
 
-export async function updateLocation(id: number, name: string): Promise<Location | null> {
+export async function updateLocation(id: number, name: string): Promise<{ location: Location } | { error: string }> {
 	locationsError.set(null);
 	try {
 		const location = await api.updateLocation(id, name);
 		locations.update((list) =>
 			list.map((l) => (l.id === id ? location : l)).sort((a, b) => a.name.localeCompare(b.name))
 		);
-		return location;
+		return { location };
 	} catch (e) {
-		locationsError.set(e instanceof Error ? e.message : get(translations).error.updateLocation);
-		return null;
+		const message = e instanceof Error ? e.message : get(translations).error.updateLocation;
+		locationsError.set(message);
+		return { error: message };
 	}
 }
 

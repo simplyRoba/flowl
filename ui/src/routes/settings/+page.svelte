@@ -86,12 +86,11 @@
 			return;
 		}
 		const result = await updateLocation(id, trimmed);
-		if (result) {
+		if ('location' in result) {
 			editingId = null;
 			editError = '';
 		} else {
-			editError = get(locationsError) || get(translations).settings.failedToRename;
-			locationsError.set(null);
+			editError = result.error;
 		}
 	}
 
