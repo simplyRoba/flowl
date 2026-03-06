@@ -365,10 +365,15 @@ export async function* chatPlant(
 		buf = lines.pop()!;
 		for (const line of lines) {
 			if (!line.startsWith('data: ')) continue;
-			const data = JSON.parse(line.slice(6));
+			let data: Record<string, unknown>;
+			try {
+				data = JSON.parse(line.slice(6));
+			} catch {
+				continue;
+			}
 			if (data.done) return;
-			if (data.error) throw new Error(data.error);
-			if (data.delta) yield data.delta;
+			if (data.error) throw new Error(data.error as string);
+			if (data.delta) yield data.delta as string;
 		}
 	}
 }

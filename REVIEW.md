@@ -270,7 +270,7 @@ The "photo or emoji fallback" pattern is duplicated between attention cards and 
 
 **WONTFIX:** The "duplication" is just two `<img>` tags calling the same utility functions (`thumbUrl`, `thumbSrcset`, `emojiToSvgPath`). The real logic is already in those functions. Extracting a component adds a new file, a props interface with string-typed class names (`photoClass`, `iconClass`), and indirection — without reducing complexity. The parent still handles container divs, background gradients, and conditional classes. Plain HTML is simpler and immediately readable.
 
-### 25. SSE JSON parsing has no error boundary
+### ~~25. SSE JSON parsing has no error boundary~~ DONE
 
 **File:** `ui/src/lib/api.ts:407`
 
