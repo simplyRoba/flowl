@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-
+	import { untrack } from 'svelte';
 	import { Droplet, Leaf, Shovel, Scissors, Pencil, Sparkles } from 'lucide-svelte';
 	import type { CareEvent } from '$lib/api';
 	import { fetchAllCareEvents } from '$lib/api';
 	import { translations } from '$lib/stores/locale';
 	import { thumbUrl, thumbSrcset } from '$lib/thumbUrl';
 	import PhotoLightbox from '$lib/components/PhotoLightbox.svelte';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 
 	let lightboxOpen = $state(false);
 	let lightboxSrc = $state('');
@@ -17,10 +18,41 @@
 	let hasMore = $state(false);
 	let loading = $state(false);
 	let error = $state<string | null>(null);
-	let activeFilter = $state('');
 	let sentinel: HTMLElement;
 
-	const FILTER_VALUES = ['', 'watered', 'fertilized', 'repotted', 'pruned', 'custom', 'ai-consultation'] as const;
+	const TYPE_VALUES = ['watered', 'fertilized', 'repotted', 'pruned', 'custom', 'ai-consultation'] as const;
+
+	let activeTypes: Set<string> = $derived(new Set(page.url.searchParams.getAll('type')));
+	let allActive: boolean = $derived(activeTypes.size === 0 || activeTypes.size === TYPE_VALUES.length);
+
+	function updateUrl(types: Set<string>) {
+		const url = new URL(page.url);
+		url.searchParams.delete('type');
+		for (const t of types) url.searchParams.append('type', t);
+		goto(url.toString(), { replaceState: true, noScroll: true });
+	}
+
+	function toggleFilter(value: string) {
+		const next = new Set(activeTypes);
+		if (next.has(value)) {
+			next.delete(value);
+		} else {
+			next.add(value);
+		}
+		if (next.size === TYPE_VALUES.length) {
+			updateUrl(new Set());
+		} else {
+			updateUrl(next);
+		}
+	}
+
+	function toggleAll() {
+		if (activeTypes.size === 0) {
+			updateUrl(new Set(TYPE_VALUES));
+		} else {
+			updateUrl(new Set());
+		}
+	}
 
 	async function loadPage(reset = false) {
 		if (loading) return;
@@ -29,9 +61,9 @@
 		const before = reset || events.length === 0
 			? undefined
 			: events[events.length - 1].id;
-		const type = activeFilter || undefined;
+		const types = activeTypes.size > 0 ? [...activeTypes] : undefined;
 		try {
-			const page = await fetchAllCareEvents(PAGE_SIZE, before, type);
+			const page = await fetchAllCareEvents(PAGE_SIZE, before, types);
 			if (reset) {
 				events = page.events;
 			} else {
@@ -42,11 +74,6 @@
 			error = e instanceof Error ? e.message : $translations.care.failedToLoad;
 		}
 		loading = false;
-	}
-
-	function setFilter(value: string) {
-		activeFilter = value;
-		loadPage(true);
 	}
 
 	function dayLabel(dateStr: string): string {
@@ -77,11 +104,6 @@
 		return $translations.care.custom;
 	}
 
-	function filterLabel(value: string): string {
-		if (value === '') return $translations.care.filterAll;
-		return eventTypeLabel(value);
-	}
-
 	interface DayGroup {
 		label: string;
 		events: CareEvent[];
@@ -102,8 +124,10 @@
 		return groups;
 	});
 
-	onMount(() => {
-		loadPage(true);
+	$effect(() => {
+		// Fetch on mount and re-fetch when filter selection changes via URL
+		void activeTypes.size;
+		untrack(() => loadPage(true));
 	});
 
 	$effect(() => {
@@ -127,12 +151,20 @@
 	</header>
 
 	<div class="log-filters">
-		{#each FILTER_VALUES as value}
+		<button
+			class="chip chip-solid"
+			class:active={allActive}
+			onclick={toggleAll}
+			aria-label={$translations.care.filterAll}
+		>
+			<span class="filter-label">{$translations.care.filterAll}</span>
+		</button>
+		{#each TYPE_VALUES as value}
 			<button
 				class="chip chip-solid"
-				class:active={activeFilter === value}
-				onclick={() => setFilter(value)}
-				aria-label={filterLabel(value)}
+				class:active={activeTypes.has(value)}
+				onclick={() => toggleFilter(value)}
+				aria-label={eventTypeLabel(value)}
 			>
 				{#if value === 'watered'}
 					<Droplet size={14} />
@@ -147,7 +179,7 @@
 				{:else if value === 'ai-consultation'}
 					<Sparkles size={14} />
 				{/if}
-				<span class="filter-label" class:icon-has-label={value !== ''}>{filterLabel(value)}</span>
+				<span class="filter-label icon-has-label">{eventTypeLabel(value)}</span>
 			</button>
 		{/each}
 	</div>

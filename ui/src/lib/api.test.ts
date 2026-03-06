@@ -132,19 +132,33 @@ describe('API endpoint functions', () => {
 		expect(fn).toHaveBeenCalledWith('/api/plants/5/care', { method: 'GET' });
 	});
 
-	it('fetchAllCareEvents builds query string', async () => {
+	it('fetchAllCareEvents builds query string with single type', async () => {
 		const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue({ events: [], has_more: false }) });
-		await fetchAllCareEvents(10, 5, 'watering');
+		await fetchAllCareEvents(10, 5, ['watered']);
 		const url = fn.mock.calls[0][0] as string;
 		expect(url).toContain('limit=10');
 		expect(url).toContain('before=5');
-		expect(url).toContain('type=watering');
+		expect(url).toContain('type=watered');
+	});
+
+	it('fetchAllCareEvents builds query string with multiple types', async () => {
+		const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue({ events: [], has_more: false }) });
+		await fetchAllCareEvents(20, undefined, ['watered', 'fertilized']);
+		const url = fn.mock.calls[0][0] as string;
+		expect(url).toContain('type=watered');
+		expect(url).toContain('type=fertilized');
 	});
 
 	it('fetchAllCareEvents with no params has no query string', async () => {
 		const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue({ events: [], has_more: false }) });
 		await fetchAllCareEvents();
 		expect(fn).toHaveBeenCalledWith('/api/care', { method: 'GET' });
+	});
+
+	it('fetchAllCareEvents with empty types array has no type param', async () => {
+		const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue({ events: [], has_more: false }) });
+		await fetchAllCareEvents(20, undefined, []);
+		expect(fn).toHaveBeenCalledWith('/api/care?limit=20', { method: 'GET' });
 	});
 });
 

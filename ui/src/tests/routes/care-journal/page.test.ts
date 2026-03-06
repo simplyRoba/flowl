@@ -11,13 +11,25 @@ HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
 });
 
 const mockFetchAllCareEvents = vi.fn();
+const mockGoto = vi.fn();
 
 vi.mock('$lib/api', () => ({
 	fetchAllCareEvents: (...args: any[]) => mockFetchAllCareEvents(...args)
 }));
 
+let mockUrl = new URL('http://localhost/care-journal');
+
+vi.mock('$app/state', () => ({
+	page: {
+		get url() { return mockUrl; }
+	}
+}));
+
 vi.mock('$app/navigation', () => ({
-	goto: vi.fn()
+	goto: (...args: any[]) => {
+		mockUrl = new URL(args[0], 'http://localhost');
+		return mockGoto(...args);
+	}
 }));
 
 function makeEvent(overrides: Partial<any> = {}) {
@@ -36,6 +48,7 @@ function makeEvent(overrides: Partial<any> = {}) {
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	mockUrl = new URL('http://localhost/care-journal');
 	mockFetchAllCareEvents.mockResolvedValue({ events: [], has_more: false });
 });
 
@@ -106,5 +119,104 @@ describe('care journal thumbnails', () => {
 			expect(document.querySelector('.log-entry')).toBeTruthy();
 		});
 		expect(document.querySelector('.log-entry-photo')).toBeNull();
+	});
+});
+
+describe('care journal filters', () => {
+	it('loads with no type filter when URL has no type param', async () => {
+		render(Page);
+
+		await vi.waitFor(() => {
+			expect(mockFetchAllCareEvents).toHaveBeenCalled();
+		});
+		expect(mockFetchAllCareEvents).toHaveBeenCalledWith(20, undefined, undefined);
+	});
+
+	it('loads with type filter when URL has type params', async () => {
+		mockUrl = new URL('http://localhost/care-journal?type=watered&type=fertilized');
+		render(Page);
+
+		await vi.waitFor(() => {
+			expect(mockFetchAllCareEvents).toHaveBeenCalled();
+		});
+		expect(mockFetchAllCareEvents).toHaveBeenCalledWith(
+			20, undefined, expect.arrayContaining(['watered', 'fertilized'])
+		);
+	});
+
+	it('shows All chip as active when no filters are set', async () => {
+		render(Page);
+
+		await vi.waitFor(() => {
+			expect(mockFetchAllCareEvents).toHaveBeenCalled();
+		});
+		const chips = document.querySelectorAll('.chip');
+		const allChip = chips[0];
+		expect(allChip.classList.contains('active')).toBe(true);
+	});
+
+	it('toggles a type filter on click', async () => {
+		render(Page);
+
+		await vi.waitFor(() => {
+			expect(mockFetchAllCareEvents).toHaveBeenCalled();
+		});
+		// Click "Watered" chip (second chip, after "All")
+		const chips = document.querySelectorAll('.chip');
+		await fireEvent.click(chips[1]); // watered
+
+		expect(mockGoto).toHaveBeenCalled();
+		const gotoUrl = mockGoto.mock.calls[0][0] as string;
+		expect(gotoUrl).toContain('type=watered');
+		expect(mockGoto.mock.calls[0][1]).toEqual(
+			expect.objectContaining({ replaceState: true })
+		);
+	});
+
+	it('All chip selects all types when no filters are active', async () => {
+		render(Page);
+
+		await vi.waitFor(() => {
+			expect(mockFetchAllCareEvents).toHaveBeenCalled();
+		});
+		const allChip = document.querySelectorAll('.chip')[0];
+		await fireEvent.click(allChip);
+
+		expect(mockGoto).toHaveBeenCalled();
+		const gotoUrl = mockGoto.mock.calls[0][0] as string;
+		for (const t of ['watered', 'fertilized', 'repotted', 'pruned', 'custom', 'ai-consultation']) {
+			expect(gotoUrl).toContain(`type=${t}`);
+		}
+	});
+
+	it('All chip clears filters when some are active', async () => {
+		mockUrl = new URL('http://localhost/care-journal?type=watered&type=pruned');
+		render(Page);
+
+		await vi.waitFor(() => {
+			expect(mockFetchAllCareEvents).toHaveBeenCalled();
+		});
+		const allChip = document.querySelectorAll('.chip')[0];
+		await fireEvent.click(allChip);
+
+		expect(mockGoto).toHaveBeenCalled();
+		const gotoUrl = mockGoto.mock.calls[0][0] as string;
+		expect(gotoUrl).not.toContain('type=');
+	});
+
+	it('toggling off the last active type returns to unfiltered state', async () => {
+		mockUrl = new URL('http://localhost/care-journal?type=watered');
+		render(Page);
+
+		await vi.waitFor(() => {
+			expect(mockFetchAllCareEvents).toHaveBeenCalled();
+		});
+		// Click "Watered" chip to toggle it off (second chip, after "All")
+		const chips = document.querySelectorAll('.chip');
+		await fireEvent.click(chips[1]);
+
+		expect(mockGoto).toHaveBeenCalled();
+		const gotoUrl = mockGoto.mock.calls[0][0] as string;
+		expect(gotoUrl).not.toContain('type=');
 	});
 });

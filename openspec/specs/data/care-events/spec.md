@@ -150,7 +150,7 @@ The API SHALL delete a care event via `DELETE /api/plants/:id/care/:event_id`.
 
 ### Requirement: List All Care Events (Global)
 
-The API SHALL return paginated care events across all plants via `GET /api/care`, ordered by `occurred_at` descending, using cursor-based pagination.
+The API SHALL return paginated care events across all plants via `GET /api/care`, ordered by `occurred_at` descending, using cursor-based pagination. The endpoint SHALL use `axum_extra::extract::Query` (backed by `serde_qs`) to deserialize query parameters, enabling repeated `type` keys.
 
 #### Scenario: First page of events
 
@@ -168,15 +168,21 @@ The API SHALL return paginated care events across all plants via `GET /api/care`
 - **WHEN** a GET request is made to `/api/care?before=42`
 - **THEN** the API responds with events older than the event with id 42
 
-#### Scenario: Filter by event type
+#### Scenario: Filter by single event type
 
 - **WHEN** a GET request is made to `/api/care?type=watered`
 - **THEN** the API responds with only care events of type `watered`
 - **AND** pagination and `has_more` apply to the filtered set
 
-#### Scenario: Invalid filter type
+#### Scenario: Filter by multiple event types
 
-- **WHEN** a GET request is made to `/api/care?type=invalid`
+- **WHEN** a GET request is made to `/api/care?type=watered&type=fertilized`
+- **THEN** the API responds with only care events whose type is `watered` or `fertilized`
+- **AND** pagination and `has_more` apply to the filtered set
+
+#### Scenario: Invalid filter type in multi-type request
+
+- **WHEN** a GET request is made to `/api/care?type=watered&type=invalid`
 - **THEN** the API responds with HTTP 422
 
 #### Scenario: No more events

@@ -281,12 +281,14 @@ export function fetchCareEvents(plantId: number): Promise<CareEvent[]> {
 export function fetchAllCareEvents(
 	limit?: number,
 	before?: number,
-	type?: string
+	types?: string[]
 ): Promise<CareEventsPage> {
 	const params = new URLSearchParams();
 	if (limit !== undefined) params.set('limit', String(limit));
 	if (before !== undefined) params.set('before', String(before));
-	if (type !== undefined) params.set('type', type);
+	if (types) {
+		for (const t of types) params.append('type', t);
+	}
 	const qs = params.toString();
 	return request('GET', `/api/care${qs ? `?${qs}` : ''}`);
 }

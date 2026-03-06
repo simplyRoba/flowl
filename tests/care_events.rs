@@ -419,6 +419,43 @@ async fn global_type_filter() {
 }
 
 #[tokio::test]
+async fn global_multi_type_filter() {
+    let app = app().await;
+    let id = create_plant(&app).await;
+
+    for t in &["watered", "fertilized", "pruned"] {
+        app.clone()
+            .oneshot(json_request(
+                "POST",
+                &format!("/api/plants/{id}/care"),
+                Some(&format!(r#"{{"event_type":"{t}"}}"#)),
+            ))
+            .await
+            .unwrap();
+    }
+
+    let resp = app
+        .clone()
+        .oneshot(json_request(
+            "GET",
+            "/api/care?type=watered&type=fertilized",
+            None,
+        ))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    let events = json["events"].as_array().unwrap();
+    assert_eq!(events.len(), 2);
+    let types: Vec<&str> = events
+        .iter()
+        .map(|e| e["event_type"].as_str().unwrap())
+        .collect();
+    assert!(types.contains(&"watered"));
+    assert!(types.contains(&"fertilized"));
+    assert!(!types.contains(&"pruned"));
+}
+
+#[tokio::test]
 async fn global_invalid_type_filter() {
     let resp = app()
         .await
@@ -426,6 +463,44 @@ async fn global_invalid_type_filter() {
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[tokio::test]
+async fn global_invalid_type_in_multi_filter() {
+    let resp = app()
+        .await
+        .oneshot(json_request(
+            "GET",
+            "/api/care?type=watered&type=invalid",
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[tokio::test]
+async fn global_no_type_filter_returns_all() {
+    let app = app().await;
+    let id = create_plant(&app).await;
+
+    for t in &["watered", "fertilized", "pruned"] {
+        app.clone()
+            .oneshot(json_request(
+                "POST",
+                &format!("/api/plants/{id}/care"),
+                Some(&format!(r#"{{"event_type":"{t}"}}"#)),
+            ))
+            .await
+            .unwrap();
+    }
+
+    let resp = app
+        .oneshot(json_request("GET", "/api/care", None))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    assert_eq!(json["events"].as_array().unwrap().len(), 3);
 }
 
 // --- Water auto-logs care event ---

@@ -1,6 +1,7 @@
 use axum::Json;
-use axum::extract::{Multipart, Path, Query, State};
+use axum::extract::{Multipart, Path, State};
 use axum::http::StatusCode;
+use axum_extra::extract::Query as ExtraQuery;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
@@ -44,8 +45,8 @@ pub struct CreateCareEvent {
 pub struct GlobalCareQuery {
     pub limit: Option<i64>,
     pub before: Option<i64>,
-    #[serde(rename = "type")]
-    pub event_type: Option<String>,
+    #[serde(default, rename = "type")]
+    pub event_types: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -222,27 +223,28 @@ pub async fn delete_care_event(
 }
 
 /// # Errors
-/// Returns `ApiError::Validation` if event type filter is invalid, or
+/// Returns `ApiError::Validation` if any event type filter is invalid, or
 /// `ApiError::BadRequest` on database failures.
 pub async fn list_all_care_events(
     State(pool): State<SqlitePool>,
-    Query(params): Query<GlobalCareQuery>,
+    ExtraQuery(params): ExtraQuery<GlobalCareQuery>,
 ) -> Result<Json<CareEventsPage>, ApiError> {
     let limit = params.limit.unwrap_or(20).clamp(1, 100);
     let fetch_count = limit + 1;
 
-    if let Some(ref event_type) = params.event_type {
+    for event_type in &params.event_types {
         validate_event_type(event_type)?;
     }
 
     let mut query = String::from(CARE_EVENT_SELECT);
-    let mut conditions: Vec<&str> = Vec::new();
+    let mut conditions: Vec<String> = Vec::new();
 
     if params.before.is_some() {
-        conditions.push("ce.id < ?");
+        conditions.push("ce.id < ?".to_string());
     }
-    if params.event_type.is_some() {
-        conditions.push("ce.event_type = ?");
+    if !params.event_types.is_empty() {
+        let placeholders: Vec<&str> = params.event_types.iter().map(|_| "?").collect();
+        conditions.push(format!("ce.event_type IN ({})", placeholders.join(", ")));
     }
 
     if !conditions.is_empty() {
@@ -256,7 +258,7 @@ pub async fn list_all_care_events(
     if let Some(before) = params.before {
         q = q.bind(before);
     }
-    if let Some(ref event_type) = params.event_type {
+    for event_type in &params.event_types {
         q = q.bind(event_type);
     }
     q = q.bind(fetch_count);
