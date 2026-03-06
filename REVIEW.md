@@ -352,7 +352,7 @@ Fixed 5-second reconnect interval. Against an unreachable broker, this hammers i
 
 A plant with thousands of care events returns all in one response. The global endpoint has pagination; the per-plant one does not.
 
-### 36. `previousValues` typed as `Record<string, unknown>`
+### ~~36. `previousValues` typed as `Record<string, unknown>`~~ DONE
 
 **File:** `ui/src/lib/components/PlantForm.svelte:316-332`
 

@@ -58,7 +58,19 @@
 	let currentSuggestion = $state(0);
 	let identifyError = $state('');
 	let appliedCount = $state(0);
-	let previousValues = $state<Record<string, unknown> | null>(null);
+	interface FormSnapshot {
+		name: string;
+		species: string;
+		notes: string;
+		wateringDays: number;
+		lightNeeds: string;
+		difficulty: string | null;
+		petSafety: string | null;
+		growthSpeed: string | null;
+		soilType: string | null;
+		soilMoisture: string | null;
+	}
+	let previousValues = $state<FormSnapshot | null>(null);
 
 	let activeSuggestion = $derived(identifyResults[currentSuggestion] ?? null);
 	let suggestionCount = $derived(identifyResults.length);
@@ -314,16 +326,16 @@
 
 	function handleUndo() {
 		if (previousValues) {
-			name = previousValues.name as string;
-			species = previousValues.species as string;
-			notes = previousValues.notes as string;
-			wateringDays = previousValues.wateringDays as number;
-			lightNeeds = previousValues.lightNeeds as string;
-			difficulty = previousValues.difficulty as string | null;
-			petSafety = previousValues.petSafety as string | null;
-			growthSpeed = previousValues.growthSpeed as string | null;
-			soilType = previousValues.soilType as string | null;
-			soilMoisture = previousValues.soilMoisture as string | null;
+			name = previousValues.name;
+			species = previousValues.species;
+			notes = previousValues.notes;
+			wateringDays = previousValues.wateringDays;
+			lightNeeds = previousValues.lightNeeds;
+			difficulty = previousValues.difficulty;
+			petSafety = previousValues.petSafety;
+			growthSpeed = previousValues.growthSpeed;
+			soilType = previousValues.soilType;
+			soilMoisture = previousValues.soilMoisture;
 			previousValues = null;
 		}
 		identifyState = 'idle';
