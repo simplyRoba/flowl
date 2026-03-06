@@ -318,7 +318,7 @@ A single `cancelled` boolean tracks edit cancellation. If two edits overlap (qui
 
 `commitEdit` reads `locationsError` via `get()` after the store sets it on failure. The store function should return or throw the error directly.
 
-### 31. Content-type trusted from header, no magic-byte check
+### ~~31. Content-type trusted from header, no magic-byte check~~ DONE
 
 **File:** `src/images.rs:50-55`
 

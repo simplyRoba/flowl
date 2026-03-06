@@ -6,6 +6,18 @@ use sqlx::SqlitePool;
 use tracing::{info, warn};
 
 const MAX_FILE_SIZE: usize = 5 * 1024 * 1024; // 5 MB
+
+fn detect_image_type(data: &[u8]) -> Option<&'static str> {
+    if data.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        Some("jpg")
+    } else if data.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
+        Some("png")
+    } else if data.len() >= 12 && data[..4] == *b"RIFF" && data[8..12] == *b"WEBP" {
+        Some("webp")
+    } else {
+        None
+    }
+}
 const THUMBNAIL_SIZES: [u32; 3] = [200, 600, 1000];
 const JPEG_QUALITY: u8 = 80;
 
@@ -156,13 +168,8 @@ impl ImageStore {
     /// Returns `ImageError::InvalidContentType` if the content-type is not
     /// JPEG, PNG, or WebP, `ImageError::TooLarge` if the data exceeds 5 MB,
     /// or `ImageError::Io` on file-write failures.
-    pub async fn save(&self, data: &[u8], content_type: &str) -> Result<String, ImageError> {
-        let ext = match content_type {
-            "image/jpeg" => "jpg",
-            "image/png" => "png",
-            "image/webp" => "webp",
-            _ => return Err(ImageError::InvalidContentType),
-        };
+    pub async fn save(&self, data: &[u8], _content_type: &str) -> Result<String, ImageError> {
+        let ext = detect_image_type(data).ok_or(ImageError::InvalidContentType)?;
 
         if data.len() > MAX_FILE_SIZE {
             return Err(ImageError::TooLarge);
@@ -389,7 +396,7 @@ mod tests {
     #[tokio::test]
     async fn save_valid_jpeg() {
         let (store, _dir) = temp_store();
-        let filename = store.save(b"fake-jpeg", "image/jpeg").await.unwrap();
+        let filename = store.save(b"\xFF\xD8\xFFfake", "image/jpeg").await.unwrap();
         assert_eq!(Path::new(&filename).extension().unwrap(), "jpg");
         assert!(store.upload_dir.join(&filename).exists());
     }
@@ -397,14 +404,17 @@ mod tests {
     #[tokio::test]
     async fn save_valid_png() {
         let (store, _dir) = temp_store();
-        let filename = store.save(b"fake-png", "image/png").await.unwrap();
+        let filename = store.save(b"\x89PNG fake", "image/png").await.unwrap();
         assert_eq!(Path::new(&filename).extension().unwrap(), "png");
     }
 
     #[tokio::test]
     async fn save_valid_webp() {
         let (store, _dir) = temp_store();
-        let filename = store.save(b"fake-webp", "image/webp").await.unwrap();
+        let filename = store
+            .save(b"RIFF\x00\x00\x00\x00WEBP", "image/webp")
+            .await
+            .unwrap();
         assert_eq!(Path::new(&filename).extension().unwrap(), "webp");
     }
 
@@ -418,7 +428,8 @@ mod tests {
     #[tokio::test]
     async fn save_rejects_oversized_file() {
         let (store, _dir) = temp_store();
-        let data = vec![0u8; MAX_FILE_SIZE + 1];
+        let mut data = vec![0u8; MAX_FILE_SIZE + 1];
+        data[..3].copy_from_slice(&[0xFF, 0xD8, 0xFF]);
         let result = store.save(&data, "image/jpeg").await;
         assert!(matches!(result, Err(ImageError::TooLarge)));
         // No file should have been written
@@ -553,8 +564,11 @@ mod tests {
     #[tokio::test]
     async fn save_with_corrupt_image_still_saves_original() {
         let (store, _dir) = temp_store();
-        // Not valid image data, but valid content-type
-        let filename = store.save(b"not-an-image", "image/jpeg").await.unwrap();
+        // Valid magic bytes but not decodable image data
+        let filename = store
+            .save(b"\xFF\xD8\xFF not-an-image", "image/jpeg")
+            .await
+            .unwrap();
         // Original saved
         assert!(store.upload_dir.join(&filename).exists());
         // No thumbnails (decode failed)
@@ -567,7 +581,10 @@ mod tests {
     #[tokio::test]
     async fn delete_existing_file() {
         let (store, _dir) = temp_store();
-        let filename = store.save(b"data", "image/jpeg").await.unwrap();
+        let filename = store
+            .save(b"\xFF\xD8\xFF data", "image/jpeg")
+            .await
+            .unwrap();
         assert!(store.upload_dir.join(&filename).exists());
         store.delete(&filename).await;
         assert!(!store.upload_dir.join(&filename).exists());
@@ -605,8 +622,11 @@ mod tests {
         let pool = test_pool().await;
 
         // Save two files
-        let referenced = store.save(b"keep", "image/jpeg").await.unwrap();
-        let orphaned = store.save(b"delete", "image/png").await.unwrap();
+        let referenced = store
+            .save(b"\xFF\xD8\xFF keep", "image/jpeg")
+            .await
+            .unwrap();
+        let orphaned = store.save(b"\x89PNG delete", "image/png").await.unwrap();
 
         // Reference only one in the DB
         sqlx::query("INSERT INTO plants (id, photo_path) VALUES (1, ?)")
@@ -630,7 +650,10 @@ mod tests {
         let (store, _dir) = temp_store();
         let pool = test_pool().await;
 
-        let filename = store.save(b"care-photo", "image/webp").await.unwrap();
+        let filename = store
+            .save(b"RIFF\x00\x00\x00\x00WEBP", "image/webp")
+            .await
+            .unwrap();
 
         sqlx::query("INSERT INTO care_events (id, photo_path) VALUES (1, ?)")
             .bind(&filename)

@@ -104,7 +104,7 @@ async fn upload_replaces_existing_photo() {
         .oneshot(multipart_request(
             &format!("/api/plants/{id}/photo"),
             "image/jpeg",
-            &[0xFF, 0xD8],
+            &[0xFF, 0xD8, 0xFF],
         ))
         .await
         .unwrap();
@@ -123,7 +123,7 @@ async fn upload_replaces_existing_photo() {
         .oneshot(multipart_request(
             &format!("/api/plants/{id}/photo"),
             "image/png",
-            &[0x89, 0x50],
+            &[0x89, 0x50, 0x4E, 0x47],
         ))
         .await
         .unwrap();
@@ -161,7 +161,8 @@ async fn upload_rejects_oversized_file() {
     let app = common::test_app().await;
     let id = create_plant(&app).await;
 
-    let data = vec![0u8; 6 * 1024 * 1024]; // 6 MB
+    let mut data = vec![0u8; 6 * 1024 * 1024]; // 6 MB
+    data[..3].copy_from_slice(&[0xFF, 0xD8, 0xFF]);
     let resp = app
         .clone()
         .oneshot(multipart_request(
@@ -185,7 +186,7 @@ async fn delete_photo() {
         .oneshot(multipart_request(
             &format!("/api/plants/{id}/photo"),
             "image/jpeg",
-            &[0xFF, 0xD8],
+            &[0xFF, 0xD8, 0xFF],
         ))
         .await
         .unwrap();
@@ -249,7 +250,7 @@ async fn delete_plant_deletes_photo_file() {
         .oneshot(multipart_request(
             &format!("/api/plants/{id}/photo"),
             "image/jpeg",
-            &[0xFF, 0xD8],
+            &[0xFF, 0xD8, 0xFF],
         ))
         .await
         .unwrap();
