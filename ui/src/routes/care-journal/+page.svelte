@@ -82,12 +82,6 @@
 		return eventTypeLabel(value);
 	}
 
-	function formatTime(dateStr: string): string {
-		const date = new Date(dateStr);
-		if (isNaN(date.getTime())) return '';
-		return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-	}
-
 	interface DayGroup {
 		label: string;
 		events: CareEvent[];
@@ -195,7 +189,6 @@
 										<Pencil size={14} />
 									{/if}
 								</div>
-								<span class="log-entry-time">{formatTime(event.occurred_at)}</span>
 							</div>
 							<div class="log-entry-content">
 								<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry-plant">{event.plant_name}</a>
@@ -354,12 +347,6 @@
 
 	.log-entry-plant:hover {
 		text-decoration: underline;
-	}
-
-	.log-entry-time {
-		font-size: 11px;
-		color: var(--color-text-muted);
-		white-space: nowrap;
 	}
 
 	.log-entry-action {
