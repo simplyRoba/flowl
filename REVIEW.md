@@ -324,17 +324,21 @@ A single `cancelled` boolean tracks edit cancellation. If two edits overlap (qui
 
 A client can upload any binary with `Content-Type: image/jpeg` and it gets stored/served. While XSS risk is limited (served with image MIME), it's unexpectedly permissive.
 
-### 32. Access log only at debug level
+### ~~32. Access log only at debug level~~ SKIPPED
 
 **File:** `src/server.rs:37`
 
 At the default `info` log level, no access log is emitted. Access logs should be at `info` level for production monitoring.
 
-### 33. Silent fallback on invalid config env vars
+**SKIPPED:** Self-hosted single-user app — access logs would be noise. Debug level is appropriate; users can opt in with `RUST_LOG=debug` when needed.
+
+### ~~33. Silent fallback on invalid config env vars~~ SKIPPED
 
 **File:** `src/config.rs:36-41`
 
 `FLOWL_PORT=abc` silently falls back to `4100`. Add a warning log for parse failures.
+
+**SKIPPED:** `parse_env` runs before tracing is initialized, so `warn!` wouldn't work. `eprintln` would work but the startup log already shows the listening address, making misconfigured ports visible.
 
 ### 34. MQTT reconnect has no exponential backoff
 

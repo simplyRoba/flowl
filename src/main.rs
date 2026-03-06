@@ -28,7 +28,7 @@ async fn main() {
         )
         .init();
 
-    info!("Starting flowl");
+    info!("Starting flowl v{}", env!("CARGO_PKG_VERSION"));
 
     let pool = db::create_pool(&config.db_path)
         .await
