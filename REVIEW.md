@@ -280,11 +280,13 @@ const data = JSON.parse(line.slice(6));
 
 Malformed SSE lines cause `SyntaxError` that propagates to the caller. Catch parse errors per-line to be resilient against upstream glitches.
 
-### 26. `resp.body!` non-null assertion in chatPlant
+### ~~26. `resp.body!` non-null assertion in chatPlant~~ SKIPPED
 
 **File:** `ui/src/lib/api.ts:395`
 
 `Response.body` can be `null`. Add a guard: `if (!resp.body) throw new Error(...)`.
+
+**SKIPPED:** The preceding `!resp.ok` check (line 351) already throws for any non-2xx response. A successful SSE/chunked streaming response always has a body. The only null scenario would be an exotic browser bug — not worth guarding against.
 
 ### 27. PlantForm photo drop does not validate file type
 
