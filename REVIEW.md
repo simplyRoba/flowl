@@ -340,7 +340,7 @@ At the default `info` log level, no access log is emitted. Access logs should be
 
 **SKIPPED:** `parse_env` runs before tracing is initialized, so `warn!` wouldn't work. `eprintln` would work but the startup log already shows the listening address, making misconfigured ports visible.
 
-### 34. MQTT reconnect has no exponential backoff
+### ~~34. MQTT reconnect has no exponential backoff~~ DONE
 
 **File:** `src/mqtt.rs:128-132`
 

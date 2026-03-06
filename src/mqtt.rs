@@ -117,18 +117,23 @@ pub fn connect(
     let (client, mut event_loop) = AsyncClient::new(options, 10);
 
     let task = tokio::spawn(async move {
+        let mut delay = std::time::Duration::from_secs(5);
+        let max_delay = std::time::Duration::from_secs(120);
+
         loop {
             match event_loop.poll().await {
                 Ok(Event::Incoming(Packet::ConnAck(_))) => {
                     connected.store(true, Ordering::Relaxed);
                     needs_republish.store(true, Ordering::Relaxed);
+                    delay = std::time::Duration::from_secs(5);
                     info!("MQTT connected");
                 }
                 Ok(_) => {}
                 Err(e) => {
                     connected.store(false, Ordering::Relaxed);
                     warn!("MQTT connection error: {e}");
-                    tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                    tokio::time::sleep(delay).await;
+                    delay = (delay * 2).min(max_delay);
                 }
             }
         }
