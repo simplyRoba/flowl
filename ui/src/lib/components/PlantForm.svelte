@@ -80,8 +80,7 @@
 	let extraPhoto2 = $state<File | null>(null);
 	let extraPreview1 = $state<string | null>(null);
 	let extraPreview2 = $state<string | null>(null);
-	let extraInput1: HTMLInputElement = $state() as HTMLInputElement;
-	let extraInput2: HTMLInputElement = $state() as HTMLInputElement;
+
 
 	$effect(() => {
 		if (!mediaTouched) {
@@ -533,7 +532,6 @@
 									type="file"
 									accept="image/jpeg,image/png,image/webp"
 									class="file-input"
-									bind:this={extraInput1}
 									onchange={(e) => handleExtraSelect(1, e)}
 								/>
 							</label>
@@ -553,7 +551,6 @@
 									type="file"
 									accept="image/jpeg,image/png,image/webp"
 									class="file-input"
-									bind:this={extraInput2}
 									onchange={(e) => handleExtraSelect(2, e)}
 								/>
 							</label>

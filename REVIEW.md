@@ -358,13 +358,15 @@ A plant with thousands of care events returns all in one response. The global en
 
 All `as` casts are unsafe. Define a typed snapshot interface.
 
-### 37. No `prefers-reduced-motion` support
+### ~~37. No `prefers-reduced-motion` support~~ SKIPPED
 
 **File:** `ui/src/routes/+layout.svelte` (global styles)
 
 Animations (slide-in, hover lifts, typing indicator) are not conditionally disabled for users who prefer reduced motion. Add a `@media (prefers-reduced-motion: reduce)` query.
 
-### 38. Dead code: `pick<T>` helper and `extraInput` bindings
+**SKIPPED:** Animations are mostly 0.15s micro-interactions. A global disable would also kill functional transforms (lightbox zoom, chat drawer drag). Not worth the blunt approach for subtle effects.
+
+### ~~38. Dead code: `pick<T>` helper and `extraInput` bindings~~ DONE
 
 - `ui/src/routes/+page.svelte:17-19` — `pick<T>` defined but never called
 - `ui/src/lib/components/PlantForm.svelte:70-71` — `extraInput1`/`extraInput2` bound but never accessed

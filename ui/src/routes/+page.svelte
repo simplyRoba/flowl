@@ -15,9 +15,6 @@
 		return 'night';
 	}
 
-	function pick<T>(arr: T[]): T {
-		return arr[Math.floor(Math.random() * arr.length)];
-	}
 
 	const timeOfDay = getTimeOfDay() as keyof typeof $translations.dashboard.greetings;
 	const greetingIndex = Math.floor(Math.random() * 5);
