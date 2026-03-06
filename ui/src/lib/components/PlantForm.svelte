@@ -1502,14 +1502,6 @@
 		flex: 1;
 	}
 
-	:global(.btn-ai) {
-		background: var(--color-ai);
-		color: #fff;
-	}
-
-	:global(.btn-ai:hover) {
-		background: color-mix(in srgb, var(--color-ai) 85%, #000);
-	}
 
 	/* ---- Applied state ---- */
 	.applied-banner {

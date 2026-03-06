@@ -459,7 +459,7 @@
 				<button class="btn btn-outline" onclick={handleCancelSave} disabled={savingNote}>
 					{$translations.chat.cancelSummary}
 				</button>
-				<button class="btn btn-primary" onclick={handleConfirmSave} disabled={savingNote || !summaryText.trim()}>
+				<button class="btn btn-ai" onclick={handleConfirmSave} disabled={savingNote || !summaryText.trim()}>
 					{savingNote ? $translations.common.saving : $translations.chat.saveSummary}
 				</button>
 			</div>
@@ -652,15 +652,12 @@
 	}
 
 	.chat-save-note-btn {
-		display: flex;
-		align-items: center;
-		gap: 4px;
+		background: none;
 		color: var(--color-ai);
-		border-color: var(--color-ai);
 	}
 
 	.chat-save-note-btn:hover:not(:disabled) {
-		background: var(--color-ai-tint);
+		opacity: 0.8;
 	}
 
 	.chat-close {
@@ -677,7 +674,7 @@
 	}
 
 	.chat-close:hover {
-		background: var(--color-ai-tint);
+		opacity: 0.8;
 	}
 
 	@media (max-width: 768px) {
@@ -943,12 +940,13 @@
 		border-radius: 50%;
 		border: none;
 		background: var(--color-ai);
-		color: white;
+		color: var(--color-text-on-ai);
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
+		padding: 1px 2px 0 0;
 		transition: filter 0.15s;
 	}
 

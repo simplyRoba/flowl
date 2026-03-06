@@ -69,6 +69,7 @@
 		--color-danger: #C45B5B;
 		--color-text-on-primary: #FFFFFF;
 		--color-text-on-water: #FFFFFF;
+		--color-text-on-ai: #FFFFFF;
 		--color-text-on-danger: #FFFFFF;
 		--color-text-on-image: #FFFFFF;
 		--color-success-soft: color-mix(in srgb, var(--color-success) 20%, transparent);
@@ -124,6 +125,7 @@
 		--color-danger: #D47878;
 		--color-text-on-primary: #1A1612;
 		--color-text-on-water: #1A1612;
+		--color-text-on-ai: #1A1612;
 		--color-text-on-danger: #1A1612;
 		--color-text-on-image: #FFFFFF;
 		--color-ai: #B89EE8;

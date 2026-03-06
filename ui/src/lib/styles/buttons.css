@@ -77,6 +77,16 @@
 	background: var(--color-water-strong);
 }
 
+/* ---- AI (purple) ---- */
+.btn-ai {
+	background: var(--color-ai);
+	color: var(--color-text-on-ai);
+}
+
+.btn-ai:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--color-ai) 85%, #000);
+}
+
 /* ---- Outline (bordered, transparent bg) ---- */
 .btn-outline {
 	background: none;

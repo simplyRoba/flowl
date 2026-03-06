@@ -371,7 +371,7 @@ Animations (slide-in, hover lifts, typing indicator) are not conditionally disab
 - `ui/src/routes/+page.svelte:17-19` — `pick<T>` defined but never called
 - `ui/src/lib/components/PlantForm.svelte:70-71` — `extraInput1`/`extraInput2` bound but never accessed
 
-### 39. `:global(.btn-ai)` leaks from scoped component
+### ~~39. `:global(.btn-ai)` leaks from scoped component~~ DONE
 
 **File:** `ui/src/routes/plants/[id]/+page.svelte:442-449`
 

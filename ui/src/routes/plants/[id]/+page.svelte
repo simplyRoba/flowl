@@ -440,14 +440,6 @@
 		margin-top: 4px;
 	}
 
-	:global(.btn-ai) {
-		background: var(--color-ai);
-		color: white;
-	}
-
-	:global(.btn-ai:hover) {
-		filter: brightness(0.95);
-	}
 
 
 
