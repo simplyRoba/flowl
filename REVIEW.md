@@ -262,11 +262,13 @@ Handles: mobile/desktop rendering, body scroll lock, drag-to-dismiss gestures, S
 
 `parseEventDate` removed — root cause fixed by making backend timestamps consistently ISO 8601 with timezone. `eventTypeLabel` still duplicated across 2 files (same argument as #22). `formatDate/formatShortDate/formatTime` are different functions, not duplicates.
 
-### 24. Photo rendering pattern duplicated
+### ~~24. Photo rendering pattern duplicated~~ WONTFIX
 
 **File:** `ui/src/routes/+page.svelte:89-97, 149-156`
 
 The "photo or emoji fallback" pattern is duplicated between attention cards and plant grid cards. Extract a `PlantPhoto` component.
+
+**WONTFIX:** The "duplication" is just two `<img>` tags calling the same utility functions (`thumbUrl`, `thumbSrcset`, `emojiToSvgPath`). The real logic is already in those functions. Extracting a component adds a new file, a props interface with string-typed class names (`photoClass`, `iconClass`), and indirection — without reducing complexity. The parent still handles container divs, background gradients, and conditional classes. Plain HTML is simpler and immediately readable.
 
 ### 25. SSE JSON parsing has no error boundary
 
