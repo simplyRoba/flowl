@@ -36,11 +36,17 @@ describe("ToastHost", () => {
 
   it("renders notifications and uses live-region semantics", async () => {
     render(ToastHost);
-    pushNotification({ variant: "error", message: "Upload failed" });
+    pushNotification({
+      variant: "error",
+      title: "Upload photo",
+      message: "Upload failed",
+    });
     pushNotification({ variant: "success", message: "Saved" });
 
     await waitFor(() => {
+      expect(screen.getByText("Upload photo")).toBeTruthy();
       expect(screen.getByText("Upload failed")).toBeTruthy();
+      expect(screen.getByText("Success")).toBeTruthy();
       expect(screen.getByText("Saved")).toBeTruthy();
     });
 

@@ -25,6 +25,18 @@
     return notification.variant === "error" ? "assertive" : "polite";
   }
 
+  function fallbackTitle(notification: Notification): string {
+    if (notification.variant === "success") {
+      return $translations.notifications.titles.success;
+    }
+
+    if (notification.variant === "error") {
+      return $translations.notifications.titles.error;
+    }
+
+    return $translations.notifications.titles.info;
+  }
+
   function handleAction(notification: Notification) {
     notification.action?.onClick();
     dismissNotification(notification.id);
@@ -155,7 +167,12 @@
         onmouseleave={() => resumeDismiss(notification)}
       >
         <div class="toast-body">
-          <div class="toast-message">{notification.message}</div>
+          <div class="toast-copy">
+            <div class="toast-title">
+              {notification.title ?? fallbackTitle(notification)}
+            </div>
+            <div class="toast-message">{notification.message}</div>
+          </div>
 
           <div class="toast-actions">
             {#if notification.action}
@@ -232,11 +249,28 @@
     gap: 12px;
   }
 
-  .toast-message {
+  .toast-copy {
     flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .toast-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: var(--color-text);
+  }
+
+  .toast-message {
+    min-width: 0;
     font-size: 14px;
     line-height: 1.4;
-    color: var(--color-text);
+    color: var(--color-text-muted);
     padding-top: 1px;
   }
 

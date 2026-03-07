@@ -107,6 +107,7 @@
 
     if (!statsLoaded) {
       pushNotification({
+        title: get(translations).settings.importData,
         variant: "error",
         message: get(translations).settings.importRefreshFailed,
       });
@@ -196,6 +197,7 @@
       const result = await repairMqtt();
       const t = get(translations);
       pushNotification({
+        title: t.settings.repairTitle,
         variant: "success",
         message: t.settings.repairResult
           .replace("{cleared}", String(result.cleared))
@@ -203,6 +205,7 @@
       });
     } catch (e: unknown) {
       pushNotification({
+        title: get(translations).settings.repairTitle,
         variant: "error",
         message:
           e instanceof Error
@@ -222,6 +225,7 @@
       await exportData();
     } catch (e: unknown) {
       pushNotification({
+        title: get(translations).settings.exportBtn,
         variant: "error",
         message:
           e instanceof Error
@@ -260,6 +264,7 @@
       const result = await importData(file);
       const t = get(translations);
       pushNotification({
+        title: t.settings.importData,
         variant: "success",
         message: t.settings.importResult
           .replace("{plants}", String(result.plants))
@@ -270,6 +275,7 @@
       await refreshImportedData();
     } catch (e: unknown) {
       pushNotification({
+        title: get(translations).settings.importData,
         variant: "error",
         message:
           e instanceof Error
@@ -286,6 +292,7 @@
       const success = await deleteLocation(id);
       if (success) {
         pushNotification({
+          title: get(translations).settings.locations,
           variant: "success",
           message: get(translations).notifications.locationDeleted.replace(
             "{name}",
@@ -294,6 +301,7 @@
         });
       } else {
         pushNotification({
+          title: get(translations).settings.locations,
           variant: "error",
           message: $locationsError || get(translations).error.deleteLocation,
         });
@@ -311,6 +319,7 @@
     const success = await deleteLocation(deleteTarget.id);
     if (success) {
       pushNotification({
+        title: get(translations).settings.locations,
         variant: "success",
         message: get(translations).notifications.locationDeleted.replace(
           "{name}",
@@ -319,6 +328,7 @@
       });
     } else {
       pushNotification({
+        title: get(translations).settings.locations,
         variant: "error",
         message: $locationsError || get(translations).error.deleteLocation,
       });

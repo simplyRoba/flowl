@@ -353,6 +353,7 @@ describe("plant delete confirmation", () => {
       expect(mockDeletePlant).toHaveBeenCalledWith(1);
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Delete plant",
           variant: "success",
           message: 'Plant "My Fern" deleted',
         }),
@@ -409,6 +410,7 @@ describe("watering feedback", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Watering",
           variant: "error",
           message: "Failed to water plant",
         }),
@@ -430,6 +432,7 @@ describe("watering feedback", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Watering",
           variant: "error",
           message: "Watering service offline",
         }),
@@ -584,6 +587,7 @@ describe("care event delete reloads plant", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Care Journal",
           variant: "error",
           message: "Delete failed",
         }),
@@ -668,6 +672,7 @@ describe("chat drawer save note", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Care Journal",
           variant: "success",
           message: "Saved to care journal",
         }),
@@ -1004,6 +1009,7 @@ describe("log form photo upload", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Care Journal",
           variant: "error",
           message: "Failed to add care event",
         }),

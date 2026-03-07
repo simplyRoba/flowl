@@ -361,6 +361,11 @@ const en = {
     attachChatPhoto: "Attach photo from chat",
   },
   notifications: {
+    titles: {
+      success: "Success",
+      info: "Notice",
+      error: "Error",
+    },
     locationDeleted: 'Location "{name}" deleted',
     plantDeleted: 'Plant "{name}" deleted',
   },

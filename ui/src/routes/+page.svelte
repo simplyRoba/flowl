@@ -89,6 +89,7 @@
       const plant = await waterPlant(plantId);
       if (!plant) {
         pushNotification({
+          title: $translations.plant.wateringSection,
           variant: "error",
           message: $plantsError || $translations.error.waterPlant,
         });

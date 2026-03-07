@@ -106,6 +106,7 @@
       const success = await deletePlant($currentPlant.id);
       if (success) {
         pushNotification({
+          title: $translations.plant.deletePlant,
           variant: "success",
           message: $translations.notifications.plantDeleted.replace(
             "{name}",
@@ -138,6 +139,7 @@
       const plant = await waterPlant($currentPlant.id);
       if (!plant) {
         pushNotification({
+          title: $translations.plant.wateringSection,
           variant: "error",
           message: $plantsError || $translations.error.waterPlant,
         });
@@ -192,6 +194,7 @@
     const removed = await removeCareEvent($currentPlant.id, event.id);
     if (!removed) {
       pushNotification({
+        title: $translations.plant.careJournalSection,
         variant: "error",
         message: $careError || $translations.error.deleteCareEvent,
       });

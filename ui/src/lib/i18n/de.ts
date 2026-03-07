@@ -368,6 +368,11 @@ export const de: Translations = {
     attachChatPhoto: "Foto aus dem Chat anhängen",
   },
   notifications: {
+    titles: {
+      success: "Erfolg",
+      info: "Hinweis",
+      error: "Fehler",
+    },
     locationDeleted: 'Standort "{name}" gelöscht',
     plantDeleted: 'Pflanze "{name}" gelöscht',
   },

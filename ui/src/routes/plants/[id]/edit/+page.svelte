@@ -37,6 +37,7 @@
     const plant = await updatePlant($currentPlant.id, data);
     if (!plant) {
       pushNotification({
+        title: $translations.plant.editPlant,
         variant: "error",
         message: $translations.error.updatePlant,
       });
@@ -49,6 +50,7 @@
       const uploaded = await uploadPhoto(plant.id, photo);
       if (!uploaded) {
         pushNotification({
+          title: $translations.form.media,
           variant: "error",
           message: $translations.error.uploadPhoto,
         });

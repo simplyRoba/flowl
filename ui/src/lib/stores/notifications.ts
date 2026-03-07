@@ -8,6 +8,7 @@ export interface NotificationAction {
 }
 
 export interface NotificationInput {
+  title?: string;
   message: string;
   variant?: NotificationVariant;
   action?: NotificationAction;
@@ -35,6 +36,7 @@ export const visibleNotifications = derived(notificationsStore, (items) =>
 export function pushNotification(input: NotificationInput): string {
   const notification: Notification = {
     id: `notification-${nextId++}`,
+    title: input.title,
     variant: input.variant ?? "info",
     message: input.message,
     action: input.action,

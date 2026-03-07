@@ -98,6 +98,7 @@
 
       if (!event) {
         pushNotification({
+          title: $translations.plant.careJournalSection,
           variant: "error",
           message: $translations.error.addCareEvent,
         });
@@ -112,6 +113,7 @@
       await onsubmit();
     } catch {
       pushNotification({
+        title: $translations.plant.careJournalSection,
         variant: "error",
         message: $translations.error.addCareEvent,
       });

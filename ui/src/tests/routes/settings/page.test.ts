@@ -242,6 +242,7 @@ describe("settings data section export/import", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Export",
           variant: "error",
           message: "Export unavailable",
         }),
@@ -316,6 +317,7 @@ describe("settings data section export/import", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Import data",
           variant: "error",
           message: "Version mismatch",
         }),
@@ -357,6 +359,7 @@ describe("settings data section export/import", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Import data",
           variant: "success",
           message: expect.stringMatching(/Imported 3 plants/),
         }),
@@ -462,6 +465,7 @@ describe("settings data section export/import", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Import data",
           variant: "error",
           message:
             "Import completed, but the refreshed totals could not be loaded.",
@@ -519,6 +523,7 @@ describe("settings delete location confirmation", () => {
       expect(mockDeleteLocation).toHaveBeenCalledWith(1);
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Locations",
           variant: "success",
           message: 'Location "Bedroom" deleted',
         }),
@@ -558,6 +563,7 @@ describe("settings delete location confirmation", () => {
       expect(mockDeleteLocation).toHaveBeenCalledWith(1);
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Locations",
           variant: "success",
           message: 'Location "Bedroom" deleted',
         }),
@@ -579,6 +585,7 @@ describe("settings delete location confirmation", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Locations",
           variant: "error",
           message: "Failed to delete location",
         }),
@@ -649,6 +656,7 @@ describe("settings MQTT repair confirmation", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Repair MQTT",
           variant: "success",
           message: "Cleared 5, published 3",
         }),
@@ -714,6 +722,7 @@ describe("settings MQTT repair confirmation", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
+          title: "Repair MQTT",
           variant: "error",
           message: "Repair unavailable",
         }),

@@ -19,6 +19,9 @@
 
     if (!plant) {
       pushNotification({
+        title: draftPlantId
+          ? $translations.plant.editPlant
+          : $translations.plant.addPlant,
         variant: "error",
         message: draftPlantId
           ? $translations.error.updatePlant
@@ -33,6 +36,7 @@
       if (!uploaded) {
         draftPlantId = plant.id;
         pushNotification({
+          title: $translations.form.media,
           variant: "error",
           message: $translations.error.uploadPhoto,
         });

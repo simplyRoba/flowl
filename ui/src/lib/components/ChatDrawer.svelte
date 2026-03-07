@@ -282,6 +282,7 @@
       lastUserPhotoPreview = null;
       onsave?.();
       pushNotification({
+        title: $translations.care.title,
         variant: "success",
         message: $translations.chat.noteSaved,
       });
