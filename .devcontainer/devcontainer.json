@@ -24,7 +24,11 @@
       "extensions": [
         "rust-lang.rust-analyzer",
         "github.vscode-github-actions",
-        "svelte.svelte-vscode"
+        "svelte.svelte-vscode",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml"
       ]
     }
   },
