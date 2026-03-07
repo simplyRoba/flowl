@@ -164,6 +164,7 @@ const en = {
     today: "Today",
     yesterday: "Yesterday",
     failedToLoad: "Failed to load events",
+    selectTypeError: "Choose a care entry type",
   },
   status: {
     overdue: "Overdue",

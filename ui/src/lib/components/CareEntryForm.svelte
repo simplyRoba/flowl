@@ -30,6 +30,7 @@
   let occurredAt = $state("");
   let showOccurredAt = $state(false);
   let submitting = $state(false);
+  let eventTypeError = $state("");
 
   function nowLocalInputValue(): string {
     const now = new Date();
@@ -61,6 +62,7 @@
   function resetForm() {
     clearPhoto();
     eventType = "";
+    eventTypeError = "";
     notes = "";
     occurredAt = "";
     showOccurredAt = false;
@@ -72,7 +74,12 @@
   }
 
   async function handleSubmit() {
-    if (!eventType || submitting) return;
+    if (submitting) return;
+    if (!eventType) {
+      eventTypeError = $translations.care.selectTypeError;
+      return;
+    }
+
     submitting = true;
     try {
       const occ = showOccurredAt ? occurredAt.trim() : "";
@@ -113,18 +120,32 @@
 </script>
 
 <div class="care-entry-form">
-  <div class="type-chips">
+  <div
+    class="type-chips"
+    class:type-chips-error={Boolean(eventTypeError)}
+    role="group"
+    aria-label={$translations.plant.addLogEntry}
+    aria-describedby={eventTypeError ? "care-entry-type-error" : undefined}
+  >
     {#each [{ value: "fertilized", label: $translations.care.fertilized, icon: Leaf }, { value: "repotted", label: $translations.care.repotted, icon: Shovel }, { value: "pruned", label: $translations.care.pruned, icon: Scissors }, { value: "custom", label: $translations.care.custom, icon: PencilIcon }] as chip (chip.value)}
       <button
         class="chip chip-solid"
         class:active={eventType === chip.value}
-        onclick={() => (eventType = chip.value)}
+        class:chip-invalid={Boolean(eventTypeError)}
+        onclick={() => {
+          eventType = chip.value;
+          eventTypeError = "";
+        }}
       >
         <chip.icon size={14} />
         {chip.label}
       </button>
     {/each}
   </div>
+
+  {#if eventTypeError}
+    <div id="care-entry-type-error" class="field-error">{eventTypeError}</div>
+  {/if}
 
   <textarea
     class="input log-notes"
@@ -199,7 +220,7 @@
       <button
         class="btn btn-primary"
         onclick={handleSubmit}
-        disabled={!eventType || submitting}
+        disabled={submitting}
       >
         {submitting ? $translations.common.saving : $translations.common.save}
       </button>
@@ -219,6 +240,20 @@
     gap: 8px;
     flex-wrap: wrap;
     margin-bottom: 10px;
+  }
+
+  .type-chips-error {
+    margin-bottom: 6px;
+  }
+
+  .chip-invalid {
+    border-color: var(--color-danger);
+  }
+
+  .field-error {
+    color: var(--color-danger);
+    font-size: 13px;
+    margin: 0 0 10px;
   }
 
   .log-notes {

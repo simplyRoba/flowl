@@ -168,6 +168,7 @@ export const de: Translations = {
     today: "Heute",
     yesterday: "Gestern",
     failedToLoad: "Ereignisse konnten nicht geladen werden",
+    selectTypeError: "Wähle einen Pflegetyp aus",
   },
   status: {
     overdue: "Überfällig",

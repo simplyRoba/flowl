@@ -167,6 +167,7 @@ export const es: Translations = {
     today: "Hoy",
     yesterday: "Ayer",
     failedToLoad: "No se pudieron cargar los eventos",
+    selectTypeError: "Elige un tipo de cuidado",
   },
   status: {
     overdue: "Atrasado",

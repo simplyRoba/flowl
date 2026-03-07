@@ -872,6 +872,23 @@ describe("log form photo upload", () => {
     });
   });
 
+  it("shows inline validation and blocks submit when no care type is selected", async () => {
+    await renderWithPlant();
+    await screen.findByText("Fern");
+    await fireEvent.click(screen.getByText("+ Add log entry"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Save")).toBeTruthy();
+    });
+
+    await fireEvent.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Choose a care entry type")).toBeTruthy();
+    });
+    expect(mockAddCareEvent).not.toHaveBeenCalled();
+  });
+
   it("shows a toast and keeps the form open when care entry creation fails", async () => {
     mockAddCareEvent.mockResolvedValue(null);
 
