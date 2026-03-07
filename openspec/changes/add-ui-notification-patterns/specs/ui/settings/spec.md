@@ -1,5 +1,19 @@
 ## MODIFIED Requirements
 
+### Requirement: Location Management
+
+The settings page SHALL include a "Locations" section listing all locations with plant counts, inline rename, and delete actions.
+
+#### Scenario: Delete location success
+
+- **WHEN** the user confirms deletion and the location is deleted successfully
+- **THEN** a global toast notification is displayed acknowledging the deletion
+
+#### Scenario: Delete location failure
+
+- **WHEN** the user tries to delete a location and the request fails
+- **THEN** a global toast notification is displayed describing the failure
+
 ### Requirement: MQTT Section
 
 The settings page SHALL include an "MQTT" section displaying the MQTT connection status, configuration, and a repair action.

@@ -15,7 +15,6 @@
         --muted: #7f705f;
         --primary: #6b8f71;
         --success: #5d9b6c;
-        --warning: #c08b2c;
         --danger: #bb5d5d;
         --shadow: 0 18px 50px rgba(59, 42, 26, 0.12);
         --radius-lg: 18px;
@@ -220,10 +219,6 @@
         border-left: 5px solid var(--danger);
       }
 
-      .toast.warning {
-        border-left: 5px solid var(--warning);
-      }
-
       .toast-title {
         font-weight: 700;
         margin-bottom: 4px;
@@ -416,10 +411,10 @@
                 <div class="close">x</div>
               </div>
 
-              <div class="toast warning">
+              <div class="toast error">
                 <div>
-                  <div class="toast-title">Import completed with warnings</div>
-                  <div class="toast-body">Some photos could not be restored.</div>
+                  <div class="toast-title">Import failed</div>
+                  <div class="toast-body">Backup version does not match this app.</div>
                 </div>
                 <div class="close">x</div>
               </div>

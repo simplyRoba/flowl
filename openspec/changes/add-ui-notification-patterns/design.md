@@ -87,13 +87,11 @@ The toast system is a global acknowledgement layer, not the primary error surfac
 
 - `success`: action completed
 - `info`: neutral acknowledgement
-- `warning`: caution, partial completion, or recoverable problem
 - `error`: action failed and no inline corrective UI is required
 
 ### Behavior
 
 - `success` and `info` auto-dismiss after a short timeout.
-- `warning` stays longer and is manually dismissible.
 - `error` is manually dismissible by default.
 - A toast may include at most one short action button such as `Retry` or `Undo`.
 - Toast body text should stay short enough to understand without scanning the rest of the page.
@@ -159,46 +157,52 @@ This is the main review artifact for confirmation or adjustment.
 | Settings: MQTT repair failure | Inline error next to action | Toast | Failure does not require local correction input, and row-inline text is cramped on mobile | Modal alert only for unusually severe failures |
 | Settings: import success | Inline result with imported counts | Toast | Import completion is a short acknowledgement; the page itself can reflect the new data via refreshed stats | Toast can include a compact count summary if desired |
 | Settings: import failure | Inline error | Toast | No local corrective field exists, and toast gives cleaner, more consistent feedback | Modal alert for version-mismatch-style hard stops if stronger emphasis is desired |
-| Settings: export success | Native download only | Usually no toast | Browser download behavior is normally sufficient and success may not be detectable reliably | Toast only if implementation can detect a meaningful failure or completion state |
+| Settings: export success | Native download only | No toast | Browser download behavior is normally sufficient and success may not be detectable reliably | Toast only if implementation can detect a meaningful failure or completion state |
 | Settings: export failure | Usually browser/network level only | Toast if detectable | Failure is global and not tied to a nearby editable control | Inline fallback if the export row later gains richer local status |
 | Plants new: field validation | Inline field errors | Keep inline field errors | Direct correction flow | None |
 | Plants new: create failure | Currently effectively silent at page level because the route does not render `$plantsError` | Toast | This is a submission/server failure, not a nearby field-correction problem, and the save trigger lives in the action bar | None |
+| Plants edit: update failure | Update errors are not surfaced near the save action today | Toast | This is a submission/server failure, not a field-correction problem | None |
 | Plants new/edit: photo upload failure during save | Current flow can still navigate because upload failure is treated as non-blocking | Toast | If photo is part of save, this should use the same failure surface as create/update failure while keeping the user on the form | None |
 | Plant detail: initial `loadPlant()` failure | Page-level error / not-found handling | Keep page-level | Route cannot proceed normally | None |
 | Plant detail: `waterPlant()` success | Visual state refresh only | No toast | The result is already visible in place via status/date changes | None |
 | Plant detail: `waterPlant()` failure | Store error outside action area | Inline section or toast | The action is local, but current error placement is weak | Toast is simpler if no dedicated inline slot is added |
 | Plant detail: delete plant success | Navigation away only | Toast on destination page | The source page disappears after success | Silent redirect is acceptable but less explicit |
-| Plant detail: delete care event success | Silent item removal | Usually no toast | The deletion is obvious in the visible list | Toast only if users need stronger reassurance |
+| Plant detail: delete care event success | Silent item removal | No toast | The deletion is obvious in the visible list | Toast only if users need stronger reassurance |
 | Plant detail: delete care event failure | Weakly surfaced through shared store | Toast | Failure should be visible immediately and does not need nearby corrective input | Inline journal-section error only if a dedicated persistent error slot is later added |
-| Care entry form: submission failure | Not clearly surfaced in-form | Inline form/toolbar error | User remains inside the form and may retry immediately | Toast only as supplement |
+| Care entry form: validation failure | Validation is limited and not clearly surfaced inline today | Inline validation | Validation belongs next to the field or control that must be corrected, matching other forms | None |
+| Care entry form: API submission failure | Not clearly surfaced in-form | Toast | This is a non-validation save failure; the form should stay populated and retryable like other forms | None |
 | Care journal route: initial load failure | Page-level error | Keep page-level | Route content cannot load | None |
 | Plant identify: identify request failure | Inline error state with retry | Keep inline section feedback | Retry belongs to the identify panel | None |
 | Chat drawer: stream failure | Message appears inside chat transcript | Keep inline section feedback | The failure belongs to the conversation context | None |
 | Chat drawer: save-note failure | Inline note status | Keep inline section feedback | Retry/edit action is in the drawer | Optional toast only as supplement |
 | Chat drawer: save-note success | Drawer closes; acknowledgement may disappear | Toast | Context closes immediately, so acknowledgement should survive closure | Silent close if you want fewer notifications |
 
-## Initial Recommendation Set
+## Implementation Target
 
-If we want a minimal first implementation with high value and low churn, the default rollout should be:
+This change should implement the matrix as stated, not only the base toast infrastructure.
 
-1. Add the global toast host and taxonomy.
-2. Fix watering and care-event deletion failure feedback without adding watering success toasts.
-3. Add toast support for settings actions and actions that navigate away or remove their own context:
-   - MQTT repair success/failure
-   - import success/failure
-   - delete plant success
-   - delete location success
-   - chat save-note success
-4. Keep current inline patterns for:
+That means the change includes:
+
+1. The global toast host and taxonomy.
+2. Dashboard watering failure toast, with watering success remaining silent.
+3. Plant-detail watering failure toast, with watering success remaining silent.
+4. Settings action toasts for delete-location, MQTT repair, import, and detectable export failure.
+5. Plant-form save-flow changes:
+   - create failure -> toast
+   - update failure -> toast
+   - photo upload failure during save -> same toast pattern, keep user on form, block navigation completion
+6. Care-entry behavior:
+   - validation -> inline
+   - API failure -> toast while keeping the form populated
+7. Plant-detail and chat follow-through:
+   - delete plant success -> toast on destination page
+   - delete care event failure -> toast
+   - chat save-note success -> toast
+8. Existing inline patterns remain inline where the matrix says they should:
    - rename conflicts
    - identify errors
-   - chat stream errors
+   - chat stream/save-note errors
    - route load failures
-5. Add corrected submission feedback for save flows:
-   - plant create failure -> toast
-   - plant update failure -> toast
-   - photo upload failure during create/edit save -> same toast pattern, keep user on form, block navigation completion
-   - care entry submit failure -> inline or toast depending on final toolbar placement decision
 
 ## Review Checkpoints
 
@@ -215,5 +219,5 @@ These are the places most worth confirming before implementation:
 - Too many success toasts can make the app feel noisy, especially on mobile.
 - Converting contextual failures to toasts can reduce clarity if the user still needs a nearby retry/input.
 - A global system is easy to overuse once it exists; the taxonomy must remain the gatekeeper.
-- If warning/error toasts persist too aggressively, they can become clutter; if they auto-dismiss too quickly, they become easy to miss.
+- If error toasts persist too aggressively, they can become clutter; if they auto-dismiss too quickly, they become easy to miss.
 - Treating photo upload as part of save completion improves user trust, but retry handling must avoid duplicate plants if create succeeded before photo upload failed.

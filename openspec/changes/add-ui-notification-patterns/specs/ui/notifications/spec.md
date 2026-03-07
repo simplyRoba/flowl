@@ -69,12 +69,6 @@ The toast system SHALL vary dismissal behavior by severity.
 - **WHEN** a `success` or `info` toast is shown
 - **THEN** it SHALL auto-dismiss after a short timeout
 
-#### Scenario: Warning remains visible longer
-
-- **WHEN** a `warning` toast is shown
-- **THEN** it SHALL remain visible longer than a `success` toast
-- **AND** it SHALL be manually dismissible
-
 #### Scenario: Error requires dismissal
 
 - **WHEN** an `error` toast is shown

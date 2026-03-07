@@ -4,7 +4,7 @@
 
 ## 1. Shared notification foundation
 
-- [ ] 1.1 Add a global notification store/model supporting `success`, `info`, `warning`, and `error`
+- [ ] 1.1 Add a global notification store/model supporting `success`, `info`, and `error`
 - [ ] 1.2 Add a toast host component mounted from the app shell with responsive desktop/mobile placement
 - [ ] 1.3 Add accessibility semantics, dismissal behavior, and tests for stacking and timeout rules
 
@@ -15,6 +15,7 @@
 - [ ] 2.3 Add feedback for actions that navigate away or remove their own context (for example delete plant, delete location, save-note success)
 - [ ] 2.4 Keep contextual inline flows inline (identify, chat stream errors, field validation)
 - [ ] 2.5 Use the same toast failure pattern for plant create/update failures and photo-upload-during-save failures
+- [ ] 2.6 Implement the remaining matrix decisions across plant detail, care entry, settings delete flows, and chat save-note success
 
 ## 3. Fill weak or silent error paths
 
@@ -28,3 +29,4 @@
 - [ ] 4.1 Add or update UI tests for the notification host and the first integrated flows
 - [ ] 4.2 Run `npm run check --prefix ui`, `npm run lint --prefix ui`, and relevant UI tests
 - [ ] 4.3 After implementation is complete, mark related `REVIEW.md` items resolved, including item 10 (dashboard watering feedback) and item 50 (global toast/snackbar system)
+- [ ] 4.4 Verify the implemented behavior matches the full matrix in `design.md`

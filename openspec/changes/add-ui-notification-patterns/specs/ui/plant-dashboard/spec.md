@@ -19,11 +19,12 @@ Each attention card SHALL include a "Water" button that waters the plant directl
 #### Scenario: Water success feedback
 
 - **WHEN** watering from an attention card succeeds
-- **THEN** a visible success acknowledgement SHALL be shown at the time of the action
-- **AND** that acknowledgement MAY use the global toast system
+- **THEN** the updated card state and/or removal from the section SHALL serve as the success feedback
+- **AND** no toast notification is required for success
 
 #### Scenario: Water failure feedback
 
 - **WHEN** watering from an attention card fails
 - **THEN** a visible error acknowledgement SHALL be shown at the time of the action
 - **AND** the error SHALL NOT rely solely on distant route-level error text
+- **AND** a global toast notification MAY be used for the failure acknowledgement
