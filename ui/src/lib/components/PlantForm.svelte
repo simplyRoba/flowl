@@ -809,7 +809,7 @@
             <span>{identifyError || $translations.identify.errorMessage}</span>
             <button
               type="button"
-              class="btn btn-outline btn-sm"
+              class="btn btn-outline btn-ai btn-sm"
               onclick={handleIdentify}>{$translations.identify.retry}</button
             >
           </div>

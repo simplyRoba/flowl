@@ -17,6 +17,12 @@
 
 /* ---- Base ---- */
 .btn {
+  --btn-accent: var(--color-primary);
+  --btn-accent-strong: var(--color-primary-dark);
+  --btn-accent-tint: var(--color-primary-tint);
+  --btn-on-accent: var(--color-text-on-primary);
+  --btn-outline-border: var(--color-border);
+  --btn-outline-color: var(--color-text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -59,51 +65,81 @@
 
 /* ---- Primary (green) ---- */
 .btn-primary {
-  background: var(--color-primary);
-  color: var(--color-text-on-primary);
+  --btn-accent: var(--color-primary);
+  --btn-accent-strong: var(--color-primary-dark);
+  --btn-accent-tint: var(--color-primary-tint);
+  --btn-on-accent: var(--color-text-on-primary);
+  --btn-outline-border: color-mix(
+    in srgb,
+    var(--color-primary) 30%,
+    var(--color-border)
+  );
+  --btn-outline-color: var(--color-primary);
+  background: var(--btn-accent);
+  color: var(--btn-on-accent);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark);
+.btn-primary:hover:not(:disabled):not(.btn-outline) {
+  background: var(--btn-accent-strong);
 }
 
 /* ---- Water (blue) ---- */
 .btn-water {
-  background: var(--color-water);
-  color: var(--color-text-on-water);
+  --btn-accent: var(--color-water);
+  --btn-accent-strong: var(--color-water-strong);
+  --btn-accent-tint: color-mix(in srgb, var(--color-water) 10%, transparent);
+  --btn-on-accent: var(--color-text-on-water);
+  --btn-outline-border: color-mix(
+    in srgb,
+    var(--color-water) 30%,
+    var(--color-border)
+  );
+  --btn-outline-color: var(--color-water);
+  background: var(--btn-accent);
+  color: var(--btn-on-accent);
 }
 
-.btn-water:hover:not(:disabled) {
-  background: var(--color-water-strong);
+.btn-water:hover:not(:disabled):not(.btn-outline) {
+  background: var(--btn-accent-strong);
 }
 
 /* ---- AI (purple) ---- */
 .btn-ai {
-  background: var(--color-ai);
-  color: var(--color-text-on-ai);
+  --btn-accent: var(--color-ai);
+  --btn-accent-strong: color-mix(in srgb, var(--color-ai) 85%, #000);
+  --btn-accent-tint: var(--color-ai-tint);
+  --btn-on-accent: var(--color-text-on-ai);
+  --btn-outline-border: color-mix(
+    in srgb,
+    var(--color-ai) 30%,
+    var(--color-border)
+  );
+  --btn-outline-color: var(--color-ai);
+  background: var(--btn-accent);
+  color: var(--btn-on-accent);
 }
 
-.btn-ai:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-ai) 85%, #000);
+.btn-ai:hover:not(:disabled):not(.btn-outline) {
+  background: var(--btn-accent-strong);
 }
 
 /* ---- Outline (bordered, transparent bg) ---- */
 .btn-outline {
   background: none;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
+  border: 1px solid var(--btn-outline-border);
+  color: var(--btn-outline-color);
 }
 
 .btn-outline:hover:not(:disabled) {
-  background: var(--color-surface-muted);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  background: var(--btn-accent-tint);
+  border-color: var(--btn-accent);
+  color: var(--btn-accent);
 }
 
 .btn-outline.active {
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
-  color: var(--color-primary);
+  border-color: var(--btn-accent);
+  background: var(--btn-accent-tint);
+  color: var(--btn-accent);
 }
 
 /* ---- Ghost (no border, no bg, text-colored) ---- */
