@@ -24,6 +24,7 @@ HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
 });
 
 const mockDeleteLocation = vi.fn();
+const mockLoadLocations = vi.fn();
 const mockUpdateLocation = vi.fn();
 const mockPushNotification = vi.fn();
 
@@ -32,7 +33,7 @@ vi.mock("$lib/stores/locations", async () => {
   return {
     locations: writable([]),
     locationsError: writable(null),
-    loadLocations: vi.fn(),
+    loadLocations: (...args: unknown[]) => mockLoadLocations(...args),
     deleteLocation: (...args: unknown[]) => mockDeleteLocation(...args),
     updateLocation: (...args: unknown[]) => mockUpdateLocation(...args),
   };
@@ -50,6 +51,7 @@ beforeEach(() => {
   locations.set([]);
   locationsError.set(null);
   vi.clearAllMocks();
+  mockLoadLocations.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -156,6 +158,32 @@ describe("settings locations section", () => {
     locationsError.set("Failed to load");
     render(Page);
     expect(screen.getByText("Failed to load")).toBeTruthy();
+  });
+
+  it("keeps rename conflicts inline", async () => {
+    locations.set([{ id: 1, name: "Bedroom", plant_count: 0 }]);
+    mockUpdateLocation.mockResolvedValue({ error: "Location already exists" });
+    render(Page);
+
+    const user = userEvent.setup();
+    const editButton = document.querySelector(
+      ".location-actions .btn-icon",
+    ) as HTMLButtonElement;
+    await user.click(editButton);
+
+    const input = document.querySelector(".edit-input") as HTMLInputElement;
+    await user.clear(input);
+    await user.type(input, "Kitchen");
+
+    const confirmButton = document.querySelector(
+      ".edit-row .btn-icon",
+    ) as HTMLButtonElement;
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("Location already exists")).toBeTruthy();
+    });
+    expect(mockPushNotification).not.toHaveBeenCalled();
   });
 });
 
@@ -331,6 +359,112 @@ describe("settings data section export/import", () => {
         expect.objectContaining({
           variant: "success",
           message: expect.stringMatching(/Imported 3 plants/),
+        }),
+      );
+    });
+  });
+
+  it("refreshes stats and locations after import succeeds", async () => {
+    const fetchStatsSpy = vi
+      .spyOn(api, "fetchStats")
+      .mockResolvedValueOnce({
+        plant_count: 5,
+        care_event_count: 10,
+        location_count: 2,
+        photo_count: 3,
+      })
+      .mockResolvedValueOnce({
+        plant_count: 8,
+        care_event_count: 12,
+        location_count: 4,
+        photo_count: 6,
+      });
+    vi.spyOn(api, "importData").mockResolvedValue({
+      locations: 4,
+      plants: 8,
+      care_events: 12,
+      photos: 6,
+    });
+
+    render(Page);
+    await waitFor(() => {
+      expect(screen.getByText(/5 plants, 3 photos/)).toBeTruthy();
+    });
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File(["zip"], "refresh.zip", { type: "application/zip" });
+    Object.defineProperty(fileInput, "files", {
+      value: [file],
+      configurable: true,
+    });
+    fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/refresh\.zip/)).toBeTruthy();
+    });
+
+    const user = userEvent.setup();
+    const importButtons = screen.getAllByRole("button", { name: "Import" });
+    await user.click(importButtons[importButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(fetchStatsSpy).toHaveBeenCalledTimes(2);
+      expect(mockLoadLocations).toHaveBeenCalledTimes(2);
+      expect(
+        screen.getByText(
+          /8 plants, 6 photos, 12 care journal entries, 4 locations/,
+        ),
+      ).toBeTruthy();
+    });
+  });
+
+  it("shows a follow-up error when totals cannot be refreshed after import", async () => {
+    vi.spyOn(api, "fetchStats")
+      .mockResolvedValueOnce({
+        plant_count: 5,
+        care_event_count: 10,
+        location_count: 2,
+        photo_count: 3,
+      })
+      .mockRejectedValueOnce(new Error("refresh failed"));
+    vi.spyOn(api, "importData").mockResolvedValue({
+      locations: 1,
+      plants: 3,
+      care_events: 5,
+      photos: 2,
+    });
+
+    render(Page);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Import/ })).toBeTruthy();
+    });
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File(["zip"], "test.zip", { type: "application/zip" });
+    Object.defineProperty(fileInput, "files", {
+      value: [file],
+      configurable: true,
+    });
+    fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/test\.zip/)).toBeTruthy();
+    });
+
+    const user = userEvent.setup();
+    const importButtons = screen.getAllByRole("button", { name: "Import" });
+    await user.click(importButtons[importButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "error",
+          message:
+            "Import completed, but the refreshed totals could not be loaded.",
         }),
       );
     });
@@ -519,6 +653,42 @@ describe("settings MQTT repair confirmation", () => {
           message: "Cleared 5, published 3",
         }),
       );
+    });
+  });
+
+  it("restores the repair button after the request finishes", async () => {
+    let resolveRepair:
+      | ((value: { cleared: number; published: number }) => void)
+      | undefined;
+    vi.spyOn(api, "repairMqtt").mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRepair = resolve;
+        }),
+    );
+
+    render(Page);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Repair/ })).toBeTruthy();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Repair/ }));
+    await waitFor(() => {
+      expect(screen.getByText(/Clear all retained MQTT topics/)).toBeTruthy();
+    });
+
+    const repairButtons = screen.getAllByRole("button", { name: "Repair" });
+    await user.click(repairButtons[repairButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Repairing..." })).toBeTruthy();
+    });
+
+    resolveRepair?.({ cleared: 2, published: 1 });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Repair" })).toBeTruthy();
     });
   });
 

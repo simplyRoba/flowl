@@ -110,6 +110,53 @@ describe("edit plant page", () => {
     expect(mockGoto).not.toHaveBeenCalled();
   });
 
+  it("navigates after updating without a new photo", async () => {
+    mockUpdatePlant.mockResolvedValue(plant());
+    render(Page);
+    const user = userEvent.setup();
+
+    await waitFor(() => {
+      expect(screen.getByText("Save without photo")).toBeTruthy();
+    });
+    await user.click(screen.getByText("Save without photo"));
+
+    await waitFor(() => {
+      expect(mockUpdatePlant).toHaveBeenCalledWith(1, { name: "Fern" });
+      expect(mockGoto).toHaveBeenCalledWith("/plants/1");
+    });
+    expect(mockUploadPhoto).not.toHaveBeenCalled();
+  });
+
+  it("waits for photo upload before navigating", async () => {
+    let resolveUpload: (() => void) | undefined;
+    mockUpdatePlant.mockResolvedValue(plant());
+    mockUploadPhoto.mockImplementation(
+      () =>
+        new Promise<Plant>((resolve) => {
+          const finishUpload = resolve as (value: Plant) => void;
+          resolveUpload = () => finishUpload(plant());
+        }),
+    );
+    render(Page);
+    const user = userEvent.setup();
+
+    await waitFor(() => {
+      expect(screen.getByText("Save with photo")).toBeTruthy();
+    });
+    await user.click(screen.getByText("Save with photo"));
+
+    await waitFor(() => {
+      expect(mockUploadPhoto).toHaveBeenCalledTimes(1);
+    });
+    expect(mockGoto).not.toHaveBeenCalled();
+
+    resolveUpload?.();
+
+    await waitFor(() => {
+      expect(mockGoto).toHaveBeenCalledWith("/plants/1");
+    });
+  });
+
   it("keeps the user on the form when photo upload fails", async () => {
     mockUpdatePlant.mockResolvedValue(plant());
     mockUploadPhoto.mockResolvedValue(null);

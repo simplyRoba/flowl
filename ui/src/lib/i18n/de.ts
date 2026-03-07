@@ -9,6 +9,7 @@ export const de: Translations = {
   common: {
     save: "Speichern",
     saving: "Speichern...",
+    retry: "Erneut versuchen",
     cancel: "Abbrechen",
     delete: "Löschen",
     back: "Zurück",
@@ -231,6 +232,8 @@ export const de: Translations = {
     importConfirm:
       '"{name}" importieren? Alle vorhandenen Daten und Fotos werden ersetzt.',
     importFailed: "Import fehlgeschlagen",
+    importRefreshFailed:
+      "Import abgeschlossen, aber die aktualisierten Summen konnten nicht geladen werden.",
     exportFailed: "Export fehlgeschlagen",
     importResult:
       "{plants} Pflanzen, {photos} Fotos, {care_events} Einträge, {locations} Standorte importiert",

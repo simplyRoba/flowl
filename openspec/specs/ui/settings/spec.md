@@ -74,6 +74,16 @@ The settings page SHALL include a "Locations" section listing all locations with
 - **AND** the dialog message includes the location name and plant count warning if applicable
 - **AND** the location is deleted only when the user confirms
 
+#### Scenario: Delete location success
+
+- **WHEN** the user confirms deletion and the location is deleted successfully
+- **THEN** a global toast notification is displayed acknowledging the deletion
+
+#### Scenario: Delete location failure
+
+- **WHEN** the user tries to delete a location and the request fails
+- **THEN** a global toast notification is displayed describing the failure
+
 #### Scenario: No locations
 
 - **WHEN** no locations exist
@@ -193,14 +203,14 @@ The settings page SHALL include an "MQTT" section displaying the MQTT connection
 - **GIVEN** the user confirmed repair
 - **WHEN** the API responds with HTTP 200 and `{ "cleared": N, "published": M }`
 - **THEN** the button returns to its default state
-- **AND** an inline message shows the cleared and published counts
+- **AND** a global toast notification is displayed acknowledging the repair result
 
 #### Scenario: Repair error feedback
 
 - **GIVEN** the user confirmed repair
 - **WHEN** the API responds with an error (409 or 503)
 - **THEN** the button returns to its default state
-- **AND** an inline error message is displayed
+- **AND** a global toast notification is displayed describing the failure
 
 ### Requirement: AI Assistant Section
 
@@ -254,12 +264,20 @@ The settings page Data section SHALL include export and import controls in addit
 #### Scenario: Import success
 - **WHEN** the user confirms the import and the server returns 200
 - **THEN** the page reloads the stats to reflect the imported data
-- **AND** a success indication is shown
+- **AND** a global toast notification is displayed acknowledging success
 
 #### Scenario: Import failure
 - **WHEN** the user confirms the import and the server returns an error
-- **THEN** an error message is displayed
-- **AND** existing data remains unchanged
+- **THEN** existing data remains unchanged
+- **AND** a global toast notification is displayed describing the failure
+
+#### Scenario: Export success
+- **WHEN** the user clicks export and the browser starts the file download normally
+- **THEN** the UI MAY remain silent without an additional success toast
+
+#### Scenario: Export detectable failure
+- **WHEN** the export flow can detect a failure before or during download handoff
+- **THEN** a global toast notification is displayed describing the failure
 
 #### Scenario: Stats overview
 - **WHEN** the settings page loads and `GET /api/stats` succeeds

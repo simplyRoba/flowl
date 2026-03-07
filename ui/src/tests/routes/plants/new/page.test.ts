@@ -61,6 +61,47 @@ describe("new plant page", () => {
     expect(mockGoto).not.toHaveBeenCalled();
   });
 
+  it("navigates after creating a plant without a photo", async () => {
+    mockCreatePlant.mockResolvedValue({ id: 7, name: "Fern" });
+    render(Page);
+
+    await userEvent.setup().click(screen.getByText("Save without photo"));
+
+    await waitFor(() => {
+      expect(mockCreatePlant).toHaveBeenCalledWith({ name: "Fern" });
+      expect(mockGoto).toHaveBeenCalledWith("/plants/7");
+    });
+    expect(mockUploadPhoto).not.toHaveBeenCalled();
+  });
+
+  it("waits for photo upload before navigating", async () => {
+    let resolveUpload:
+      | ((value: { id: number; name: string }) => void)
+      | undefined;
+    mockCreatePlant.mockResolvedValue({ id: 7, name: "Fern" });
+    mockUploadPhoto.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveUpload = resolve;
+        }),
+    );
+    render(Page);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByText("Save with photo"));
+
+    await waitFor(() => {
+      expect(mockUploadPhoto).toHaveBeenCalledTimes(1);
+    });
+    expect(mockGoto).not.toHaveBeenCalled();
+
+    resolveUpload?.({ id: 7, name: "Fern" });
+
+    await waitFor(() => {
+      expect(mockGoto).toHaveBeenCalledWith("/plants/7");
+    });
+  });
+
   it("keeps the user on the form and reuses the created plant when photo upload fails", async () => {
     mockCreatePlant.mockResolvedValue({ id: 7, name: "Fern" });
     mockUploadPhoto.mockResolvedValueOnce(null).mockResolvedValueOnce({

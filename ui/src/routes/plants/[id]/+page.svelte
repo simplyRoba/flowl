@@ -139,7 +139,7 @@
       if (!plant) {
         pushNotification({
           variant: "error",
-          message: $translations.error.waterPlant,
+          message: $plantsError || $translations.error.waterPlant,
         });
         plantsError.set(null);
         return;

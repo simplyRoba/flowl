@@ -92,6 +92,27 @@
   let importFile: File | null = $state(null);
   let repairDialogOpen = $state(false);
 
+  async function loadStatsSection(): Promise<boolean> {
+    try {
+      stats = await fetchStats();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function refreshImportedData(): Promise<void> {
+    const statsLoaded = await loadStatsSection();
+    await loadLocations();
+
+    if (!statsLoaded) {
+      pushNotification({
+        variant: "error",
+        message: get(translations).settings.importRefreshFailed,
+      });
+    }
+  }
+
   onMount(() => {
     loadLocations();
     fetchAppInfo()
@@ -101,13 +122,11 @@
       .catch(() => {
         /* hide About section on failure */
       });
-    fetchStats()
-      .then((s) => {
-        stats = s;
-      })
-      .catch(() => {
+    loadStatsSection().then((loaded) => {
+      if (!loaded) {
         /* hide Data section on failure */
-      });
+      }
+    });
     fetchMqttStatus()
       .then((m) => {
         mqttStatus = m;
@@ -248,12 +267,7 @@
           .replace("{care_events}", String(result.care_events))
           .replace("{locations}", String(result.locations)),
       });
-      fetchStats()
-        .then((s) => {
-          stats = s;
-        })
-        .catch(() => {});
-      loadLocations();
+      await refreshImportedData();
     } catch (e: unknown) {
       pushNotification({
         variant: "error",

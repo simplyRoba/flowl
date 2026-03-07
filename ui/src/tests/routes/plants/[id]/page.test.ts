@@ -108,7 +108,7 @@ vi.mock("$lib/stores/ai", async () => {
 });
 
 import { aiStatus } from "$lib/stores/ai";
-import { currentPlant } from "$lib/stores/plants";
+import { currentPlant, plantsError } from "$lib/stores/plants";
 import { careError, careEvents } from "$lib/stores/care";
 
 function makePlant(overrides: Partial<Plant> = {}) {
@@ -414,6 +414,27 @@ describe("watering feedback", () => {
       );
     });
   });
+
+  it("uses the store error details when watering fails", async () => {
+    mockWaterPlant.mockImplementation(async () => {
+      plantsError.set("Watering service offline");
+      return null;
+    });
+    await renderWithPlant();
+    await screen.findByText("Fern");
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Water now" }));
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "error",
+          message: "Watering service offline",
+        }),
+      );
+    });
+  });
 });
 
 describe("Ask AI button", () => {
@@ -652,6 +673,61 @@ describe("chat drawer save note", () => {
       );
       expect(screen.queryByText("Quick questions")).toBeNull();
     });
+  });
+
+  it("keeps stream failures inline in the drawer", async () => {
+    mockChatPlant.mockImplementation(async function* () {
+      yield* [];
+      throw new Error("stream failed");
+    });
+
+    await openChatAndSendMessage();
+    const user = userEvent.setup();
+
+    const input = screen.getByPlaceholderText("Ask about your plant...");
+    await user.type(input, "How is my plant?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Something went wrong. Please try again."),
+      ).toBeTruthy();
+    });
+    expect(mockPushNotification).not.toHaveBeenCalled();
+  });
+
+  it("keeps save-note failures inline in the drawer", async () => {
+    mockChatPlant.mockImplementation(async function* () {
+      yield "Looks healthy";
+    });
+    mockSummarizeChat.mockResolvedValue("Healthy and growing well");
+    mockCreateCareEventApi.mockRejectedValue(new Error("save failed"));
+
+    await openChatAndSendMessage();
+    const user = userEvent.setup();
+
+    const input = screen.getByPlaceholderText("Ask about your plant...");
+    await user.type(input, "How is my plant?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Looks healthy")).toBeTruthy();
+      expect(screen.getByText("Save note")).toBeTruthy();
+    });
+
+    await user.click(screen.getByText("Save note"));
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Healthy and growing well")).toBeTruthy();
+    });
+
+    const saveButtons = screen.getAllByText("Save");
+    await user.click(saveButtons[saveButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to save note")).toBeTruthy();
+    });
+    expect(mockPushNotification).not.toHaveBeenCalled();
   });
 
   it("summarizeChat calls the correct API endpoint", async () => {

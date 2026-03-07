@@ -7,6 +7,7 @@ const en = {
   common: {
     save: "Save",
     saving: "Saving...",
+    retry: "Retry",
     cancel: "Cancel",
     delete: "Delete",
     back: "Back",
@@ -225,6 +226,8 @@ const en = {
     importConfirm:
       'Import "{name}"? All existing data and photos will be replaced.',
     importFailed: "Import failed",
+    importRefreshFailed:
+      "Import completed, but the refreshed totals could not be loaded.",
     exportFailed: "Export failed",
     importResult:
       "Imported {plants} plants, {photos} photos, {care_events} log entries, {locations} locations",
