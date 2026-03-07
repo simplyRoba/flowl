@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>flowl notification mockups</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f1ea;
+        --surface: #fffdf9;
+        --surface-2: #f2ebe2;
+        --border: #ddcfbf;
+        --text: #2f261c;
+        --muted: #7f705f;
+        --primary: #6b8f71;
+        --success: #5d9b6c;
+        --warning: #c08b2c;
+        --danger: #bb5d5d;
+        --shadow: 0 18px 50px rgba(59, 42, 26, 0.12);
+        --radius-lg: 18px;
+        --radius-md: 12px;
+        --radius-sm: 9px;
+        --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--font);
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(107, 143, 113, 0.15), transparent 24%),
+          linear-gradient(180deg, #fbf7f2, var(--bg));
+      }
+
+      .page {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 32px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 32px;
+      }
+
+      .intro {
+        margin: 0 0 28px;
+        color: var(--muted);
+        max-width: 820px;
+        line-height: 1.5;
+      }
+
+      .grid {
+        display: grid;
+        gap: 24px;
+      }
+
+      .panel {
+        background: rgba(255, 253, 249, 0.76);
+        border: 1px solid rgba(221, 207, 191, 0.9);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        padding: 24px;
+        backdrop-filter: blur(8px);
+      }
+
+      .panel h2 {
+        margin: 0 0 6px;
+        font-size: 20px;
+      }
+
+      .panel p {
+        margin: 0 0 18px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .device {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(180deg, #f7f1e8, #efe5d8);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+      }
+
+      .desktop {
+        min-height: 460px;
+        padding: 22px;
+      }
+
+      .mobile {
+        width: 380px;
+        max-width: 100%;
+        min-height: 760px;
+        margin: 0 auto;
+        border-radius: 34px;
+        padding: 18px 16px 90px;
+      }
+
+      .shell-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+
+      .shell-title {
+        font-weight: 700;
+        font-size: 24px;
+      }
+
+      .shell-subtitle {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .content-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 18px;
+        box-shadow: 0 10px 25px rgba(69, 53, 35, 0.06);
+      }
+
+      .content-card + .content-card {
+        margin-top: 16px;
+      }
+
+      .attention-item {
+        display: grid;
+        grid-template-columns: 64px 1fr auto;
+        gap: 12px;
+        align-items: center;
+        background: linear-gradient(135deg, rgba(91, 155, 196, 0.08), rgba(107, 143, 113, 0.1));
+        border: 1px solid rgba(107, 143, 113, 0.2);
+        border-radius: 16px;
+        padding: 12px;
+      }
+
+      .thumb {
+        width: 64px;
+        height: 64px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #aac8ae, #6b8f71);
+      }
+
+      .label {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .btn {
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 14px;
+        font: inherit;
+        font-weight: 600;
+        background: var(--primary);
+        color: white;
+      }
+
+      .btn.ghost {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+
+      .toast-stack {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: min(340px, calc(100% - 32px));
+      }
+
+      .toast-stack.desktop-stack {
+        right: 18px;
+        bottom: 18px;
+      }
+
+      .toast-stack.mobile-stack {
+        left: 16px;
+        right: 16px;
+        top: max(16px, env(safe-area-inset-top));
+        width: auto;
+      }
+
+      .toast {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px 12px;
+        align-items: start;
+        padding: 14px 14px 13px;
+        border-radius: 16px;
+        background: rgba(255, 253, 249, 0.96);
+        border: 1px solid var(--border);
+        box-shadow: 0 18px 40px rgba(47, 38, 28, 0.14);
+      }
+
+      .toast.success {
+        border-left: 5px solid var(--success);
+      }
+
+      .toast.error {
+        border-left: 5px solid var(--danger);
+      }
+
+      .toast.warning {
+        border-left: 5px solid var(--warning);
+      }
+
+      .toast-title {
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .toast-body {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .toast-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        grid-column: 1 / -1;
+      }
+
+      .close {
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .mobile-nav {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 68px;
+        border-top: 1px solid var(--border);
+        background: rgba(255, 253, 249, 0.96);
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        color: var(--muted);
+      }
+
+      .example-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+
+      .example {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+      }
+
+      .input {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--text);
+        font: inherit;
+      }
+
+      .input.error {
+        border-color: rgba(187, 93, 93, 0.7);
+        box-shadow: 0 0 0 3px rgba(187, 93, 93, 0.12);
+      }
+
+      .field-error,
+      .section-note,
+      .page-error {
+        margin-top: 10px;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .field-error,
+      .page-error.error,
+      .section-note.error {
+        color: var(--danger);
+      }
+
+      .section-note.success {
+        color: var(--success);
+      }
+
+      .page-error {
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: rgba(187, 93, 93, 0.08);
+        border: 1px solid rgba(187, 93, 93, 0.18);
+      }
+
+      .section-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 14px;
+      }
+
+      .caption {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 800px) {
+        .page {
+          padding: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <h1>Notification patterns</h1>
+      <p class="intro">
+        Self-contained visual reference for the proposed `ui/notifications`
+        capability. These are intentionally static mockups for comparing placement
+        and feedback types before implementation.
+      </p>
+
+      <section class="grid">
+        <article class="panel">
+          <h2>Scenario A: desktop dashboard with toast stack</h2>
+          <p>
+            Global success/error acknowledgements sit at the bottom-right when the
+            action source can disappear or be offscreen.
+          </p>
+          <div class="device desktop">
+            <div class="shell-header">
+              <div>
+                <div class="shell-title">Good morning</div>
+                <div class="shell-subtitle">2 plants need water today</div>
+              </div>
+              <div class="muted">fixed sidebar</div>
+            </div>
+
+            <div class="content-card">
+              <span class="label">Needs attention</span>
+              <div class="attention-item">
+                <div class="thumb"></div>
+                <div>
+                  <div><strong>Monstera</strong></div>
+                  <div class="muted">Overdue - living room</div>
+                </div>
+                <button class="btn">Water</button>
+              </div>
+            </div>
+
+            <div class="content-card">
+              <span class="label">All plants</span>
+              <div class="muted">Regular dashboard content continues here.</div>
+            </div>
+
+            <div class="toast-stack desktop-stack">
+              <div class="toast success">
+                <div>
+                  <div class="toast-title">Watered Monstera</div>
+                  <div class="toast-body">Next due in 7 days.</div>
+                </div>
+                <div class="close">x</div>
+              </div>
+
+              <div class="toast error">
+                <div>
+                  <div class="toast-title">Failed to water Pilea</div>
+                  <div class="toast-body">The plant could not be updated.</div>
+                </div>
+                <div class="close">x</div>
+                <div class="toast-actions">
+                  <button class="btn ghost">Retry</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <h2>Scenario B: mobile top stack</h2>
+          <p>
+            On mobile, toasts move to the top so they do not fight with the fixed
+            bottom nav or chat drawer gesture area.
+          </p>
+          <div class="device mobile">
+            <div class="toast-stack mobile-stack">
+              <div class="toast success">
+                <div>
+                  <div class="toast-title">Location deleted</div>
+                  <div class="toast-body">The room is gone from settings.</div>
+                </div>
+                <div class="close">x</div>
+              </div>
+
+              <div class="toast warning">
+                <div>
+                  <div class="toast-title">Import completed with warnings</div>
+                  <div class="toast-body">Some photos could not be restored.</div>
+                </div>
+                <div class="close">x</div>
+              </div>
+            </div>
+
+            <div class="shell-header" style="margin-top: 110px">
+              <div>
+                <div class="shell-title" style="font-size: 22px">Settings</div>
+                <div class="shell-subtitle">Feedback remains readable</div>
+              </div>
+            </div>
+
+            <div class="content-card">
+              <span class="label">Data</span>
+              <div class="muted">
+                Page content stays fully visible while the nav remains unobstructed.
+              </div>
+            </div>
+
+            <div class="mobile-nav">
+              <span>Plants</span>
+              <span>Journal</span>
+              <span>Settings</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <h2>Scenario C: inline stays where correction happens</h2>
+          <p>
+            Validation, contextual detail, and page-load failure keep their message
+            near the place where the user understands or fixes the issue.
+          </p>
+
+          <div class="example-grid">
+            <div class="example">
+              <span class="label">Field inline</span>
+              <input class="input error" value="Living Room" />
+              <div class="field-error">
+                A location with this name already exists.
+              </div>
+              <div class="caption">Best for direct correction.</div>
+            </div>
+
+            <div class="example">
+              <span class="label">Section inline</span>
+              <div class="section-row">
+                <div>
+                  <strong>MQTT repair</strong><br />
+                  <span class="muted">Republish retained discovery state.</span>
+                </div>
+                <button class="btn ghost">Repair</button>
+              </div>
+              <div class="section-note success">
+                Cleared 12 retained topics and republished 34 entities.
+              </div>
+              <div class="section-note error">
+                Could not connect to broker. Try again when MQTT is online.
+              </div>
+              <div class="caption">Best for detailed, local outcomes.</div>
+            </div>
+
+            <div class="example">
+              <span class="label">Page-level error</span>
+              <div class="page-error error">
+                Could not load your care journal right now. Refresh the page and try
+                again.
+              </div>
+              <div class="caption">Best when the route cannot render normally.</div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

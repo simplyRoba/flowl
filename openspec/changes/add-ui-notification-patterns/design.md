@@ -130,65 +130,17 @@ Because of that, mobile bottom snackbars are a poor fit here.
 
 ## Visual Mockups
 
-### Desktop toast stack
+Interactive mockups live in `openspec/changes/add-ui-notification-patterns/mockups/notifications.html`.
 
-```text
-┌────────────────────────────────────────────────────────────────────┐
-│ Dashboard                                                    [nav]│
-│                                                                    │
-│  ┌─────────────────────── content ───────────────────────────────┐  │
-│  │                                                              │  │
-│  │  Needs Attention                                             │  │
-│  │  [Water]                                                     │  │
-│  │                                                              │  │
-│  └──────────────────────────────────────────────────────────────┘  │
-│                                                                    │
-│                                       ┌──────────────────────────┐ │
-│                                       │ Watered Monstera        │ │
-│                                       │ Next due in 7 days      │ │
-│                                       └──────────────────────────┘ │
-│                                       ┌──────────────────────────┐ │
-│                                       │ Failed to water Pilea    │ │
-│                                       │ [Retry]              [x] │ │
-│                                       └──────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────┘
-```
+The HTML artifact includes these scenarios:
 
-### Mobile toast stack
+- desktop dashboard with bottom-right toast stack
+- mobile screen with top-anchored toast stack
+- field-inline error example
+- section-inline success/error example
+- page-level error example
 
-```text
-┌──────────────────────────────────────┐
-│ [safe area]                          │
-│  ┌────────────────────────────────┐  │
-│  │ Watered Monstera           [x] │  │
-│  └────────────────────────────────┘  │
-│  ┌────────────────────────────────┐  │
-│  │ Failed to delete location  [x] │  │
-│  └────────────────────────────────┘  │
-│                                      │
-│  page content                        │
-│  ...                                 │
-│                                      │
-│ [fixed bottom nav stays unobstructed]│
-└──────────────────────────────────────┘
-```
-
-### Inline vs toast contrast
-
-```text
-FIELD INLINE
-[ Location name        ]
-  A location with this name already exists.
-
-SECTION INLINE
-[ Repair MQTT ]
-  Cleared 12 retained topics and republished 34 entities.
-
-TOAST
-┌──────────────────────────────┐
-│ Location deleted         [x] │
-└──────────────────────────────┘
-```
+That artifact should be treated as the visual source of truth for this change rather than ASCII sketches embedded in markdown.
 
 ## Surface Audit
 

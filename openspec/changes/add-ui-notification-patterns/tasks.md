@@ -1,3 +1,7 @@
+## 0. Design artifacts
+
+- [ ] 0.1 Maintain a self-contained HTML mockup covering desktop toast stack, mobile toast stack, field-inline, section-inline, and page-level scenarios
+
 ## 1. Shared notification foundation
 
 - [ ] 1.1 Add a global notification store/model supporting `success`, `info`, `warning`, and `error`
@@ -19,3 +23,4 @@
 
 - [ ] 4.1 Add or update UI tests for the notification host and the first integrated flows
 - [ ] 4.2 Run `npm run check --prefix ui`, `npm run lint --prefix ui`, and relevant UI tests
+- [ ] 4.3 After implementation is complete, mark related `REVIEW.md` items resolved, including item 10 (dashboard watering feedback) and item 50 (global toast/snackbar system)
