@@ -520,6 +520,33 @@ describe("settings MQTT repair confirmation", () => {
     });
   });
 
+  it("shows a toast when repair fails", async () => {
+    vi.spyOn(api, "repairMqtt").mockRejectedValue(new Error("Repair unavailable"));
+
+    render(Page);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Repair/ })).toBeTruthy();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Repair/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Clear all retained MQTT topics/)).toBeTruthy();
+    });
+    const repairButtons = screen.getAllByRole("button", { name: "Repair" });
+    await user.click(repairButtons[repairButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "error",
+          message: "Repair unavailable",
+        }),
+      );
+    });
+  });
+
   it("does not repair when dialog is cancelled", async () => {
     const repairSpy = vi.spyOn(api, "repairMqtt");
 

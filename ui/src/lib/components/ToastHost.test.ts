@@ -14,9 +14,18 @@ import {
 } from "$lib/stores/notifications";
 
 describe("ToastHost", () => {
+  function setViewportWidth(width: number) {
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      writable: true,
+      value: width,
+    });
+  }
+
   beforeEach(() => {
     clearNotifications();
     vi.useFakeTimers();
+    setViewportWidth(1024);
   });
 
   afterEach(() => {
@@ -35,8 +44,34 @@ describe("ToastHost", () => {
       expect(screen.getByText("Saved")).toBeTruthy();
     });
 
-    expect(screen.getByRole("alert").textContent).toContain("Upload failed");
-    expect(screen.getByRole("status").textContent).toContain("Saved");
+    const errorToast = screen.getByRole("alert");
+    const successToast = screen.getByRole("status");
+
+    expect(errorToast.textContent).toContain("Upload failed");
+    expect(errorToast.getAttribute("aria-live")).toBe("assertive");
+    expect(successToast.textContent).toContain("Saved");
+    expect(successToast.getAttribute("aria-live")).toBe("polite");
+  });
+
+  it("uses desktop and mobile placement metadata", async () => {
+    const { container } = render(ToastHost);
+    pushNotification({ variant: "info", message: "Desktop" });
+
+    await waitFor(() => {
+      expect(container.querySelector(".toast-host")).toBeTruthy();
+    });
+    expect(container.querySelector(".toast-host")?.getAttribute("data-placement")).toBe(
+      "bottom-right",
+    );
+
+    setViewportWidth(640);
+    window.dispatchEvent(new Event("resize"));
+
+    await waitFor(() => {
+      expect(container.querySelector(".toast-host")?.getAttribute("data-placement")).toBe(
+        "top",
+      );
+    });
   });
 
   it("auto-dismisses success notifications", async () => {
@@ -83,6 +118,19 @@ describe("ToastHost", () => {
     vi.advanceTimersByTime(10000);
 
     expect(screen.getByText("Upload failed")).toBeTruthy();
+  });
+
+  it("dismisses a toast with the keyboard-reachable close button", async () => {
+    render(ToastHost);
+    pushNotification({ variant: "error", message: "Upload failed" });
+
+    const closeButton = await screen.findByRole("button", { name: "Close" });
+    closeButton.focus();
+    await fireEvent.keyDown(closeButton, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Upload failed")).toBeNull();
+    });
   });
 
   it("shows at most three notifications at once", async () => {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { X } from "lucide-svelte";
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import { translations } from "$lib/stores/locale";
   import {
@@ -10,10 +10,12 @@
   } from "$lib/stores/notifications";
 
   const AUTO_DISMISS_MS = 3500;
+  const MOBILE_BREAKPOINT = 768;
   const timers = new SvelteMap<string, ReturnType<typeof setTimeout>>();
   const timerStartedAt = new SvelteMap<string, number>();
   const remainingTime = new SvelteMap<string, number>();
   const pausedNotifications = new SvelteSet<string>();
+  let isMobileViewport = $state(false);
 
   function liveRole(notification: Notification): "status" | "alert" {
     return notification.variant === "error" ? "alert" : "status";
@@ -26,6 +28,17 @@
   function handleAction(notification: Notification) {
     notification.action?.onClick();
     dismissNotification(notification.id);
+  }
+
+  function handleCloseKeydown(event: KeyboardEvent, id: string) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    dismissNotification(id);
+  }
+
+  function syncViewport() {
+    if (typeof window === "undefined") return;
+    isMobileViewport = window.innerWidth <= MOBILE_BREAKPOINT;
   }
 
   function clearTimer(id: string) {
@@ -99,6 +112,19 @@
     }
   });
 
+  onMount(() => {
+    syncViewport();
+
+    const handleResize = () => {
+      syncViewport();
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  });
+
   onDestroy(() => {
     for (const timer of timers.values()) {
       clearTimeout(timer);
@@ -111,7 +137,12 @@
 </script>
 
 {#if $visibleNotifications.length > 0}
-  <div class="toast-host" aria-label="Notifications">
+  <div
+    class="toast-host"
+    class:toast-host-mobile={isMobileViewport}
+    aria-label="Notifications"
+    data-placement={isMobileViewport ? "top" : "bottom-right"}
+  >
     {#each $visibleNotifications as notification (notification.id)}
       <div
         class="toast"
@@ -140,6 +171,7 @@
             type="button"
             class="toast-close"
             aria-label={$translations.common.close}
+            onkeydown={(event) => handleCloseKeydown(event, notification.id)}
             onclick={() => dismissNotification(notification.id)}
           >
             <X size={14} />
@@ -227,13 +259,11 @@
     color: var(--color-text);
   }
 
-  @media (max-width: 768px) {
-    .toast-host {
-      top: max(12px, env(safe-area-inset-top, 0px));
-      right: 16px;
-      bottom: auto;
-      left: 16px;
-      width: auto;
-    }
+  .toast-host-mobile {
+    top: max(12px, env(safe-area-inset-top, 0px));
+    right: 16px;
+    bottom: auto;
+    left: 16px;
+    width: auto;
   }
 </style>

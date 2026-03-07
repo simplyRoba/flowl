@@ -392,12 +392,25 @@ describe("attention card water action", () => {
     resolveWater!();
   });
 
+  it("keeps watering success silent", async () => {
+    const wateredPlant = makePlant({ id: 1, name: "Fern", watering_status: "ok" });
+    mockWaterPlant.mockResolvedValue(wateredPlant);
+    plants.set([makePlant({ id: 1, name: "Fern", watering_status: "due" })]);
+    render(Page);
+
+    await fireEvent.click(screen.getByRole("button", { name: /Water/ }));
+
+    await vi.waitFor(() => {
+      expect(mockWaterPlant).toHaveBeenCalledWith(1);
+    });
+    expect(mockPushNotification).not.toHaveBeenCalled();
+  });
+
   it("removes plant from attention section after watering to ok", async () => {
     mockWaterPlant.mockImplementation((id: number) => {
-      plants.update((list) =>
-        list.map((p) => (p.id === id ? { ...p, watering_status: "ok" } : p)),
-      );
-      return Promise.resolve(null);
+      const updatedPlant = makePlant({ id, name: "Fern", watering_status: "ok" });
+      plants.update((list) => list.map((p) => (p.id === id ? updatedPlant : p)));
+      return Promise.resolve(updatedPlant);
     });
     plants.set([
       makePlant({ id: 1, name: "Fern", watering_status: "due" }),

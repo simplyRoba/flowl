@@ -357,6 +357,9 @@ describe("plant delete confirmation", () => {
         }),
       );
       expect(mockGoto).toHaveBeenCalledWith("/");
+      expect(mockPushNotification.mock.invocationCallOrder[0]).toBeLessThan(
+        mockGoto.mock.invocationCallOrder[0],
+      );
     });
   });
 
@@ -378,6 +381,20 @@ describe("plant delete confirmation", () => {
 });
 
 describe("watering feedback", () => {
+  it("keeps watering success silent", async () => {
+    mockWaterPlant.mockResolvedValue(makePlant({ last_watered: "2025-02-01T10:00:00Z" }));
+    await renderWithPlant();
+    await screen.findByText("Fern");
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Water now" }));
+
+    await waitFor(() => {
+      expect(mockWaterPlant).toHaveBeenCalledWith(1);
+    });
+    expect(mockPushNotification).not.toHaveBeenCalled();
+  });
+
   it("shows a toast when watering fails", async () => {
     mockWaterPlant.mockResolvedValue(null);
     await renderWithPlant();
@@ -629,6 +646,7 @@ describe("chat drawer save note", () => {
           message: "Saved to care journal",
         }),
       );
+      expect(screen.queryByText("Quick questions")).toBeNull();
     });
   });
 
