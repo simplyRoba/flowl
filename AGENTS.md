@@ -8,6 +8,7 @@ Guidance for coding agents working in `flowl` (Rust backend + SvelteKit frontend
 
 ## Ground rules
 - Ask clarifying questions when requirements materially affect behavior and cannot be inferred from code/specs.
+- When the user asks for a staged or limited change, do only that requested step and stop before follow-on changes until asked.
 - Prefer small, focused changes; avoid drive-by refactors unless needed for correctness.
 - Never merge or push to `main` without asking; keep branches short-lived and purpose-specific.
 - Use Conventional Commits for commit messages (`feat:`, `fix:`, `refactor:`, etc.).
