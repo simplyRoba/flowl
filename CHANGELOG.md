@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.23.1](https://github.com/simplyRoba/flowl/compare/v0.23.0...v0.23.1) (2026-03-07)
+
+
+### Bug Fixes
+
+* **ui:** add AI color entries for actions and assistant states ([35bec91](https://github.com/simplyRoba/flowl/commit/35bec91d1e284a18cae6f171954313b853572dde))
+* **ui:** add context titles to toast notifications ([4ead8c6](https://github.com/simplyRoba/flowl/commit/4ead8c6ed6cc98d193439fc6a11219a8cc425ced))
+
 ## [0.23.0](https://github.com/simplyRoba/flowl/compare/v0.22.0...v0.23.0) (2026-03-07)
 
 
