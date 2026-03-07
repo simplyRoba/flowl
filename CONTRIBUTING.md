@@ -8,6 +8,12 @@ The Rust backend serves a SvelteKit SPA. The UI is built as static files (`ui/bu
 
 Requires Node.js (LTS) and Rust (stable). A devcontainer config is included.
 
+Install UI dependencies first:
+
+```bash
+npm ci --prefix ui
+```
+
 Run two terminals:
 
 ```bash
@@ -48,6 +54,38 @@ Or run vitest directly for watch mode during UI development:
 
 ```bash
 cd ui && npx vitest
+```
+
+### Linting and formatting
+
+Run UI formatting check:
+
+```bash
+npm run format:check --prefix ui
+```
+
+Apply UI formatting:
+
+```bash
+npm run format --prefix ui
+```
+
+Run UI linting:
+
+```bash
+npm run lint --prefix ui
+```
+
+Auto-fix UI lint issues where possible:
+
+```bash
+npm run lint:fix --prefix ui
+```
+
+Run Svelte/TypeScript checks:
+
+```bash
+npm run check --prefix ui
 ```
 
 ### Build with embedded UI

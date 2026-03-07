@@ -31,7 +31,7 @@ The CI pipeline SHALL install the stable Rust toolchain with `rustfmt` and `clip
 
 ### Requirement: Lint Checks
 
-The CI pipeline SHALL verify formatting with `cargo fmt -- --check` and run `cargo clippy -- -D warnings`.
+The CI pipeline SHALL verify Rust formatting with `cargo fmt -- --check`, run `cargo clippy -- -D warnings`, verify UI formatting with `npm run format:check --prefix ui`, run UI linting with `npm run lint --prefix ui`, and run UI type/framework checks with `npm run check --prefix ui`.
 
 #### Scenario: Formatting violation
 
@@ -42,6 +42,21 @@ The CI pipeline SHALL verify formatting with `cargo fmt -- --check` and run `car
 
 - **WHEN** `cargo clippy` emits a warning
 - **THEN** the lint job fails (warnings treated as errors)
+
+#### Scenario: UI formatting violation
+
+- **WHEN** UI source code does not conform to the configured Prettier rules
+- **THEN** the UI lint job fails
+
+#### Scenario: UI lint violation
+
+- **WHEN** `npm run lint --prefix ui` reports an ESLint error
+- **THEN** the UI lint job fails
+
+#### Scenario: UI type or Svelte check failure
+
+- **WHEN** `npm run check --prefix ui` reports a Svelte or TypeScript error
+- **THEN** the UI lint job fails
 
 ### Requirement: Test Execution
 

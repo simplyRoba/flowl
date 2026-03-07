@@ -409,9 +409,9 @@ Use a `$derived` or helper function instead.
 
 These are improvements that would polish the product but are not urgent.
 
-### 43. No ESLint or Prettier for frontend
+### ~~43. No ESLint or Prettier for frontend~~ DONE
 
-The UI has `svelte-check` for types but no linting or formatting enforcement. Inconsistent formatting is already visible (e.g., `onsave` at column 0 in plant detail). Consider adding `eslint-plugin-svelte` and `prettier-plugin-svelte`.
+Added ESLint + Prettier to `ui/` with `eslint-plugin-svelte`, `prettier-plugin-svelte`, npm scripts, and editor/devcontainer integration.
 
 ### ~~44. All three i18n dictionaries are bundled~~ DONE
 
