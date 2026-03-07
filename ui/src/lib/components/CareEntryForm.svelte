@@ -85,7 +85,9 @@
       const occ = showOccurredAt ? occurredAt.trim() : "";
       const occDate = occ ? new Date(occ) : null;
       const occIso =
-        occDate && !isNaN(occDate.getTime()) ? occDate.toISOString() : undefined;
+        occDate && !isNaN(occDate.getTime())
+          ? occDate.toISOString()
+          : undefined;
       const photoFile = photo;
       const event = await addCareEvent(plantId, {
         event_type: eventType,

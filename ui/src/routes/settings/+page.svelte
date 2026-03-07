@@ -205,7 +205,9 @@
       pushNotification({
         variant: "error",
         message:
-          e instanceof Error ? e.message : get(translations).settings.exportFailed,
+          e instanceof Error
+            ? e.message
+            : get(translations).settings.exportFailed,
       });
     } finally {
       exportLoading = false;

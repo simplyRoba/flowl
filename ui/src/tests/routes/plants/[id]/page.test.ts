@@ -382,7 +382,9 @@ describe("plant delete confirmation", () => {
 
 describe("watering feedback", () => {
   it("keeps watering success silent", async () => {
-    mockWaterPlant.mockResolvedValue(makePlant({ last_watered: "2025-02-01T10:00:00Z" }));
+    mockWaterPlant.mockResolvedValue(
+      makePlant({ last_watered: "2025-02-01T10:00:00Z" }),
+    );
     await renderWithPlant();
     await screen.findByText("Fern");
 
@@ -544,7 +546,9 @@ describe("care event delete reloads plant", () => {
     ]);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Delete log entry" })).toBeTruthy();
+      expect(
+        screen.getByRole("button", { name: "Delete log entry" }),
+      ).toBeTruthy();
     });
 
     const user = userEvent.setup();

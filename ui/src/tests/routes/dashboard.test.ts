@@ -393,7 +393,11 @@ describe("attention card water action", () => {
   });
 
   it("keeps watering success silent", async () => {
-    const wateredPlant = makePlant({ id: 1, name: "Fern", watering_status: "ok" });
+    const wateredPlant = makePlant({
+      id: 1,
+      name: "Fern",
+      watering_status: "ok",
+    });
     mockWaterPlant.mockResolvedValue(wateredPlant);
     plants.set([makePlant({ id: 1, name: "Fern", watering_status: "due" })]);
     render(Page);
@@ -408,8 +412,14 @@ describe("attention card water action", () => {
 
   it("removes plant from attention section after watering to ok", async () => {
     mockWaterPlant.mockImplementation((id: number) => {
-      const updatedPlant = makePlant({ id, name: "Fern", watering_status: "ok" });
-      plants.update((list) => list.map((p) => (p.id === id ? updatedPlant : p)));
+      const updatedPlant = makePlant({
+        id,
+        name: "Fern",
+        watering_status: "ok",
+      });
+      plants.update((list) =>
+        list.map((p) => (p.id === id ? updatedPlant : p)),
+      );
       return Promise.resolve(updatedPlant);
     });
     plants.set([

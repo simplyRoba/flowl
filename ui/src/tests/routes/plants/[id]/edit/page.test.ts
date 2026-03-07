@@ -101,7 +101,10 @@ describe("edit plant page", () => {
 
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
-        expect.objectContaining({ variant: "error", message: "Failed to update plant" }),
+        expect.objectContaining({
+          variant: "error",
+          message: "Failed to update plant",
+        }),
       );
     });
     expect(mockGoto).not.toHaveBeenCalled();
@@ -120,7 +123,10 @@ describe("edit plant page", () => {
 
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
-        expect.objectContaining({ variant: "error", message: "Failed to upload photo" }),
+        expect.objectContaining({
+          variant: "error",
+          message: "Failed to upload photo",
+        }),
       );
     });
     expect(mockGoto).not.toHaveBeenCalled();

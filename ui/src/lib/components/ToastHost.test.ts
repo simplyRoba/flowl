@@ -60,17 +60,17 @@ describe("ToastHost", () => {
     await waitFor(() => {
       expect(container.querySelector(".toast-host")).toBeTruthy();
     });
-    expect(container.querySelector(".toast-host")?.getAttribute("data-placement")).toBe(
-      "bottom-right",
-    );
+    expect(
+      container.querySelector(".toast-host")?.getAttribute("data-placement"),
+    ).toBe("bottom-right");
 
     setViewportWidth(640);
     window.dispatchEvent(new Event("resize"));
 
     await waitFor(() => {
-      expect(container.querySelector(".toast-host")?.getAttribute("data-placement")).toBe(
-        "top",
-      );
+      expect(
+        container.querySelector(".toast-host")?.getAttribute("data-placement"),
+      ).toBe("top");
     });
   });
 

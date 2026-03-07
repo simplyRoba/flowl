@@ -199,7 +199,9 @@ describe("settings data section export/import", () => {
   });
 
   it("shows a toast when export fails before download starts", async () => {
-    vi.spyOn(api, "exportData").mockRejectedValue(new Error("Export unavailable"));
+    vi.spyOn(api, "exportData").mockRejectedValue(
+      new Error("Export unavailable"),
+    );
 
     render(Page);
     await waitFor(() => {
@@ -521,7 +523,9 @@ describe("settings MQTT repair confirmation", () => {
   });
 
   it("shows a toast when repair fails", async () => {
-    vi.spyOn(api, "repairMqtt").mockRejectedValue(new Error("Repair unavailable"));
+    vi.spyOn(api, "repairMqtt").mockRejectedValue(
+      new Error("Repair unavailable"),
+    );
 
     render(Page);
     await waitFor(() => {

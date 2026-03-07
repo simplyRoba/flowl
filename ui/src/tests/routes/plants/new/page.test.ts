@@ -52,7 +52,10 @@ describe("new plant page", () => {
 
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
-        expect.objectContaining({ variant: "error", message: "Failed to create plant" }),
+        expect.objectContaining({
+          variant: "error",
+          message: "Failed to create plant",
+        }),
       );
     });
     expect(mockGoto).not.toHaveBeenCalled();
@@ -73,7 +76,10 @@ describe("new plant page", () => {
 
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
-        expect.objectContaining({ variant: "error", message: "Failed to upload photo" }),
+        expect.objectContaining({
+          variant: "error",
+          message: "Failed to upload photo",
+        }),
       );
     });
     expect(mockGoto).not.toHaveBeenCalled();
