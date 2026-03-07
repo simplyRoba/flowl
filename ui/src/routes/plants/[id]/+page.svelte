@@ -1,892 +1,906 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
-	import {
-		ArrowLeft,
-		Pencil,
-		Trash2,
-		Droplet,
-		Droplets,
-		MapPin,
-		Sun,
-		CloudSun,
-		Cloud,
-		Leaf,
-		Shovel,
-		Scissors,
-		BookOpen,
-		Pencil as PencilIcon,
-		Info,
-		Gauge,
-		PawPrint,
-		TrendingUp,
-		Layers,
-		Repeat,
-		CalendarCheck,
-		CalendarClock,
-		Sparkles
-	} from 'lucide-svelte';
-	import {
-		currentPlant,
-		plantsError,
-		loadPlant,
-		deletePlant,
-		waterPlant
-	} from '$lib/stores/plants';
-	import {
-		careEvents,
-		loadCareEvents,
-		removeCareEvent
-	} from '$lib/stores/care';
-	import { translations } from '$lib/stores/locale';
-	import { emojiToSvgPath } from '$lib/emoji';
-	import { thumbUrl, thumbSrcset } from '$lib/thumbUrl';
-	import StatusBadge from '$lib/components/StatusBadge.svelte';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import PhotoLightbox from '$lib/components/PhotoLightbox.svelte';
-	import ModalDialog from '$lib/components/ModalDialog.svelte';
-	import ChatDrawer from '$lib/components/ChatDrawer.svelte';
-	import CareEntryForm from '$lib/components/CareEntryForm.svelte';
-	import type { CareEvent } from '$lib/api';
-	import { aiStatus, loadAiStatus } from '$lib/stores/ai';
+  import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { page } from "$app/stores";
+  import {
+    ArrowLeft,
+    Pencil,
+    Trash2,
+    Droplet,
+    Droplets,
+    MapPin,
+    Sun,
+    CloudSun,
+    Cloud,
+    Leaf,
+    Shovel,
+    Scissors,
+    BookOpen,
+    Pencil as PencilIcon,
+    Info,
+    Gauge,
+    PawPrint,
+    TrendingUp,
+    Layers,
+    Repeat,
+    CalendarCheck,
+    CalendarClock,
+    Sparkles,
+  } from "lucide-svelte";
+  import {
+    currentPlant,
+    plantsError,
+    loadPlant,
+    deletePlant,
+    waterPlant,
+  } from "$lib/stores/plants";
+  import {
+    careEvents,
+    loadCareEvents,
+    removeCareEvent,
+  } from "$lib/stores/care";
+  import { translations } from "$lib/stores/locale";
+  import { emojiToSvgPath } from "$lib/emoji";
+  import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
+  import StatusBadge from "$lib/components/StatusBadge.svelte";
+  import PageHeader from "$lib/components/PageHeader.svelte";
+  import PhotoLightbox from "$lib/components/PhotoLightbox.svelte";
+  import ModalDialog from "$lib/components/ModalDialog.svelte";
+  import ChatDrawer from "$lib/components/ChatDrawer.svelte";
+  import CareEntryForm from "$lib/components/CareEntryForm.svelte";
+  import type { CareEvent } from "$lib/api";
+  import { aiStatus, loadAiStatus } from "$lib/stores/ai";
 
-	let notFound = $state(false);
-	let deleting = $state(false);
-	let watering = $state(false);
-	let showLogForm = $state(false);
-	let showAllEvents = $state(false);
-	let deletingEventId = $state<number | null>(null);
-	let deleteEventDialogTarget = $state<CareEvent | null>(null);
-	let backHref = $state('/');
-	let lightboxOpen = $state(false);
-	let deleteDialogOpen = $state(false);
-	let aiEnabled = $derived($aiStatus?.enabled ?? false);
-	let chatOpen = $state(false);
-	let lightboxSrc = $state('');
-	const BACK_PATHS = new Set(['/', '/care-journal', '/plants', '/settings']);
+  type BackPath = "/" | "/care-journal" | "/plants" | "/settings";
 
-	const EVENT_LIMIT = 20;
+  let notFound = $state(false);
+  let deleting = $state(false);
+  let watering = $state(false);
+  let showLogForm = $state(false);
+  let showAllEvents = $state(false);
+  let deletingEventId = $state<number | null>(null);
+  let deleteEventDialogTarget = $state<CareEvent | null>(null);
+  let backHref = $state<BackPath>("/");
+  let lightboxOpen = $state(false);
+  let deleteDialogOpen = $state(false);
+  let aiEnabled = $derived($aiStatus?.enabled ?? false);
+  let chatOpen = $state(false);
+  let lightboxSrc = $state("");
+  const BACK_PATHS = new Set<BackPath>([
+    "/",
+    "/care-journal",
+    "/plants",
+    "/settings",
+  ]);
 
-	onMount(async () => {
-		const id = Number($page.params.id);
-		const plant = await loadPlant(id);
-		if (!plant) {
-			notFound = true;
-		} else {
-			await loadCareEvents(id);
-		}
-		loadAiStatus();
-	});
+  const EVENT_LIMIT = 20;
 
-	$effect(() => {
-		const from = $page.url.searchParams.get('from');
-		backHref = from && BACK_PATHS.has(from) ? from : '/';
-	});
+  onMount(async () => {
+    const id = Number($page.params.id);
+    const plant = await loadPlant(id);
+    if (!plant) {
+      notFound = true;
+    } else {
+      await loadCareEvents(id);
+    }
+    loadAiStatus();
+  });
 
-	function handleDelete() {
-		deleteDialogOpen = true;
-	}
+  $effect(() => {
+    const from = $page.url.searchParams.get("from") as BackPath | null;
+    backHref = from && BACK_PATHS.has(from) ? from : "/";
+  });
 
-	async function handleDeleteConfirm() {
-		deleteDialogOpen = false;
-		if (!$currentPlant) return;
-		deleting = true;
-		try {
-			const success = await deletePlant($currentPlant.id);
-			if (success) {
-				goto('/');
-			}
-		} finally {
-			deleting = false;
-		}
-	}
+  function handleDelete() {
+    deleteDialogOpen = true;
+  }
 
-	function lightLabel(needs: string) {
-		if (needs === 'direct') return $translations.plant.lightDirect;
-		if (needs === 'low') return $translations.plant.lightLow;
-		return $translations.plant.lightIndirect;
-	}
+  async function handleDeleteConfirm() {
+    deleteDialogOpen = false;
+    if (!$currentPlant) return;
+    deleting = true;
+    try {
+      const success = await deletePlant($currentPlant.id);
+      if (success) {
+        goto(resolve("/"));
+      }
+    } finally {
+      deleting = false;
+    }
+  }
 
-	function lightIcon(needs: string) {
-		if (needs === 'direct') return Sun;
-		if (needs === 'low') return Cloud;
-		return CloudSun;
-	}
+  function lightLabel(needs: string) {
+    if (needs === "direct") return $translations.plant.lightDirect;
+    if (needs === "low") return $translations.plant.lightLow;
+    return $translations.plant.lightIndirect;
+  }
 
-	async function handleWater() {
-		if (!$currentPlant || watering) return;
-		watering = true;
-		try {
-			await waterPlant($currentPlant.id);
-			await loadCareEvents($currentPlant.id);
-		} finally {
-			watering = false;
-		}
-	}
+  function lightIcon(needs: string) {
+    if (needs === "direct") return Sun;
+    if (needs === "low") return Cloud;
+    return CloudSun;
+  }
 
-	function formatDate(dateStr: string | null): string {
-		if (!dateStr) return $translations.plant.never;
-		const date = new Date(dateStr);
-		if (isNaN(date.getTime())) return dateStr;
-		return date.toLocaleDateString(undefined, {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric'
-		});
-	}
+  async function handleWater() {
+    if (!$currentPlant || watering) return;
+    watering = true;
+    try {
+      await waterPlant($currentPlant.id);
+      await loadCareEvents($currentPlant.id);
+    } finally {
+      watering = false;
+    }
+  }
 
-	function eventTypeLabel(type: string): string {
-		if (type === 'watered') return $translations.care.watered;
-		if (type === 'fertilized') return $translations.care.fertilized;
-		if (type === 'repotted') return $translations.care.repotted;
-		if (type === 'pruned') return $translations.care.pruned;
-		if (type === 'ai-consultation') return $translations.care.aiConsultation;
-		return $translations.care.custom;
-	}
+  function formatDate(dateStr: string | null): string {
+    if (!dateStr) return $translations.plant.never;
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
 
-	function formatShortDate(dateStr: string): string {
-		const date = new Date(dateStr);
-		if (isNaN(date.getTime())) return dateStr;
-		return date.toLocaleDateString(undefined, {
-			month: 'short',
-			day: 'numeric',
-			year: '2-digit'
-		});
-	}
+  function eventTypeLabel(type: string): string {
+    if (type === "watered") return $translations.care.watered;
+    if (type === "fertilized") return $translations.care.fertilized;
+    if (type === "repotted") return $translations.care.repotted;
+    if (type === "pruned") return $translations.care.pruned;
+    if (type === "ai-consultation") return $translations.care.aiConsultation;
+    return $translations.care.custom;
+  }
 
-	function handleEventDelete(event: CareEvent) {
-		deleteEventDialogTarget = event;
-	}
+  function formatShortDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "2-digit",
+    });
+  }
 
-	async function handleEventDeleteConfirm() {
-		const event = deleteEventDialogTarget;
-		deleteEventDialogTarget = null;
-		if (!$currentPlant || !event || deletingEventId === event.id) return;
-		deletingEventId = event.id;
-		await removeCareEvent($currentPlant.id, event.id);
-		await loadPlant($currentPlant.id);
-		deletingEventId = null;
-	}
+  function handleEventDelete(event: CareEvent) {
+    deleteEventDialogTarget = event;
+  }
 
-	let displayEvents = $derived(
-		showAllEvents ? $careEvents : $careEvents.slice(0, EVENT_LIMIT)
-	);
+  async function handleEventDeleteConfirm() {
+    const event = deleteEventDialogTarget;
+    deleteEventDialogTarget = null;
+    if (!$currentPlant || !event || deletingEventId === event.id) return;
+    deletingEventId = event.id;
+    await removeCareEvent($currentPlant.id, event.id);
+    await loadPlant($currentPlant.id);
+    deletingEventId = null;
+  }
 
-	let hasMoreEvents = $derived($careEvents.length > EVENT_LIMIT);
+  let displayEvents = $derived(
+    showAllEvents ? $careEvents : $careEvents.slice(0, EVENT_LIMIT),
+  );
 
-	let LightNeedsIcon = $derived(
-		$currentPlant ? lightIcon($currentPlant.light_needs) : Sun
-	);
+  let hasMoreEvents = $derived($careEvents.length > EVENT_LIMIT);
 
-	function difficultyLabel(val: string): string {
-		if (val === 'easy') return $translations.plant.difficultyEasy;
-		if (val === 'moderate') return $translations.plant.difficultyModerate;
-		return $translations.plant.difficultyDemanding;
-	}
+  let LightNeedsIcon = $derived(
+    $currentPlant ? lightIcon($currentPlant.light_needs) : Sun,
+  );
 
-	function petSafetyLabel(val: string): string {
-		if (val === 'safe') return $translations.plant.petSafe;
-		if (val === 'caution') return $translations.plant.petCaution;
-		return $translations.plant.petToxic;
-	}
+  function difficultyLabel(val: string): string {
+    if (val === "easy") return $translations.plant.difficultyEasy;
+    if (val === "moderate") return $translations.plant.difficultyModerate;
+    return $translations.plant.difficultyDemanding;
+  }
 
-	function growthSpeedLabel(val: string): string {
-		if (val === 'slow') return $translations.plant.growthSlow;
-		if (val === 'moderate') return $translations.plant.growthModerate;
-		return $translations.plant.growthFast;
-	}
+  function petSafetyLabel(val: string): string {
+    if (val === "safe") return $translations.plant.petSafe;
+    if (val === "caution") return $translations.plant.petCaution;
+    return $translations.plant.petToxic;
+  }
 
-	function soilMoistureLabel(val: string): string {
-		if (val === 'dry') return $translations.plant.moistureDry;
-		if (val === 'moderate') return $translations.plant.moistureModerate;
-		return $translations.plant.moistureMoist;
-	}
+  function growthSpeedLabel(val: string): string {
+    if (val === "slow") return $translations.plant.growthSlow;
+    if (val === "moderate") return $translations.plant.growthModerate;
+    return $translations.plant.growthFast;
+  }
 
-	function soilTypeLabel(val: string): string {
-		if (val === 'standard') return $translations.plant.soilStandard;
-		if (val === 'cactus-mix') return $translations.plant.soilCactus;
-		if (val === 'orchid-bark') return $translations.plant.soilOrchid;
-		return $translations.plant.soilPeat;
-	}
+  function soilMoistureLabel(val: string): string {
+    if (val === "dry") return $translations.plant.moistureDry;
+    if (val === "moderate") return $translations.plant.moistureModerate;
+    return $translations.plant.moistureMoist;
+  }
 
-	function openLightbox(src?: string) {
-		const url = src || $currentPlant?.photo_url;
-		if (!url) return;
-		lightboxSrc = url;
-		lightboxOpen = true;
-	}
+  function soilTypeLabel(val: string): string {
+    if (val === "standard") return $translations.plant.soilStandard;
+    if (val === "cactus-mix") return $translations.plant.soilCactus;
+    if (val === "orchid-bark") return $translations.plant.soilOrchid;
+    return $translations.plant.soilPeat;
+  }
 
-	function closeLightbox() {
-		lightboxOpen = false;
-	}
+  function openLightbox(src?: string) {
+    const url = src || $currentPlant?.photo_url;
+    if (!url) return;
+    lightboxSrc = url;
+    lightboxOpen = true;
+  }
+
+  function closeLightbox() {
+    lightboxOpen = false;
+  }
 </script>
 
 {#if notFound}
-	<div class="not-found">
-		<h2>{$translations.plant.notFound}</h2>
-		<p>{$translations.plant.notFoundHint}</p>
-		<a href="/" class="back-link"
-			><ArrowLeft size={16} /> {$translations.plant.backToPlants}</a
-		>
-	</div>
+  <div class="not-found">
+    <h2>{$translations.plant.notFound}</h2>
+    <p>{$translations.plant.notFoundHint}</p>
+    <a href={resolve("/")} class="back-link"
+      ><ArrowLeft size={16} /> {$translations.plant.backToPlants}</a
+    >
+  </div>
 {:else if $currentPlant}
-	<div class="detail">
-		<div class="detail-content">
-			<PageHeader {backHref} backLabel={$translations.common.back}>
-				<a href="/plants/{$currentPlant.id}/edit" class="btn btn-icon">
-					<Pencil size={16} />
-				</a>
-				<button
-					class="btn btn-icon btn-danger"
-					onclick={handleDelete}
-					disabled={deleting}
-				>
-					<Trash2 size={16} />
-				</button>
-			</PageHeader>
+  <div class="detail">
+    <div class="detail-content">
+      <PageHeader
+        backHref={backHref as BackPath}
+        backLabel={$translations.common.back}
+      >
+        <a
+          href={resolve(`/plants/${$currentPlant.id}/edit`)}
+          class="btn btn-icon"
+        >
+          <Pencil size={16} />
+        </a>
+        <button
+          class="btn btn-icon btn-danger"
+          onclick={handleDelete}
+          disabled={deleting}
+        >
+          <Trash2 size={16} />
+        </button>
+      </PageHeader>
 
-			<div class="detail-hero">
-				<div class="detail-photo">
-					{#if $currentPlant.photo_url}
-						<button
-							type="button"
-							class="detail-photo-button"
-							aria-label={$translations.plant.openPhoto}
-							onclick={() => openLightbox()}
-						>
-							<img
-								src={thumbUrl($currentPlant.photo_url, 200)}
-								srcset={thumbSrcset($currentPlant.photo_url)}
-								sizes="(max-width: 768px) 100vw, (min-width: 1280px) 300px, 260px"
-								alt={$currentPlant.name}
-								class="detail-photo-img"
-								onerror={(e) => {
-									const img = e.currentTarget as HTMLImageElement;
-									img.onerror = null;
-									img.src = $currentPlant!.photo_url!;
-								}}
-							/>
-						</button>
-					{:else}
-						<img
-							src={emojiToSvgPath($currentPlant.icon)}
-							alt={$currentPlant.name}
-							class="detail-photo-icon"
-						/>
-					{/if}
-				</div>
-				<div class="detail-info">
-					<div class="detail-name">
-						<h2>{$currentPlant.name}</h2>
-						{#if $currentPlant.species}
-							<span class="detail-species">{$currentPlant.species}</span>
-						{/if}
-					</div>
-					{#if $currentPlant.location_name}
-						<p class="detail-location">
-							<MapPin size={14} />
-							{$currentPlant.location_name}
-						</p>
-					{/if}
-					<div class="detail-status">
-						<StatusBadge
-							status={$currentPlant.watering_status}
-							nextDue={$currentPlant.next_due ?? null}
-						/>
-					</div>
-					<div class="hero-actions">
-						<button
-							class="btn btn-water btn-lg"
-							onclick={handleWater}
-							disabled={watering}
-						>
-							<Droplet size={16} />
-							{watering
-								? $translations.dashboard.watering
-								: $translations.plant.waterNow}
-						</button>
-						{#if aiEnabled}
-							<button
-								class="btn btn-ai btn-lg"
-								onclick={() => (chatOpen = true)}
-							>
-								<Sparkles size={16} />
-								{$translations.chat.askAi}
-							</button>
-						{/if}
-					</div>
-				</div>
-			</div>
+      <div class="detail-hero">
+        <div class="detail-photo">
+          {#if $currentPlant.photo_url}
+            <button
+              type="button"
+              class="detail-photo-button"
+              aria-label={$translations.plant.openPhoto}
+              onclick={() => openLightbox()}
+            >
+              <img
+                src={thumbUrl($currentPlant.photo_url, 200)}
+                srcset={thumbSrcset($currentPlant.photo_url)}
+                sizes="(max-width: 768px) 100vw, (min-width: 1280px) 300px, 260px"
+                alt={$currentPlant.name}
+                class="detail-photo-img"
+                onerror={(e) => {
+                  const img = e.currentTarget as HTMLImageElement;
+                  img.onerror = null;
+                  img.src = $currentPlant!.photo_url!;
+                }}
+              />
+            </button>
+          {:else}
+            <img
+              src={emojiToSvgPath($currentPlant.icon)}
+              alt={$currentPlant.name}
+              class="detail-photo-icon"
+            />
+          {/if}
+        </div>
+        <div class="detail-info">
+          <div class="detail-name">
+            <h2>{$currentPlant.name}</h2>
+            {#if $currentPlant.species}
+              <span class="detail-species">{$currentPlant.species}</span>
+            {/if}
+          </div>
+          {#if $currentPlant.location_name}
+            <p class="detail-location">
+              <MapPin size={14} />
+              {$currentPlant.location_name}
+            </p>
+          {/if}
+          <div class="detail-status">
+            <StatusBadge
+              status={$currentPlant.watering_status}
+              nextDue={$currentPlant.next_due ?? null}
+            />
+          </div>
+          <div class="hero-actions">
+            <button
+              class="btn btn-water btn-lg"
+              onclick={handleWater}
+              disabled={watering}
+            >
+              <Droplet size={16} />
+              {watering
+                ? $translations.dashboard.watering
+                : $translations.plant.waterNow}
+            </button>
+            {#if aiEnabled}
+              <button
+                class="btn btn-ai btn-lg"
+                onclick={() => (chatOpen = true)}
+              >
+                <Sparkles size={16} />
+                {$translations.chat.askAi}
+              </button>
+            {/if}
+          </div>
+        </div>
+      </div>
 
-			<div class="detail-sections">
-				<div class="detail-grid">
-					<div class="section">
-						<div class="section-title">
-							<Droplet size={14} />
-							{$translations.plant.wateringSection}
-						</div>
-						<div class="detail-row">
-							<span class="detail-row-label"
-								>{$translations.plant.interval}</span
-							><span class="detail-row-value"
-								>{$translations.plant.everyNDays.replace(
-									'{n}',
-									String($currentPlant.watering_interval_days)
-								)}
-								<Repeat size={14} /></span
-							>
-						</div>
-						<div class="detail-row">
-							<span class="detail-row-label"
-								>{$translations.plant.lastWatered}</span
-							><span class="detail-row-value"
-								>{formatDate($currentPlant.last_watered)}
-								<CalendarCheck size={14} /></span
-							>
-						</div>
-						<div class="detail-row">
-							<span class="detail-row-label">{$translations.plant.nextDue}</span
-							><span class="detail-row-value"
-								>{$currentPlant.next_due
-									? formatDate($currentPlant.next_due)
-									: $translations.plant.na}
-								<CalendarClock size={14} /></span
-							>
-						</div>
-						{#if $currentPlant.soil_moisture}
-							<div class="detail-row">
-								<span class="detail-row-label"
-									>{$translations.plant.soilMoisture}</span
-								>
-								<span class="detail-row-value"
-									>{soilMoistureLabel($currentPlant.soil_moisture)}
-									<Droplets size={14} /></span
-								>
-							</div>
-						{/if}
-					</div>
-					<div class="section">
-						<div class="section-title">
-							<Info size={14} />
-							{$translations.plant.careInfoSection}
-						</div>
-						<div class="detail-row">
-							<span class="detail-row-label">{$translations.plant.light}</span>
-							<span class="detail-row-value">
-								{lightLabel($currentPlant.light_needs)}
-								<LightNeedsIcon size={14} />
-							</span>
-						</div>
-						{#if $currentPlant.difficulty}
-							<div class="detail-row">
-								<span class="detail-row-label"
-									>{$translations.plant.difficulty}</span
-								>
-								<span class="detail-row-value"
-									>{difficultyLabel($currentPlant.difficulty)}
-									<Gauge size={14} /></span
-								>
-							</div>
-						{/if}
-						{#if $currentPlant.pet_safety}
-							<div class="detail-row">
-								<span class="detail-row-label"
-									>{$translations.plant.petSafety}</span
-								>
-								<span class="detail-row-value"
-									>{petSafetyLabel($currentPlant.pet_safety)}
-									<PawPrint size={14} /></span
-								>
-							</div>
-						{/if}
-						{#if $currentPlant.growth_speed}
-							<div class="detail-row">
-								<span class="detail-row-label"
-									>{$translations.plant.growth}</span
-								>
-								<span class="detail-row-value"
-									>{growthSpeedLabel($currentPlant.growth_speed)}
-									<TrendingUp size={14} /></span
-								>
-							</div>
-						{/if}
-						{#if $currentPlant.soil_type}
-							<div class="detail-row">
-								<span class="detail-row-label">{$translations.plant.soil}</span>
-								<span class="detail-row-value"
-									>{soilTypeLabel($currentPlant.soil_type)}
-									<Layers size={14} /></span
-								>
-							</div>
-						{/if}
-					</div>
-				</div>
+      <div class="detail-sections">
+        <div class="detail-grid">
+          <div class="section">
+            <div class="section-title">
+              <Droplet size={14} />
+              {$translations.plant.wateringSection}
+            </div>
+            <div class="detail-row">
+              <span class="detail-row-label"
+                >{$translations.plant.interval}</span
+              ><span class="detail-row-value"
+                >{$translations.plant.everyNDays.replace(
+                  "{n}",
+                  String($currentPlant.watering_interval_days),
+                )}
+                <Repeat size={14} /></span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="detail-row-label"
+                >{$translations.plant.lastWatered}</span
+              ><span class="detail-row-value"
+                >{formatDate($currentPlant.last_watered)}
+                <CalendarCheck size={14} /></span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="detail-row-label">{$translations.plant.nextDue}</span
+              ><span class="detail-row-value"
+                >{$currentPlant.next_due
+                  ? formatDate($currentPlant.next_due)
+                  : $translations.plant.na}
+                <CalendarClock size={14} /></span
+              >
+            </div>
+            {#if $currentPlant.soil_moisture}
+              <div class="detail-row">
+                <span class="detail-row-label"
+                  >{$translations.plant.soilMoisture}</span
+                >
+                <span class="detail-row-value"
+                  >{soilMoistureLabel($currentPlant.soil_moisture)}
+                  <Droplets size={14} /></span
+                >
+              </div>
+            {/if}
+          </div>
+          <div class="section">
+            <div class="section-title">
+              <Info size={14} />
+              {$translations.plant.careInfoSection}
+            </div>
+            <div class="detail-row">
+              <span class="detail-row-label">{$translations.plant.light}</span>
+              <span class="detail-row-value">
+                {lightLabel($currentPlant.light_needs)}
+                <LightNeedsIcon size={14} />
+              </span>
+            </div>
+            {#if $currentPlant.difficulty}
+              <div class="detail-row">
+                <span class="detail-row-label"
+                  >{$translations.plant.difficulty}</span
+                >
+                <span class="detail-row-value"
+                  >{difficultyLabel($currentPlant.difficulty)}
+                  <Gauge size={14} /></span
+                >
+              </div>
+            {/if}
+            {#if $currentPlant.pet_safety}
+              <div class="detail-row">
+                <span class="detail-row-label"
+                  >{$translations.plant.petSafety}</span
+                >
+                <span class="detail-row-value"
+                  >{petSafetyLabel($currentPlant.pet_safety)}
+                  <PawPrint size={14} /></span
+                >
+              </div>
+            {/if}
+            {#if $currentPlant.growth_speed}
+              <div class="detail-row">
+                <span class="detail-row-label"
+                  >{$translations.plant.growth}</span
+                >
+                <span class="detail-row-value"
+                  >{growthSpeedLabel($currentPlant.growth_speed)}
+                  <TrendingUp size={14} /></span
+                >
+              </div>
+            {/if}
+            {#if $currentPlant.soil_type}
+              <div class="detail-row">
+                <span class="detail-row-label">{$translations.plant.soil}</span>
+                <span class="detail-row-value"
+                  >{soilTypeLabel($currentPlant.soil_type)}
+                  <Layers size={14} /></span
+                >
+              </div>
+            {/if}
+          </div>
+        </div>
 
-				{#if $currentPlant.notes}
-					<div class="section">
-						<div class="section-title">
-							<PencilIcon size={14} />
-							{$translations.plant.notesSection}
-						</div>
-						<div class="detail-notes">{$currentPlant.notes}</div>
-					</div>
-				{/if}
+        {#if $currentPlant.notes}
+          <div class="section">
+            <div class="section-title">
+              <PencilIcon size={14} />
+              {$translations.plant.notesSection}
+            </div>
+            <div class="detail-notes">{$currentPlant.notes}</div>
+          </div>
+        {/if}
 
-				<div class="section care-journal">
-					<div class="section-title">
-						<BookOpen size={14} />
-						{$translations.plant.careJournalSection}
-					</div>
+        <div class="section care-journal">
+          <div class="section-title">
+            <BookOpen size={14} />
+            {$translations.plant.careJournalSection}
+          </div>
 
-					{#if $careEvents.length === 0}
-						<p class="journal-empty">{$translations.plant.noCareEvents}</p>
-					{:else}
-						<ul class="timeline">
-							{#each displayEvents as event}
-								<li class="timeline-item">
-									<span class="timeline-icon">
-										{#if event.event_type === 'watered'}
-											<Droplet size={12} />
-										{:else if event.event_type === 'fertilized'}
-											<Leaf size={12} />
-										{:else if event.event_type === 'repotted'}
-											<Shovel size={12} />
-										{:else if event.event_type === 'pruned'}
-											<Scissors size={12} />
-										{:else if event.event_type === 'ai-consultation'}
-											<Sparkles size={12} />
-										{:else}
-											<PencilIcon size={12} />
-										{/if}
-									</span>
-									<span class="timeline-text">
-										<span class="timeline-top">
-											<span class="timeline-label"
-												>{eventTypeLabel(event.event_type)}</span
-											>
-											<span class="timeline-date"
-												>{formatShortDate(event.occurred_at)}</span
-											>
-										</span>
-										{#if event.photo_url}
-											<button
-												class="timeline-photo"
-												onclick={() => openLightbox(event.photo_url!)}
-											>
-												<img
-													src={thumbUrl(event.photo_url, 200)}
-													srcset={thumbSrcset(event.photo_url)}
-													sizes="72px"
-													alt=""
-													onerror={(e) => {
-														const img = e.currentTarget as HTMLImageElement;
-														img.onerror = null;
-														img.src = event.photo_url!;
-													}}
-												/>
-											</button>
-										{/if}
-										{#if event.notes}
-											<span class="timeline-sub">{event.notes}</span>
-										{/if}
-									</span>
-									<span class="timeline-actions">
-										<button
-											class="btn btn-ghost event-delete"
-											onclick={() => handleEventDelete(event)}
-											disabled={deletingEventId === event.id}
-											aria-label={$translations.plant.deleteLogEntry}
-										>
-											<Trash2 size={16} />
-										</button>
-									</span>
-								</li>
-							{/each}
-						</ul>
-						{#if hasMoreEvents && !showAllEvents}
-							<button
-								class="btn btn-ghost"
-								onclick={() => (showAllEvents = true)}
-								>{$translations.plant.showMore}</button
-							>
-						{/if}
-					{/if}
+          {#if $careEvents.length === 0}
+            <p class="journal-empty">{$translations.plant.noCareEvents}</p>
+          {:else}
+            <ul class="timeline">
+              {#each displayEvents as event (event.id)}
+                <li class="timeline-item">
+                  <span class="timeline-icon">
+                    {#if event.event_type === "watered"}
+                      <Droplet size={12} />
+                    {:else if event.event_type === "fertilized"}
+                      <Leaf size={12} />
+                    {:else if event.event_type === "repotted"}
+                      <Shovel size={12} />
+                    {:else if event.event_type === "pruned"}
+                      <Scissors size={12} />
+                    {:else if event.event_type === "ai-consultation"}
+                      <Sparkles size={12} />
+                    {:else}
+                      <PencilIcon size={12} />
+                    {/if}
+                  </span>
+                  <span class="timeline-text">
+                    <span class="timeline-top">
+                      <span class="timeline-label"
+                        >{eventTypeLabel(event.event_type)}</span
+                      >
+                      <span class="timeline-date"
+                        >{formatShortDate(event.occurred_at)}</span
+                      >
+                    </span>
+                    {#if event.photo_url}
+                      <button
+                        class="timeline-photo"
+                        onclick={() => openLightbox(event.photo_url!)}
+                      >
+                        <img
+                          src={thumbUrl(event.photo_url, 200)}
+                          srcset={thumbSrcset(event.photo_url)}
+                          sizes="72px"
+                          alt=""
+                          onerror={(e) => {
+                            const img = e.currentTarget as HTMLImageElement;
+                            img.onerror = null;
+                            img.src = event.photo_url!;
+                          }}
+                        />
+                      </button>
+                    {/if}
+                    {#if event.notes}
+                      <span class="timeline-sub">{event.notes}</span>
+                    {/if}
+                  </span>
+                  <span class="timeline-actions">
+                    <button
+                      class="btn btn-ghost event-delete"
+                      onclick={() => handleEventDelete(event)}
+                      disabled={deletingEventId === event.id}
+                      aria-label={$translations.plant.deleteLogEntry}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </span>
+                </li>
+              {/each}
+            </ul>
+            {#if hasMoreEvents && !showAllEvents}
+              <button
+                class="btn btn-ghost"
+                onclick={() => (showAllEvents = true)}
+                >{$translations.plant.showMore}</button
+              >
+            {/if}
+          {/if}
 
-					{#if showLogForm}
-						<CareEntryForm
-							plantId={$currentPlant.id}
-							onsubmit={() => {
-								loadCareEvents($currentPlant.id);
-								showLogForm = false;
-							}}
-							oncancel={() => {
-								showLogForm = false;
-							}}
-						/>
-					{:else}
-						<button class="btn btn-ghost" onclick={() => (showLogForm = true)}>
-							{$translations.plant.addLogEntry}
-						</button>
-					{/if}
-				</div>
-			</div>
+          {#if showLogForm}
+            <CareEntryForm
+              plantId={$currentPlant.id}
+              onsubmit={() => {
+                loadCareEvents($currentPlant.id);
+                showLogForm = false;
+              }}
+              oncancel={() => {
+                showLogForm = false;
+              }}
+            />
+          {:else}
+            <button class="btn btn-ghost" onclick={() => (showLogForm = true)}>
+              {$translations.plant.addLogEntry}
+            </button>
+          {/if}
+        </div>
+      </div>
 
-			<PhotoLightbox
-				open={lightboxOpen}
-				src={lightboxSrc}
-				alt={$currentPlant.name}
-				onclose={closeLightbox}
-			/>
-		</div>
+      <PhotoLightbox
+        open={lightboxOpen}
+        src={lightboxSrc}
+        alt={$currentPlant.name}
+        onclose={closeLightbox}
+      />
+    </div>
 
-		<ChatDrawer
-			plant={$currentPlant}
-			open={chatOpen}
-			onclose={() => {
-				chatOpen = false;
-			}}
-			onsave={() => loadCareEvents($currentPlant.id)}
-		/>
-	</div>
+    <ChatDrawer
+      plant={$currentPlant}
+      open={chatOpen}
+      onclose={() => {
+        chatOpen = false;
+      }}
+      onsave={() => loadCareEvents($currentPlant.id)}
+    />
+  </div>
 {:else if $plantsError}
-	<p class="error">{$plantsError}</p>
+  <p class="error">{$plantsError}</p>
 {:else}
-	<p class="loading">{$translations.common.loading}</p>
+  <p class="loading">{$translations.common.loading}</p>
 {/if}
 
 <ModalDialog
-	open={deleteDialogOpen}
-	title={$translations.plant.deletePlant}
-	message={$currentPlant
-		? $translations.plant.deleteConfirm.replace('{name}', $currentPlant.name)
-		: ''}
-	mode="confirm"
-	variant="danger"
-	confirmLabel={$translations.common.delete}
-	onconfirm={handleDeleteConfirm}
-	oncancel={() => {
-		deleteDialogOpen = false;
-	}}
+  open={deleteDialogOpen}
+  title={$translations.plant.deletePlant}
+  message={$currentPlant
+    ? $translations.plant.deleteConfirm.replace("{name}", $currentPlant.name)
+    : ""}
+  mode="confirm"
+  variant="danger"
+  confirmLabel={$translations.common.delete}
+  onconfirm={handleDeleteConfirm}
+  oncancel={() => {
+    deleteDialogOpen = false;
+  }}
 />
 
 <ModalDialog
-	open={deleteEventDialogTarget !== null}
-	title={$translations.plant.deleteLogEntry}
-	message={$translations.plant.deleteLogEntryConfirm}
-	mode="confirm"
-	variant="danger"
-	confirmLabel={$translations.common.delete}
-	onconfirm={handleEventDeleteConfirm}
-	oncancel={() => {
-		deleteEventDialogTarget = null;
-	}}
+  open={deleteEventDialogTarget !== null}
+  title={$translations.plant.deleteLogEntry}
+  message={$translations.plant.deleteLogEntryConfirm}
+  mode="confirm"
+  variant="danger"
+  confirmLabel={$translations.common.delete}
+  onconfirm={handleEventDeleteConfirm}
+  oncancel={() => {
+    deleteEventDialogTarget = null;
+  }}
 />
 
 <style>
-	.detail {
-		max-width: var(--content-width-default);
-		margin: 0 auto;
-	}
+  .detail {
+    max-width: var(--content-width-default);
+    margin: 0 auto;
+  }
 
-	.detail-content {
-		min-width: 0;
-	}
+  .detail-content {
+    min-width: 0;
+  }
 
-	.hero-actions {
-		display: flex;
-		gap: 8px;
-		margin-top: 4px;
-	}
+  .hero-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
 
-	.detail-hero {
-		display: flex;
-		align-items: flex-start;
-		gap: 20px;
-		margin-bottom: 24px;
-	}
+  .detail-hero {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
 
-	.detail-photo {
-		width: 260px;
-		height: 260px;
-		flex-shrink: 0;
-		border-radius: var(--radius-card);
-		overflow: hidden;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
+  .detail-photo {
+    width: 260px;
+    height: 260px;
+    flex-shrink: 0;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-	.detail-photo-button {
-		width: 100%;
-		height: 100%;
-		border: none;
-		background: transparent;
-		padding: 0;
-		cursor: zoom-in;
-	}
+  .detail-photo-button {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: zoom-in;
+  }
 
-	.detail-photo-img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		border-radius: var(--radius-card);
-	}
+  .detail-photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-card);
+  }
 
-	.detail-photo-icon {
-		width: 110px;
-		height: 110px;
-	}
+  .detail-photo-icon {
+    width: 110px;
+    height: 110px;
+  }
 
-	.detail-name {
-		display: flex;
-		align-items: baseline;
-		flex-wrap: wrap;
-		gap: 6px;
-		margin-bottom: 6px;
-	}
+  .detail-name {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
 
-	.detail-info h2 {
-		font-size: var(--fs-page-title);
-		font-weight: 700;
-		margin: 0;
-	}
+  .detail-info h2 {
+    font-size: var(--fs-page-title);
+    font-weight: 700;
+    margin: 0;
+  }
 
-	.detail-species {
-		color: var(--color-text-muted);
-		font-size: 14px;
-		font-style: italic;
-	}
+  .detail-species {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    font-style: italic;
+  }
 
-	.detail-info {
-		flex: 1;
-	}
+  .detail-info {
+    flex: 1;
+  }
 
-	.detail-location {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		color: var(--color-text-muted);
-		font-size: 14px;
-		margin: 0 0 10px;
-	}
+  .detail-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    margin: 0 0 10px;
+  }
 
-	.detail-status {
-		margin-bottom: 14px;
-	}
+  .detail-status {
+    margin-bottom: 14px;
+  }
 
-	.detail-sections {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
+  .detail-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
 
-	.detail-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 16px;
-	}
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
 
-	.detail-row {
-		display: flex;
-		justify-content: space-between;
-		padding: 6px 0;
-		font-size: 14px;
-	}
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+  }
 
-	.detail-row-label {
-		color: var(--color-text-muted);
-	}
+  .detail-row-label {
+    color: var(--color-text-muted);
+  }
 
-	.detail-row-value {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-	}
+  .detail-row-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-	.detail-notes {
-		font-size: 14px;
-		line-height: 1.5;
-		color: var(--color-text);
-		white-space: pre-wrap;
-	}
+  .detail-notes {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--color-text);
+    white-space: pre-wrap;
+  }
 
-	.not-found {
-		text-align: center;
-		padding: 64px 24px;
-	}
+  .not-found {
+    text-align: center;
+    padding: 64px 24px;
+  }
 
-	.not-found h2 {
-		font-size: var(--fs-page-title);
-		font-weight: 600;
-		margin: 0 0 8px;
-	}
+  .not-found h2 {
+    font-size: var(--fs-page-title);
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
 
-	.not-found p {
-		color: var(--color-text-muted);
-		margin: 0 0 24px;
-	}
+  .not-found p {
+    color: var(--color-text-muted);
+    margin: 0 0 24px;
+  }
 
-	.error {
-		color: var(--color-danger);
-		padding: 16px;
-	}
+  .error {
+    color: var(--color-danger);
+    padding: 16px;
+  }
 
-	.loading {
-		color: var(--color-text-muted);
-		padding: 16px;
-	}
+  .loading {
+    color: var(--color-text-muted);
+    padding: 16px;
+  }
 
-	.care-journal {
-		margin-bottom: 16px;
-	}
+  .care-journal {
+    margin-bottom: 16px;
+  }
 
-	.journal-empty {
-		color: var(--color-text-muted);
-		font-size: 14px;
-		margin: 8px 0 0;
-	}
+  .journal-empty {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    margin: 8px 0 0;
+  }
 
-	.timeline {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-	}
+  .timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
 
-	.timeline-item {
-		display: flex;
-		gap: 10px;
-		padding: 8px 0;
-		font-size: 14px;
-		border-bottom: 1px solid var(--color-border);
-		align-items: flex-start;
-	}
+  .timeline-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 14px;
+    border-bottom: 1px solid var(--color-border);
+    align-items: flex-start;
+  }
 
-	.timeline-item:last-child {
-		border-bottom: none;
-	}
+  .timeline-item:last-child {
+    border-bottom: none;
+  }
 
-	.timeline-icon {
-		width: 24px;
-		height: 24px;
-		border-radius: 6px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 12px;
-		flex-shrink: 0;
-		background: var(--color-surface-muted);
-		color: var(--color-text-muted);
-	}
+  .timeline-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    background: var(--color-surface-muted);
+    color: var(--color-text-muted);
+  }
 
-	.timeline-text {
-		flex: 1;
-		min-width: 0;
-	}
+  .timeline-text {
+    flex: 1;
+    min-width: 0;
+  }
 
-	.timeline-top {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 12px;
-		min-height: 24px;
-		margin-bottom: 2px;
-	}
+  .timeline-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    min-height: 24px;
+    margin-bottom: 2px;
+  }
 
-	.timeline-label {
-		font-weight: 500;
-	}
+  .timeline-label {
+    font-weight: 500;
+  }
 
-	.timeline-date {
-		font-size: 12px;
-		color: var(--color-text-muted);
-		flex-shrink: 0;
-	}
+  .timeline-date {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
 
-	.timeline-photo {
-		float: right;
-		width: 72px;
-		height: 72px;
-		border-radius: 8px;
-		overflow: hidden;
-		border: none;
-		padding: 0;
-		background: none;
-		cursor: zoom-in;
-		margin-left: 12px;
-		margin-bottom: 4px;
-	}
+  .timeline-photo {
+    float: right;
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: none;
+    padding: 0;
+    background: none;
+    cursor: zoom-in;
+    margin-left: 12px;
+    margin-bottom: 4px;
+  }
 
-	.timeline-photo img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		display: block;
-	}
+  .timeline-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
 
-	.timeline-actions {
-		display: flex;
-		align-items: center;
-		min-height: 24px;
-	}
+  .timeline-actions {
+    display: flex;
+    align-items: center;
+    min-height: 24px;
+  }
 
-	.event-delete {
-		color: var(--color-text-muted);
-	}
+  .event-delete {
+    color: var(--color-text-muted);
+  }
 
-	.event-delete:hover:not(:disabled) {
-		color: var(--color-danger);
-		opacity: 1;
-	}
+  .event-delete:hover:not(:disabled) {
+    color: var(--color-danger);
+    opacity: 1;
+  }
 
-	.timeline-sub {
-		display: block;
-		color: var(--color-text-muted);
-		font-size: 13px;
-		margin-top: 2px;
-	}
+  .timeline-sub {
+    display: block;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    margin-top: 2px;
+  }
 
-	.btn-ghost:not(.event-delete) {
-		margin-top: 8px;
-	}
+  .btn-ghost:not(.event-delete) {
+    margin-top: 8px;
+  }
 
-	@media (min-width: 1280px) {
-		.detail-photo {
-			width: 300px;
-			height: 300px;
-		}
-	}
+  @media (min-width: 1280px) {
+    .detail-photo {
+      width: 300px;
+      height: 300px;
+    }
+  }
 
-	@media (max-width: 768px) {
-		.detail {
-			padding-bottom: 64px;
-		}
+  @media (max-width: 768px) {
+    .detail {
+      padding-bottom: 64px;
+    }
 
-		.detail-hero {
-			flex-direction: column;
-			gap: 16px;
-		}
+    .detail-hero {
+      flex-direction: column;
+      gap: 16px;
+    }
 
-		.detail-photo {
-			width: 100%;
-			height: 220px;
-		}
+    .detail-photo {
+      width: 100%;
+      height: 220px;
+    }
 
-		.detail-info h2 {
-			font-size: var(--fs-page-title);
-		}
+    .detail-info h2 {
+      font-size: var(--fs-page-title);
+    }
 
-		.detail-info {
-			width: 100%;
-		}
+    .detail-info {
+      width: 100%;
+    }
 
-		.hero-actions :global(.btn) {
-			flex: 1;
-			justify-content: center;
-		}
+    .hero-actions :global(.btn) {
+      flex: 1;
+      justify-content: center;
+    }
 
-		.detail-grid {
-			grid-template-columns: 1fr;
-		}
-	}
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
