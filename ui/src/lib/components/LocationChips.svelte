@@ -4,16 +4,18 @@
   import { translations } from "$lib/stores/locale";
 
   let {
-      locations,
-      value = null,
-      onchange,
-      oncreate,
-      showNone = true,
+    locations,
+    value = null,
+    onchange,
+    oncreate,
+    showNone = true,
   }: {
     locations: Location[];
     value: number | null;
     onchange: (id: number | null) => void;
-    oncreate?: (name: string) => Promise<{ location: Location } | { error: string }>;
+    oncreate?: (
+      name: string,
+    ) => Promise<{ location: Location } | { error: string }>;
     showNone?: boolean;
   } = $props();
 
@@ -37,7 +39,8 @@
     if (!trimmed || !oncreate) return;
 
     const existing = locations.find(
-      (loc) => normalizeLocationName(loc.name) === normalizeLocationName(trimmed),
+      (loc) =>
+        normalizeLocationName(loc.name) === normalizeLocationName(trimmed),
     );
     if (existing) {
       createError = locationExistsMessage(existing.name);

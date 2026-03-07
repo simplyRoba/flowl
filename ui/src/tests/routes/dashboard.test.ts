@@ -223,6 +223,29 @@ describe("needs attention section", () => {
     expect(names[1].textContent).toBe("Due Plant");
   });
 
+  it("sorts attention plants by next due date within the same status", () => {
+    plants.set([
+      makePlant({
+        id: 1,
+        name: "Later Due",
+        watering_status: "due",
+        next_due: "2025-01-10",
+      }),
+      makePlant({
+        id: 2,
+        name: "Sooner Due",
+        watering_status: "due",
+        next_due: "2025-01-05",
+      }),
+    ]);
+    render(Page);
+
+    const attentionSection = document.querySelector(".attention-section");
+    const names = attentionSection!.querySelectorAll(".attention-card-name");
+    expect(names[0].textContent).toBe("Sooner Due");
+    expect(names[1].textContent).toBe("Later Due");
+  });
+
   it("does not include ok plants in attention section", () => {
     plants.set([
       makePlant({ id: 1, name: "Fern", watering_status: "ok" }),
@@ -357,6 +380,39 @@ describe("needs attention section", () => {
     const attentionSection = document.querySelector(".attention-section");
     const link = attentionSection!.querySelector("a");
     expect(link?.getAttribute("href")).toBe("/plants/42?from=/");
+  });
+
+  it("sorts plant cards by due date with the next due first", async () => {
+    plants.set([
+      makePlant({
+        id: 1,
+        name: "No Due",
+        watering_status: "ok",
+        next_due: null,
+      }),
+      makePlant({
+        id: 2,
+        name: "Later",
+        watering_status: "ok",
+        next_due: "2025-01-20",
+      }),
+      makePlant({
+        id: 3,
+        name: "Sooner",
+        watering_status: "ok",
+        next_due: "2025-01-05",
+      }),
+    ]);
+    render(Page);
+
+    await vi.waitFor(() => {
+      expect(document.querySelectorAll(".plant-card-name").length).toBe(3);
+    });
+
+    const names = document.querySelectorAll(".plant-card-name");
+    expect(names[0]?.textContent).toBe("Sooner");
+    expect(names[1]?.textContent).toBe("Later");
+    expect(names[2]?.textContent).toBe("No Due");
   });
 });
 

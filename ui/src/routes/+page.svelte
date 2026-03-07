@@ -35,18 +35,38 @@
     $translations.dashboard.subtitles[timeOfDay][subtitleIndex],
   );
 
+  function duePriority(status: string): number {
+    if (status === "overdue") return 0;
+    if (status === "due") return 1;
+    return 2;
+  }
+
+  function dueTimestamp(nextDue: string | null): number {
+    if (!nextDue) return Number.POSITIVE_INFINITY;
+    const value = new Date(nextDue).getTime();
+    return Number.isNaN(value) ? Number.POSITIVE_INFINITY : value;
+  }
+
+  function comparePlantsByDue(
+    a: (typeof $plants)[number],
+    b: (typeof $plants)[number],
+  ): number {
+    const priorityDiff =
+      duePriority(a.watering_status) - duePriority(b.watering_status);
+    if (priorityDiff !== 0) return priorityDiff;
+
+    const dueDiff = dueTimestamp(a.next_due) - dueTimestamp(b.next_due);
+    if (dueDiff !== 0) return dueDiff;
+
+    return a.name.localeCompare(b.name);
+  }
+
+  let sortedPlants = $derived([...$plants].sort(comparePlantsByDue));
+
   let attentionPlants = $derived(
-    $plants
-      .filter(
-        (p) => p.watering_status === "overdue" || p.watering_status === "due",
-      )
-      .sort((a, b) => {
-        if (a.watering_status === "overdue" && b.watering_status !== "overdue")
-          return -1;
-        if (a.watering_status !== "overdue" && b.watering_status === "overdue")
-          return 1;
-        return 0;
-      }),
+    sortedPlants.filter(
+      (p) => p.watering_status === "overdue" || p.watering_status === "due",
+    ),
   );
 
   let subtitle = $derived(
@@ -209,7 +229,7 @@
     </div>
   {:else}
     <div class="plant-grid">
-      {#each $plants as plant (plant.id)}
+      {#each sortedPlants as plant (plant.id)}
         <a href={resolve(`/plants/${plant.id}?from=/`)} class="plant-card">
           {#if plant.photo_url}
             <div class="plant-card-photo">

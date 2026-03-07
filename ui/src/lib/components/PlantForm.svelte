@@ -17,7 +17,7 @@
     ChevronLeft,
     ChevronRight,
   } from "lucide-svelte";
-  import type { Plant, CreatePlant, Location, IdentifyResult } from "$lib/api";
+  import type { Plant, CreatePlant, IdentifyResult } from "$lib/api";
   import { identifyPlant } from "$lib/api";
   import { aiStatus, loadAiStatus } from "$lib/stores/ai";
   import {

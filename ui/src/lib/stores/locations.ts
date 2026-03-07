@@ -6,9 +6,7 @@ import { translations } from "./locale";
 export const locations = writable<Location[]>([]);
 export const locationsError = writable<string | null>(null);
 
-export type CreateLocationResult =
-  | { location: Location }
-  | { error: string };
+export type CreateLocationResult = { location: Location } | { error: string };
 
 function localizeLocationError(message: string): string {
   const match = /^Location ['"](.+?)['"] already exists$/.exec(message);
