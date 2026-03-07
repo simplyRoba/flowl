@@ -18,7 +18,7 @@ Run two terminals:
 
 ```bash
 # Terminal 1: UI with hot module reload
-cd ui && npm run dev
+npm run dev --prefix ui
 
 # Terminal 2: Rust backend with auto-restart on code changes
 FLOWL_DB_PATH=/tmp/flowl.db FLOWL_AI_API_KEY=ENABLE-AI-UI FLOWL_MQTT_DISABLED=true SKIP_UI_BUILD=1 cargo watch -x run
@@ -53,7 +53,7 @@ cargo test --test ui
 Or run vitest directly for watch mode during UI development:
 
 ```bash
-cd ui && npx vitest
+npm --prefix ui exec vitest --watch
 ```
 
 ### Linting and formatting
