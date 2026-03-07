@@ -112,12 +112,11 @@
       </div>
       <div class="attention-cards">
         {#each attentionPlants as plant (plant.id)}
-          <div class="attention-card">
-            <div
-              class="attention-card-accent"
-              class:accent-overdue={plant.watering_status === "overdue"}
-              class:accent-due={plant.watering_status === "due"}
-            ></div>
+          <div
+            class="attention-card"
+            class:attention-card-overdue={plant.watering_status === "overdue"}
+            class:attention-card-due={plant.watering_status === "due"}
+          >
             {#if plant.photo_url}
               <div class="attention-card-photo">
                 <img
@@ -429,6 +428,7 @@
     border-radius: var(--radius-card);
     overflow: hidden;
     border: 1px solid var(--color-border);
+    border-left-width: 4px;
     background: var(--color-surface);
     cursor: pointer;
     transition:
@@ -441,17 +441,12 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   }
 
-  .attention-card-accent {
-    width: 4px;
-    flex-shrink: 0;
+  .attention-card-overdue {
+    border-left-color: var(--color-danger);
   }
 
-  .accent-overdue {
-    background: var(--color-danger);
-  }
-
-  .accent-due {
-    background: var(--color-warning);
+  .attention-card-due {
+    border-left-color: var(--color-warning);
   }
 
   .attention-card-photo {

@@ -154,28 +154,30 @@
         onmouseenter={() => pauseDismiss(notification.id)}
         onmouseleave={() => resumeDismiss(notification)}
       >
-        <div class="toast-message">{notification.message}</div>
+        <div class="toast-body">
+          <div class="toast-message">{notification.message}</div>
 
-        <div class="toast-actions">
-          {#if notification.action}
+          <div class="toast-actions">
+            {#if notification.action}
+              <button
+                type="button"
+                class="toast-action"
+                onclick={() => handleAction(notification)}
+              >
+                {notification.action.label}
+              </button>
+            {/if}
+
             <button
               type="button"
-              class="toast-action"
-              onclick={() => handleAction(notification)}
+              class="toast-close"
+              aria-label={$translations.common.close}
+              onkeydown={(event) => handleCloseKeydown(event, notification.id)}
+              onclick={() => dismissNotification(notification.id)}
             >
-              {notification.action.label}
+              <X size={14} />
             </button>
-          {/if}
-
-          <button
-            type="button"
-            class="toast-close"
-            aria-label={$translations.common.close}
-            onkeydown={(event) => handleCloseKeydown(event, notification.id)}
-            onclick={() => dismissNotification(notification.id)}
-          >
-            <X size={14} />
-          </button>
+          </div>
         </div>
       </div>
     {/each}
@@ -200,25 +202,34 @@
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    justify-content: space-between;
-    padding: 12px 14px;
-    border-radius: 14px;
+    border-radius: var(--radius-card);
     border: 1px solid var(--color-border);
-    background: color-mix(in srgb, var(--color-surface) 96%, transparent);
-    box-shadow: 0 18px 40px rgba(44, 36, 24, 0.14);
-    backdrop-filter: blur(10px);
+    border-left-width: 4px;
+    background: var(--color-surface);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    padding: 12px 14px;
   }
 
   .toast-success {
-    border-left: 4px solid var(--color-success);
+    border-left-color: var(--color-success);
   }
 
   .toast-info {
-    border-left: 4px solid var(--color-primary);
+    border-left-color: var(--color-primary);
   }
 
   .toast-error {
-    border-left: 4px solid var(--color-danger);
+    border-left-color: var(--color-danger);
+  }
+
+  .toast-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
   }
 
   .toast-message {
@@ -226,12 +237,13 @@
     font-size: 14px;
     line-height: 1.4;
     color: var(--color-text);
+    padding-top: 1px;
   }
 
   .toast-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     flex-shrink: 0;
   }
 
@@ -241,22 +253,31 @@
     align-items: center;
     justify-content: center;
     border: none;
+    border-radius: var(--radius-btn);
     background: none;
     color: var(--color-text-muted);
     cursor: pointer;
     font: inherit;
     font-size: 13px;
-    padding: 2px 4px;
+    min-height: 30px;
+    padding: 0 10px;
+    transition: color var(--transition-speed);
   }
 
   .toast-action {
     color: var(--color-primary);
     font-weight: 600;
+    padding-inline: 12px;
   }
 
   .toast-close:hover,
   .toast-action:hover {
     color: var(--color-text);
+  }
+
+  .toast-close {
+    width: 30px;
+    padding: 0;
   }
 
   .toast-host-mobile {
@@ -265,5 +286,20 @@
     bottom: auto;
     left: 16px;
     width: auto;
+  }
+
+  @media (max-width: 768px) {
+    .toast-body {
+      width: 100%;
+    }
+
+    .toast-action,
+    .toast-close {
+      min-height: 32px;
+    }
+
+    .toast-close {
+      width: 32px;
+    }
   }
 </style>
