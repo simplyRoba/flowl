@@ -308,6 +308,7 @@ export const es: Translations = {
     days: "días",
     none: "Ninguna",
     locationName: "Nombre de ubicación",
+    locationExists: 'La ubicación "{name}" ya existe',
     add: "Añadir",
     newLocation: "+ Nueva",
     difficulty: "Dificultad",

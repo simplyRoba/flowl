@@ -109,7 +109,7 @@ describe("LocationChips", () => {
     const user = userEvent.setup();
     const onchange = vi.fn();
     const newLoc: Location = { id: 3, name: "Balcony", plant_count: 0 };
-    const oncreate = vi.fn().mockResolvedValue(newLoc);
+    const oncreate = vi.fn().mockResolvedValue({ location: newLoc });
     render(LocationChips, {
       props: { locations: mockLocations, value: null, onchange, oncreate },
     });
@@ -121,5 +121,39 @@ describe("LocationChips", () => {
 
     expect(oncreate).toHaveBeenCalledWith("Balcony");
     expect(onchange).toHaveBeenCalledWith(3);
+  });
+
+  it("shows an inline error when the location already exists", async () => {
+    const user = userEvent.setup();
+    const onchange = vi.fn();
+    const oncreate = vi.fn();
+    render(LocationChips, {
+      props: { locations: mockLocations, value: null, onchange, oncreate },
+    });
+
+    await user.click(screen.getByText("+ New"));
+    await user.type(screen.getByPlaceholderText("Location name"), "kitchen");
+    await user.click(screen.getByText("Add"));
+
+    expect(oncreate).not.toHaveBeenCalled();
+    expect(screen.getByText('Location "Kitchen" already exists')).toBeTruthy();
+    expect(onchange).not.toHaveBeenCalled();
+  });
+
+  it("shows backend create errors inline and keeps the form open", async () => {
+    const user = userEvent.setup();
+    const onchange = vi.fn();
+    const oncreate = vi.fn().mockResolvedValue({ error: "Duplicate" });
+    render(LocationChips, {
+      props: { locations: mockLocations, value: null, onchange, oncreate },
+    });
+
+    await user.click(screen.getByText("+ New"));
+    await user.type(screen.getByPlaceholderText("Location name"), "Office");
+    await user.click(screen.getByText("Add"));
+
+    expect(screen.getByText("Duplicate")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Location name")).toBeTruthy();
+    expect(onchange).not.toHaveBeenCalled();
   });
 });

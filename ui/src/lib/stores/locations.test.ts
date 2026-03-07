@@ -59,7 +59,7 @@ describe("createLocation", () => {
     locations.set([mockLocation2]); // Kitchen
     vi.mocked(api.createLocation).mockResolvedValue(mockLocation3); // Balcony
     const result = await createLocation("Balcony");
-    expect(result).toEqual(mockLocation3);
+    expect(result).toEqual({ location: mockLocation3 });
     const list = get(locations);
     expect(list[0].name).toBe("Balcony");
     expect(list[1].name).toBe("Kitchen");
@@ -68,8 +68,19 @@ describe("createLocation", () => {
   it("sets error on failure", async () => {
     vi.mocked(api.createLocation).mockRejectedValue(new Error("Duplicate"));
     const result = await createLocation("Bedroom");
-    expect(result).toBeNull();
+    expect(result).toEqual({ error: "Duplicate" });
     expect(get(locationsError)).toBe("Duplicate");
+  });
+
+  it("translates duplicate create errors from the backend", async () => {
+    vi.mocked(api.createLocation).mockRejectedValue(
+      new Error("Location 'Bedroom' already exists"),
+    );
+
+    const result = await createLocation("Bedroom");
+
+    expect(result).toEqual({ error: 'Location "Bedroom" already exists' });
+    expect(get(locationsError)).toBe('Location "Bedroom" already exists');
   });
 });
 
@@ -90,6 +101,17 @@ describe("updateLocation", () => {
     const result = await updateLocation(1, "New Name");
     expect(result).toEqual({ error: "Update failed" });
     expect(get(locationsError)).toBe("Update failed");
+  });
+
+  it("translates duplicate update errors from the backend", async () => {
+    vi.mocked(api.updateLocation).mockRejectedValue(
+      new Error("Location 'Kitchen' already exists"),
+    );
+
+    const result = await updateLocation(1, "Kitchen");
+
+    expect(result).toEqual({ error: 'Location "Kitchen" already exists' });
+    expect(get(locationsError)).toBe('Location "Kitchen" already exists');
   });
 });
 

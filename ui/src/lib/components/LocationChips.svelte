@@ -4,29 +4,54 @@
   import { translations } from "$lib/stores/locale";
 
   let {
-    locations,
-    value = null,
-    onchange,
-    oncreate,
-    showNone = true,
+      locations,
+      value = null,
+      onchange,
+      oncreate,
+      showNone = true,
   }: {
     locations: Location[];
     value: number | null;
     onchange: (id: number | null) => void;
-    oncreate?: (name: string) => Promise<Location | null>;
+    oncreate?: (name: string) => Promise<{ location: Location } | { error: string }>;
     showNone?: boolean;
   } = $props();
 
   let adding = $state(false);
   let newName = $state("");
+  let createError = $state("");
+
+  function normalizeLocationName(name: string): string {
+    return name.trim().toLocaleLowerCase();
+  }
+
+  function locationExistsMessage(name: string): string {
+    const form = $translations.form as typeof $translations.form & {
+      locationExists: string;
+    };
+    return form.locationExists.replace("{name}", name);
+  }
 
   async function handleCreate() {
-    if (!newName.trim() || !oncreate) return;
-    const loc = await oncreate(newName.trim());
-    if (loc) {
-      onchange(loc.id);
+    const trimmed = newName.trim();
+    if (!trimmed || !oncreate) return;
+
+    const existing = locations.find(
+      (loc) => normalizeLocationName(loc.name) === normalizeLocationName(trimmed),
+    );
+    if (existing) {
+      createError = locationExistsMessage(existing.name);
+      return;
+    }
+
+    const result = await oncreate(trimmed);
+    if ("location" in result) {
+      onchange(result.location.id);
       newName = "";
+      createError = "";
       adding = false;
+    } else {
+      createError = result.error;
     }
   }
 </script>
@@ -61,25 +86,35 @@
         handleCreate();
       }}
     >
-      <input
-        type="text"
-        bind:value={newName}
-        placeholder={$translations.form.locationName}
-        class="input new-input"
-      />
-      <button type="submit" class="chip add-btn"
-        >{$translations.form.add}</button
-      >
-      <button
-        type="button"
-        class="chip"
-        onclick={() => {
-          adding = false;
-          newName = "";
-        }}
-      >
-        {$translations.common.cancel}
-      </button>
+      <div class="new-location-row">
+        <input
+          type="text"
+          bind:value={newName}
+          placeholder={$translations.form.locationName}
+          class="input new-input"
+          class:input-error={createError}
+          oninput={() => {
+            createError = "";
+          }}
+        />
+        <button type="submit" class="chip add-btn"
+          >{$translations.form.add}</button
+        >
+        <button
+          type="button"
+          class="chip"
+          onclick={() => {
+            adding = false;
+            newName = "";
+            createError = "";
+          }}
+        >
+          {$translations.common.cancel}
+        </button>
+      </div>
+      {#if createError}
+        <span class="field-error" aria-live="polite">{createError}</span>
+      {/if}
     </form>
   {:else}
     <button
@@ -87,6 +122,7 @@
       class="chip chip-dashed"
       onclick={() => {
         adding = true;
+        createError = "";
       }}
     >
       {$translations.form.newLocation}
@@ -99,7 +135,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    align-items: center;
+    align-items: flex-start;
   }
 
   .chip {
@@ -107,6 +143,12 @@
   }
 
   .new-location {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .new-location-row {
     display: flex;
     gap: 8px;
     align-items: center;
@@ -128,5 +170,10 @@
     padding: 8px 14px;
     font-size: var(--fs-chip);
     border-radius: var(--radius-pill);
+  }
+
+  .field-error {
+    font-size: var(--fs-chip);
+    color: var(--color-danger);
   }
 </style>

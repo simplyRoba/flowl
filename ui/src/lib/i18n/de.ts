@@ -310,6 +310,7 @@ export const de: Translations = {
     days: "Tage",
     none: "Kein",
     locationName: "Standortname",
+    locationExists: 'Standort "{name}" existiert bereits',
     add: "Hinzufügen",
     newLocation: "+ Neu",
     difficulty: "Schwierigkeit",

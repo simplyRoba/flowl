@@ -478,7 +478,7 @@
 
   async function handleCreateLocation(
     locationName: string,
-  ): Promise<Location | null> {
+  ): Promise<Awaited<ReturnType<typeof createLocation>>> {
     return await createLocation(locationName);
   }
 </script>

@@ -17,6 +17,11 @@
 - Ollama provider implementation (behind the same trait)
 - Provider selection via env var or Settings UI
 
+## Error Handling & Localization
+
+- Stop showing backend-provided error strings directly in the UI; they bypass frontend localization and are never translated correctly for the active locale
+- Introduce stable error codes / translation keys for API validation and conflict responses, then map them to localized frontend messages
+
 ## PWA Level 2 — Enhanced Install Experience
 - Add `beforeinstallprompt` handler for a custom in-app install banner (Android/Chrome only)
 - Add Apple-specific meta tags (`apple-mobile-web-app-capable`, `apple-touch-icon`) for better iOS integration

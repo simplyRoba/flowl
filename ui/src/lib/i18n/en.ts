@@ -304,6 +304,7 @@ const en = {
     days: "days",
     none: "None",
     locationName: "Location name",
+    locationExists: 'Location "{name}" already exists',
     add: "Add",
     newLocation: "+ New",
     difficulty: "Difficulty",

@@ -6,6 +6,19 @@ import { translations } from "./locale";
 export const locations = writable<Location[]>([]);
 export const locationsError = writable<string | null>(null);
 
+export type CreateLocationResult =
+  | { location: Location }
+  | { error: string };
+
+function localizeLocationError(message: string): string {
+  const match = /^Location ['"](.+?)['"] already exists$/.exec(message);
+  if (match) {
+    return get(translations).form.locationExists.replace("{name}", match[1]);
+  }
+
+  return message;
+}
+
 export async function loadLocations() {
   locationsError.set(null);
   try {
@@ -18,19 +31,23 @@ export async function loadLocations() {
   }
 }
 
-export async function createLocation(name: string): Promise<Location | null> {
+export async function createLocation(
+  name: string,
+): Promise<CreateLocationResult> {
   locationsError.set(null);
   try {
     const location = await api.createLocation(name);
     locations.update((list) =>
       [...list, location].sort((a, b) => a.name.localeCompare(b.name)),
     );
-    return location;
+    return { location };
   } catch (e) {
-    locationsError.set(
-      e instanceof Error ? e.message : get(translations).error.createLocation,
-    );
-    return null;
+    const message =
+      e instanceof Error
+        ? localizeLocationError(e.message)
+        : get(translations).error.createLocation;
+    locationsError.set(message);
+    return { error: message };
   }
 }
 
@@ -49,7 +66,9 @@ export async function updateLocation(
     return { location };
   } catch (e) {
     const message =
-      e instanceof Error ? e.message : get(translations).error.updateLocation;
+      e instanceof Error
+        ? localizeLocationError(e.message)
+        : get(translations).error.updateLocation;
     locationsError.set(message);
     return { error: message };
   }
