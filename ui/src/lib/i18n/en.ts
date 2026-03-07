@@ -225,6 +225,7 @@ const en = {
     importConfirm:
       'Import "{name}"? All existing data and photos will be replaced.',
     importFailed: "Import failed",
+    exportFailed: "Export failed",
     importResult:
       "Imported {plants} plants, {photos} photos, {care_events} log entries, {locations} locations",
     statsLabel: "Plants",

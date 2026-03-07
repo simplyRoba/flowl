@@ -231,6 +231,7 @@ export const de: Translations = {
     importConfirm:
       '"{name}" importieren? Alle vorhandenen Daten und Fotos werden ersetzt.',
     importFailed: "Import fehlgeschlagen",
+    exportFailed: "Export fehlgeschlagen",
     importResult:
       "{plants} Pflanzen, {photos} Fotos, {care_events} Einträge, {locations} Standorte importiert",
     statsLabel: "Pflanzen",

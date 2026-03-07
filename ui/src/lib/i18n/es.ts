@@ -229,6 +229,7 @@ export const es: Translations = {
     importConfirm:
       '¿Importar "{name}"? Todos los datos y fotos existentes serán reemplazados.',
     importFailed: "Importación fallida",
+    exportFailed: "Exportación fallida",
     importResult:
       "{plants} plantas, {photos} fotos, {care_events} entradas, {locations} ubicaciones importadas",
     statsLabel: "Plantas",

@@ -182,17 +182,7 @@ describe("settings data section export/import", () => {
   });
 
   it("export button navigates to export URL", async () => {
-    // Mock window.location.href setter
-    const hrefSpy = vi.fn();
-    Object.defineProperty(window, "location", {
-      value: { ...window.location, href: "" },
-      writable: true,
-      configurable: true,
-    });
-    Object.defineProperty(window.location, "href", {
-      set: hrefSpy,
-      configurable: true,
-    });
+    const exportSpy = vi.spyOn(api, "exportData").mockResolvedValue();
 
     render(Page);
     await waitFor(() => {
@@ -201,7 +191,32 @@ describe("settings data section export/import", () => {
 
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /Export/ }));
-    expect(hrefSpy).toHaveBeenCalledWith("/api/data/export");
+
+    await waitFor(() => {
+      expect(exportSpy).toHaveBeenCalledTimes(1);
+    });
+    expect(mockPushNotification).not.toHaveBeenCalled();
+  });
+
+  it("shows a toast when export fails before download starts", async () => {
+    vi.spyOn(api, "exportData").mockRejectedValue(new Error("Export unavailable"));
+
+    render(Page);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Export/ })).toBeTruthy();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Export/ }));
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "error",
+          message: "Export unavailable",
+        }),
+      );
+    });
   });
 
   it("import button opens file picker", async () => {

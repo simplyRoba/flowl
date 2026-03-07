@@ -40,6 +40,7 @@
     fetchMqttStatus,
     repairMqtt,
     importData,
+    exportData,
     type AppInfo,
     type Stats,
     type MqttStatus,
@@ -80,6 +81,7 @@
   });
   let repairLoading = $state(false);
   let importLoading = $state(false);
+  let exportLoading = $state(false);
   let fileInput: HTMLInputElement = $state() as HTMLInputElement;
 
   // Dialog state
@@ -193,8 +195,21 @@
     }
   }
 
-  function handleExport() {
-    window.location.href = "/api/data/export";
+  async function handleExport() {
+    if (exportLoading) return;
+
+    exportLoading = true;
+    try {
+      await exportData();
+    } catch (e: unknown) {
+      pushNotification({
+        variant: "error",
+        message:
+          e instanceof Error ? e.message : get(translations).settings.exportFailed,
+      });
+    } finally {
+      exportLoading = false;
+    }
   }
 
   function handleImportClick() {
@@ -562,7 +577,11 @@
             bind:this={fileInput}
             onchange={handleFileSelected}
           />
-          <button class="btn btn-outline btn-sm" onclick={handleExport}>
+          <button
+            class="btn btn-outline btn-sm"
+            disabled={exportLoading}
+            onclick={handleExport}
+          >
             <Download size={14} />
             {$translations.settings.exportBtn}
           </button>
