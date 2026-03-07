@@ -348,7 +348,7 @@ const en = {
     lightRequirements: "Light requirements",
     whyOverdue: "Why is it overdue?",
     helpIdentify: "Help identify",
-    saveNote: "Save note",
+    saveNote: "Create note",
     savingNote: "Summarizing...",
     summaryPlaceholder: "Edit the summary before saving...",
     saveSummary: "Save",

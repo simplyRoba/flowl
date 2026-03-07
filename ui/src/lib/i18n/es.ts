@@ -352,7 +352,7 @@ export const es: Translations = {
     lightRequirements: "Requisitos de luz",
     whyOverdue: "¿Por qué está atrasada?",
     helpIdentify: "Ayuda a identificar",
-    saveNote: "Guardar nota",
+    saveNote: "Crear nota",
     savingNote: "Resumiendo...",
     summaryPlaceholder: "Edita el resumen antes de guardar...",
     saveSummary: "Guardar",

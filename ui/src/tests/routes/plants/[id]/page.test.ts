@@ -611,7 +611,7 @@ describe("chat drawer save note", () => {
     await openChatAndSendMessage();
     // Chat is open but no messages have been sent
     await waitFor(() => {
-      expect(screen.queryByText("Save note")).toBeNull();
+      expect(screen.queryByText("Create note")).toBeNull();
     });
   });
 
@@ -652,10 +652,10 @@ describe("chat drawer save note", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Looks healthy")).toBeTruthy();
-      expect(screen.getByText("Save note")).toBeTruthy();
+      expect(screen.getByText("Create note")).toBeTruthy();
     });
 
-    await user.click(screen.getByText("Save note"));
+    await user.click(screen.getByText("Create note"));
 
     await waitFor(() => {
       expect(screen.getByDisplayValue("Healthy and growing well")).toBeTruthy();
@@ -712,10 +712,10 @@ describe("chat drawer save note", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Looks healthy")).toBeTruthy();
-      expect(screen.getByText("Save note")).toBeTruthy();
+      expect(screen.getByText("Create note")).toBeTruthy();
     });
 
-    await user.click(screen.getByText("Save note"));
+    await user.click(screen.getByText("Create note"));
 
     await waitFor(() => {
       expect(screen.getByDisplayValue("Healthy and growing well")).toBeTruthy();
