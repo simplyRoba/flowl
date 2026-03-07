@@ -1,264 +1,264 @@
 <script lang="ts">
-	import { X } from 'lucide-svelte';
-	import { translations } from '$lib/stores/locale';
+  import { X } from "lucide-svelte";
+  import { translations } from "$lib/stores/locale";
 
-	let {
-		open = false,
-		src = '',
-		alt = '',
-		onclose
-	}: {
-		open?: boolean;
-		src?: string;
-		alt?: string;
-		onclose?: () => void;
-	} = $props();
+  let {
+    open = false,
+    src = "",
+    alt = "",
+    onclose,
+  }: {
+    open?: boolean;
+    src?: string;
+    alt?: string;
+    onclose?: () => void;
+  } = $props();
 
-	let zoom = $state(1);
-	let translateX = $state(0);
-	let translateY = $state(0);
-	let isPanning = $state(false);
-	let panStartX = $state(0);
-	let panStartY = $state(0);
-	let panOriginX = $state(0);
-	let panOriginY = $state(0);
-	let pinchStartDistance = $state<number | null>(null);
-	let pinchStartZoom = $state(1);
-	let imageEl: HTMLImageElement | null = $state(null);
-	let dialogEl: HTMLDialogElement | undefined = $state();
-	let bodyOverflow = $state('');
+  let zoom = $state(1);
+  let translateX = $state(0);
+  let translateY = $state(0);
+  let isPanning = $state(false);
+  let panStartX = $state(0);
+  let panStartY = $state(0);
+  let panOriginX = $state(0);
+  let panOriginY = $state(0);
+  let pinchStartDistance = $state<number | null>(null);
+  let pinchStartZoom = $state(1);
+  let imageEl: HTMLImageElement | null = $state(null);
+  let dialogEl: HTMLDialogElement | undefined = $state();
+  let bodyOverflow = $state("");
 
-	const MIN_ZOOM = 1;
-	const MAX_ZOOM = 3;
+  const MIN_ZOOM = 1;
+  const MAX_ZOOM = 3;
 
-	function requestClose() {
-		onclose?.();
-	}
+  function requestClose() {
+    onclose?.();
+  }
 
-	function handleCancel(e: Event) {
-		e.preventDefault();
-		requestClose();
-	}
+  function handleCancel(e: Event) {
+    e.preventDefault();
+    requestClose();
+  }
 
-	function handleBackdropClick(e: MouseEvent) {
-		if (e.target === dialogEl) {
-			requestClose();
-		}
-	}
+  function handleBackdropClick(e: MouseEvent) {
+    if (e.target === dialogEl) {
+      requestClose();
+    }
+  }
 
-	function clamp(value: number, min: number, max: number): number {
-		return Math.min(max, Math.max(min, value));
-	}
+  function clamp(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
+  }
 
-	function clampTranslate(nextX: number, nextY: number) {
-		if (!imageEl) {
-			return { x: nextX, y: nextY };
-		}
-		const baseWidth = imageEl.clientWidth;
-		const baseHeight = imageEl.clientHeight;
-		const maxX = Math.max(0, (baseWidth * zoom - baseWidth) / 2);
-		const maxY = Math.max(0, (baseHeight * zoom - baseHeight) / 2);
-		return {
-			x: clamp(nextX, -maxX, maxX),
-			y: clamp(nextY, -maxY, maxY)
-		};
-	}
+  function clampTranslate(nextX: number, nextY: number) {
+    if (!imageEl) {
+      return { x: nextX, y: nextY };
+    }
+    const baseWidth = imageEl.clientWidth;
+    const baseHeight = imageEl.clientHeight;
+    const maxX = Math.max(0, (baseWidth * zoom - baseWidth) / 2);
+    const maxY = Math.max(0, (baseHeight * zoom - baseHeight) / 2);
+    return {
+      x: clamp(nextX, -maxX, maxX),
+      y: clamp(nextY, -maxY, maxY),
+    };
+  }
 
-	function handleWheel(event: WheelEvent) {
-		if (!open) return;
-		event.preventDefault();
-		zoom = clamp(zoom + event.deltaY * -0.002, MIN_ZOOM, MAX_ZOOM);
-		const clamped = clampTranslate(translateX, translateY);
-		translateX = clamped.x;
-		translateY = clamped.y;
-	}
+  function handleWheel(event: WheelEvent) {
+    if (!open) return;
+    event.preventDefault();
+    zoom = clamp(zoom + event.deltaY * -0.002, MIN_ZOOM, MAX_ZOOM);
+    const clamped = clampTranslate(translateX, translateY);
+    translateX = clamped.x;
+    translateY = clamped.y;
+  }
 
-	function handlePointerDown(event: PointerEvent) {
-		if (!open || zoom <= 1) return;
-		isPanning = true;
-		panStartX = event.clientX;
-		panStartY = event.clientY;
-		panOriginX = translateX;
-		panOriginY = translateY;
-	}
+  function handlePointerDown(event: PointerEvent) {
+    if (!open || zoom <= 1) return;
+    isPanning = true;
+    panStartX = event.clientX;
+    panStartY = event.clientY;
+    panOriginX = translateX;
+    panOriginY = translateY;
+  }
 
-	function handleWindowPointerMove(event: PointerEvent) {
-		if (!isPanning) return;
-		const nextX = panOriginX + (event.clientX - panStartX);
-		const nextY = panOriginY + (event.clientY - panStartY);
-		const clamped = clampTranslate(nextX, nextY);
-		translateX = clamped.x;
-		translateY = clamped.y;
-	}
+  function handleWindowPointerMove(event: PointerEvent) {
+    if (!isPanning) return;
+    const nextX = panOriginX + (event.clientX - panStartX);
+    const nextY = panOriginY + (event.clientY - panStartY);
+    const clamped = clampTranslate(nextX, nextY);
+    translateX = clamped.x;
+    translateY = clamped.y;
+  }
 
-	function handleWindowPointerUp() {
-		isPanning = false;
-	}
+  function handleWindowPointerUp() {
+    isPanning = false;
+  }
 
-	function touchDistance(touches: TouchList): number {
-		const [a, b] = [touches[0], touches[1]];
-		const dx = a.clientX - b.clientX;
-		const dy = a.clientY - b.clientY;
-		return Math.hypot(dx, dy);
-	}
+  function touchDistance(touches: TouchList): number {
+    const [a, b] = [touches[0], touches[1]];
+    const dx = a.clientX - b.clientX;
+    const dy = a.clientY - b.clientY;
+    return Math.hypot(dx, dy);
+  }
 
-	function handleWindowTouchStart(event: TouchEvent) {
-		if (!open) return;
-		if (event.touches.length === 2) {
-			pinchStartDistance = touchDistance(event.touches);
-			pinchStartZoom = zoom;
-		}
-	}
+  function handleWindowTouchStart(event: TouchEvent) {
+    if (!open) return;
+    if (event.touches.length === 2) {
+      pinchStartDistance = touchDistance(event.touches);
+      pinchStartZoom = zoom;
+    }
+  }
 
-	function handleWindowTouchMove(event: TouchEvent) {
-		if (!open || event.touches.length !== 2 || !pinchStartDistance) return;
-		event.preventDefault();
-		zoom = clamp(
-			pinchStartZoom * (touchDistance(event.touches) / pinchStartDistance),
-			MIN_ZOOM,
-			MAX_ZOOM
-		);
-		const clamped = clampTranslate(translateX, translateY);
-		translateX = clamped.x;
-		translateY = clamped.y;
-	}
+  function handleWindowTouchMove(event: TouchEvent) {
+    if (!open || event.touches.length !== 2 || !pinchStartDistance) return;
+    event.preventDefault();
+    zoom = clamp(
+      pinchStartZoom * (touchDistance(event.touches) / pinchStartDistance),
+      MIN_ZOOM,
+      MAX_ZOOM,
+    );
+    const clamped = clampTranslate(translateX, translateY);
+    translateX = clamped.x;
+    translateY = clamped.y;
+  }
 
-	function handleWindowTouchEnd() {
-		pinchStartDistance = null;
-	}
+  function handleWindowTouchEnd() {
+    pinchStartDistance = null;
+  }
 
-	$effect(() => {
-		if (!dialogEl) return;
-		if (open && src && !dialogEl.open) {
-			zoom = 1;
-			translateX = 0;
-			translateY = 0;
-			dialogEl.showModal();
-		} else if ((!open || !src) && dialogEl.open) {
-			dialogEl.close();
-		}
-	});
+  $effect(() => {
+    if (!dialogEl) return;
+    if (open && src && !dialogEl.open) {
+      zoom = 1;
+      translateX = 0;
+      translateY = 0;
+      dialogEl.showModal();
+    } else if ((!open || !src) && dialogEl.open) {
+      dialogEl.close();
+    }
+  });
 
-	$effect(() => {
-		if (typeof document === 'undefined') return;
-		if (open) {
-			bodyOverflow = document.body.style.overflow;
-			document.body.style.overflow = 'hidden';
-			return;
-		}
-		document.body.style.overflow = bodyOverflow;
-	});
+  $effect(() => {
+    if (typeof document === "undefined") return;
+    if (open) {
+      bodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return;
+    }
+    document.body.style.overflow = bodyOverflow;
+  });
 
-	$effect(() => {
-		if (!open || typeof window === 'undefined') return;
-		window.addEventListener('pointermove', handleWindowPointerMove);
-		window.addEventListener('pointerup', handleWindowPointerUp);
-		window.addEventListener('touchstart', handleWindowTouchStart, {
-			passive: true
-		});
-		window.addEventListener('touchmove', handleWindowTouchMove, {
-			passive: false
-		});
-		window.addEventListener('touchend', handleWindowTouchEnd);
-		return () => {
-			window.removeEventListener('pointermove', handleWindowPointerMove);
-			window.removeEventListener('pointerup', handleWindowPointerUp);
-			window.removeEventListener('touchstart', handleWindowTouchStart);
-			window.removeEventListener('touchmove', handleWindowTouchMove);
-			window.removeEventListener('touchend', handleWindowTouchEnd);
-		};
-	});
+  $effect(() => {
+    if (!open || typeof window === "undefined") return;
+    window.addEventListener("pointermove", handleWindowPointerMove);
+    window.addEventListener("pointerup", handleWindowPointerUp);
+    window.addEventListener("touchstart", handleWindowTouchStart, {
+      passive: true,
+    });
+    window.addEventListener("touchmove", handleWindowTouchMove, {
+      passive: false,
+    });
+    window.addEventListener("touchend", handleWindowTouchEnd);
+    return () => {
+      window.removeEventListener("pointermove", handleWindowPointerMove);
+      window.removeEventListener("pointerup", handleWindowPointerUp);
+      window.removeEventListener("touchstart", handleWindowTouchStart);
+      window.removeEventListener("touchmove", handleWindowTouchMove);
+      window.removeEventListener("touchend", handleWindowTouchEnd);
+    };
+  });
 </script>
 
 <dialog
-	bind:this={dialogEl}
-	class="lightbox"
-	aria-label={$translations.plant.openPhoto}
-	oncancel={handleCancel}
-	onclick={handleBackdropClick}
+  bind:this={dialogEl}
+  class="lightbox"
+  aria-label={$translations.plant.openPhoto}
+  oncancel={handleCancel}
+  onclick={handleBackdropClick}
 >
-	<button
-		type="button"
-		class="lightbox-close"
-		aria-label={$translations.common.close}
-		onclick={requestClose}
-	>
-		<X size={24} />
-	</button>
-	<div class="lightbox-content">
-		<img
-			{src}
-			{alt}
-			class="lightbox-image"
-			bind:this={imageEl}
-			onwheel={handleWheel}
-			onpointerdown={handlePointerDown}
-			style={`transform: translate(${translateX}px, ${translateY}px) scale(${zoom});`}
-		/>
-	</div>
+  <button
+    type="button"
+    class="lightbox-close"
+    aria-label={$translations.common.close}
+    onclick={requestClose}
+  >
+    <X size={24} />
+  </button>
+  <div class="lightbox-content">
+    <img
+      {src}
+      {alt}
+      class="lightbox-image"
+      bind:this={imageEl}
+      onwheel={handleWheel}
+      onpointerdown={handlePointerDown}
+      style={`transform: translate(${translateX}px, ${translateY}px) scale(${zoom});`}
+    />
+  </div>
 </dialog>
 
 <style>
-	.lightbox {
-		border: none;
-		background: transparent;
-		padding: 0;
-		margin: 0;
-		inset: 0;
-		max-width: none;
-		max-height: none;
-		width: 100dvw;
-		height: 100dvh;
-	}
+  .lightbox {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    inset: 0;
+    max-width: none;
+    max-height: none;
+    width: 100dvw;
+    height: 100dvh;
+  }
 
-	.lightbox[open] {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
+  .lightbox[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-	.lightbox::backdrop {
-		background: color-mix(in srgb, var(--color-background) 82%, transparent);
-	}
+  .lightbox::backdrop {
+    background: color-mix(in srgb, var(--color-background) 82%, transparent);
+  }
 
-	.lightbox-close {
-		position: fixed;
-		top: calc(16px + env(safe-area-inset-top, 0px));
-		right: calc(16px + env(safe-area-inset-right, 0px));
-		width: 40px;
-		height: 40px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: none;
-		border-radius: var(--radius-btn);
-		background: var(--color-surface);
-		color: var(--color-text-muted);
-		cursor: pointer;
-		z-index: 1;
-	}
+  .lightbox-close {
+    position: fixed;
+    top: calc(16px + env(safe-area-inset-top, 0px));
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-btn);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    z-index: 1;
+  }
 
-	.lightbox-close:hover {
-		opacity: 0.6;
-	}
+  .lightbox-close:hover {
+    opacity: 0.6;
+  }
 
-	.lightbox-content {
-		max-width: 90dvw;
-		max-height: 90dvh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		overflow: hidden;
-		border-radius: var(--radius-card);
-	}
+  .lightbox-content {
+    max-width: 90dvw;
+    max-height: 90dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+  }
 
-	.lightbox-image {
-		max-width: 90dvw;
-		max-height: 90dvh;
-		object-fit: contain;
-		cursor: grab;
-		user-select: none;
-		touch-action: none;
-		will-change: transform;
-	}
+  .lightbox-image {
+    max-width: 90dvw;
+    max-height: 90dvh;
+    object-fit: contain;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    will-change: transform;
+  }
 </style>
