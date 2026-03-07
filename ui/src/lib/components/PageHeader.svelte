@@ -19,7 +19,8 @@
 <!-- Desktop: inline header row -->
 <div class="page-header-inline">
 	<a href={backHref} class="back-link">
-		<ArrowLeft size={16} /> {resolvedLabel}
+		<ArrowLeft size={16} />
+		{resolvedLabel}
 	</a>
 	{#if children}
 		<div class="header-actions">
@@ -31,7 +32,8 @@
 <!-- Mobile: fixed bottom action bar -->
 <div class="action-bar">
 	<a href={backHref} class="action-bar-back">
-		<ArrowLeft size={16} /> {resolvedLabel}
+		<ArrowLeft size={16} />
+		{resolvedLabel}
 	</a>
 	{#if children}
 		<div class="action-bar-actions">

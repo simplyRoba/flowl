@@ -3,13 +3,36 @@
 	import { translations } from '$lib/stores/locale';
 
 	const PRESET_KEYS = [
-		{ days: 3, labelKey: 'threeDays' as const, shortKey: 'threeDaysShort' as const, descKey: 'thirsty' as const },
-		{ days: 7, labelKey: 'sevenDays' as const, shortKey: 'sevenDaysShort' as const, descKey: 'weekly' as const },
-		{ days: 14, labelKey: 'fourteenDays' as const, shortKey: 'fourteenDaysShort' as const, descKey: 'biweekly' as const },
-		{ days: 30, labelKey: 'thirtyDays' as const, shortKey: 'thirtyDaysShort' as const, descKey: 'monthly' as const }
+		{
+			days: 3,
+			labelKey: 'threeDays' as const,
+			shortKey: 'threeDaysShort' as const,
+			descKey: 'thirsty' as const
+		},
+		{
+			days: 7,
+			labelKey: 'sevenDays' as const,
+			shortKey: 'sevenDaysShort' as const,
+			descKey: 'weekly' as const
+		},
+		{
+			days: 14,
+			labelKey: 'fourteenDays' as const,
+			shortKey: 'fourteenDaysShort' as const,
+			descKey: 'biweekly' as const
+		},
+		{
+			days: 30,
+			labelKey: 'thirtyDays' as const,
+			shortKey: 'thirtyDaysShort' as const,
+			descKey: 'monthly' as const
+		}
 	];
 
-	let { value = 7, onchange }: { value: number; onchange: (days: number) => void } = $props();
+	let {
+		value = 7,
+		onchange
+	}: { value: number; onchange: (days: number) => void } = $props();
 
 	function decrement() {
 		if (value > 1) onchange(value - 1);
@@ -32,7 +55,8 @@
 				<span class="preset-icon"><Droplet size={16} /></span>
 				<span class="preset-value">
 					<span class="preset-long">{$translations.form[preset.labelKey]}</span>
-					<span class="preset-short">{$translations.form[preset.shortKey]}</span>
+					<span class="preset-short">{$translations.form[preset.shortKey]}</span
+					>
 				</span>
 				<span class="preset-label">{$translations.form[preset.descKey]}</span>
 			</button>
@@ -45,20 +69,29 @@
 			<span class="stepper-short">{$translations.form.customShort}</span>
 		</span>
 		<div class="stepper">
-			<button type="button" class="btn btn-icon stepper-btn" onclick={decrement} disabled={value <= 1}>
+			<button
+				type="button"
+				class="btn btn-icon stepper-btn"
+				onclick={decrement}
+				disabled={value <= 1}
+			>
 				<Minus size={16} />
 			</button>
 			<input
 				class="stepper-value"
 				type="number"
 				min="1"
-				value={value}
+				{value}
 				oninput={(e) => {
 					const next = Number((e.currentTarget as HTMLInputElement).value);
 					if (!Number.isNaN(next) && next > 0) onchange(next);
 				}}
 			/>
-			<button type="button" class="btn btn-icon stepper-btn" onclick={increment}>
+			<button
+				type="button"
+				class="btn btn-icon stepper-btn"
+				onclick={increment}
+			>
 				<Plus size={16} />
 			</button>
 		</div>

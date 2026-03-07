@@ -65,11 +65,19 @@ describe('system preference listener', () => {
 		const listeners = new Set<(event: MediaQueryListEvent) => void>();
 		const state = { matches: false };
 		const media = {
-			get matches() { return state.matches; },
-			addEventListener: (_: 'change', listener: (event: MediaQueryListEvent) => void) => {
+			get matches() {
+				return state.matches;
+			},
+			addEventListener: (
+				_: 'change',
+				listener: (event: MediaQueryListEvent) => void
+			) => {
 				listeners.add(listener);
 			},
-			removeEventListener: (_: 'change', listener: (event: MediaQueryListEvent) => void) => {
+			removeEventListener: (
+				_: 'change',
+				listener: (event: MediaQueryListEvent) => void
+			) => {
 				listeners.delete(listener);
 			}
 		} as MediaQueryList;
@@ -81,12 +89,16 @@ describe('system preference listener', () => {
 
 		expect(seen).toEqual([false]);
 		state.matches = true;
-		listeners.forEach((listener) => listener({ matches: true } as MediaQueryListEvent));
+		listeners.forEach((listener) =>
+			listener({ matches: true } as MediaQueryListEvent)
+		);
 		expect(seen).toEqual([false, true]);
 
 		stop();
 		state.matches = false;
-		listeners.forEach((listener) => listener({ matches: false } as MediaQueryListEvent));
+		listeners.forEach((listener) =>
+			listener({ matches: false } as MediaQueryListEvent)
+		);
 		expect(seen).toEqual([false, true]);
 	});
 });

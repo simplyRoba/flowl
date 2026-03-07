@@ -1,10 +1,30 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Sun, CloudSun, Cloud, Camera, X, Gauge, PawPrint, TrendingUp, Layers, Droplets, Sparkles, Check, TriangleAlert, ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import {
+		Sun,
+		CloudSun,
+		Cloud,
+		Camera,
+		X,
+		Gauge,
+		PawPrint,
+		TrendingUp,
+		Layers,
+		Droplets,
+		Sparkles,
+		Check,
+		TriangleAlert,
+		ChevronLeft,
+		ChevronRight
+	} from 'lucide-svelte';
 	import type { Plant, CreatePlant, Location, IdentifyResult } from '$lib/api';
 	import { identifyPlant } from '$lib/api';
 	import { aiStatus, loadAiStatus } from '$lib/stores/ai';
-	import { locations, loadLocations, createLocation } from '$lib/stores/locations';
+	import {
+		locations,
+		loadLocations,
+		createLocation
+	} from '$lib/stores/locations';
 	import { translations } from '$lib/stores/locale';
 	import IconPicker from './IconPicker.svelte';
 	import LocationChips from './LocationChips.svelte';
@@ -49,11 +69,15 @@
 	let mediaMode = $state<'both' | 'icon' | 'photo'>('both');
 	let mediaTouched = $state(false);
 
-	let hasPhoto = $derived(photoPreview !== null || (initial?.photo_url != null && photoFile === null));
+	let hasPhoto = $derived(
+		photoPreview !== null || (initial?.photo_url != null && photoFile === null)
+	);
 
 	// AI Identify state
 	let aiEnabled = $derived($aiStatus?.enabled ?? false);
-	let identifyState = $state<'idle' | 'loading' | 'result' | 'applied' | 'error'>('idle');
+	let identifyState = $state<
+		'idle' | 'loading' | 'result' | 'applied' | 'error'
+	>('idle');
 	let identifyResults = $state<IdentifyResult[]>([]);
 	let currentSuggestion = $state(0);
 	let identifyError = $state('');
@@ -80,7 +104,6 @@
 	let extraPhoto2 = $state<File | null>(null);
 	let extraPreview1 = $state<string | null>(null);
 	let extraPreview2 = $state<string | null>(null);
-
 
 	$effect(() => {
 		if (!mediaTouched) {
@@ -227,7 +250,12 @@
 	const VALID_DIFFICULTY = ['easy', 'moderate', 'demanding'];
 	const VALID_PET_SAFETY = ['safe', 'caution', 'toxic'];
 	const VALID_GROWTH = ['slow', 'moderate', 'fast'];
-	const VALID_SOIL_TYPE = ['standard', 'cactus-mix', 'orchid-bark', 'peat-moss'];
+	const VALID_SOIL_TYPE = [
+		'standard',
+		'cactus-mix',
+		'orchid-bark',
+		'peat-moss'
+	];
 	const VALID_SOIL_MOISTURE = ['dry', 'moderate', 'moist'];
 
 	type FillChip = { label: string; value: string };
@@ -236,16 +264,29 @@
 		if (!activeSuggestion) return [];
 		const t = $translations;
 		const chips: FillChip[] = [];
-		chips.push({ label: t.form.speciesShort, value: activeSuggestion.scientific_name });
+		chips.push({
+			label: t.form.speciesShort,
+			value: activeSuggestion.scientific_name
+		});
 		const cp = activeSuggestion.care_profile;
 		if (cp) {
-			if (cp.watering_interval_days != null) chips.push({ label: t.form.watering, value: `${cp.watering_interval_days}d` });
-			if (cp.light_needs && VALID_LIGHT.includes(cp.light_needs)) chips.push({ label: t.form.lightNeeds, value: cp.light_needs });
-			if (cp.difficulty && VALID_DIFFICULTY.includes(cp.difficulty)) chips.push({ label: t.form.difficulty, value: cp.difficulty });
-			if (cp.pet_safety && VALID_PET_SAFETY.includes(cp.pet_safety)) chips.push({ label: t.form.petSafety, value: cp.pet_safety });
-			if (cp.growth_speed && VALID_GROWTH.includes(cp.growth_speed)) chips.push({ label: t.form.growthSpeed, value: cp.growth_speed });
-			if (cp.soil_type && VALID_SOIL_TYPE.includes(cp.soil_type)) chips.push({ label: t.form.soilType, value: cp.soil_type });
-			if (cp.soil_moisture && VALID_SOIL_MOISTURE.includes(cp.soil_moisture)) chips.push({ label: t.form.soilMoisture, value: cp.soil_moisture });
+			if (cp.watering_interval_days != null)
+				chips.push({
+					label: t.form.watering,
+					value: `${cp.watering_interval_days}d`
+				});
+			if (cp.light_needs && VALID_LIGHT.includes(cp.light_needs))
+				chips.push({ label: t.form.lightNeeds, value: cp.light_needs });
+			if (cp.difficulty && VALID_DIFFICULTY.includes(cp.difficulty))
+				chips.push({ label: t.form.difficulty, value: cp.difficulty });
+			if (cp.pet_safety && VALID_PET_SAFETY.includes(cp.pet_safety))
+				chips.push({ label: t.form.petSafety, value: cp.pet_safety });
+			if (cp.growth_speed && VALID_GROWTH.includes(cp.growth_speed))
+				chips.push({ label: t.form.growthSpeed, value: cp.growth_speed });
+			if (cp.soil_type && VALID_SOIL_TYPE.includes(cp.soil_type))
+				chips.push({ label: t.form.soilType, value: cp.soil_type });
+			if (cp.soil_moisture && VALID_SOIL_MOISTURE.includes(cp.soil_moisture))
+				chips.push({ label: t.form.soilMoisture, value: cp.soil_moisture });
 		}
 		return chips;
 	});
@@ -279,7 +320,8 @@
 			currentSuggestion = 0;
 			identifyState = 'result';
 		} catch (e: unknown) {
-			identifyError = e instanceof Error ? e.message : $translations.identify.errorMessage;
+			identifyError =
+				e instanceof Error ? e.message : $translations.identify.errorMessage;
 			identifyState = 'error';
 		}
 	}
@@ -289,8 +331,16 @@
 
 		// Snapshot current values
 		previousValues = {
-			name, species, notes, wateringDays, lightNeeds,
-			difficulty, petSafety, growthSpeed, soilType, soilMoisture
+			name,
+			species,
+			notes,
+			wateringDays,
+			lightNeeds,
+			difficulty,
+			petSafety,
+			growthSpeed,
+			soilType,
+			soilMoisture
 		};
 
 		let count = 0;
@@ -310,13 +360,34 @@
 		}
 
 		if (cp) {
-			if (cp.watering_interval_days != null) { wateringDays = cp.watering_interval_days; count++; }
-			if (cp.light_needs && VALID_LIGHT.includes(cp.light_needs)) { lightNeeds = cp.light_needs; count++; }
-			if (cp.difficulty && VALID_DIFFICULTY.includes(cp.difficulty)) { difficulty = cp.difficulty; count++; }
-			if (cp.pet_safety && VALID_PET_SAFETY.includes(cp.pet_safety)) { petSafety = cp.pet_safety; count++; }
-			if (cp.growth_speed && VALID_GROWTH.includes(cp.growth_speed)) { growthSpeed = cp.growth_speed; count++; }
-			if (cp.soil_type && VALID_SOIL_TYPE.includes(cp.soil_type)) { soilType = cp.soil_type; count++; }
-			if (cp.soil_moisture && VALID_SOIL_MOISTURE.includes(cp.soil_moisture)) { soilMoisture = cp.soil_moisture; count++; }
+			if (cp.watering_interval_days != null) {
+				wateringDays = cp.watering_interval_days;
+				count++;
+			}
+			if (cp.light_needs && VALID_LIGHT.includes(cp.light_needs)) {
+				lightNeeds = cp.light_needs;
+				count++;
+			}
+			if (cp.difficulty && VALID_DIFFICULTY.includes(cp.difficulty)) {
+				difficulty = cp.difficulty;
+				count++;
+			}
+			if (cp.pet_safety && VALID_PET_SAFETY.includes(cp.pet_safety)) {
+				petSafety = cp.pet_safety;
+				count++;
+			}
+			if (cp.growth_speed && VALID_GROWTH.includes(cp.growth_speed)) {
+				growthSpeed = cp.growth_speed;
+				count++;
+			}
+			if (cp.soil_type && VALID_SOIL_TYPE.includes(cp.soil_type)) {
+				soilType = cp.soil_type;
+				count++;
+			}
+			if (cp.soil_moisture && VALID_SOIL_MOISTURE.includes(cp.soil_moisture)) {
+				soilMoisture = cp.soil_moisture;
+				count++;
+			}
 		}
 
 		appliedCount = count;
@@ -351,7 +422,8 @@
 	// Carousel navigation (task 5.7)
 	function prevSuggestion() {
 		if (suggestionCount <= 1) return;
-		currentSuggestion = (currentSuggestion - 1 + suggestionCount) % suggestionCount;
+		currentSuggestion =
+			(currentSuggestion - 1 + suggestionCount) % suggestionCount;
 	}
 
 	function nextSuggestion() {
@@ -404,7 +476,9 @@
 		onsave(data, photoFile ?? undefined);
 	}
 
-	async function handleCreateLocation(locationName: string): Promise<Location | null> {
+	async function handleCreateLocation(
+		locationName: string
+	): Promise<Location | null> {
 		return await createLocation(locationName);
 	}
 </script>
@@ -419,16 +493,32 @@
 				<div class="media-photo">
 					{#if photoPreview}
 						<div class="photo-preview">
-							<img src={photoPreview} alt={$translations.form.photoPreview} class="preview-img" />
-							<button type="button" class="photo-remove-btn" onclick={handleRemoveNewPhoto}>
+							<img
+								src={photoPreview}
+								alt={$translations.form.photoPreview}
+								class="preview-img"
+							/>
+							<button
+								type="button"
+								class="photo-remove-btn"
+								onclick={handleRemoveNewPhoto}
+							>
 								<X size={16} />
 							</button>
 						</div>
 					{:else if initial?.photo_url}
 						<div class="photo-preview">
-							<img src={initial.photo_url} alt={initial.name} class="preview-img" />
+							<img
+								src={initial.photo_url}
+								alt={initial.name}
+								class="preview-img"
+							/>
 							{#if onremovephoto}
-								<button type="button" class="photo-remove-btn" onclick={handleRemoveExistingPhoto}>
+								<button
+									type="button"
+									class="photo-remove-btn"
+									onclick={handleRemoveExistingPhoto}
+								>
 									<X size={16} />
 								</button>
 							{/if}
@@ -446,7 +536,10 @@
 							<span>{$translations.form.addPhoto}</span>
 							<span class="upload-hint">{$translations.form.clickOrDrag}</span>
 							{#if aiEnabled}
-								<span class="upload-hint upload-hint-ai"><Sparkles size={12} /> {$translations.form.addPhotoHint}</span>
+								<span class="upload-hint upload-hint-ai"
+									><Sparkles size={12} />
+									{$translations.form.addPhotoHint}</span
+								>
 							{/if}
 							<input
 								type="file"
@@ -472,7 +565,11 @@
 							</label>
 						{/if}
 						{#if mediaMode === 'photo'}
-							<button type="button" class="btn btn-outline media-switch" onclick={switchToIcon}>
+							<button
+								type="button"
+								class="btn btn-outline media-switch"
+								onclick={switchToIcon}
+							>
 								{$translations.form.useIcon}
 							</button>
 						{/if}
@@ -487,7 +584,11 @@
 					<IconPicker value={icon} onchange={handleIconSelect} />
 					{#if mediaMode === 'icon'}
 						<div class="media-actions">
-							<button type="button" class="btn btn-outline media-switch" onclick={switchToPhoto}>
+							<button
+								type="button"
+								class="btn btn-outline media-switch"
+								onclick={switchToPhoto}
+							>
 								{$translations.form.usePhoto}
 							</button>
 						</div>
@@ -508,7 +609,9 @@
 						<Sparkles size={18} />
 						{$translations.identify.identifyPlant}
 					</button>
-					<div class="extra-photos-label">{$translations.identify.extraPhotosHint}</div>
+					<div class="extra-photos-label">
+						{$translations.identify.extraPhotosHint}
+					</div>
 					<div class="extra-photos">
 						<div class="extra-photo-slot extra-photo-filled extra-photo-main">
 							{#if photoPreview}
@@ -520,7 +623,11 @@
 						{#if extraPreview1}
 							<div class="extra-photo-slot extra-photo-filled">
 								<img src={extraPreview1} alt={$translations.identify.closeUp} />
-								<button type="button" class="extra-photo-remove" onclick={() => removeExtraPhoto(1)}>
+								<button
+									type="button"
+									class="extra-photo-remove"
+									onclick={() => removeExtraPhoto(1)}
+								>
 									<X size={12} />
 								</button>
 							</div>
@@ -539,7 +646,11 @@
 						{#if extraPreview2}
 							<div class="extra-photo-slot extra-photo-filled">
 								<img src={extraPreview2} alt={$translations.identify.stemPot} />
-								<button type="button" class="extra-photo-remove" onclick={() => removeExtraPhoto(2)}>
+								<button
+									type="button"
+									class="extra-photo-remove"
+									onclick={() => removeExtraPhoto(2)}
+								>
 									<X size={12} />
 								</button>
 							</div>
@@ -556,7 +667,6 @@
 							</label>
 						{/if}
 					</div>
-
 				{:else if identifyState === 'loading'}
 					<div class="identify-loading-header">
 						<span class="spinner"></span>
@@ -581,14 +691,17 @@
 						<div class="shimmer"></div>
 						<div class="shimmer"></div>
 					</div>
-
 				{:else if identifyState === 'result' && activeSuggestion}
 					<div class="suggestion-header">
 						<Sparkles size={14} />
 						{$translations.identify.aiSuggestion}
-							{#if suggestionCount > 1}
-								<span class="suggestion-counter">{$translations.identify.suggestionCount.replace('{current}', String(currentSuggestion + 1)).replace('{total}', String(suggestionCount))}</span>
-							{/if}
+						{#if suggestionCount > 1}
+							<span class="suggestion-counter"
+								>{$translations.identify.suggestionCount
+									.replace('{current}', String(currentSuggestion + 1))
+									.replace('{total}', String(suggestionCount))}</span
+							>
+						{/if}
 					</div>
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div
@@ -596,32 +709,50 @@
 						onpointerdown={suggestionCount > 1 ? handleSwipeStart : undefined}
 						onpointerup={suggestionCount > 1 ? handleSwipeEnd : undefined}
 					>
-					<div class="suggestion-name">
-						<span class="suggestion-scientific">{activeSuggestion.scientific_name}</span>
-						{#if activeSuggestion.confidence != null}
-							<span class="suggestion-confidence">{$translations.identify.confidence.replace('{n}', String(Math.round(activeSuggestion.confidence * 100)))}</span>
-						{/if}
-					</div>
-					{#if activeSuggestion.common_name}
-						<div class="suggestion-common">"{activeSuggestion.common_name}"</div>
-					{/if}
-					{#if activeSuggestion.summary}
-						<div class="suggestion-summary">{activeSuggestion.summary}</div>
-					{/if}
-					{#if willFillChips.length > 0}
-						<div class="will-fill">
-							<div class="will-fill-label">{$translations.identify.willFill}</div>
-							<div class="fill-chips">
-								{#each willFillChips as chip}
-									<span class="fill-chip"><Check size={11} /> {chip.label} ({chip.value})</span>
-								{/each}
-							</div>
+						<div class="suggestion-name">
+							<span class="suggestion-scientific"
+								>{activeSuggestion.scientific_name}</span
+							>
+							{#if activeSuggestion.confidence != null}
+								<span class="suggestion-confidence"
+									>{$translations.identify.confidence.replace(
+										'{n}',
+										String(Math.round(activeSuggestion.confidence * 100))
+									)}</span
+								>
+							{/if}
 						</div>
-					{/if}
+						{#if activeSuggestion.common_name}
+							<div class="suggestion-common">
+								"{activeSuggestion.common_name}"
+							</div>
+						{/if}
+						{#if activeSuggestion.summary}
+							<div class="suggestion-summary">{activeSuggestion.summary}</div>
+						{/if}
+						{#if willFillChips.length > 0}
+							<div class="will-fill">
+								<div class="will-fill-label">
+									{$translations.identify.willFill}
+								</div>
+								<div class="fill-chips">
+									{#each willFillChips as chip}
+										<span class="fill-chip"
+											><Check size={11} /> {chip.label} ({chip.value})</span
+										>
+									{/each}
+								</div>
+							</div>
+						{/if}
 					</div>
 					{#if suggestionCount > 1}
 						<div class="suggestion-nav">
-							<button type="button" class="nav-btn" onclick={prevSuggestion} aria-label={$translations.identify.prevSuggestion}>
+							<button
+								type="button"
+								class="nav-btn"
+								onclick={prevSuggestion}
+								aria-label={$translations.identify.prevSuggestion}
+							>
 								<ChevronLeft size={18} />
 							</button>
 							<div class="nav-dots">
@@ -630,40 +761,66 @@
 										type="button"
 										class="nav-dot"
 										class:active={i === currentSuggestion}
-										onclick={() => { currentSuggestion = i; }}
-										aria-label={$translations.identify.suggestionCount.replace('{current}', String(i + 1)).replace('{total}', String(suggestionCount))}
+										onclick={() => {
+											currentSuggestion = i;
+										}}
+										aria-label={$translations.identify.suggestionCount
+											.replace('{current}', String(i + 1))
+											.replace('{total}', String(suggestionCount))}
 									></button>
 								{/each}
 							</div>
-							<button type="button" class="nav-btn" onclick={nextSuggestion} aria-label={$translations.identify.nextSuggestion}>
+							<button
+								type="button"
+								class="nav-btn"
+								onclick={nextSuggestion}
+								aria-label={$translations.identify.nextSuggestion}
+							>
 								<ChevronRight size={18} />
 							</button>
 						</div>
 					{/if}
 					<div class="suggestion-actions">
-						<button type="button" class="btn btn-ai" onclick={handleApply}>{$translations.identify.applyToForm}</button>
-						<button type="button" class="btn btn-outline" onclick={handleDismiss}>{$translations.identify.dismiss}</button>
+						<button type="button" class="btn btn-ai" onclick={handleApply}
+							>{$translations.identify.applyToForm}</button
+						>
+						<button
+							type="button"
+							class="btn btn-outline"
+							onclick={handleDismiss}>{$translations.identify.dismiss}</button
+						>
 					</div>
-
 				{:else if identifyState === 'applied'}
 					<div class="applied-banner">
 						<Check size={18} />
-						<span>{$translations.identify.applied.replace('{n}', String(appliedCount))}</span>
-						<button type="button" class="applied-undo" onclick={handleUndo}>{$translations.identify.undo}</button>
+						<span
+							>{$translations.identify.applied.replace(
+								'{n}',
+								String(appliedCount)
+							)}</span
+						>
+						<button type="button" class="applied-undo" onclick={handleUndo}
+							>{$translations.identify.undo}</button
+						>
 					</div>
-
 				{:else if identifyState === 'error'}
 					<div class="identify-error">
 						<TriangleAlert size={18} />
 						<span>{identifyError || $translations.identify.errorMessage}</span>
-						<button type="button" class="btn btn-outline btn-sm" onclick={handleIdentify}>{$translations.identify.retry}</button>
+						<button
+							type="button"
+							class="btn btn-outline btn-sm"
+							onclick={handleIdentify}>{$translations.identify.retry}</button
+						>
 					</div>
 				{/if}
 			</div>
 		{/if}
 
 		<div class="form-group">
-			<label class="form-label" for="plant-name">{$translations.form.nameLabel}</label>
+			<label class="form-label" for="plant-name"
+				>{$translations.form.nameLabel}</label
+			>
 			<input
 				id="plant-name"
 				type="text"
@@ -671,7 +828,9 @@
 				placeholder={$translations.form.namePlaceholder}
 				class="input"
 				class:input-error={nameError}
-				oninput={() => { nameError = ''; }}
+				oninput={() => {
+					nameError = '';
+				}}
 			/>
 			{#if nameError}
 				<span class="field-error">{nameError}</span>
@@ -679,7 +838,9 @@
 		</div>
 
 		<div class="form-group">
-			<label class="form-label" for="plant-species">{$translations.form.speciesLabel}</label>
+			<label class="form-label" for="plant-species"
+				>{$translations.form.speciesLabel}</label
+			>
 			<input
 				id="plant-species"
 				type="text"
@@ -695,7 +856,9 @@
 		<LocationChips
 			locations={$locations}
 			value={locationId}
-			onchange={(v) => { locationId = v; }}
+			onchange={(v) => {
+				locationId = v;
+			}}
 			oncreate={handleCreateLocation}
 			showNone={showLocationNone}
 		/>
@@ -703,7 +866,12 @@
 
 	<section class="section">
 		<div class="section-title">{$translations.form.watering}</div>
-		<WateringInterval value={wateringDays} onchange={(v) => { wateringDays = v; }} />
+		<WateringInterval
+			value={wateringDays}
+			onchange={(v) => {
+				wateringDays = v;
+			}}
+		/>
 	</section>
 
 	<section class="section">
@@ -713,7 +881,9 @@
 				type="button"
 				class="light-option"
 				class:active={lightNeeds === 'direct'}
-				onclick={() => { lightNeeds = 'direct'; }}
+				onclick={() => {
+					lightNeeds = 'direct';
+				}}
 			>
 				<span class="light-icon"><Sun size={20} /></span>
 				<span>{$translations.form.direct}</span>
@@ -723,7 +893,9 @@
 				type="button"
 				class="light-option"
 				class:active={lightNeeds === 'indirect'}
-				onclick={() => { lightNeeds = 'indirect'; }}
+				onclick={() => {
+					lightNeeds = 'indirect';
+				}}
 			>
 				<span class="light-icon"><CloudSun size={20} /></span>
 				<span>{$translations.form.indirect}</span>
@@ -733,7 +905,9 @@
 				type="button"
 				class="light-option"
 				class:active={lightNeeds === 'low'}
-				onclick={() => { lightNeeds = 'low'; }}
+				onclick={() => {
+					lightNeeds = 'low';
+				}}
 			>
 				<span class="light-icon"><Cloud size={20} /></span>
 				<span>{$translations.form.low}</span>
@@ -743,21 +917,24 @@
 	</section>
 
 	<section class="section">
-		<div class="section-title">{$translations.form.careInfo} <span class="section-optional">{$translations.form.optional}</span></div>
+		<div class="section-title">
+			{$translations.form.careInfo}
+			<span class="section-optional">{$translations.form.optional}</span>
+		</div>
 
 		<div class="care-info-group">
-			<span class="care-info-label"><Gauge size={14} /> {$translations.form.difficulty}</span>
+			<span class="care-info-label"
+				><Gauge size={14} /> {$translations.form.difficulty}</span
+			>
 			<div class="light-selector">
-				{#each [
-					{ value: 'easy', label: $translations.form.easy },
-					{ value: 'moderate', label: $translations.form.moderate },
-					{ value: 'demanding', label: $translations.form.demanding }
-				] as opt}
+				{#each [{ value: 'easy', label: $translations.form.easy }, { value: 'moderate', label: $translations.form.moderate }, { value: 'demanding', label: $translations.form.demanding }] as opt}
 					<button
 						type="button"
 						class="btn btn-outline care-option"
 						class:active={difficulty === opt.value}
-						onclick={() => { difficulty = difficulty === opt.value ? null : opt.value; }}
+						onclick={() => {
+							difficulty = difficulty === opt.value ? null : opt.value;
+						}}
 					>
 						{opt.label}
 					</button>
@@ -766,18 +943,18 @@
 		</div>
 
 		<div class="care-info-group">
-			<span class="care-info-label"><PawPrint size={14} /> {$translations.form.petSafety}</span>
+			<span class="care-info-label"
+				><PawPrint size={14} /> {$translations.form.petSafety}</span
+			>
 			<div class="light-selector">
-				{#each [
-					{ value: 'safe', label: $translations.form.safe },
-					{ value: 'caution', label: $translations.form.caution },
-					{ value: 'toxic', label: $translations.form.toxic }
-				] as opt}
+				{#each [{ value: 'safe', label: $translations.form.safe }, { value: 'caution', label: $translations.form.caution }, { value: 'toxic', label: $translations.form.toxic }] as opt}
 					<button
 						type="button"
 						class="btn btn-outline care-option"
 						class:active={petSafety === opt.value}
-						onclick={() => { petSafety = petSafety === opt.value ? null : opt.value; }}
+						onclick={() => {
+							petSafety = petSafety === opt.value ? null : opt.value;
+						}}
 					>
 						{opt.label}
 					</button>
@@ -786,18 +963,18 @@
 		</div>
 
 		<div class="care-info-group">
-			<span class="care-info-label"><TrendingUp size={14} /> {$translations.form.growthSpeed}</span>
+			<span class="care-info-label"
+				><TrendingUp size={14} /> {$translations.form.growthSpeed}</span
+			>
 			<div class="light-selector">
-				{#each [
-					{ value: 'slow', label: $translations.form.slow },
-					{ value: 'moderate', label: $translations.form.moderate },
-					{ value: 'fast', label: $translations.form.fast }
-				] as opt}
+				{#each [{ value: 'slow', label: $translations.form.slow }, { value: 'moderate', label: $translations.form.moderate }, { value: 'fast', label: $translations.form.fast }] as opt}
 					<button
 						type="button"
 						class="btn btn-outline care-option"
 						class:active={growthSpeed === opt.value}
-						onclick={() => { growthSpeed = growthSpeed === opt.value ? null : opt.value; }}
+						onclick={() => {
+							growthSpeed = growthSpeed === opt.value ? null : opt.value;
+						}}
 					>
 						{opt.label}
 					</button>
@@ -806,19 +983,18 @@
 		</div>
 
 		<div class="care-info-group">
-			<span class="care-info-label"><Layers size={14} /> {$translations.form.soilType}</span>
+			<span class="care-info-label"
+				><Layers size={14} /> {$translations.form.soilType}</span
+			>
 			<div class="light-selector">
-				{#each [
-					{ value: 'standard', label: $translations.form.standard },
-					{ value: 'cactus-mix', label: $translations.form.cactusMix },
-					{ value: 'orchid-bark', label: $translations.form.orchidBark },
-					{ value: 'peat-moss', label: $translations.form.peatMoss }
-				] as opt}
+				{#each [{ value: 'standard', label: $translations.form.standard }, { value: 'cactus-mix', label: $translations.form.cactusMix }, { value: 'orchid-bark', label: $translations.form.orchidBark }, { value: 'peat-moss', label: $translations.form.peatMoss }] as opt}
 					<button
 						type="button"
 						class="btn btn-outline care-option"
 						class:active={soilType === opt.value}
-						onclick={() => { soilType = soilType === opt.value ? null : opt.value; }}
+						onclick={() => {
+							soilType = soilType === opt.value ? null : opt.value;
+						}}
 					>
 						{opt.label}
 					</button>
@@ -827,18 +1003,18 @@
 		</div>
 
 		<div class="care-info-group">
-			<span class="care-info-label"><Droplets size={14} /> {$translations.form.soilMoisture}</span>
+			<span class="care-info-label"
+				><Droplets size={14} /> {$translations.form.soilMoisture}</span
+			>
 			<div class="light-selector">
-				{#each [
-					{ value: 'dry', label: $translations.form.dry },
-					{ value: 'moderate', label: $translations.form.moderate },
-					{ value: 'moist', label: $translations.form.moist }
-				] as opt}
+				{#each [{ value: 'dry', label: $translations.form.dry }, { value: 'moderate', label: $translations.form.moderate }, { value: 'moist', label: $translations.form.moist }] as opt}
 					<button
 						type="button"
 						class="btn btn-outline care-option"
 						class:active={soilMoisture === opt.value}
-						onclick={() => { soilMoisture = soilMoisture === opt.value ? null : opt.value; }}
+						onclick={() => {
+							soilMoisture = soilMoisture === opt.value ? null : opt.value;
+						}}
 					>
 						{opt.label}
 					</button>
@@ -931,7 +1107,6 @@
 		flex: 1 1 0;
 		white-space: nowrap;
 	}
-
 
 	.form-group {
 		display: flex;
@@ -1050,7 +1225,11 @@
 	}
 
 	.photo-remove-btn:hover {
-		background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+		background: color-mix(
+			in srgb,
+			var(--color-danger) 10%,
+			var(--color-surface)
+		);
 		border-color: var(--color-danger);
 		transform: scale(1.15);
 	}
@@ -1172,7 +1351,8 @@
 		gap: 8px;
 		width: 100%;
 		padding: 12px 16px;
-		border: 1px solid color-mix(in srgb, var(--color-ai) 40%, var(--color-border));
+		border: 1px solid
+			color-mix(in srgb, var(--color-ai) 40%, var(--color-border));
 		border-radius: var(--radius-btn);
 		background: var(--color-ai-soft);
 		color: var(--color-text);
@@ -1269,7 +1449,11 @@
 	}
 
 	.extra-photo-remove:hover {
-		background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+		background: color-mix(
+			in srgb,
+			var(--color-danger) 10%,
+			var(--color-surface)
+		);
 		border-color: var(--color-danger);
 		transform: scale(1.15);
 	}
@@ -1300,7 +1484,9 @@
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.loading-photos {
@@ -1326,7 +1512,8 @@
 	.shimmer {
 		height: 14px;
 		border-radius: 7px;
-		background: linear-gradient(90deg,
+		background: linear-gradient(
+			90deg,
 			var(--color-surface-muted) 25%,
 			color-mix(in srgb, var(--color-ai) 12%, var(--color-surface-muted)) 50%,
 			var(--color-surface-muted) 75%
@@ -1335,13 +1522,23 @@
 		animation: shimmer 1.8s ease-in-out infinite;
 	}
 
-	.shimmer:nth-child(1) { width: 75%; }
-	.shimmer:nth-child(2) { width: 60%; }
-	.shimmer:nth-child(3) { width: 45%; }
+	.shimmer:nth-child(1) {
+		width: 75%;
+	}
+	.shimmer:nth-child(2) {
+		width: 60%;
+	}
+	.shimmer:nth-child(3) {
+		width: 45%;
+	}
 
 	@keyframes shimmer {
-		0% { background-position: 200% 0; }
-		100% { background-position: -200% 0; }
+		0% {
+			background-position: 200% 0;
+		}
+		100% {
+			background-position: -200% 0;
+		}
 	}
 
 	/* ---- Suggestion card ---- */
@@ -1502,7 +1699,6 @@
 		flex: 1;
 	}
 
-
 	/* ---- Applied state ---- */
 	.applied-banner {
 		display: flex;
@@ -1637,5 +1833,4 @@
 			flex-wrap: wrap;
 		}
 	}
-
 </style>

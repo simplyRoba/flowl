@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Location } from '$lib/api';
 import {
 	locations,
@@ -31,7 +31,10 @@ beforeEach(() => {
 
 describe('loadLocations', () => {
 	it('sets locations on success', async () => {
-		vi.mocked(api.fetchLocations).mockResolvedValue([mockLocation, mockLocation2]);
+		vi.mocked(api.fetchLocations).mockResolvedValue([
+			mockLocation,
+			mockLocation2
+		]);
 		await loadLocations();
 		expect(get(locations)).toEqual([mockLocation, mockLocation2]);
 		expect(get(locationsError)).toBeNull();

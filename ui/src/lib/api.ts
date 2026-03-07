@@ -119,7 +119,11 @@ class ApiError extends Error {
 	}
 }
 
-async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
+async function request<T>(
+	method: string,
+	url: string,
+	body?: unknown
+): Promise<T> {
 	const init: RequestInit = { method };
 	if (body instanceof FormData) {
 		init.body = body;
@@ -246,7 +250,9 @@ export function fetchSettings(): Promise<UserSettings> {
 	return request('GET', '/api/settings');
 }
 
-export function updateSettings(data: Partial<UserSettings>): Promise<UserSettings> {
+export function updateSettings(
+	data: Partial<UserSettings>
+): Promise<UserSettings> {
 	return request('PUT', '/api/settings', data);
 }
 
@@ -293,21 +299,34 @@ export function fetchAllCareEvents(
 	return request('GET', `/api/care${qs ? `?${qs}` : ''}`);
 }
 
-export function createCareEvent(plantId: number, data: CreateCareEvent): Promise<CareEvent> {
+export function createCareEvent(
+	plantId: number,
+	data: CreateCareEvent
+): Promise<CareEvent> {
 	return request('POST', `/api/plants/${plantId}/care`, data);
 }
 
-export function deleteCareEvent(plantId: number, eventId: number): Promise<void> {
+export function deleteCareEvent(
+	plantId: number,
+	eventId: number
+): Promise<void> {
 	return request('DELETE', `/api/plants/${plantId}/care/${eventId}`);
 }
 
-export function uploadCareEventPhoto(plantId: number, eventId: number, file: File): Promise<CareEvent> {
+export function uploadCareEventPhoto(
+	plantId: number,
+	eventId: number,
+	file: File
+): Promise<CareEvent> {
 	const body = new FormData();
 	body.append('file', file);
 	return request('POST', `/api/plants/${plantId}/care/${eventId}/photo`, body);
 }
 
-export function deleteCareEventPhoto(plantId: number, eventId: number): Promise<void> {
+export function deleteCareEventPhoto(
+	plantId: number,
+	eventId: number
+): Promise<void> {
 	return request('DELETE', `/api/plants/${plantId}/care/${eventId}/photo`);
 }
 
@@ -339,7 +358,11 @@ export async function* chatPlant(
 	image?: string
 ): AsyncGenerator<string> {
 	const historyClean = history.map(({ role, content }) => ({ role, content }));
-	const body: Record<string, unknown> = { plant_id: plantId, message, history: historyClean };
+	const body: Record<string, unknown> = {
+		plant_id: plantId,
+		message,
+		history: historyClean
+	};
 	if (image) body.image = image;
 	const resp = await fetch('/api/ai/chat', {
 		method: 'POST',
@@ -378,7 +401,10 @@ export async function* chatPlant(
 	}
 }
 
-export async function summarizeChat(plantId: number, history: ChatMessage[]): Promise<string> {
+export async function summarizeChat(
+	plantId: number,
+	history: ChatMessage[]
+): Promise<string> {
 	const data: { summary: string } = await request('POST', '/api/ai/summarize', {
 		plant_id: plantId,
 		history

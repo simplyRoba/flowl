@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from '@testing-library/svelte';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import StatusBadge from './StatusBadge.svelte';
 
 afterEach(() => {

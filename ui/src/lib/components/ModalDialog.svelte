@@ -70,7 +70,9 @@
 		<p class="modal-message">{message}</p>
 		<div class="modal-actions">
 			{#if mode === 'confirm'}
-				<button type="button" class="btn btn-outline" onclick={oncancel}>{$translations.common.cancel}</button>
+				<button type="button" class="btn btn-outline" onclick={oncancel}
+					>{$translations.common.cancel}</button
+				>
 				<button
 					type="button"
 					class="btn {variant === 'danger' ? 'btn-danger-fill' : 'btn-primary'}"

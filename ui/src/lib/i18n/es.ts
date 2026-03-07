@@ -131,7 +131,8 @@ export const es: Translations = {
 		notesOptional: 'Notas (opcional)',
 		openPhoto: 'Abrir foto',
 		deleteLogEntry: 'Eliminar entrada',
-		deleteLogEntryConfirm: '¿Eliminar esta entrada de cuidado? Esto no se puede deshacer.',
+		deleteLogEntryConfirm:
+			'¿Eliminar esta entrada de cuidado? Esto no se puede deshacer.',
 		lightDirect: 'Luz solar directa',
 		lightLow: 'Poca luz',
 		lightIndirect: 'Luz indirecta',
@@ -190,7 +191,8 @@ export const es: Translations = {
 		plantCount: { one: '{n} planta', other: '{n} plantas' },
 		deleteLocation: 'Eliminar ubicación',
 		deleteLocationConfirm: '¿Eliminar "{name}"?',
-		deleteLocationConfirmPlants: '¿Eliminar "{name}"? {count} {verb} {pronoun} ubicación.',
+		deleteLocationConfirmPlants:
+			'¿Eliminar "{name}"? {count} {verb} {pronoun} ubicación.',
 		deleteLocationVerb: { one: 'perderá', other: 'perderán' },
 		deleteLocationPronoun: { one: 'su', other: 'su' },
 		mqtt: 'MQTT',
@@ -201,8 +203,10 @@ export const es: Translations = {
 		broker: 'Broker',
 		topicPrefix: 'Prefijo de topic',
 		repair: 'Reparar',
-		repairDesc: 'Elimina los topics MQTT retenidos y republica el estado actual.',
-		repairConfirm: '¿Eliminar todos los topics MQTT retenidos y republicar el estado actual de todas las plantas?',
+		repairDesc:
+			'Elimina los topics MQTT retenidos y republica el estado actual.',
+		repairConfirm:
+			'¿Eliminar todos los topics MQTT retenidos y republicar el estado actual de todas las plantas?',
 		repairTitle: 'Reparar MQTT',
 		repairing: 'Reparando...',
 		repairFailed: 'Reparación fallida',
@@ -221,12 +225,17 @@ export const es: Translations = {
 		importBtn: 'Importar',
 		exportBtn: 'Exportar',
 		importData: 'Importar datos',
-		importConfirm: '¿Importar "{name}"? Todos los datos y fotos existentes serán reemplazados.',
+		importConfirm:
+			'¿Importar "{name}"? Todos los datos y fotos existentes serán reemplazados.',
 		importFailed: 'Importación fallida',
-		importResult: '{plants} plantas, {photos} fotos, {care_events} entradas, {locations} ubicaciones importadas',
+		importResult:
+			'{plants} plantas, {photos} fotos, {care_events} entradas, {locations} ubicaciones importadas',
 		statsLabel: 'Plantas',
 		statsPlants: { one: '{n} planta', other: '{n} plantas' },
-		statsCareEvents: { one: '{n} entrada del diario', other: '{n} entradas del diario' },
+		statsCareEvents: {
+			one: '{n} entrada del diario',
+			other: '{n} entradas del diario'
+		},
 		statsLocations: { one: '{n} ubicación', other: '{n} ubicaciones' },
 		statsPhotos: { one: '{n} foto', other: '{n} fotos' },
 		about: 'Acerca de',
@@ -315,7 +324,8 @@ export const es: Translations = {
 		dismiss: 'Descartar',
 		applied: 'Sugerencia IA aplicada — {n} campos actualizados',
 		undo: 'Deshacer',
-		errorMessage: 'Identificación fallida. El servicio de IA podría no estar disponible temporalmente.',
+		errorMessage:
+			'Identificación fallida. El servicio de IA podría no estar disponible temporalmente.',
 		retry: 'Reintentar',
 		confidence: '{n} %',
 		suggestionCount: '{current} / {total}',

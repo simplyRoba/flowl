@@ -5,7 +5,9 @@ import ModalDialog from './ModalDialog.svelte';
 
 // jsdom doesn't implement HTMLDialogElement.showModal/close — stub them
 beforeEach(() => {
-	HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
+	HTMLDialogElement.prototype.showModal = vi.fn(function (
+		this: HTMLDialogElement
+	) {
 		this.setAttribute('open', '');
 	});
 	HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
@@ -20,7 +22,13 @@ afterEach(() => {
 describe('ModalDialog confirm mode', () => {
 	it('renders cancel and confirm buttons', () => {
 		render(ModalDialog, {
-			props: { open: true, title: 'Delete?', message: 'Are you sure?', mode: 'confirm', confirmLabel: 'Delete' }
+			props: {
+				open: true,
+				title: 'Delete?',
+				message: 'Are you sure?',
+				mode: 'confirm',
+				confirmLabel: 'Delete'
+			}
 		});
 		expect(screen.getByText('Delete?')).toBeTruthy();
 		expect(screen.getByText('Are you sure?')).toBeTruthy();
@@ -31,7 +39,14 @@ describe('ModalDialog confirm mode', () => {
 	it('fires onconfirm when confirm button clicked', async () => {
 		const onconfirm = vi.fn();
 		render(ModalDialog, {
-			props: { open: true, title: 'T', message: 'M', mode: 'confirm', confirmLabel: 'Yes', onconfirm }
+			props: {
+				open: true,
+				title: 'T',
+				message: 'M',
+				mode: 'confirm',
+				confirmLabel: 'Yes',
+				onconfirm
+			}
 		});
 		const user = userEvent.setup();
 		await user.click(screen.getByRole('button', { name: 'Yes' }));
@@ -71,7 +86,14 @@ describe('ModalDialog confirm mode', () => {
 
 	it('uses danger styling when variant is danger', () => {
 		render(ModalDialog, {
-			props: { open: true, title: 'T', message: 'M', mode: 'confirm', variant: 'danger', confirmLabel: 'Delete' }
+			props: {
+				open: true,
+				title: 'T',
+				message: 'M',
+				mode: 'confirm',
+				variant: 'danger',
+				confirmLabel: 'Delete'
+			}
 		});
 		const confirmBtn = screen.getByRole('button', { name: 'Delete' });
 		expect(confirmBtn.className).toContain('btn-danger-fill');
@@ -79,7 +101,14 @@ describe('ModalDialog confirm mode', () => {
 
 	it('uses primary styling when variant is warning', () => {
 		render(ModalDialog, {
-			props: { open: true, title: 'T', message: 'M', mode: 'confirm', variant: 'warning', confirmLabel: 'OK' }
+			props: {
+				open: true,
+				title: 'T',
+				message: 'M',
+				mode: 'confirm',
+				variant: 'warning',
+				confirmLabel: 'OK'
+			}
 		});
 		const confirmBtn = screen.getByRole('button', { name: 'OK' });
 		expect(confirmBtn.className).toContain('btn-primary');
@@ -89,7 +118,12 @@ describe('ModalDialog confirm mode', () => {
 describe('ModalDialog alert mode', () => {
 	it('renders single OK button', () => {
 		render(ModalDialog, {
-			props: { open: true, title: 'Error', message: 'Something failed', mode: 'alert' }
+			props: {
+				open: true,
+				title: 'Error',
+				message: 'Something failed',
+				mode: 'alert'
+			}
 		});
 		expect(screen.getByText('Error')).toBeTruthy();
 		expect(screen.getByText('Something failed')).toBeTruthy();
@@ -130,7 +164,13 @@ describe('ModalDialog alert mode', () => {
 
 	it('uses danger styling for alert with danger variant', () => {
 		render(ModalDialog, {
-			props: { open: true, title: 'T', message: 'M', mode: 'alert', variant: 'danger' }
+			props: {
+				open: true,
+				title: 'T',
+				message: 'M',
+				mode: 'alert',
+				variant: 'danger'
+			}
 		});
 		const okBtn = screen.getByRole('button', { name: 'OK' });
 		expect(okBtn.className).toContain('btn-danger-fill');

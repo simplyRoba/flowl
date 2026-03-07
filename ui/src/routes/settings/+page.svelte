@@ -1,21 +1,56 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { get } from 'svelte/store';
-	import { Globe } from 'lucide-svelte';
-	import { Check, Pencil, Trash2, Palette, MapPin, Database, Info, Radio, Download, Upload, Wrench, Sparkles } from 'lucide-svelte';
-	import { locations, locationsError, loadLocations, deleteLocation, updateLocation } from '$lib/stores/locations';
+	import {
+		Check,
+		Pencil,
+		Trash2,
+		Palette,
+		MapPin,
+		Database,
+		Info,
+		Radio,
+		Download,
+		Upload,
+		Wrench,
+		Sparkles
+	} from 'lucide-svelte';
+	import {
+		locations,
+		locationsError,
+		loadLocations,
+		deleteLocation,
+		updateLocation
+	} from '$lib/stores/locations';
 	import {
 		themePreference,
 		setThemePreference,
 		type ThemePreference
 	} from '$lib/stores/theme';
-	import { translations, locale, setLocale, type Locale } from '$lib/stores/locale';
+	import {
+		translations,
+		locale,
+		setLocale,
+		type Locale
+	} from '$lib/stores/locale';
 	import { plural } from '$lib/i18n/plural';
-	import { fetchAppInfo, fetchStats, fetchMqttStatus, repairMqtt, importData, type AppInfo, type Stats, type MqttStatus } from '$lib/api';
+	import {
+		fetchAppInfo,
+		fetchStats,
+		fetchMqttStatus,
+		repairMqtt,
+		importData,
+		type AppInfo,
+		type Stats,
+		type MqttStatus
+	} from '$lib/api';
 	import { aiStatus as aiStatusStore, loadAiStatus } from '$lib/stores/ai';
 	import ModalDialog from '$lib/components/ModalDialog.svelte';
 
-	const themeOptions: { value: ThemePreference; labelKey: 'themeLight' | 'themeDark' | 'themeSystem' }[] = [
+	const themeOptions: {
+		value: ThemePreference;
+		labelKey: 'themeLight' | 'themeDark' | 'themeSystem';
+	}[] = [
 		{ value: 'light', labelKey: 'themeLight' },
 		{ value: 'dark', labelKey: 'themeDark' },
 		{ value: 'system', labelKey: 'themeSystem' }
@@ -52,7 +87,8 @@
 
 	// Dialog state
 	let deleteDialogOpen = $state(false);
-	let deleteTarget: { id: number; name: string; plantCount: number } | null = $state(null);
+	let deleteTarget: { id: number; name: string; plantCount: number } | null =
+		$state(null);
 	let importDialogOpen = $state(false);
 	let importFile: File | null = $state(null);
 	let repairDialogOpen = $state(false);
@@ -60,14 +96,26 @@
 	onMount(() => {
 		loadLocations();
 		fetchAppInfo()
-			.then((info) => { appInfo = info; })
-			.catch(() => { /* hide About section on failure */ });
+			.then((info) => {
+				appInfo = info;
+			})
+			.catch(() => {
+				/* hide About section on failure */
+			});
 		fetchStats()
-			.then((s) => { stats = s; })
-			.catch(() => { /* hide Data section on failure */ });
+			.then((s) => {
+				stats = s;
+			})
+			.catch(() => {
+				/* hide Data section on failure */
+			});
 		fetchMqttStatus()
-			.then((m) => { mqttStatus = m; })
-			.catch(() => { /* hide MQTT section on failure */ });
+			.then((m) => {
+				mqttStatus = m;
+			})
+			.catch(() => {
+				/* hide MQTT section on failure */
+			});
 		loadAiStatus();
 	});
 
@@ -130,9 +178,14 @@
 		try {
 			const result = await repairMqtt();
 			const t = get(translations);
-			repairMessage = t.settings.repairResult.replace('{cleared}', String(result.cleared)).replace('{published}', String(result.published));
+			repairMessage = t.settings.repairResult
+				.replace('{cleared}', String(result.cleared))
+				.replace('{published}', String(result.published));
 		} catch (e: unknown) {
-			repairError = e instanceof Error ? e.message : get(translations).settings.repairFailed;
+			repairError =
+				e instanceof Error
+					? e.message
+					: get(translations).settings.repairFailed;
 		} finally {
 			repairLoading = false;
 		}
@@ -176,11 +229,16 @@
 				.replace('{care_events}', String(result.care_events))
 				.replace('{locations}', String(result.locations));
 			fetchStats()
-				.then((s) => { stats = s; })
+				.then((s) => {
+					stats = s;
+				})
 				.catch(() => {});
 			loadLocations();
 		} catch (e: unknown) {
-			importError = e instanceof Error ? e.message : get(translations).settings.importFailed;
+			importError =
+				e instanceof Error
+					? e.message
+					: get(translations).settings.importFailed;
 		} finally {
 			importLoading = false;
 		}
@@ -209,12 +267,19 @@
 	</header>
 
 	<section class="section settings-section">
-		<h2 class="section-title"><Palette size={14} /> {$translations.settings.appearance}</h2>
+		<h2 class="section-title">
+			<Palette size={14} />
+			{$translations.settings.appearance}
+		</h2>
 		<div class="setting-row">
 			<div>
 				<div class="setting-label">{$translations.settings.theme}</div>
 			</div>
-			<div class="theme-selector" role="radiogroup" aria-label={$translations.settings.theme}>
+			<div
+				class="theme-selector"
+				role="radiogroup"
+				aria-label={$translations.settings.theme}
+			>
 				{#each themeOptions as option}
 					<button
 						type="button"
@@ -233,7 +298,11 @@
 			<div>
 				<div class="setting-label">{$translations.settings.language}</div>
 			</div>
-			<div class="theme-selector" role="radiogroup" aria-label={$translations.settings.language}>
+			<div
+				class="theme-selector"
+				role="radiogroup"
+				aria-label={$translations.settings.language}
+			>
 				{#each localeOptions as option}
 					<button
 						type="button"
@@ -250,7 +319,10 @@
 	</section>
 
 	<section class="section settings-section">
-		<h2 class="section-title"><MapPin size={14} /> {$translations.settings.locations}</h2>
+		<h2 class="section-title">
+			<MapPin size={14} />
+			{$translations.settings.locations}
+		</h2>
 
 		{#if $locationsError}
 			<p class="error">{$locationsError}</p>
@@ -270,11 +342,16 @@
 										bind:value={editValue}
 										onblur={() => commitEdit(location.id, location.name)}
 										onkeydown={handleEditKeydown}
-										oninput={() => { editError = ''; }}
+										oninput={() => {
+											editError = '';
+										}}
 									/>
 									<button
 										class="btn btn-icon"
-										onmousedown={(e) => { e.preventDefault(); commitEdit(location.id, location.name); }}
+										onmousedown={(e) => {
+											e.preventDefault();
+											commitEdit(location.id, location.name);
+										}}
 									>
 										<Check size={16} />
 									</button>
@@ -287,7 +364,12 @@
 							<div class="location-info">
 								<span class="location-name">{location.name}</span>
 								{#if location.plant_count > 0}
-									<span class="plant-count">{plural($translations.settings.plantCount, location.plant_count)}</span>
+									<span class="plant-count"
+										>{plural(
+											$translations.settings.plantCount,
+											location.plant_count
+										)}</span
+									>
 								{/if}
 							</div>
 							<div class="location-actions">
@@ -299,7 +381,12 @@
 								</button>
 								<button
 									class="btn btn-icon btn-danger"
-									onclick={() => handleDelete(location.id, location.name, location.plant_count)}
+									onclick={() =>
+										handleDelete(
+											location.id,
+											location.name,
+											location.plant_count
+										)}
 								>
 									<Trash2 size={16} />
 								</button>
@@ -313,14 +400,19 @@
 
 	{#if mqttStatus}
 		<section class="section settings-section">
-			<h2 class="section-title"><Radio size={14} /> {$translations.settings.mqtt}</h2>
+			<h2 class="section-title">
+				<Radio size={14} />
+				{$translations.settings.mqtt}
+			</h2>
 			<div class="about-row">
 				<span class="setting-label">{$translations.settings.status}</span>
 				<span class="status-value">
 					{#if mqttStatus.status === 'connected'}
-						<span class="status-dot status-connected"></span> {$translations.settings.connected}
+						<span class="status-dot status-connected"></span>
+						{$translations.settings.connected}
 					{:else if mqttStatus.status === 'disconnected'}
-						<span class="status-dot status-disconnected"></span> {$translations.settings.disconnected}
+						<span class="status-dot status-disconnected"></span>
+						{$translations.settings.disconnected}
 					{:else}
 						{$translations.settings.disabled}
 					{/if}
@@ -332,13 +424,16 @@
 					<span>{mqttStatus.broker}</span>
 				</div>
 				<div class="about-row">
-					<span class="setting-label">{$translations.settings.topicPrefix}</span>
+					<span class="setting-label">{$translations.settings.topicPrefix}</span
+					>
 					<span>{mqttStatus.topic_prefix}</span>
 				</div>
 				<div class="about-row">
 					<div class="setting-info">
 						<div class="setting-label">{$translations.settings.repair}</div>
-						<div class="setting-description">{$translations.settings.repairDesc}</div>
+						<div class="setting-description">
+							{$translations.settings.repairDesc}
+						</div>
 					</div>
 					<span class="repair-actions">
 						{#if repairMessage}
@@ -350,7 +445,9 @@
 						<button
 							class="btn btn-outline btn-sm"
 							disabled={mqttStatus.status !== 'connected' || repairLoading}
-							title={mqttStatus.status !== 'connected' ? $translations.settings.mqttMustBeConnected : undefined}
+							title={mqttStatus.status !== 'connected'
+								? $translations.settings.mqttMustBeConnected
+								: undefined}
 							onclick={handleRepairClick}
 						>
 							{#if repairLoading}
@@ -367,12 +464,16 @@
 
 	{#if aiStatus}
 		<section class="section settings-section">
-			<h2 class="section-title"><Sparkles size={14} /> {$translations.settings.ai}</h2>
+			<h2 class="section-title">
+				<Sparkles size={14} />
+				{$translations.settings.ai}
+			</h2>
 			<div class="about-row">
 				<span class="setting-label">{$translations.settings.status}</span>
 				<span class="status-value">
 					{#if aiStatus.enabled}
-						<span class="status-dot status-ai"></span> {$translations.settings.aiEnabled}
+						<span class="status-dot status-ai"></span>
+						{$translations.settings.aiEnabled}
 					{:else}
 						{$translations.settings.aiDisabled}
 					{/if}
@@ -401,11 +502,16 @@
 
 	{#if stats}
 		<section class="section settings-section">
-			<h2 class="section-title"><Database size={14} /> {$translations.settings.data}</h2>
+			<h2 class="section-title">
+				<Database size={14} />
+				{$translations.settings.data}
+			</h2>
 			<div class="about-row">
 				<div class="setting-info">
 					<div class="setting-label">{$translations.settings.backup}</div>
-					<div class="setting-description">{$translations.settings.backupDesc}</div>
+					<div class="setting-description">
+						{$translations.settings.backupDesc}
+					</div>
 				</div>
 				<span class="backup-actions">
 					{#if importMessage}
@@ -433,20 +539,35 @@
 						onchange={handleFileSelected}
 					/>
 					<button class="btn btn-outline btn-sm" onclick={handleExport}>
-						<Download size={14} /> {$translations.settings.exportBtn}
+						<Download size={14} />
+						{$translations.settings.exportBtn}
 					</button>
 				</span>
 			</div>
 			<div class="about-row">
 				<span class="setting-label">{$translations.settings.statsLabel}</span>
-				<span>{plural($translations.settings.statsPlants, stats.plant_count)}, {plural($translations.settings.statsPhotos, stats.photo_count)}, {plural($translations.settings.statsCareEvents, stats.care_event_count)}, {plural($translations.settings.statsLocations, stats.location_count)}</span>
+				<span
+					>{plural($translations.settings.statsPlants, stats.plant_count)}, {plural(
+						$translations.settings.statsPhotos,
+						stats.photo_count
+					)}, {plural(
+						$translations.settings.statsCareEvents,
+						stats.care_event_count
+					)}, {plural(
+						$translations.settings.statsLocations,
+						stats.location_count
+					)}</span
+				>
 			</div>
 		</section>
 	{/if}
 
 	{#if appInfo}
 		<section class="section settings-section">
-			<h2 class="section-title"><Info size={14} /> {$translations.settings.about}</h2>
+			<h2 class="section-title">
+				<Info size={14} />
+				{$translations.settings.about}
+			</h2>
 			<div class="about-row">
 				<span class="setting-label">{$translations.settings.version}</span>
 				<span>{appInfo.version}</span>
@@ -471,28 +592,54 @@
 	message={deleteTarget
 		? deleteTarget.plantCount > 0
 			? $translations.settings.deleteLocationConfirmPlants
-				.replace('{name}', deleteTarget.name)
-				.replace('{count}', plural($translations.settings.plantCount, deleteTarget.plantCount))
-				.replace('{verb}', plural($translations.settings.deleteLocationVerb, deleteTarget.plantCount))
-				.replace('{pronoun}', plural($translations.settings.deleteLocationPronoun, deleteTarget.plantCount))
-			: $translations.settings.deleteLocationConfirm.replace('{name}', deleteTarget.name)
+					.replace('{name}', deleteTarget.name)
+					.replace(
+						'{count}',
+						plural($translations.settings.plantCount, deleteTarget.plantCount)
+					)
+					.replace(
+						'{verb}',
+						plural(
+							$translations.settings.deleteLocationVerb,
+							deleteTarget.plantCount
+						)
+					)
+					.replace(
+						'{pronoun}',
+						plural(
+							$translations.settings.deleteLocationPronoun,
+							deleteTarget.plantCount
+						)
+					)
+			: $translations.settings.deleteLocationConfirm.replace(
+					'{name}',
+					deleteTarget.name
+				)
 		: ''}
 	mode="confirm"
 	variant="danger"
 	confirmLabel={$translations.common.delete}
 	onconfirm={handleDeleteConfirm}
-	oncancel={() => { deleteDialogOpen = false; deleteTarget = null; }}
+	oncancel={() => {
+		deleteDialogOpen = false;
+		deleteTarget = null;
+	}}
 />
 
 <ModalDialog
 	open={importDialogOpen}
 	title={$translations.settings.importData}
-	message={importFile ? $translations.settings.importConfirm.replace('{name}', importFile.name) : ''}
+	message={importFile
+		? $translations.settings.importConfirm.replace('{name}', importFile.name)
+		: ''}
 	mode="confirm"
 	variant="danger"
 	confirmLabel={$translations.settings.importBtn}
 	onconfirm={handleImportConfirm}
-	oncancel={() => { importDialogOpen = false; importFile = null; }}
+	oncancel={() => {
+		importDialogOpen = false;
+		importFile = null;
+	}}
 />
 
 <ModalDialog
@@ -503,7 +650,9 @@
 	variant="warning"
 	confirmLabel={$translations.settings.repair}
 	onconfirm={handleRepairConfirm}
-	oncancel={() => { repairDialogOpen = false; }}
+	oncancel={() => {
+		repairDialogOpen = false;
+	}}
 />
 
 <style>
@@ -575,7 +724,9 @@
 		font-size: var(--fs-chip);
 		font-weight: 600;
 		cursor: pointer;
-		transition: background var(--transition-speed), color var(--transition-speed);
+		transition:
+			background var(--transition-speed),
+			color var(--transition-speed);
 	}
 
 	.theme-option:hover {
@@ -658,7 +809,6 @@
 		align-items: center;
 		gap: 6px;
 	}
-
 
 	.edit-input {
 		flex: 1;

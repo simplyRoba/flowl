@@ -116,7 +116,9 @@ describe('createPlant', () => {
 	});
 
 	it('sets error on failure', async () => {
-		vi.mocked(api.createPlant).mockRejectedValue(new Error('Validation failed'));
+		vi.mocked(api.createPlant).mockRejectedValue(
+			new Error('Validation failed')
+		);
 		const result = await createPlant({ name: '' } as CreatePlant);
 		expect(result).toBeNull();
 		expect(get(plantsError)).toBe('Validation failed');
@@ -128,7 +130,9 @@ describe('updatePlant', () => {
 		plants.set([mockPlant, mockPlant2]);
 		const updated = { ...mockPlant, name: 'Updated Fern' };
 		vi.mocked(api.updatePlant).mockResolvedValue(updated);
-		const result = await updatePlant(1, { name: 'Updated Fern' } as UpdatePlant);
+		const result = await updatePlant(1, {
+			name: 'Updated Fern'
+		} as UpdatePlant);
 		expect(result).toEqual(updated);
 		expect(get(plants)[0].name).toBe('Updated Fern');
 		expect(get(currentPlant)).toEqual(updated);
@@ -164,7 +168,11 @@ describe('deletePlant', () => {
 describe('waterPlant', () => {
 	it('updates plant in list on success', async () => {
 		plants.set([mockPlant]);
-		const watered = { ...mockPlant, last_watered: '2025-01-10', watering_status: 'ok' };
+		const watered = {
+			...mockPlant,
+			last_watered: '2025-01-10',
+			watering_status: 'ok'
+		};
 		vi.mocked(api.waterPlant).mockResolvedValue(watered);
 		const result = await waterPlant(1);
 		expect(result).toEqual(watered);
@@ -193,7 +201,9 @@ describe('uploadPhoto', () => {
 	});
 
 	it('sets error on failure', async () => {
-		vi.mocked(api.uploadPlantPhoto).mockRejectedValue(new Error('Upload failed'));
+		vi.mocked(api.uploadPlantPhoto).mockRejectedValue(
+			new Error('Upload failed')
+		);
 		const file = new File(['test'], 'photo.jpg', { type: 'image/jpeg' });
 		const result = await uploadPhoto(1, file);
 		expect(result).toBeNull();
@@ -214,7 +224,9 @@ describe('deletePhoto', () => {
 	});
 
 	it('sets error on failure', async () => {
-		vi.mocked(api.deletePlantPhoto).mockRejectedValue(new Error('Delete photo failed'));
+		vi.mocked(api.deletePlantPhoto).mockRejectedValue(
+			new Error('Delete photo failed')
+		);
 		const result = await deletePhoto(1);
 		expect(result).toBe(false);
 		expect(get(plantsError)).toBe('Delete photo failed');

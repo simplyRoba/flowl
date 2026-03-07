@@ -4,12 +4,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Page from '../../../routes/settings/+page.svelte';
 import { get } from 'svelte/store';
 import { setThemePreference, THEME_STORAGE_KEY } from '$lib/stores/theme';
-import { locale, setLocale, destroyLocale, LOCALE_STORAGE_KEY } from '$lib/stores/locale';
+import {
+	locale,
+	setLocale,
+	destroyLocale,
+	LOCALE_STORAGE_KEY
+} from '$lib/stores/locale';
 import { locations, locationsError } from '$lib/stores/locations';
 import * as api from '$lib/api';
 
 // jsdom doesn't implement HTMLDialogElement.showModal/close
-HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
+HTMLDialogElement.prototype.showModal = vi.fn(function (
+	this: HTMLDialogElement
+) {
 	this.setAttribute('open', '');
 });
 HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
@@ -111,7 +118,9 @@ describe('settings locations section', () => {
 
 	it('shows empty state when no locations', () => {
 		render(Page);
-		expect(screen.getByText('No locations yet. Create locations when adding plants.')).toBeTruthy();
+		expect(
+			screen.getByText('No locations yet. Create locations when adding plants.')
+		).toBeTruthy();
 	});
 
 	it('renders location list', () => {
@@ -125,17 +134,13 @@ describe('settings locations section', () => {
 	});
 
 	it('shows plant count badge for locations with plants', () => {
-		locations.set([
-			{ id: 1, name: 'Bedroom', plant_count: 3 }
-		]);
+		locations.set([{ id: 1, name: 'Bedroom', plant_count: 3 }]);
 		render(Page);
 		expect(screen.getByText('3 plants')).toBeTruthy();
 	});
 
 	it('shows singular plant count', () => {
-		locations.set([
-			{ id: 1, name: 'Bedroom', plant_count: 1 }
-		]);
+		locations.set([{ id: 1, name: 'Bedroom', plant_count: 1 }]);
 		render(Page);
 		expect(screen.getByText('1 plant')).toBeTruthy();
 	});
@@ -149,9 +154,12 @@ describe('settings locations section', () => {
 
 describe('settings data section export/import', () => {
 	beforeEach(() => {
-		vi
-			.spyOn(api, 'fetchStats')
-			.mockResolvedValue({ plant_count: 5, care_event_count: 10, location_count: 2, photo_count: 3 });
+		vi.spyOn(api, 'fetchStats').mockResolvedValue({
+			plant_count: 5,
+			care_event_count: 10,
+			location_count: 2,
+			photo_count: 3
+		});
 		vi.spyOn(api, 'fetchAppInfo').mockRejectedValue(new Error('skip'));
 		vi.spyOn(api, 'fetchMqttStatus').mockRejectedValue(new Error('skip'));
 	});
@@ -195,7 +203,9 @@ describe('settings data section export/import', () => {
 			expect(screen.getByRole('button', { name: /Import/ })).toBeTruthy();
 		});
 
-		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		const fileInput = document.querySelector(
+			'input[type="file"]'
+		) as HTMLInputElement;
 		expect(fileInput).toBeTruthy();
 		expect(fileInput.accept).toBe('.zip');
 	});
@@ -206,9 +216,14 @@ describe('settings data section export/import', () => {
 			expect(screen.getByRole('button', { name: /Import/ })).toBeTruthy();
 		});
 
-		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		const fileInput = document.querySelector(
+			'input[type="file"]'
+		) as HTMLInputElement;
 		const file = new File(['zip'], 'test.zip', { type: 'application/zip' });
-		Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+		Object.defineProperty(fileInput, 'files', {
+			value: [file],
+			configurable: true
+		});
 		fileInput.dispatchEvent(new Event('change', { bubbles: true }));
 
 		await waitFor(() => {
@@ -218,16 +233,23 @@ describe('settings data section export/import', () => {
 	});
 
 	it('shows import error on failure', async () => {
-		vi.spyOn(api, 'importData').mockRejectedValue(new Error('Version mismatch'));
+		vi.spyOn(api, 'importData').mockRejectedValue(
+			new Error('Version mismatch')
+		);
 
 		render(Page);
 		await waitFor(() => {
 			expect(screen.getByRole('button', { name: /Import/ })).toBeTruthy();
 		});
 
-		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		const fileInput = document.querySelector(
+			'input[type="file"]'
+		) as HTMLInputElement;
 		const file = new File(['zip'], 'test.zip', { type: 'application/zip' });
-		Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+		Object.defineProperty(fileInput, 'files', {
+			value: [file],
+			configurable: true
+		});
 		fileInput.dispatchEvent(new Event('change', { bubbles: true }));
 
 		// Confirm in dialog
@@ -257,9 +279,14 @@ describe('settings data section export/import', () => {
 			expect(screen.getByRole('button', { name: /Import/ })).toBeTruthy();
 		});
 
-		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		const fileInput = document.querySelector(
+			'input[type="file"]'
+		) as HTMLInputElement;
 		const file = new File(['zip'], 'test.zip', { type: 'application/zip' });
-		Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+		Object.defineProperty(fileInput, 'files', {
+			value: [file],
+			configurable: true
+		});
 		fileInput.dispatchEvent(new Event('change', { bubbles: true }));
 
 		// Confirm in dialog
@@ -283,9 +310,14 @@ describe('settings data section export/import', () => {
 			expect(screen.getByRole('button', { name: /Import/ })).toBeTruthy();
 		});
 
-		const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+		const fileInput = document.querySelector(
+			'input[type="file"]'
+		) as HTMLInputElement;
 		const file = new File(['zip'], 'test.zip', { type: 'application/zip' });
-		Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+		Object.defineProperty(fileInput, 'files', {
+			value: [file],
+			configurable: true
+		});
 		fileInput.dispatchEvent(new Event('change', { bubbles: true }));
 
 		// Cancel in dialog
@@ -302,7 +334,9 @@ describe('settings data section export/import', () => {
 
 describe('settings delete location confirmation', () => {
 	function getDeleteButtons() {
-		return document.querySelectorAll('.btn-danger') as NodeListOf<HTMLButtonElement>;
+		return document.querySelectorAll(
+			'.btn-danger'
+		) as NodeListOf<HTMLButtonElement>;
 	}
 
 	it('deletes immediately when location has no plants', async () => {
@@ -326,7 +360,9 @@ describe('settings delete location confirmation', () => {
 
 		await waitFor(() => {
 			expect(screen.getByText(/Delete "Bedroom"/)).toBeTruthy();
-			expect(screen.getByText(/3 plants will lose their location/)).toBeTruthy();
+			expect(
+				screen.getByText(/3 plants will lose their location/)
+			).toBeTruthy();
 		});
 	});
 

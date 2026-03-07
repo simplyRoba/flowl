@@ -12,7 +12,9 @@ export async function loadLocations() {
 		const data = await api.fetchLocations();
 		locations.set(data);
 	} catch (e) {
-		locationsError.set(e instanceof Error ? e.message : get(translations).error.loadLocations);
+		locationsError.set(
+			e instanceof Error ? e.message : get(translations).error.loadLocations
+		);
 	}
 }
 
@@ -20,24 +22,34 @@ export async function createLocation(name: string): Promise<Location | null> {
 	locationsError.set(null);
 	try {
 		const location = await api.createLocation(name);
-		locations.update((list) => [...list, location].sort((a, b) => a.name.localeCompare(b.name)));
+		locations.update((list) =>
+			[...list, location].sort((a, b) => a.name.localeCompare(b.name))
+		);
 		return location;
 	} catch (e) {
-		locationsError.set(e instanceof Error ? e.message : get(translations).error.createLocation);
+		locationsError.set(
+			e instanceof Error ? e.message : get(translations).error.createLocation
+		);
 		return null;
 	}
 }
 
-export async function updateLocation(id: number, name: string): Promise<{ location: Location } | { error: string }> {
+export async function updateLocation(
+	id: number,
+	name: string
+): Promise<{ location: Location } | { error: string }> {
 	locationsError.set(null);
 	try {
 		const location = await api.updateLocation(id, name);
 		locations.update((list) =>
-			list.map((l) => (l.id === id ? location : l)).sort((a, b) => a.name.localeCompare(b.name))
+			list
+				.map((l) => (l.id === id ? location : l))
+				.sort((a, b) => a.name.localeCompare(b.name))
 		);
 		return { location };
 	} catch (e) {
-		const message = e instanceof Error ? e.message : get(translations).error.updateLocation;
+		const message =
+			e instanceof Error ? e.message : get(translations).error.updateLocation;
 		locationsError.set(message);
 		return { error: message };
 	}
@@ -50,7 +62,9 @@ export async function deleteLocation(id: number): Promise<boolean> {
 		locations.update((list) => list.filter((l) => l.id !== id));
 		return true;
 	} catch (e) {
-		locationsError.set(e instanceof Error ? e.message : get(translations).error.deleteLocation);
+		locationsError.set(
+			e instanceof Error ? e.message : get(translations).error.deleteLocation
+		);
 		return false;
 	}
 }

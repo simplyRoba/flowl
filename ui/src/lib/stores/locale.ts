@@ -117,5 +117,7 @@ export function destroyLocale(): void {
 export function setLocale(l: Locale): void {
 	locale.set(l);
 	writeLocale(getStorage(), l);
-	import('$lib/api').then(({ updateSettings }) => updateSettings({ locale: l })).catch(() => {});
+	import('$lib/api')
+		.then(({ updateSettings }) => updateSettings({ locale: l }))
+		.catch(() => {});
 }

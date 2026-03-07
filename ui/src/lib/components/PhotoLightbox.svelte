@@ -2,7 +2,17 @@
 	import { X } from 'lucide-svelte';
 	import { translations } from '$lib/stores/locale';
 
-	let { open = false, src = '', alt = '', onclose }: { open?: boolean; src?: string; alt?: string; onclose?: () => void } = $props();
+	let {
+		open = false,
+		src = '',
+		alt = '',
+		onclose
+	}: {
+		open?: boolean;
+		src?: string;
+		alt?: string;
+		onclose?: () => void;
+	} = $props();
 
 	let zoom = $state(1);
 	let translateX = $state(0);
@@ -117,12 +127,6 @@
 		pinchStartDistance = null;
 	}
 
-	function handleWindowKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape') {
-			requestClose();
-		}
-	}
-
 	$effect(() => {
 		if (!dialogEl) return;
 		if (open && src && !dialogEl.open) {
@@ -149,8 +153,12 @@
 		if (!open || typeof window === 'undefined') return;
 		window.addEventListener('pointermove', handleWindowPointerMove);
 		window.addEventListener('pointerup', handleWindowPointerUp);
-		window.addEventListener('touchstart', handleWindowTouchStart, { passive: true });
-		window.addEventListener('touchmove', handleWindowTouchMove, { passive: false });
+		window.addEventListener('touchstart', handleWindowTouchStart, {
+			passive: true
+		});
+		window.addEventListener('touchmove', handleWindowTouchMove, {
+			passive: false
+		});
 		window.addEventListener('touchend', handleWindowTouchEnd);
 		return () => {
 			window.removeEventListener('pointermove', handleWindowPointerMove);
@@ -169,13 +177,18 @@
 	oncancel={handleCancel}
 	onclick={handleBackdropClick}
 >
-	<button type="button" class="lightbox-close" aria-label={$translations.common.close} onclick={requestClose}>
+	<button
+		type="button"
+		class="lightbox-close"
+		aria-label={$translations.common.close}
+		onclick={requestClose}
+	>
 		<X size={24} />
 	</button>
 	<div class="lightbox-content">
 		<img
-			src={src}
-			alt={alt}
+			{src}
+			{alt}
 			class="lightbox-image"
 			bind:this={imageEl}
 			onwheel={handleWheel}

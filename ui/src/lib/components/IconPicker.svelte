@@ -3,7 +3,10 @@
 
 	const ICONS = ['🪴', '🌿', '🌵', '🌸', '🪻', '🌱', '🌷', '🌻', '🍀'];
 
-	let { value = '🪴', onchange }: { value: string; onchange: (icon: string) => void } = $props();
+	let {
+		value = '🪴',
+		onchange
+	}: { value: string; onchange: (icon: string) => void } = $props();
 </script>
 
 <div class="emoji-picker">
@@ -14,7 +17,13 @@
 			class:active={value === icon}
 			onclick={() => onchange(icon)}
 		>
-			<img class="noto" src={emojiToSvgPath(icon)} alt={icon} width="24" height="24" />
+			<img
+				class="noto"
+				src={emojiToSvgPath(icon)}
+				alt={icon}
+				width="24"
+				height="24"
+			/>
 		</button>
 	{/each}
 </div>
@@ -48,6 +57,7 @@
 	.emoji-option.active {
 		border-color: var(--color-primary);
 		background: var(--color-primary-tint);
-		box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
+		box-shadow: 0 0 0 2px
+			color-mix(in srgb, var(--color-primary) 30%, transparent);
 	}
 </style>

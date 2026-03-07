@@ -2,7 +2,14 @@
 	import { onMount } from 'svelte';
 	import { Sparkles, X, Send, BookOpen, Camera } from 'lucide-svelte';
 	import { translations } from '$lib/stores/locale';
-	import { chatPlant, summarizeChat, createCareEvent, uploadCareEventPhoto, type ChatMessage, type Plant } from '$lib/api';
+	import {
+		chatPlant,
+		summarizeChat,
+		createCareEvent,
+		uploadCareEventPhoto,
+		type ChatMessage,
+		type Plant
+	} from '$lib/api';
 
 	let {
 		plant,
@@ -16,7 +23,9 @@
 		onsave?: () => void;
 	} = $props();
 
-	let messages: { role: string; content: string; image?: string }[] = $state([]);
+	let messages: { role: string; content: string; image?: string }[] = $state(
+		[]
+	);
 	let inputText = $state('');
 	let streaming = $state(false);
 	let abortController: AbortController | null = $state(null);
@@ -42,9 +51,12 @@
 	let lastUserPhotoPreview: string | null = $state(null);
 	let saveNotePhoto = $state(true); // whether to attach photo on save
 
-
-	let hasAssistantMessage = $derived(messages.some(m => m.role === 'assistant' && m.content));
-	let showSaveNote = $derived(hasAssistantMessage && !streaming && !editingSummary);
+	let hasAssistantMessage = $derived(
+		messages.some((m) => m.role === 'assistant' && m.content)
+	);
+	let showSaveNote = $derived(
+		hasAssistantMessage && !streaming && !editingSummary
+	);
 
 	// Drag-to-dismiss state
 	let dragStartY = $state(0);
@@ -183,7 +195,13 @@
 			// Also exclude the user message we just added — it goes as the `message` param
 			const historyWithoutCurrent = history.slice(0, -1);
 
-			for await (const delta of chatPlant(plant.id, userMsg, historyWithoutCurrent, controller.signal, imageBase64)) {
+			for await (const delta of chatPlant(
+				plant.id,
+				userMsg,
+				historyWithoutCurrent,
+				controller.signal,
+				imageBase64
+			)) {
 				messages[messages.length - 1].content += delta;
 				scrollToBottom();
 			}
@@ -197,7 +215,10 @@
 					content: $translations.chat.errorMessage
 				};
 			} else {
-				messages.push({ role: 'assistant', content: $translations.chat.errorMessage });
+				messages.push({
+					role: 'assistant',
+					content: $translations.chat.errorMessage
+				});
 			}
 			scrollToBottom();
 		} finally {
@@ -334,7 +355,9 @@
 	onMount(() => {
 		const mq = window.matchMedia('(max-width: 768px)');
 		isMobile = mq.matches;
-		const handler = (e: MediaQueryListEvent) => { isMobile = e.matches; };
+		const handler = (e: MediaQueryListEvent) => {
+			isMobile = e.matches;
+		};
 		mq.addEventListener('change', handler);
 		return () => {
 			mq.removeEventListener('change', handler);
@@ -369,12 +392,22 @@
 		</div>
 		<div class="chat-header-right">
 			{#if showSaveNote}
-				<button class="btn btn-sm chat-save-note-btn" onclick={handleSaveNote} disabled={summarizing}>
+				<button
+					class="btn btn-sm chat-save-note-btn"
+					onclick={handleSaveNote}
+					disabled={summarizing}
+				>
 					<BookOpen size={14} />
-					{summarizing ? $translations.chat.savingNote : $translations.chat.saveNote}
+					{summarizing
+						? $translations.chat.savingNote
+						: $translations.chat.saveNote}
 				</button>
 			{/if}
-			<button class="chat-close" onclick={handleClose} aria-label={$translations.chat.close}>
+			<button
+				class="chat-close"
+				onclick={handleClose}
+				aria-label={$translations.chat.close}
+			>
 				<X size={18} />
 			</button>
 		</div>
@@ -413,12 +446,16 @@
 		{:else}
 			{#each messages as msg}
 				{#if msg.content}
-				<div class="message" class:user={msg.role === 'user'} class:assistant={msg.role === 'assistant'}>
-					{#if msg.image && msg.role === 'user'}
-						<img class="message-photo" src={msg.image} alt="" />
-					{/if}
-					{msg.content}
-				</div>
+					<div
+						class="message"
+						class:user={msg.role === 'user'}
+						class:assistant={msg.role === 'assistant'}
+					>
+						{#if msg.image && msg.role === 'user'}
+							<img class="message-photo" src={msg.image} alt="" />
+						{/if}
+						{msg.content}
+					</div>
 				{/if}
 			{/each}
 			{#if streaming && messages[messages.length - 1]?.content === ''}
@@ -448,19 +485,37 @@
 				<div class="summary-photo-preview">
 					<div class="photo-preview-thumb">
 						<img src={lastUserPhotoPreview} alt="" />
-						<button class="photo-preview-remove" onclick={() => { saveNotePhoto = false; }} aria-label={$translations.chat.removePhoto}>
+						<button
+							class="photo-preview-remove"
+							onclick={() => {
+								saveNotePhoto = false;
+							}}
+							aria-label={$translations.chat.removePhoto}
+						>
 							<X size={12} />
 						</button>
 					</div>
-					<span class="summary-photo-label">{$translations.chat.attachChatPhoto}</span>
+					<span class="summary-photo-label"
+						>{$translations.chat.attachChatPhoto}</span
+					>
 				</div>
 			{/if}
 			<div class="summary-actions">
-				<button class="btn btn-outline" onclick={handleCancelSave} disabled={savingNote}>
+				<button
+					class="btn btn-outline"
+					onclick={handleCancelSave}
+					disabled={savingNote}
+				>
 					{$translations.chat.cancelSummary}
 				</button>
-				<button class="btn btn-ai" onclick={handleConfirmSave} disabled={savingNote || !summaryText.trim()}>
-					{savingNote ? $translations.common.saving : $translations.chat.saveSummary}
+				<button
+					class="btn btn-ai"
+					onclick={handleConfirmSave}
+					disabled={savingNote || !summaryText.trim()}
+				>
+					{savingNote
+						? $translations.common.saving
+						: $translations.chat.saveSummary}
 				</button>
 			</div>
 		</div>
@@ -469,14 +524,22 @@
 			<div class="photo-preview-strip">
 				<div class="photo-preview-thumb">
 					<img src={attachedPreview} alt="" />
-					<button class="photo-preview-remove" onclick={clearPhoto} aria-label={$translations.chat.removePhoto}>
+					<button
+						class="photo-preview-remove"
+						onclick={clearPhoto}
+						aria-label={$translations.chat.removePhoto}
+					>
 						<X size={12} />
 					</button>
 				</div>
 			</div>
 		{/if}
 		<div class="chat-input-area">
-			<label class="attach-btn" class:disabled={streaming} title={$translations.chat.attachPhoto}>
+			<label
+				class="attach-btn"
+				class:disabled={streaming}
+				title={$translations.chat.attachPhoto}
+			>
 				<Camera size={16} />
 				<input
 					type="file"
@@ -516,12 +579,17 @@
 <dialog
 	bind:this={dialogEl}
 	class="chat-dialog-mobile"
-	oncancel={(e) => { e.preventDefault(); handleClose(); }}
+	oncancel={(e) => {
+		e.preventDefault();
+		handleClose();
+	}}
 >
 	{#if open && isMobile}
 		<div
 			class="dialog-sheet"
-			style:transform={dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined}
+			style:transform={dragOffset > 0
+				? `translateY(${dragOffset}px)`
+				: undefined}
 			style:transition={dragging ? 'none' : 'transform 0.15s ease-out'}
 		>
 			{@render chatContent()}
@@ -546,8 +614,12 @@
 	}
 
 	@keyframes slideInRight {
-		from { transform: translateX(100%); }
-		to { transform: translateX(0); }
+		from {
+			transform: translateX(100%);
+		}
+		to {
+			transform: translateX(0);
+		}
 	}
 
 	@media (max-width: 768px) {
@@ -583,8 +655,12 @@
 	}
 
 	@keyframes slideUp {
-		from { transform: translateY(100%); }
-		to { transform: translateY(0); }
+		from {
+			transform: translateY(100%);
+		}
+		to {
+			transform: translateY(0);
+		}
 	}
 
 	.dialog-sheet {
@@ -805,8 +881,16 @@
 	}
 
 	@keyframes typing {
-		0%, 60%, 100% { opacity: 0.4; transform: translateY(0); }
-		30% { opacity: 1; transform: translateY(-4px); }
+		0%,
+		60%,
+		100% {
+			opacity: 0.4;
+			transform: translateY(0);
+		}
+		30% {
+			opacity: 1;
+			transform: translateY(-4px);
+		}
 	}
 
 	/* ── Drag-and-drop overlay ── */
@@ -863,7 +947,11 @@
 	}
 
 	.photo-preview-remove:hover {
-		background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+		background: color-mix(
+			in srgb,
+			var(--color-danger) 10%,
+			var(--color-surface)
+		);
 		border-color: var(--color-danger);
 		transform: scale(1.15);
 	}
@@ -1022,5 +1110,4 @@
 	.summary-actions .btn {
 		flex: 1;
 	}
-
 </style>

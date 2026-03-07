@@ -54,20 +54,41 @@
 		</button>
 	{/each}
 	{#if adding}
-		<form class="new-location" onsubmit={(e) => { e.preventDefault(); handleCreate(); }}>
+		<form
+			class="new-location"
+			onsubmit={(e) => {
+				e.preventDefault();
+				handleCreate();
+			}}
+		>
 			<input
 				type="text"
 				bind:value={newName}
 				placeholder={$translations.form.locationName}
 				class="input new-input"
 			/>
-			<button type="submit" class="chip add-btn">{$translations.form.add}</button>
-			<button type="button" class="chip" onclick={() => { adding = false; newName = ''; }}>
+			<button type="submit" class="chip add-btn"
+				>{$translations.form.add}</button
+			>
+			<button
+				type="button"
+				class="chip"
+				onclick={() => {
+					adding = false;
+					newName = '';
+				}}
+			>
 				{$translations.common.cancel}
 			</button>
 		</form>
 	{:else}
-		<button type="button" class="chip chip-dashed" onclick={() => { adding = true; }}>
+		<button
+			type="button"
+			class="chip chip-dashed"
+			onclick={() => {
+				adding = true;
+			}}
+		>
 			{$translations.form.newLocation}
 		</button>
 	{/if}
@@ -108,5 +129,4 @@
 		font-size: var(--fs-chip);
 		border-radius: var(--radius-pill);
 	}
-
 </style>

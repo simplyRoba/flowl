@@ -10,7 +10,10 @@ export function isThemePreference(value: unknown): value is ThemePreference {
 	return value === 'light' || value === 'dark' || value === 'system';
 }
 
-export function resolveTheme(preference: ThemePreference, prefersDark: boolean): ThemeMode {
+export function resolveTheme(
+	preference: ThemePreference,
+	prefersDark: boolean
+): ThemeMode {
 	if (preference === 'system') return prefersDark ? 'dark' : 'light';
 	return preference;
 }
@@ -25,7 +28,10 @@ export function readThemePreference(storage: Storage | null): ThemePreference {
 	}
 }
 
-export function writeThemePreference(storage: Storage | null, preference: ThemePreference): void {
+export function writeThemePreference(
+	storage: Storage | null,
+	preference: ThemePreference
+): void {
 	if (!storage) return;
 	try {
 		storage.setItem(THEME_STORAGE_KEY, preference);
@@ -46,7 +52,9 @@ export function createSystemPreferenceListener(
 	return () => media.removeEventListener('change', handler);
 }
 
-export const themePreference = writable<ThemePreference>(readThemePreference(getStorage()));
+export const themePreference = writable<ThemePreference>(
+	readThemePreference(getStorage())
+);
 export const systemPrefersDark = writable(false);
 export const effectiveTheme = derived(
 	[themePreference, systemPrefersDark],
@@ -71,7 +79,9 @@ const THEME_COLORS: Record<ThemeMode, string> = {
 function applyTheme(theme: ThemeMode): void {
 	if (typeof document === 'undefined') return;
 	document.documentElement.dataset.theme = theme;
-	let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+	let meta = document.querySelector(
+		'meta[name="theme-color"]'
+	) as HTMLMetaElement | null;
 	if (!meta) {
 		meta = document.createElement('meta');
 		meta.name = 'theme-color';
@@ -102,7 +112,9 @@ export function initTheme(serverPreference?: ThemePreference): void {
 		);
 	}
 
-	const stopThemeSubscription = effectiveTheme.subscribe((theme) => applyTheme(theme));
+	const stopThemeSubscription = effectiveTheme.subscribe((theme) =>
+		applyTheme(theme)
+	);
 	cleanup = () => {
 		stopSystemListener();
 		stopThemeSubscription();
@@ -118,5 +130,7 @@ export function destroyTheme(): void {
 export function setThemePreference(preference: ThemePreference): void {
 	themePreference.set(preference);
 	writeThemePreference(getStorage(), preference);
-	import('$lib/api').then(({ updateSettings }) => updateSettings({ theme: preference })).catch(() => {});
+	import('$lib/api')
+		.then(({ updateSettings }) => updateSettings({ theme: preference }))
+		.catch(() => {});
 }

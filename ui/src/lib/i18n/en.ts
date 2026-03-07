@@ -188,7 +188,8 @@ const en = {
 		plantCount: { one: '{n} plant', other: '{n} plants' },
 		deleteLocation: 'Delete location',
 		deleteLocationConfirm: 'Delete "{name}"?',
-		deleteLocationConfirmPlants: 'Delete "{name}"? {count} will {verb} {pronoun} location.',
+		deleteLocationConfirmPlants:
+			'Delete "{name}"? {count} will {verb} {pronoun} location.',
 		deleteLocationVerb: { one: 'lose', other: 'lose' },
 		deleteLocationPronoun: { one: 'its', other: 'their' },
 		mqtt: 'MQTT',
@@ -200,7 +201,8 @@ const en = {
 		topicPrefix: 'Topic prefix',
 		repair: 'Repair',
 		repairDesc: 'Clears retained MQTT topics and republishes current state.',
-		repairConfirm: 'Clear all retained MQTT topics and republish fresh state for all plants?',
+		repairConfirm:
+			'Clear all retained MQTT topics and republish fresh state for all plants?',
 		repairTitle: 'Repair MQTT',
 		repairing: 'Repairing...',
 		repairFailed: 'Repair failed',
@@ -219,12 +221,17 @@ const en = {
 		importBtn: 'Import',
 		exportBtn: 'Export',
 		importData: 'Import data',
-		importConfirm: 'Import "{name}"? All existing data and photos will be replaced.',
+		importConfirm:
+			'Import "{name}"? All existing data and photos will be replaced.',
 		importFailed: 'Import failed',
-		importResult: 'Imported {plants} plants, {photos} photos, {care_events} log entries, {locations} locations',
+		importResult:
+			'Imported {plants} plants, {photos} photos, {care_events} log entries, {locations} locations',
 		statsLabel: 'Plants',
 		statsPlants: { one: '{n} plant', other: '{n} plants' },
-		statsCareEvents: { one: '{n} care journal entry', other: '{n} care journal entries' },
+		statsCareEvents: {
+			one: '{n} care journal entry',
+			other: '{n} care journal entries'
+		},
 		statsLocations: { one: '{n} location', other: '{n} locations' },
 		statsPhotos: { one: '{n} photo', other: '{n} photos' },
 		about: 'About',
@@ -313,7 +320,8 @@ const en = {
 		dismiss: 'Dismiss',
 		applied: 'AI suggestion applied — {n} fields updated',
 		undo: 'Undo',
-		errorMessage: 'Identification failed. The AI service might be temporarily unavailable.',
+		errorMessage:
+			'Identification failed. The AI service might be temporarily unavailable.',
 		retry: 'Retry',
 		confidence: '{n}%',
 		suggestionCount: '{current} / {total}',
@@ -327,7 +335,7 @@ const en = {
 		thinking: 'Thinking...',
 		errorMessage: 'Something went wrong. Please try again.',
 		close: 'Close chat',
-		emptyState: 'Ask anything about your {name}\'s care',
+		emptyState: "Ask anything about your {name}'s care",
 		quickQuestions: 'Quick questions',
 		healthCheck: 'Health check',
 		wateringAdvice: 'Watering advice',

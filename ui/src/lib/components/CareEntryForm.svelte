@@ -1,10 +1,22 @@
 <script lang="ts">
-	import { Leaf, Shovel, Scissors, Pencil as PencilIcon, Camera, CalendarClock, X as XIcon } from 'lucide-svelte';
+	import {
+		Leaf,
+		Shovel,
+		Scissors,
+		Pencil as PencilIcon,
+		Camera,
+		CalendarClock,
+		X as XIcon
+	} from 'lucide-svelte';
 	import { addCareEvent } from '$lib/stores/care';
 	import { uploadCareEventPhoto } from '$lib/api';
 	import { translations } from '$lib/stores/locale';
 
-	let { plantId, onsubmit, oncancel }: {
+	let {
+		plantId,
+		onsubmit,
+		oncancel
+	}: {
 		plantId: number;
 		onsubmit: () => void;
 		oncancel: () => void;
@@ -63,7 +75,8 @@
 		submitting = true;
 		const occ = showOccurredAt ? occurredAt.trim() : '';
 		const occDate = occ ? new Date(occ) : null;
-		const occIso = occDate && !isNaN(occDate.getTime()) ? occDate.toISOString() : undefined;
+		const occIso =
+			occDate && !isNaN(occDate.getTime()) ? occDate.toISOString() : undefined;
 		const photoFile = photo;
 		const event = await addCareEvent(plantId, {
 			event_type: eventType,
@@ -81,16 +94,11 @@
 
 <div class="care-entry-form">
 	<div class="type-chips">
-		{#each [
-			{ value: 'fertilized', label: $translations.care.fertilized, icon: Leaf },
-			{ value: 'repotted', label: $translations.care.repotted, icon: Shovel },
-			{ value: 'pruned', label: $translations.care.pruned, icon: Scissors },
-			{ value: 'custom', label: $translations.care.custom, icon: PencilIcon }
-		] as chip}
+		{#each [{ value: 'fertilized', label: $translations.care.fertilized, icon: Leaf }, { value: 'repotted', label: $translations.care.repotted, icon: Shovel }, { value: 'pruned', label: $translations.care.pruned, icon: Scissors }, { value: 'custom', label: $translations.care.custom, icon: PencilIcon }] as chip}
 			<button
 				class="chip chip-solid"
 				class:active={eventType === chip.value}
-				onclick={() => eventType = chip.value}
+				onclick={() => (eventType = chip.value)}
 			>
 				<chip.icon size={14} />
 				{chip.label}
@@ -112,7 +120,11 @@
 					<div class="toolbar-thumb">
 						<img src={photoPreview} alt="" />
 					</div>
-					<button class="toolbar-dismiss" onclick={clearPhoto} aria-label={$translations.chat.removePhoto}>
+					<button
+						class="toolbar-dismiss"
+						onclick={clearPhoto}
+						aria-label={$translations.chat.removePhoto}
+					>
 						<XIcon size={12} />
 					</button>
 				</div>
@@ -136,14 +148,24 @@
 						max={nowLocalInputValue()}
 						bind:value={occurredAt}
 					/>
-					<button class="toolbar-dismiss" onclick={() => { showOccurredAt = false; occurredAt = ''; }} aria-label={$translations.common.cancel}>
+					<button
+						class="toolbar-dismiss"
+						onclick={() => {
+							showOccurredAt = false;
+							occurredAt = '';
+						}}
+						aria-label={$translations.common.cancel}
+					>
 						<XIcon size={12} />
 					</button>
 				</div>
 			{:else}
 				<button
 					class="toolbar-btn"
-					onclick={() => { showOccurredAt = true; if (!occurredAt) occurredAt = nowLocalInputValue(); }}
+					onclick={() => {
+						showOccurredAt = true;
+						if (!occurredAt) occurredAt = nowLocalInputValue();
+					}}
 				>
 					<CalendarClock size={16} />
 				</button>
@@ -151,8 +173,14 @@
 		</div>
 
 		<div class="toolbar-right">
-			<button class="btn btn-outline" onclick={handleCancel}>{$translations.common.cancel}</button>
-			<button class="btn btn-primary" onclick={handleSubmit} disabled={!eventType || submitting}>
+			<button class="btn btn-outline" onclick={handleCancel}
+				>{$translations.common.cancel}</button
+			>
+			<button
+				class="btn btn-primary"
+				onclick={handleSubmit}
+				disabled={!eventType || submitting}
+			>
 				{submitting ? $translations.common.saving : $translations.common.save}
 			</button>
 		</div>
@@ -213,7 +241,10 @@
 		border-radius: var(--radius-btn);
 		background: var(--color-surface);
 		color: var(--color-text-muted);
-		transition: background var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed);
+		transition:
+			background var(--transition-speed),
+			border-color var(--transition-speed),
+			color var(--transition-speed);
 	}
 
 	.toolbar-btn:hover {
@@ -268,7 +299,9 @@
 		align-items: center;
 		justify-content: center;
 		padding: 0;
-		transition: color var(--transition-speed), background var(--transition-speed);
+		transition:
+			color var(--transition-speed),
+			background var(--transition-speed);
 	}
 
 	.toolbar-dismiss:hover {

@@ -1,6 +1,13 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { Droplet, Leaf, Shovel, Scissors, Pencil, Sparkles } from 'lucide-svelte';
+	import {
+		Droplet,
+		Leaf,
+		Shovel,
+		Scissors,
+		Pencil,
+		Sparkles
+	} from 'lucide-svelte';
 	import type { CareEvent } from '$lib/api';
 	import { fetchAllCareEvents } from '$lib/api';
 	import { translations } from '$lib/stores/locale';
@@ -20,10 +27,21 @@
 	let error = $state<string | null>(null);
 	let sentinel: HTMLElement;
 
-	const TYPE_VALUES = ['watered', 'fertilized', 'repotted', 'pruned', 'custom', 'ai-consultation'] as const;
+	const TYPE_VALUES = [
+		'watered',
+		'fertilized',
+		'repotted',
+		'pruned',
+		'custom',
+		'ai-consultation'
+	] as const;
 
-	let activeTypes: Set<string> = $derived(new Set(page.url.searchParams.getAll('type')));
-	let allActive: boolean = $derived(activeTypes.size === 0 || activeTypes.size === TYPE_VALUES.length);
+	let activeTypes: Set<string> = $derived(
+		new Set(page.url.searchParams.getAll('type'))
+	);
+	let allActive: boolean = $derived(
+		activeTypes.size === 0 || activeTypes.size === TYPE_VALUES.length
+	);
 
 	function updateUrl(types: Set<string>) {
 		const url = new URL(page.url);
@@ -58,9 +76,8 @@
 		if (loading) return;
 		loading = true;
 		error = null;
-		const before = reset || events.length === 0
-			? undefined
-			: events[events.length - 1].id;
+		const before =
+			reset || events.length === 0 ? undefined : events[events.length - 1].id;
 		const types = activeTypes.size > 0 ? [...activeTypes] : undefined;
 		try {
 			const page = await fetchAllCareEvents(PAGE_SIZE, before, types);
@@ -90,8 +107,10 @@
 		yesterday.setDate(yesterday.getDate() - 1);
 		const eventDate = new Date(date);
 		eventDate.setHours(0, 0, 0, 0);
-		if (eventDate.getTime() === today.getTime()) return `${$translations.care.today} — ${fullDate}`;
-		if (eventDate.getTime() === yesterday.getTime()) return `${$translations.care.yesterday} — ${fullDate}`;
+		if (eventDate.getTime() === today.getTime())
+			return `${$translations.care.today} — ${fullDate}`;
+		if (eventDate.getTime() === yesterday.getTime())
+			return `${$translations.care.yesterday} — ${fullDate}`;
 		return fullDate;
 	}
 
@@ -134,11 +153,14 @@
 		void events.length;
 		if (!hasMore || !sentinel) return;
 
-		const observer = new IntersectionObserver((entries) => {
-			if (entries[0].isIntersecting && hasMore && !loading) {
-				loadPage();
-			}
-		}, { rootMargin: '200px' });
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0].isIntersecting && hasMore && !loading) {
+					loadPage();
+				}
+			},
+			{ rootMargin: '200px' }
+		);
 
 		observer.observe(sentinel);
 		return () => observer.disconnect();
@@ -223,13 +245,35 @@
 								</div>
 							</div>
 							<div class="log-entry-content">
-								<a href="/plants/{event.plant_id}?from=/care-journal" class="log-entry-plant">{event.plant_name}</a>
+								<a
+									href="/plants/{event.plant_id}?from=/care-journal"
+									class="log-entry-plant">{event.plant_name}</a
+								>
 								{#if event.photo_url}
-									<button class="log-entry-photo" onclick={(e) => { e.stopPropagation(); lightboxSrc = event.photo_url!; lightboxOpen = true; }}>
-										<img src={thumbUrl(event.photo_url, 200)} srcset={thumbSrcset(event.photo_url)} sizes="80px" alt="" onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = event.photo_url!; }} />
+									<button
+										class="log-entry-photo"
+										onclick={(e) => {
+											e.stopPropagation();
+											lightboxSrc = event.photo_url!;
+											lightboxOpen = true;
+										}}
+									>
+										<img
+											src={thumbUrl(event.photo_url, 200)}
+											srcset={thumbSrcset(event.photo_url)}
+											sizes="80px"
+											alt=""
+											onerror={(e) => {
+												const img = e.currentTarget as HTMLImageElement;
+												img.onerror = null;
+												img.src = event.photo_url!;
+											}}
+										/>
 									</button>
 								{/if}
-								<div class="log-entry-action">{eventTypeLabel(event.event_type)}</div>
+								<div class="log-entry-action">
+									{eventTypeLabel(event.event_type)}
+								</div>
 								{#if event.notes}
 									<div class="log-entry-note">{event.notes}</div>
 								{/if}
@@ -252,7 +296,9 @@
 	open={lightboxOpen}
 	src={lightboxSrc}
 	alt=""
-	onclose={() => { lightboxOpen = false; }}
+	onclose={() => {
+		lightboxOpen = false;
+	}}
 />
 
 <style>
@@ -337,12 +383,24 @@
 		color: var(--color-text-muted);
 	}
 
-	.log-entry-icon.water-icon { background: color-mix(in srgb, var(--color-water) 15%, transparent); }
-	.log-entry-icon.fertilize-icon { background: color-mix(in srgb, var(--color-secondary) 15%, transparent); }
-	.log-entry-icon.repot-icon { background: color-mix(in srgb, var(--color-success) 15%, transparent); }
-	.log-entry-icon.prune-icon { background: color-mix(in srgb, var(--color-text-muted) 15%, transparent); }
-	.log-entry-icon.custom-icon { background: color-mix(in srgb, var(--color-warning) 15%, transparent); }
-	.log-entry-icon.ai-icon { background: color-mix(in srgb, var(--color-ai) 15%, transparent); }
+	.log-entry-icon.water-icon {
+		background: color-mix(in srgb, var(--color-water) 15%, transparent);
+	}
+	.log-entry-icon.fertilize-icon {
+		background: color-mix(in srgb, var(--color-secondary) 15%, transparent);
+	}
+	.log-entry-icon.repot-icon {
+		background: color-mix(in srgb, var(--color-success) 15%, transparent);
+	}
+	.log-entry-icon.prune-icon {
+		background: color-mix(in srgb, var(--color-text-muted) 15%, transparent);
+	}
+	.log-entry-icon.custom-icon {
+		background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+	}
+	.log-entry-icon.ai-icon {
+		background: color-mix(in srgb, var(--color-ai) 15%, transparent);
+	}
 
 	.log-entry-content {
 		flex: 1;
