@@ -71,7 +71,9 @@ describe('dashboard page', () => {
 		await vi.waitFor(() => {
 			expect(screen.getByText('No plants yet')).toBeTruthy();
 		});
-		expect(screen.getByText('Add your first plant to get started.')).toBeTruthy();
+		expect(
+			screen.getByText('Add your first plant to get started.')
+		).toBeTruthy();
 	});
 
 	it('shows Add Plant link in empty state', async () => {
@@ -91,8 +93,18 @@ describe('dashboard page', () => {
 
 	it('renders plant cards with mocked data', async () => {
 		plants.set([
-			makePlant({ id: 1, name: 'Fern', watering_status: 'ok', location_name: 'Bedroom' }),
-			makePlant({ id: 2, name: 'Cactus', watering_status: 'due', location_name: null })
+			makePlant({
+				id: 1,
+				name: 'Fern',
+				watering_status: 'ok',
+				location_name: 'Bedroom'
+			}),
+			makePlant({
+				id: 2,
+				name: 'Cactus',
+				watering_status: 'due',
+				location_name: null
+			})
 		]);
 		render(Page);
 		await vi.waitFor(() => {
@@ -143,7 +155,9 @@ describe('dynamic greeting subtitle', () => {
 		const greeting = document.querySelector('.greeting p');
 		expect(greeting?.textContent).toBeTruthy();
 		// Should contain attention keywords (singular variant)
-		expect(greeting?.textContent).toMatch(/thirsty|drink|waiting for water|calling|hydrate/);
+		expect(greeting?.textContent).toMatch(
+			/thirsty|drink|waiting for water|calling|hydrate/
+		);
 	});
 
 	it('shows default time-of-day subtitle when all plants are ok', () => {
@@ -152,14 +166,18 @@ describe('dynamic greeting subtitle', () => {
 		const greeting = document.querySelector('.greeting p');
 		expect(greeting?.textContent).toBeTruthy();
 		// Should NOT contain attention keywords
-		expect(greeting?.textContent).not.toMatch(/thirsty|drink|waiting for water|calling|hydrate/);
+		expect(greeting?.textContent).not.toMatch(
+			/thirsty|drink|waiting for water|calling|hydrate/
+		);
 	});
 
 	it('shows default subtitle when no plants exist', () => {
 		render(Page);
 		const greeting = document.querySelector('.greeting p');
 		expect(greeting?.textContent).toBeTruthy();
-		expect(greeting?.textContent).not.toMatch(/thirsty|drink|waiting for water|calling|hydrate/);
+		expect(greeting?.textContent).not.toMatch(
+			/thirsty|drink|waiting for water|calling|hydrate/
+		);
 	});
 });
 
@@ -213,37 +231,58 @@ describe('needs attention section', () => {
 
 	it('shows photo when plant has photo_url', () => {
 		plants.set([
-			makePlant({ id: 1, name: 'Fern', watering_status: 'due', photo_url: '/uploads/fern.jpg' })
+			makePlant({
+				id: 1,
+				name: 'Fern',
+				watering_status: 'due',
+				photo_url: '/uploads/fern.jpg'
+			})
 		]);
 		render(Page);
 		const attentionSection = document.querySelector('.attention-section');
-		const img = attentionSection!.querySelector('.attention-photo-img') as HTMLImageElement;
+		const img = attentionSection!.querySelector(
+			'.attention-photo-img'
+		) as HTMLImageElement;
 		expect(img).toBeTruthy();
 		expect(img.src).toContain('/uploads/fern_200.jpg');
 	});
 
 	it('shows 200px thumbnail on grid card when plant has photo_url', async () => {
 		plants.set([
-			makePlant({ id: 1, name: 'Fern', watering_status: 'ok', photo_url: '/uploads/fern.jpg' })
+			makePlant({
+				id: 1,
+				name: 'Fern',
+				watering_status: 'ok',
+				photo_url: '/uploads/fern.jpg'
+			})
 		]);
 		render(Page);
 		await vi.waitFor(() => {
 			expect(document.querySelector('.plant-card')).toBeTruthy();
 		});
-		const img = document.querySelector('.plant-card .photo-img') as HTMLImageElement;
+		const img = document.querySelector(
+			'.plant-card .photo-img'
+		) as HTMLImageElement;
 		expect(img).toBeTruthy();
 		expect(img.src).toContain('/uploads/fern_200.jpg');
 	});
 
 	it('falls back to original photo_url on grid card thumbnail error', async () => {
 		plants.set([
-			makePlant({ id: 1, name: 'Fern', watering_status: 'ok', photo_url: '/uploads/fern.jpg' })
+			makePlant({
+				id: 1,
+				name: 'Fern',
+				watering_status: 'ok',
+				photo_url: '/uploads/fern.jpg'
+			})
 		]);
 		render(Page);
 		await vi.waitFor(() => {
 			expect(document.querySelector('.plant-card .photo-img')).toBeTruthy();
 		});
-		const img = document.querySelector('.plant-card .photo-img') as HTMLImageElement;
+		const img = document.querySelector(
+			'.plant-card .photo-img'
+		) as HTMLImageElement;
 		expect(img.src).toContain('/uploads/fern_200.jpg');
 		await fireEvent.error(img);
 		expect(img.src).toContain('/uploads/fern.jpg');
@@ -252,11 +291,18 @@ describe('needs attention section', () => {
 
 	it('falls back to original photo_url on attention card thumbnail error', async () => {
 		plants.set([
-			makePlant({ id: 1, name: 'Fern', watering_status: 'due', photo_url: '/uploads/fern.jpg' })
+			makePlant({
+				id: 1,
+				name: 'Fern',
+				watering_status: 'due',
+				photo_url: '/uploads/fern.jpg'
+			})
 		]);
 		render(Page);
 		const attentionSection = document.querySelector('.attention-section');
-		const img = attentionSection!.querySelector('.attention-photo-img') as HTMLImageElement;
+		const img = attentionSection!.querySelector(
+			'.attention-photo-img'
+		) as HTMLImageElement;
 		expect(img.src).toContain('/uploads/fern_200.jpg');
 		await fireEvent.error(img);
 		expect(img.src).toContain('/uploads/fern.jpg');
@@ -265,11 +311,19 @@ describe('needs attention section', () => {
 
 	it('shows emoji icon fallback when no photo', () => {
 		plants.set([
-			makePlant({ id: 1, name: 'Fern', watering_status: 'due', photo_url: null, icon: '🌿' })
+			makePlant({
+				id: 1,
+				name: 'Fern',
+				watering_status: 'due',
+				photo_url: null,
+				icon: '🌿'
+			})
 		]);
 		render(Page);
 		const attentionSection = document.querySelector('.attention-section');
-		const icon = attentionSection!.querySelector('.attention-icon') as HTMLImageElement;
+		const icon = attentionSection!.querySelector(
+			'.attention-icon'
+		) as HTMLImageElement;
 		expect(icon).toBeTruthy();
 		expect(icon.src).toContain('/emoji/');
 	});
@@ -295,11 +349,16 @@ describe('attention card water action', () => {
 	it('shows loading state while watering', async () => {
 		let resolveWater: () => void;
 		mockWaterPlant.mockImplementation(
-			() => new Promise<void>((resolve) => { resolveWater = resolve; })
+			() =>
+				new Promise<void>((resolve) => {
+					resolveWater = resolve;
+				})
 		);
 		plants.set([makePlant({ id: 1, name: 'Fern', watering_status: 'due' })]);
 		render(Page);
-		const waterBtn = screen.getByRole('button', { name: /Water/ }) as HTMLButtonElement;
+		const waterBtn = screen.getByRole('button', {
+			name: /Water/
+		}) as HTMLButtonElement;
 		waterBtn.click();
 
 		// Wait for the click handler to run

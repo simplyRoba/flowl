@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Plus, TriangleAlert, Droplet } from 'lucide-svelte';
-	import { plants, plantsError, loadPlants, waterPlant } from '$lib/stores/plants';
+	import {
+		plants,
+		plantsError,
+		loadPlants,
+		waterPlant
+	} from '$lib/stores/plants';
 	import { translations } from '$lib/stores/locale';
 	import { emojiToSvgPath } from '$lib/emoji';
 	import { thumbUrl, thumbSrcset } from '$lib/thumbUrl';
@@ -15,21 +20,29 @@
 		return 'night';
 	}
 
-
-	const timeOfDay = getTimeOfDay() as keyof typeof $translations.dashboard.greetings;
+	const timeOfDay =
+		getTimeOfDay() as keyof typeof $translations.dashboard.greetings;
 	const greetingIndex = Math.floor(Math.random() * 5);
 	const subtitleIndex = Math.floor(Math.random() * 4);
 	const attentionMsgIndex = Math.floor(Math.random() * 5);
 
-	let greeting = $derived($translations.dashboard.greetings[timeOfDay][greetingIndex]);
-	let defaultSubtitle = $derived($translations.dashboard.subtitles[timeOfDay][subtitleIndex]);
+	let greeting = $derived(
+		$translations.dashboard.greetings[timeOfDay][greetingIndex]
+	);
+	let defaultSubtitle = $derived(
+		$translations.dashboard.subtitles[timeOfDay][subtitleIndex]
+	);
 
 	let attentionPlants = $derived(
 		$plants
-			.filter((p) => p.watering_status === 'overdue' || p.watering_status === 'due')
+			.filter(
+				(p) => p.watering_status === 'overdue' || p.watering_status === 'due'
+			)
 			.sort((a, b) => {
-				if (a.watering_status === 'overdue' && b.watering_status !== 'overdue') return -1;
-				if (a.watering_status !== 'overdue' && b.watering_status === 'overdue') return 1;
+				if (a.watering_status === 'overdue' && b.watering_status !== 'overdue')
+					return -1;
+				if (a.watering_status !== 'overdue' && b.watering_status === 'overdue')
+					return 1;
 				return 0;
 			})
 	);
@@ -39,7 +52,10 @@
 			? defaultSubtitle
 			: attentionPlants.length === 1
 				? $translations.dashboard.attentionSingular[attentionMsgIndex]
-				: $translations.dashboard.attentionPlural[attentionMsgIndex].replace('{n}', String(attentionPlants.length))
+				: $translations.dashboard.attentionPlural[attentionMsgIndex].replace(
+						'{n}',
+						String(attentionPlants.length)
+					)
 	);
 
 	let loading = $state(true);
@@ -57,7 +73,7 @@
 		'linear-gradient(135deg, color-mix(in srgb, var(--color-warning) 35%, transparent), color-mix(in srgb, var(--color-warning) 15%, transparent))',
 		'linear-gradient(135deg, color-mix(in srgb, var(--color-secondary) 30%, transparent), color-mix(in srgb, var(--color-secondary) 12%, transparent))',
 		'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 35%, transparent), color-mix(in srgb, var(--color-primary) 15%, transparent))',
-		'linear-gradient(135deg, color-mix(in srgb, var(--color-text-muted) 25%, transparent), color-mix(in srgb, var(--color-text-muted) 10%, transparent))',
+		'linear-gradient(135deg, color-mix(in srgb, var(--color-text-muted) 25%, transparent), color-mix(in srgb, var(--color-text-muted) 10%, transparent))'
 	];
 
 	function cardBg(id: number): string {
@@ -85,22 +101,51 @@
 			<div class="attention-cards">
 				{#each attentionPlants as plant (plant.id)}
 					<div class="attention-card">
-						<div class="attention-card-accent" class:accent-overdue={plant.watering_status === 'overdue'} class:accent-due={plant.watering_status === 'due'}></div>
+						<div
+							class="attention-card-accent"
+							class:accent-overdue={plant.watering_status === 'overdue'}
+							class:accent-due={plant.watering_status === 'due'}
+						></div>
 						{#if plant.photo_url}
 							<div class="attention-card-photo">
-								<img src={thumbUrl(plant.photo_url, 200)} srcset={thumbSrcset(plant.photo_url)} sizes="120px" alt={plant.name} class="attention-photo-img" onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = plant.photo_url!; }} />
+								<img
+									src={thumbUrl(plant.photo_url, 200)}
+									srcset={thumbSrcset(plant.photo_url)}
+									sizes="120px"
+									alt={plant.name}
+									class="attention-photo-img"
+									onerror={(e) => {
+										const img = e.currentTarget as HTMLImageElement;
+										img.onerror = null;
+										img.src = plant.photo_url!;
+									}}
+								/>
 							</div>
 						{:else}
-							<div class="attention-card-photo attention-card-photo-emoji" style:background={cardBg(plant.id)}>
-								<img src={emojiToSvgPath(plant.icon)} alt={plant.name} class="attention-icon" />
+							<div
+								class="attention-card-photo attention-card-photo-emoji"
+								style:background={cardBg(plant.id)}
+							>
+								<img
+									src={emojiToSvgPath(plant.icon)}
+									alt={plant.name}
+									class="attention-icon"
+								/>
 							</div>
 						{/if}
 						<div class="attention-card-body">
-							<a href="/plants/{plant.id}?from=/" class="attention-card-name">{plant.name}</a>
+							<a href="/plants/{plant.id}?from=/" class="attention-card-name"
+								>{plant.name}</a
+							>
 							{#if plant.location_name}
-								<span class="attention-card-location">{plant.location_name}</span>
+								<span class="attention-card-location"
+									>{plant.location_name}</span
+								>
 							{/if}
-							<StatusBadge status={plant.watering_status} nextDue={plant.next_due ?? null} />
+							<StatusBadge
+								status={plant.watering_status}
+								nextDue={plant.next_due ?? null}
+							/>
 							<div class="attention-card-actions">
 								<button
 									class="btn btn-water btn-sm"
@@ -109,7 +154,9 @@
 								>
 									<Droplet size={16} />
 									<span class="water-btn-label">
-										{wateringIds.has(plant.id) ? $translations.dashboard.watering : $translations.dashboard.water}
+										{wateringIds.has(plant.id)
+											? $translations.dashboard.watering
+											: $translations.dashboard.water}
 									</span>
 								</button>
 							</div>
@@ -136,7 +183,11 @@
 		<!-- prevent empty-state flash while plants are loading -->
 	{:else if $plants.length === 0}
 		<div class="empty-state">
-			<img src={emojiToSvgPath('🪴')} alt={$translations.dashboard.emptyIconAlt} class="empty-icon" />
+			<img
+				src={emojiToSvgPath('🪴')}
+				alt={$translations.dashboard.emptyIconAlt}
+				class="empty-icon"
+			/>
 			<h2>{$translations.dashboard.noPlants}</h2>
 			<p>{$translations.dashboard.noPlantsHint}</p>
 			<a href="/plants/new" class="btn btn-primary btn-sm">
@@ -150,11 +201,26 @@
 				<a href="/plants/{plant.id}?from=/" class="plant-card">
 					{#if plant.photo_url}
 						<div class="plant-card-photo">
-							<img src={thumbUrl(plant.photo_url, 200)} srcset={thumbSrcset(plant.photo_url)} sizes="(min-width: 1280px) 280px, (min-width: 769px) 240px, 100vw" alt={plant.name} class="photo-img" onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = plant.photo_url!; }} />
+							<img
+								src={thumbUrl(plant.photo_url, 200)}
+								srcset={thumbSrcset(plant.photo_url)}
+								sizes="(min-width: 1280px) 280px, (min-width: 769px) 240px, 100vw"
+								alt={plant.name}
+								class="photo-img"
+								onerror={(e) => {
+									const img = e.currentTarget as HTMLImageElement;
+									img.onerror = null;
+									img.src = plant.photo_url!;
+								}}
+							/>
 						</div>
 					{:else}
 						<div class="plant-card-photo" style:background={cardBg(plant.id)}>
-							<img src={emojiToSvgPath(plant.icon)} alt={plant.name} class="plant-icon" />
+							<img
+								src={emojiToSvgPath(plant.icon)}
+								alt={plant.name}
+								class="plant-icon"
+							/>
 						</div>
 					{/if}
 					<div class="plant-card-body">
@@ -163,7 +229,10 @@
 							<div class="plant-card-location">{plant.location_name}</div>
 						{/if}
 						<div class="plant-card-footer">
-							<StatusBadge status={plant.watering_status} nextDue={plant.next_due ?? null} />
+							<StatusBadge
+								status={plant.watering_status}
+								nextDue={plant.next_due ?? null}
+							/>
 						</div>
 					</div>
 				</a>
@@ -207,7 +276,6 @@
 		margin: 0;
 	}
 
-
 	.empty-state {
 		display: flex;
 		flex-direction: column;
@@ -248,7 +316,9 @@
 		text-decoration: none;
 		color: inherit;
 		cursor: pointer;
-		transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+		transition:
+			transform var(--transition-speed),
+			box-shadow var(--transition-speed);
 	}
 
 	.plant-card:hover {
@@ -348,7 +418,9 @@
 		border: 1px solid var(--color-border);
 		background: var(--color-surface);
 		cursor: pointer;
-		transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+		transition:
+			transform var(--transition-speed),
+			box-shadow var(--transition-speed);
 	}
 
 	.attention-card:hover {
@@ -435,7 +507,6 @@
 		padding-top: 8px;
 	}
 
-
 	@media (min-width: 1280px) {
 		.attention-cards {
 			grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -468,7 +539,6 @@
 		.greeting h2 {
 			font-size: 18px;
 		}
-
 
 		.plant-grid {
 			grid-template-columns: 1fr;

@@ -50,7 +50,9 @@ describe('loadCareEvents', () => {
 	});
 
 	it('sets error on failure', async () => {
-		vi.mocked(api.fetchCareEvents).mockRejectedValue(new Error('Network error'));
+		vi.mocked(api.fetchCareEvents).mockRejectedValue(
+			new Error('Network error')
+		);
 		await loadCareEvents(10);
 		expect(get(careEvents)).toEqual([]);
 		expect(get(careError)).toBe('Network error');
@@ -73,7 +75,9 @@ describe('addCareEvent', () => {
 			created_at: '2025-01-11T10:00:00Z'
 		};
 		vi.mocked(api.createCareEvent).mockResolvedValue(newEvent);
-		const result = await addCareEvent(10, { event_type: 'watering' } as CreateCareEvent);
+		const result = await addCareEvent(10, {
+			event_type: 'watering'
+		} as CreateCareEvent);
 		expect(result).toEqual(newEvent);
 		const events = get(careEvents);
 		expect(events[0].id).toBe(3); // newest first
@@ -89,7 +93,9 @@ describe('addCareEvent', () => {
 			created_at: '2025-01-05T10:00:00Z'
 		};
 		vi.mocked(api.createCareEvent).mockResolvedValue(olderEvent);
-		const result = await addCareEvent(10, { event_type: 'watering' } as CreateCareEvent);
+		const result = await addCareEvent(10, {
+			event_type: 'watering'
+		} as CreateCareEvent);
 		expect(result).toEqual(olderEvent);
 		const events = get(careEvents);
 		expect(events[0].id).toBe(1); // Jan 10 first
@@ -98,7 +104,9 @@ describe('addCareEvent', () => {
 
 	it('sets error on failure', async () => {
 		vi.mocked(api.createCareEvent).mockRejectedValue(new Error('Add failed'));
-		const result = await addCareEvent(10, { event_type: 'watering' } as CreateCareEvent);
+		const result = await addCareEvent(10, {
+			event_type: 'watering'
+		} as CreateCareEvent);
 		expect(result).toBeNull();
 		expect(get(careError)).toBe('Add failed');
 	});
@@ -114,7 +122,9 @@ describe('removeCareEvent', () => {
 	});
 
 	it('sets error on failure', async () => {
-		vi.mocked(api.deleteCareEvent).mockRejectedValue(new Error('Delete failed'));
+		vi.mocked(api.deleteCareEvent).mockRejectedValue(
+			new Error('Delete failed')
+		);
 		const result = await removeCareEvent(10, 1);
 		expect(result).toBe(false);
 		expect(get(careError)).toBe('Delete failed');

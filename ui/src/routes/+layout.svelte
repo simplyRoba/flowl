@@ -14,14 +14,19 @@
 	let { children } = $props();
 
 	function isActive(href: string): boolean {
-		if (href === '/') return page.url.pathname === '/' || page.url.pathname.startsWith('/plants');
+		if (href === '/')
+			return (
+				page.url.pathname === '/' || page.url.pathname.startsWith('/plants')
+			);
 		return page.url.pathname.startsWith(href);
 	}
 
 	onMount(async () => {
 		try {
 			const settings = await fetchSettings();
-			const theme = isThemePreference(settings.theme) ? settings.theme : undefined;
+			const theme = isThemePreference(settings.theme)
+				? settings.theme
+				: undefined;
 			const locale = isLocale(settings.locale) ? settings.locale : undefined;
 			initTheme(theme);
 			initLocale(locale);
@@ -38,10 +43,30 @@
 
 <div class="app">
 	<nav class="sidebar">
-		<div class="logo"><Logo size={28} /><span class="nav-label brand">flowl</span></div>
-		<a href="/" class="nav-item" class:active={isActive('/')}><Leaf size={20} /><span class="nav-label">{$translations.nav.plants}</span></a>
-		<a href="/care-journal" class="nav-item" class:active={isActive('/care-journal')}><BookOpen size={20} /><span class="nav-label">{$translations.nav.careJournal}</span></a>
-		<a href="/settings" class="nav-item bottom" class:active={isActive('/settings')}><Settings size={20} /><span class="nav-label">{$translations.nav.settings}</span></a>
+		<div class="logo">
+			<Logo size={28} /><span class="nav-label brand">flowl</span>
+		</div>
+		<a href="/" class="nav-item" class:active={isActive('/')}
+			><Leaf size={20} /><span class="nav-label"
+				>{$translations.nav.plants}</span
+			></a
+		>
+		<a
+			href="/care-journal"
+			class="nav-item"
+			class:active={isActive('/care-journal')}
+			><BookOpen size={20} /><span class="nav-label"
+				>{$translations.nav.careJournal}</span
+			></a
+		>
+		<a
+			href="/settings"
+			class="nav-item bottom"
+			class:active={isActive('/settings')}
+			><Settings size={20} /><span class="nav-label"
+				>{$translations.nav.settings}</span
+			></a
+		>
 	</nav>
 	<main class="content">
 		{@render children()}
@@ -51,31 +76,55 @@
 <style>
 	:global(:root) {
 		color-scheme: light;
-		--color-background: #FAF6F1;
-		--color-surface: #FFFFFF;
-		--color-surface-muted: color-mix(in srgb, var(--color-surface) 86%, var(--color-background));
-		--color-border: #E5DDD3;
-		--color-border-subtle: color-mix(in srgb, var(--color-border) 70%, var(--color-background));
-		--color-text: #2C2418;
-		--color-text-muted: #8C7E6E;
-		--color-primary: #6B8F71;
-		--color-primary-tint: color-mix(in srgb, var(--color-primary) 10%, transparent);
-		--color-primary-dark: #4A6B4F;
-		--color-secondary: #C4775B;
-		--color-water: #5B9BC4;
-		--color-water-strong: #4C89B1;
-		--color-success: #7AB87A;
-		--color-warning: #D4A843;
-		--color-danger: #C45B5B;
-		--color-text-on-primary: #FFFFFF;
-		--color-text-on-water: #FFFFFF;
-		--color-text-on-ai: #FFFFFF;
-		--color-text-on-danger: #FFFFFF;
-		--color-text-on-image: #FFFFFF;
-		--color-success-soft: color-mix(in srgb, var(--color-success) 20%, transparent);
-		--color-warning-soft: color-mix(in srgb, var(--color-warning) 18%, transparent);
-		--color-danger-soft: color-mix(in srgb, var(--color-danger) 16%, transparent);
-		--color-ai: #9B7ED8;
+		--color-background: #faf6f1;
+		--color-surface: #ffffff;
+		--color-surface-muted: color-mix(
+			in srgb,
+			var(--color-surface) 86%,
+			var(--color-background)
+		);
+		--color-border: #e5ddd3;
+		--color-border-subtle: color-mix(
+			in srgb,
+			var(--color-border) 70%,
+			var(--color-background)
+		);
+		--color-text: #2c2418;
+		--color-text-muted: #8c7e6e;
+		--color-primary: #6b8f71;
+		--color-primary-tint: color-mix(
+			in srgb,
+			var(--color-primary) 10%,
+			transparent
+		);
+		--color-primary-dark: #4a6b4f;
+		--color-secondary: #c4775b;
+		--color-water: #5b9bc4;
+		--color-water-strong: #4c89b1;
+		--color-success: #7ab87a;
+		--color-warning: #d4a843;
+		--color-danger: #c45b5b;
+		--color-text-on-primary: #ffffff;
+		--color-text-on-water: #ffffff;
+		--color-text-on-ai: #ffffff;
+		--color-text-on-danger: #ffffff;
+		--color-text-on-image: #ffffff;
+		--color-success-soft: color-mix(
+			in srgb,
+			var(--color-success) 20%,
+			transparent
+		);
+		--color-warning-soft: color-mix(
+			in srgb,
+			var(--color-warning) 18%,
+			transparent
+		);
+		--color-danger-soft: color-mix(
+			in srgb,
+			var(--color-danger) 16%,
+			transparent
+		);
+		--color-ai: #9b7ed8;
 		--color-ai-tint: color-mix(in srgb, var(--color-ai) 10%, transparent);
 		--color-ai-soft: color-mix(in srgb, var(--color-ai) 15%, transparent);
 
@@ -97,7 +146,9 @@
 		/* Layout */
 		--nav-bottom-height: 56px;
 		--safe-area-bottom: env(safe-area-inset-bottom, 0px);
-		--nav-bottom-total: calc(var(--nav-bottom-height) + var(--safe-area-bottom));
+		--nav-bottom-total: calc(
+			var(--nav-bottom-height) + var(--safe-area-bottom)
+		);
 
 		/* Content widths */
 		--content-width-narrow: 640px;
@@ -107,28 +158,40 @@
 
 	:global([data-theme='dark']) {
 		color-scheme: dark;
-		--color-background: #1A1612;
+		--color-background: #1a1612;
 		--color-surface: #252019;
-		--color-surface-muted: color-mix(in srgb, var(--color-surface) 90%, var(--color-background));
-		--color-border: #3A3228;
-		--color-border-subtle: color-mix(in srgb, var(--color-border) 70%, var(--color-background));
-		--color-text: #EDE6DB;
-		--color-text-muted: #9C8E7E;
-		--color-primary: #8BB592;
-		--color-primary-tint: color-mix(in srgb, var(--color-primary) 10%, transparent);
-		--color-primary-dark: #A3CDA9;
-		--color-secondary: #D49478;
-		--color-water: #78B4D8;
+		--color-surface-muted: color-mix(
+			in srgb,
+			var(--color-surface) 90%,
+			var(--color-background)
+		);
+		--color-border: #3a3228;
+		--color-border-subtle: color-mix(
+			in srgb,
+			var(--color-border) 70%,
+			var(--color-background)
+		);
+		--color-text: #ede6db;
+		--color-text-muted: #9c8e7e;
+		--color-primary: #8bb592;
+		--color-primary-tint: color-mix(
+			in srgb,
+			var(--color-primary) 10%,
+			transparent
+		);
+		--color-primary-dark: #a3cda9;
+		--color-secondary: #d49478;
+		--color-water: #78b4d8;
 		--color-water-strong: color-mix(in srgb, var(--color-water) 85%, #000);
-		--color-success: #8BC48B;
-		--color-warning: #D4B054;
-		--color-danger: #D47878;
-		--color-text-on-primary: #1A1612;
-		--color-text-on-water: #1A1612;
-		--color-text-on-ai: #1A1612;
-		--color-text-on-danger: #1A1612;
-		--color-text-on-image: #FFFFFF;
-		--color-ai: #B89EE8;
+		--color-success: #8bc48b;
+		--color-warning: #d4b054;
+		--color-danger: #d47878;
+		--color-text-on-primary: #1a1612;
+		--color-text-on-water: #1a1612;
+		--color-text-on-ai: #1a1612;
+		--color-text-on-danger: #1a1612;
+		--color-text-on-image: #ffffff;
+		--color-ai: #b89ee8;
 		--color-ai-tint: color-mix(in srgb, var(--color-ai) 12%, transparent);
 		--color-ai-soft: color-mix(in srgb, var(--color-ai) 18%, transparent);
 	}
@@ -136,7 +199,9 @@
 	:global(html, body) {
 		margin: 0;
 		min-width: 320px;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+		font-family:
+			-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+			Cantarell, sans-serif;
 		background: var(--color-background);
 		color: var(--color-text);
 	}
@@ -176,7 +241,9 @@
 		border-radius: 10px;
 		text-decoration: none;
 		color: var(--color-text-muted);
-		transition: background 0.15s, color 0.15s;
+		transition:
+			background 0.15s,
+			color 0.15s;
 	}
 
 	.nav-item:hover {

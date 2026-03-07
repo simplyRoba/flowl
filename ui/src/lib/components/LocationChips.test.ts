@@ -34,7 +34,12 @@ describe('LocationChips', () => {
 	it('hides None chip when showNone is false', () => {
 		const onchange = vi.fn();
 		render(LocationChips, {
-			props: { locations: mockLocations, value: null, onchange, showNone: false }
+			props: {
+				locations: mockLocations,
+				value: null,
+				onchange,
+				showNone: false
+			}
 		});
 		expect(screen.queryByText('None')).toBeNull();
 	});

@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Page from '../../../routes/care-journal/+page.svelte';
 
 // jsdom doesn't implement HTMLDialogElement.showModal/close
-HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
+HTMLDialogElement.prototype.showModal = vi.fn(function (
+	this: HTMLDialogElement
+) {
 	this.setAttribute('open', '');
 });
 HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
@@ -21,7 +23,9 @@ let mockUrl = new URL('http://localhost/care-journal');
 
 vi.mock('$app/state', () => ({
 	page: {
-		get url() { return mockUrl; }
+		get url() {
+			return mockUrl;
+		}
 	}
 }));
 
@@ -65,7 +69,9 @@ describe('care journal thumbnails', () => {
 		render(Page);
 
 		await vi.waitFor(() => {
-			const img = document.querySelector('.log-entry-photo img') as HTMLImageElement;
+			const img = document.querySelector(
+				'.log-entry-photo img'
+			) as HTMLImageElement;
 			expect(img).toBeTruthy();
 			expect(img.src).toContain('/uploads/care/1_200.jpg');
 		});
@@ -81,7 +87,9 @@ describe('care journal thumbnails', () => {
 		await vi.waitFor(() => {
 			expect(document.querySelector('.log-entry-photo img')).toBeTruthy();
 		});
-		const img = document.querySelector('.log-entry-photo img') as HTMLImageElement;
+		const img = document.querySelector(
+			'.log-entry-photo img'
+		) as HTMLImageElement;
 		expect(img.src).toContain('/uploads/care/2_200.jpg');
 		await fireEvent.error(img);
 		expect(img.src).toContain('/uploads/care/2.png');
@@ -98,10 +106,14 @@ describe('care journal thumbnails', () => {
 		await vi.waitFor(() => {
 			expect(document.querySelector('.log-entry-photo')).toBeTruthy();
 		});
-		const photoBtn = document.querySelector('.log-entry-photo') as HTMLButtonElement;
+		const photoBtn = document.querySelector(
+			'.log-entry-photo'
+		) as HTMLButtonElement;
 		await fireEvent.click(photoBtn);
 
-		const lightbox = document.querySelector('dialog.lightbox') as HTMLDialogElement;
+		const lightbox = document.querySelector(
+			'dialog.lightbox'
+		) as HTMLDialogElement;
 		expect(lightbox.hasAttribute('open')).toBe(true);
 		const lightboxImg = lightbox.querySelector('img') as HTMLImageElement;
 		expect(lightboxImg.src).toContain('/uploads/care/3.jpg');
@@ -129,18 +141,26 @@ describe('care journal filters', () => {
 		await vi.waitFor(() => {
 			expect(mockFetchAllCareEvents).toHaveBeenCalled();
 		});
-		expect(mockFetchAllCareEvents).toHaveBeenCalledWith(20, undefined, undefined);
+		expect(mockFetchAllCareEvents).toHaveBeenCalledWith(
+			20,
+			undefined,
+			undefined
+		);
 	});
 
 	it('loads with type filter when URL has type params', async () => {
-		mockUrl = new URL('http://localhost/care-journal?type=watered&type=fertilized');
+		mockUrl = new URL(
+			'http://localhost/care-journal?type=watered&type=fertilized'
+		);
 		render(Page);
 
 		await vi.waitFor(() => {
 			expect(mockFetchAllCareEvents).toHaveBeenCalled();
 		});
 		expect(mockFetchAllCareEvents).toHaveBeenCalledWith(
-			20, undefined, expect.arrayContaining(['watered', 'fertilized'])
+			20,
+			undefined,
+			expect.arrayContaining(['watered', 'fertilized'])
 		);
 	});
 
@@ -184,7 +204,14 @@ describe('care journal filters', () => {
 
 		expect(mockGoto).toHaveBeenCalled();
 		const gotoUrl = mockGoto.mock.calls[0][0] as string;
-		for (const t of ['watered', 'fertilized', 'repotted', 'pruned', 'custom', 'ai-consultation']) {
+		for (const t of [
+			'watered',
+			'fertilized',
+			'repotted',
+			'pruned',
+			'custom',
+			'ai-consultation'
+		]) {
 			expect(gotoUrl).toContain(`type=${t}`);
 		}
 	});

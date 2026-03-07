@@ -22,15 +22,25 @@
 </script>
 
 <div class="page">
-<PageHeader backHref="/" backLabel={$translations.common.cancel}>
-		<button type="submit" form="plant-form" class="btn btn-primary" disabled={saving}>
+	<PageHeader backHref="/" backLabel={$translations.common.cancel}>
+		<button
+			type="submit"
+			form="plant-form"
+			class="btn btn-primary"
+			disabled={saving}
+		>
 			{saving ? $translations.common.saving : $translations.common.save}
 		</button>
 	</PageHeader>
 
 	<h1>{$translations.plant.addPlant}</h1>
 
-	<PlantForm onsave={handleSave} {saving} showLocationNone={false} showFooterActions={false} />
+	<PlantForm
+		onsave={handleSave}
+		{saving}
+		showLocationNone={false}
+		showFooterActions={false}
+	/>
 </div>
 
 <style>

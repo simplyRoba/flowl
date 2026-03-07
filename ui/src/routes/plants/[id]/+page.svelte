@@ -2,9 +2,43 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { ArrowLeft, Pencil, Trash2, Droplet, Droplets, MapPin, Sun, CloudSun, Cloud, Leaf, Shovel, Scissors, BookOpen, Pencil as PencilIcon, Info, Gauge, PawPrint, TrendingUp, Layers, Repeat, CalendarCheck, CalendarClock, Sparkles } from 'lucide-svelte';
-	import { currentPlant, plantsError, loadPlant, deletePlant, waterPlant } from '$lib/stores/plants';
-	import { careEvents, loadCareEvents, removeCareEvent } from '$lib/stores/care';
+	import {
+		ArrowLeft,
+		Pencil,
+		Trash2,
+		Droplet,
+		Droplets,
+		MapPin,
+		Sun,
+		CloudSun,
+		Cloud,
+		Leaf,
+		Shovel,
+		Scissors,
+		BookOpen,
+		Pencil as PencilIcon,
+		Info,
+		Gauge,
+		PawPrint,
+		TrendingUp,
+		Layers,
+		Repeat,
+		CalendarCheck,
+		CalendarClock,
+		Sparkles
+	} from 'lucide-svelte';
+	import {
+		currentPlant,
+		plantsError,
+		loadPlant,
+		deletePlant,
+		waterPlant
+	} from '$lib/stores/plants';
+	import {
+		careEvents,
+		loadCareEvents,
+		removeCareEvent
+	} from '$lib/stores/care';
 	import { translations } from '$lib/stores/locale';
 	import { emojiToSvgPath } from '$lib/emoji';
 	import { thumbUrl, thumbSrcset } from '$lib/thumbUrl';
@@ -95,7 +129,11 @@
 		if (!dateStr) return $translations.plant.never;
 		const date = new Date(dateStr);
 		if (isNaN(date.getTime())) return dateStr;
-		return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+		return date.toLocaleDateString(undefined, {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
+		});
 	}
 
 	function eventTypeLabel(type: string): string {
@@ -110,7 +148,11 @@
 	function formatShortDate(dateStr: string): string {
 		const date = new Date(dateStr);
 		if (isNaN(date.getTime())) return dateStr;
-		return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
+		return date.toLocaleDateString(undefined, {
+			month: 'short',
+			day: 'numeric',
+			year: '2-digit'
+		});
 	}
 
 	function handleEventDelete(event: CareEvent) {
@@ -178,222 +220,333 @@
 	function closeLightbox() {
 		lightboxOpen = false;
 	}
-
 </script>
 
 {#if notFound}
 	<div class="not-found">
 		<h2>{$translations.plant.notFound}</h2>
 		<p>{$translations.plant.notFoundHint}</p>
-		<a href="/" class="back-link"><ArrowLeft size={16} /> {$translations.plant.backToPlants}</a>
+		<a href="/" class="back-link"
+			><ArrowLeft size={16} /> {$translations.plant.backToPlants}</a
+		>
 	</div>
 {:else if $currentPlant}
 	<div class="detail">
 		<div class="detail-content">
-		<PageHeader {backHref} backLabel={$translations.common.back}>
-			<a href="/plants/{$currentPlant.id}/edit" class="btn btn-icon">
-				<Pencil size={16} />
-			</a>
-			<button class="btn btn-icon btn-danger" onclick={handleDelete} disabled={deleting}>
-				<Trash2 size={16} />
-			</button>
-		</PageHeader>
+			<PageHeader {backHref} backLabel={$translations.common.back}>
+				<a href="/plants/{$currentPlant.id}/edit" class="btn btn-icon">
+					<Pencil size={16} />
+				</a>
+				<button
+					class="btn btn-icon btn-danger"
+					onclick={handleDelete}
+					disabled={deleting}
+				>
+					<Trash2 size={16} />
+				</button>
+			</PageHeader>
 
-		<div class="detail-hero">
-			<div class="detail-photo">
-				{#if $currentPlant.photo_url}
-					<button
-						type="button"
-						class="detail-photo-button"
-						aria-label={$translations.plant.openPhoto}
-						onclick={() => openLightbox()}
-					>
+			<div class="detail-hero">
+				<div class="detail-photo">
+					{#if $currentPlant.photo_url}
+						<button
+							type="button"
+							class="detail-photo-button"
+							aria-label={$translations.plant.openPhoto}
+							onclick={() => openLightbox()}
+						>
+							<img
+								src={thumbUrl($currentPlant.photo_url, 200)}
+								srcset={thumbSrcset($currentPlant.photo_url)}
+								sizes="(max-width: 768px) 100vw, (min-width: 1280px) 300px, 260px"
+								alt={$currentPlant.name}
+								class="detail-photo-img"
+								onerror={(e) => {
+									const img = e.currentTarget as HTMLImageElement;
+									img.onerror = null;
+									img.src = $currentPlant!.photo_url!;
+								}}
+							/>
+						</button>
+					{:else}
 						<img
-							src={thumbUrl($currentPlant.photo_url, 200)}
-							srcset={thumbSrcset($currentPlant.photo_url)}
-							sizes="(max-width: 768px) 100vw, (min-width: 1280px) 300px, 260px"
+							src={emojiToSvgPath($currentPlant.icon)}
 							alt={$currentPlant.name}
-							class="detail-photo-img"
-							onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = $currentPlant!.photo_url!; }}
+							class="detail-photo-icon"
 						/>
-					</button>
-				{:else}
-					<img
-						src={emojiToSvgPath($currentPlant.icon)}
-						alt={$currentPlant.name}
-						class="detail-photo-icon"
-					/>
-				{/if}
-			</div>
-			<div class="detail-info">
-				<div class="detail-name">
-					<h2>{$currentPlant.name}</h2>
-					{#if $currentPlant.species}
-						<span class="detail-species">{$currentPlant.species}</span>
 					{/if}
 				</div>
-				{#if $currentPlant.location_name}
-					<p class="detail-location"><MapPin size={14} /> {$currentPlant.location_name}</p>
-				{/if}
-				<div class="detail-status">
-					<StatusBadge status={$currentPlant.watering_status} nextDue={$currentPlant.next_due ?? null} />
+				<div class="detail-info">
+					<div class="detail-name">
+						<h2>{$currentPlant.name}</h2>
+						{#if $currentPlant.species}
+							<span class="detail-species">{$currentPlant.species}</span>
+						{/if}
+					</div>
+					{#if $currentPlant.location_name}
+						<p class="detail-location">
+							<MapPin size={14} />
+							{$currentPlant.location_name}
+						</p>
+					{/if}
+					<div class="detail-status">
+						<StatusBadge
+							status={$currentPlant.watering_status}
+							nextDue={$currentPlant.next_due ?? null}
+						/>
+					</div>
+					<div class="hero-actions">
+						<button
+							class="btn btn-water btn-lg"
+							onclick={handleWater}
+							disabled={watering}
+						>
+							<Droplet size={16} />
+							{watering
+								? $translations.dashboard.watering
+								: $translations.plant.waterNow}
+						</button>
+						{#if aiEnabled}
+							<button
+								class="btn btn-ai btn-lg"
+								onclick={() => (chatOpen = true)}
+							>
+								<Sparkles size={16} />
+								{$translations.chat.askAi}
+							</button>
+						{/if}
+					</div>
 				</div>
-				<div class="hero-actions">
-					<button class="btn btn-water btn-lg" onclick={handleWater} disabled={watering}>
-						<Droplet size={16} />
-						{watering ? $translations.dashboard.watering : $translations.plant.waterNow}
-					</button>
-					{#if aiEnabled}
-						<button class="btn btn-ai btn-lg" onclick={() => chatOpen = true}>
-							<Sparkles size={16} />
-							{$translations.chat.askAi}
+			</div>
+
+			<div class="detail-sections">
+				<div class="detail-grid">
+					<div class="section">
+						<div class="section-title">
+							<Droplet size={14} />
+							{$translations.plant.wateringSection}
+						</div>
+						<div class="detail-row">
+							<span class="detail-row-label"
+								>{$translations.plant.interval}</span
+							><span class="detail-row-value"
+								>{$translations.plant.everyNDays.replace(
+									'{n}',
+									String($currentPlant.watering_interval_days)
+								)}
+								<Repeat size={14} /></span
+							>
+						</div>
+						<div class="detail-row">
+							<span class="detail-row-label"
+								>{$translations.plant.lastWatered}</span
+							><span class="detail-row-value"
+								>{formatDate($currentPlant.last_watered)}
+								<CalendarCheck size={14} /></span
+							>
+						</div>
+						<div class="detail-row">
+							<span class="detail-row-label">{$translations.plant.nextDue}</span
+							><span class="detail-row-value"
+								>{$currentPlant.next_due
+									? formatDate($currentPlant.next_due)
+									: $translations.plant.na}
+								<CalendarClock size={14} /></span
+							>
+						</div>
+						{#if $currentPlant.soil_moisture}
+							<div class="detail-row">
+								<span class="detail-row-label"
+									>{$translations.plant.soilMoisture}</span
+								>
+								<span class="detail-row-value"
+									>{soilMoistureLabel($currentPlant.soil_moisture)}
+									<Droplets size={14} /></span
+								>
+							</div>
+						{/if}
+					</div>
+					<div class="section">
+						<div class="section-title">
+							<Info size={14} />
+							{$translations.plant.careInfoSection}
+						</div>
+						<div class="detail-row">
+							<span class="detail-row-label">{$translations.plant.light}</span>
+							<span class="detail-row-value">
+								{lightLabel($currentPlant.light_needs)}
+								<LightNeedsIcon size={14} />
+							</span>
+						</div>
+						{#if $currentPlant.difficulty}
+							<div class="detail-row">
+								<span class="detail-row-label"
+									>{$translations.plant.difficulty}</span
+								>
+								<span class="detail-row-value"
+									>{difficultyLabel($currentPlant.difficulty)}
+									<Gauge size={14} /></span
+								>
+							</div>
+						{/if}
+						{#if $currentPlant.pet_safety}
+							<div class="detail-row">
+								<span class="detail-row-label"
+									>{$translations.plant.petSafety}</span
+								>
+								<span class="detail-row-value"
+									>{petSafetyLabel($currentPlant.pet_safety)}
+									<PawPrint size={14} /></span
+								>
+							</div>
+						{/if}
+						{#if $currentPlant.growth_speed}
+							<div class="detail-row">
+								<span class="detail-row-label"
+									>{$translations.plant.growth}</span
+								>
+								<span class="detail-row-value"
+									>{growthSpeedLabel($currentPlant.growth_speed)}
+									<TrendingUp size={14} /></span
+								>
+							</div>
+						{/if}
+						{#if $currentPlant.soil_type}
+							<div class="detail-row">
+								<span class="detail-row-label">{$translations.plant.soil}</span>
+								<span class="detail-row-value"
+									>{soilTypeLabel($currentPlant.soil_type)}
+									<Layers size={14} /></span
+								>
+							</div>
+						{/if}
+					</div>
+				</div>
+
+				{#if $currentPlant.notes}
+					<div class="section">
+						<div class="section-title">
+							<PencilIcon size={14} />
+							{$translations.plant.notesSection}
+						</div>
+						<div class="detail-notes">{$currentPlant.notes}</div>
+					</div>
+				{/if}
+
+				<div class="section care-journal">
+					<div class="section-title">
+						<BookOpen size={14} />
+						{$translations.plant.careJournalSection}
+					</div>
+
+					{#if $careEvents.length === 0}
+						<p class="journal-empty">{$translations.plant.noCareEvents}</p>
+					{:else}
+						<ul class="timeline">
+							{#each displayEvents as event}
+								<li class="timeline-item">
+									<span class="timeline-icon">
+										{#if event.event_type === 'watered'}
+											<Droplet size={12} />
+										{:else if event.event_type === 'fertilized'}
+											<Leaf size={12} />
+										{:else if event.event_type === 'repotted'}
+											<Shovel size={12} />
+										{:else if event.event_type === 'pruned'}
+											<Scissors size={12} />
+										{:else if event.event_type === 'ai-consultation'}
+											<Sparkles size={12} />
+										{:else}
+											<PencilIcon size={12} />
+										{/if}
+									</span>
+									<span class="timeline-text">
+										<span class="timeline-top">
+											<span class="timeline-label"
+												>{eventTypeLabel(event.event_type)}</span
+											>
+											<span class="timeline-date"
+												>{formatShortDate(event.occurred_at)}</span
+											>
+										</span>
+										{#if event.photo_url}
+											<button
+												class="timeline-photo"
+												onclick={() => openLightbox(event.photo_url!)}
+											>
+												<img
+													src={thumbUrl(event.photo_url, 200)}
+													srcset={thumbSrcset(event.photo_url)}
+													sizes="72px"
+													alt=""
+													onerror={(e) => {
+														const img = e.currentTarget as HTMLImageElement;
+														img.onerror = null;
+														img.src = event.photo_url!;
+													}}
+												/>
+											</button>
+										{/if}
+										{#if event.notes}
+											<span class="timeline-sub">{event.notes}</span>
+										{/if}
+									</span>
+									<span class="timeline-actions">
+										<button
+											class="btn btn-ghost event-delete"
+											onclick={() => handleEventDelete(event)}
+											disabled={deletingEventId === event.id}
+											aria-label={$translations.plant.deleteLogEntry}
+										>
+											<Trash2 size={16} />
+										</button>
+									</span>
+								</li>
+							{/each}
+						</ul>
+						{#if hasMoreEvents && !showAllEvents}
+							<button
+								class="btn btn-ghost"
+								onclick={() => (showAllEvents = true)}
+								>{$translations.plant.showMore}</button
+							>
+						{/if}
+					{/if}
+
+					{#if showLogForm}
+						<CareEntryForm
+							plantId={$currentPlant.id}
+							onsubmit={() => {
+								loadCareEvents($currentPlant.id);
+								showLogForm = false;
+							}}
+							oncancel={() => {
+								showLogForm = false;
+							}}
+						/>
+					{:else}
+						<button class="btn btn-ghost" onclick={() => (showLogForm = true)}>
+							{$translations.plant.addLogEntry}
 						</button>
 					{/if}
 				</div>
 			</div>
-		</div>
 
-		<div class="detail-sections">
-			<div class="detail-grid">
-				<div class="section">
-					<div class="section-title"><Droplet size={14} /> {$translations.plant.wateringSection}</div>
-					<div class="detail-row"><span class="detail-row-label">{$translations.plant.interval}</span><span class="detail-row-value">{$translations.plant.everyNDays.replace('{n}', String($currentPlant.watering_interval_days))} <Repeat size={14} /></span></div>
-					<div class="detail-row"><span class="detail-row-label">{$translations.plant.lastWatered}</span><span class="detail-row-value">{formatDate($currentPlant.last_watered)} <CalendarCheck size={14} /></span></div>
-					<div class="detail-row"><span class="detail-row-label">{$translations.plant.nextDue}</span><span class="detail-row-value">{$currentPlant.next_due ? formatDate($currentPlant.next_due) : $translations.plant.na} <CalendarClock size={14} /></span></div>
-					{#if $currentPlant.soil_moisture}
-						<div class="detail-row">
-							<span class="detail-row-label">{$translations.plant.soilMoisture}</span>
-							<span class="detail-row-value">{soilMoistureLabel($currentPlant.soil_moisture)} <Droplets size={14} /></span>
-						</div>
-					{/if}
-				</div>
-				<div class="section">
-					<div class="section-title"><Info size={14} /> {$translations.plant.careInfoSection}</div>
-					<div class="detail-row">
-						<span class="detail-row-label">{$translations.plant.light}</span>
-						<span class="detail-row-value">
-							{lightLabel($currentPlant.light_needs)}
-							<LightNeedsIcon size={14} />
-						</span>
-					</div>
-					{#if $currentPlant.difficulty}
-						<div class="detail-row">
-							<span class="detail-row-label">{$translations.plant.difficulty}</span>
-							<span class="detail-row-value">{difficultyLabel($currentPlant.difficulty)} <Gauge size={14} /></span>
-						</div>
-					{/if}
-					{#if $currentPlant.pet_safety}
-						<div class="detail-row">
-							<span class="detail-row-label">{$translations.plant.petSafety}</span>
-							<span class="detail-row-value">{petSafetyLabel($currentPlant.pet_safety)} <PawPrint size={14} /></span>
-						</div>
-					{/if}
-					{#if $currentPlant.growth_speed}
-						<div class="detail-row">
-							<span class="detail-row-label">{$translations.plant.growth}</span>
-							<span class="detail-row-value">{growthSpeedLabel($currentPlant.growth_speed)} <TrendingUp size={14} /></span>
-						</div>
-					{/if}
-					{#if $currentPlant.soil_type}
-						<div class="detail-row">
-							<span class="detail-row-label">{$translations.plant.soil}</span>
-							<span class="detail-row-value">{soilTypeLabel($currentPlant.soil_type)} <Layers size={14} /></span>
-						</div>
-					{/if}
-				</div>
-			</div>
-
-			{#if $currentPlant.notes}
-				<div class="section">
-					<div class="section-title"><PencilIcon size={14} /> {$translations.plant.notesSection}</div>
-					<div class="detail-notes">{$currentPlant.notes}</div>
-				</div>
-			{/if}
-
-			<div class="section care-journal">
-				<div class="section-title"><BookOpen size={14} /> {$translations.plant.careJournalSection}</div>
-
-			{#if $careEvents.length === 0}
-				<p class="journal-empty">{$translations.plant.noCareEvents}</p>
-			{:else}
-					<ul class="timeline">
-						{#each displayEvents as event}
-							<li class="timeline-item">
-								<span class="timeline-icon">
-									{#if event.event_type === 'watered'}
-										<Droplet size={12} />
-									{:else if event.event_type === 'fertilized'}
-										<Leaf size={12} />
-									{:else if event.event_type === 'repotted'}
-										<Shovel size={12} />
-									{:else if event.event_type === 'pruned'}
-										<Scissors size={12} />
-									{:else if event.event_type === 'ai-consultation'}
-										<Sparkles size={12} />
-									{:else}
-										<PencilIcon size={12} />
-									{/if}
-								</span>
-								<span class="timeline-text">
-									<span class="timeline-top">
-										<span class="timeline-label">{eventTypeLabel(event.event_type)}</span>
-										<span class="timeline-date">{formatShortDate(event.occurred_at)}</span>
-									</span>
-									{#if event.photo_url}
-										<button class="timeline-photo" onclick={() => openLightbox(event.photo_url!)}>
-											<img src={thumbUrl(event.photo_url, 200)} srcset={thumbSrcset(event.photo_url)} sizes="72px" alt="" onerror={(e) => { const img = e.currentTarget as HTMLImageElement; img.onerror = null; img.src = event.photo_url!; }} />
-										</button>
-									{/if}
-									{#if event.notes}
-										<span class="timeline-sub">{event.notes}</span>
-									{/if}
-								</span>
-								<span class="timeline-actions">
-									<button
-										class="btn btn-ghost event-delete"
-										onclick={() => handleEventDelete(event)}
-										disabled={deletingEventId === event.id}
-										aria-label={$translations.plant.deleteLogEntry}
-									>
-										<Trash2 size={16} />
-									</button>
-								</span>
-							</li>
-						{/each}
-					</ul>
-				{#if hasMoreEvents && !showAllEvents}
-					<button class="btn btn-ghost" onclick={() => showAllEvents = true}>{$translations.plant.showMore}</button>
-				{/if}
-			{/if}
-
-			{#if showLogForm}
-				<CareEntryForm
-					plantId={$currentPlant.id}
-					onsubmit={() => { loadCareEvents($currentPlant.id); showLogForm = false; }}
-					oncancel={() => { showLogForm = false; }}
-				/>
-			{:else}
-				<button class="btn btn-ghost" onclick={() => showLogForm = true}>
-					{$translations.plant.addLogEntry}
-				</button>
-			{/if}
-			</div>
-		</div>
-
-		<PhotoLightbox
-			open={lightboxOpen}
-			src={lightboxSrc}
-			alt={$currentPlant.name}
-			onclose={closeLightbox}
-		/>
-
+			<PhotoLightbox
+				open={lightboxOpen}
+				src={lightboxSrc}
+				alt={$currentPlant.name}
+				onclose={closeLightbox}
+			/>
 		</div>
 
 		<ChatDrawer
 			plant={$currentPlant}
 			open={chatOpen}
-			onclose={() => { chatOpen = false; }}
-		onsave={() => loadCareEvents($currentPlant.id)}
+			onclose={() => {
+				chatOpen = false;
+			}}
+			onsave={() => loadCareEvents($currentPlant.id)}
 		/>
 	</div>
 {:else if $plantsError}
@@ -405,12 +558,16 @@
 <ModalDialog
 	open={deleteDialogOpen}
 	title={$translations.plant.deletePlant}
-	message={$currentPlant ? $translations.plant.deleteConfirm.replace('{name}', $currentPlant.name) : ''}
+	message={$currentPlant
+		? $translations.plant.deleteConfirm.replace('{name}', $currentPlant.name)
+		: ''}
 	mode="confirm"
 	variant="danger"
 	confirmLabel={$translations.common.delete}
 	onconfirm={handleDeleteConfirm}
-	oncancel={() => { deleteDialogOpen = false; }}
+	oncancel={() => {
+		deleteDialogOpen = false;
+	}}
 />
 
 <ModalDialog
@@ -421,7 +578,9 @@
 	variant="danger"
 	confirmLabel={$translations.common.delete}
 	onconfirm={handleEventDeleteConfirm}
-	oncancel={() => { deleteEventDialogTarget = null; }}
+	oncancel={() => {
+		deleteEventDialogTarget = null;
+	}}
 />
 
 <style>
@@ -439,10 +598,6 @@
 		gap: 8px;
 		margin-top: 4px;
 	}
-
-
-
-
 
 	.detail-hero {
 		display: flex;

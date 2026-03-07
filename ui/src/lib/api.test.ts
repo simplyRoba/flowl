@@ -133,7 +133,10 @@ describe('API endpoint functions', () => {
 	});
 
 	it('fetchAllCareEvents builds query string with single type', async () => {
-		const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue({ events: [], has_more: false }) });
+		const fn = mockFetch({
+			ok: true,
+			json: vi.fn().mockResolvedValue({ events: [], has_more: false })
+		});
 		await fetchAllCareEvents(10, 5, ['watered']);
 		const url = fn.mock.calls[0][0] as string;
 		expect(url).toContain('limit=10');
@@ -142,7 +145,10 @@ describe('API endpoint functions', () => {
 	});
 
 	it('fetchAllCareEvents builds query string with multiple types', async () => {
-		const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue({ events: [], has_more: false }) });
+		const fn = mockFetch({
+			ok: true,
+			json: vi.fn().mockResolvedValue({ events: [], has_more: false })
+		});
 		await fetchAllCareEvents(20, undefined, ['watered', 'fertilized']);
 		const url = fn.mock.calls[0][0] as string;
 		expect(url).toContain('type=watered');
@@ -150,13 +156,19 @@ describe('API endpoint functions', () => {
 	});
 
 	it('fetchAllCareEvents with no params has no query string', async () => {
-		const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue({ events: [], has_more: false }) });
+		const fn = mockFetch({
+			ok: true,
+			json: vi.fn().mockResolvedValue({ events: [], has_more: false })
+		});
 		await fetchAllCareEvents();
 		expect(fn).toHaveBeenCalledWith('/api/care', { method: 'GET' });
 	});
 
 	it('fetchAllCareEvents with empty types array has no type param', async () => {
-		const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue({ events: [], has_more: false }) });
+		const fn = mockFetch({
+			ok: true,
+			json: vi.fn().mockResolvedValue({ events: [], has_more: false })
+		});
 		await fetchAllCareEvents(20, undefined, []);
 		expect(fn).toHaveBeenCalledWith('/api/care?limit=20', { method: 'GET' });
 	});
@@ -166,7 +178,9 @@ describe('importData', () => {
 	it('sends POST with FormData to /api/data/import', async () => {
 		const result = { locations: 1, plants: 2, care_events: 3, photos: 0 };
 		const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue(result) });
-		const file = new File(['zip content'], 'export.zip', { type: 'application/zip' });
+		const file = new File(['zip content'], 'export.zip', {
+			type: 'application/zip'
+		});
 		const response = await importData(file);
 		expect(response).toEqual(result);
 		expect(fn).toHaveBeenCalledTimes(1);

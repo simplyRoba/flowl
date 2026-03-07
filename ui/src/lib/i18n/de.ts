@@ -106,7 +106,8 @@ export const de: Translations = {
 		editPlant: 'Pflanze bearbeiten',
 		addPlant: 'Pflanze hinzufügen',
 		deletePlant: 'Pflanze löschen',
-		deleteConfirm: '"{name}" löschen? Dies kann nicht rückgängig gemacht werden.',
+		deleteConfirm:
+			'"{name}" löschen? Dies kann nicht rückgängig gemacht werden.',
 		wateringSection: 'Bewässerung',
 		careInfoSection: 'Pflegeinfo',
 		notesSection: 'Notizen',
@@ -131,7 +132,8 @@ export const de: Translations = {
 		notesOptional: 'Notizen (optional)',
 		openPhoto: 'Foto öffnen',
 		deleteLogEntry: 'Eintrag löschen',
-		deleteLogEntryConfirm: 'Diesen Pflegeeintrag löschen? Dies kann nicht rückgängig gemacht werden.',
+		deleteLogEntryConfirm:
+			'Diesen Pflegeeintrag löschen? Dies kann nicht rückgängig gemacht werden.',
 		lightDirect: 'Direktes Sonnenlicht',
 		lightLow: 'Wenig Licht',
 		lightIndirect: 'Indirektes Licht',
@@ -186,11 +188,13 @@ export const de: Translations = {
 		themeSystem: 'System',
 		language: 'Sprache',
 		locations: 'Standorte',
-		noLocations: 'Noch keine Standorte. Erstelle Standorte beim Hinzufügen von Pflanzen.',
+		noLocations:
+			'Noch keine Standorte. Erstelle Standorte beim Hinzufügen von Pflanzen.',
 		plantCount: { one: '{n} Pflanze', other: '{n} Pflanzen' },
 		deleteLocation: 'Standort löschen',
 		deleteLocationConfirm: '"{name}" löschen?',
-		deleteLocationConfirmPlants: '"{name}" löschen? {count} {verb} {pronoun} Standort.',
+		deleteLocationConfirmPlants:
+			'"{name}" löschen? {count} {verb} {pronoun} Standort.',
 		deleteLocationVerb: { one: 'verliert', other: 'verlieren' },
 		deleteLocationPronoun: { one: 'ihren', other: 'ihren' },
 		mqtt: 'MQTT',
@@ -201,8 +205,10 @@ export const de: Translations = {
 		broker: 'Broker',
 		topicPrefix: 'Topic-Präfix',
 		repair: 'Reparatur',
-		repairDesc: 'Löscht gespeicherte MQTT-Topics und veröffentlicht den aktuellen Stand neu.',
-		repairConfirm: 'Alle gespeicherten MQTT-Topics löschen und aktuellen Stand für alle Pflanzen neu veröffentlichen?',
+		repairDesc:
+			'Löscht gespeicherte MQTT-Topics und veröffentlicht den aktuellen Stand neu.',
+		repairConfirm:
+			'Alle gespeicherten MQTT-Topics löschen und aktuellen Stand für alle Pflanzen neu veröffentlichen?',
 		repairTitle: 'MQTT reparieren',
 		repairing: 'Reparieren...',
 		repairFailed: 'Reparatur fehlgeschlagen',
@@ -221,12 +227,17 @@ export const de: Translations = {
 		importBtn: 'Importieren',
 		exportBtn: 'Exportieren',
 		importData: 'Daten importieren',
-		importConfirm: '"{name}" importieren? Alle vorhandenen Daten und Fotos werden ersetzt.',
+		importConfirm:
+			'"{name}" importieren? Alle vorhandenen Daten und Fotos werden ersetzt.',
 		importFailed: 'Import fehlgeschlagen',
-		importResult: '{plants} Pflanzen, {photos} Fotos, {care_events} Einträge, {locations} Standorte importiert',
+		importResult:
+			'{plants} Pflanzen, {photos} Fotos, {care_events} Einträge, {locations} Standorte importiert',
 		statsLabel: 'Pflanzen',
 		statsPlants: { one: '{n} Pflanze', other: '{n} Pflanzen' },
-		statsCareEvents: { one: '{n} Pflegetagebuch-Eintrag', other: '{n} Pflegetagebuch-Einträge' },
+		statsCareEvents: {
+			one: '{n} Pflegetagebuch-Eintrag',
+			other: '{n} Pflegetagebuch-Einträge'
+		},
 		statsLocations: { one: '{n} Standort', other: '{n} Standorte' },
 		statsPhotos: { one: '{n} Foto', other: '{n} Fotos' },
 		about: 'Über',
@@ -306,7 +317,8 @@ export const de: Translations = {
 	identify: {
 		identifyPlant: 'Pflanze identifizieren',
 		identifying: 'Identifiziere...',
-		extraPhotosHint: 'Weitere Fotos für bessere Genauigkeit hinzufügen (optional):',
+		extraPhotosHint:
+			'Weitere Fotos für bessere Genauigkeit hinzufügen (optional):',
 		closeUp: 'Nahaufnahme',
 		stemPot: 'Stängel / Topf',
 		aiSuggestion: 'KI-Vorschlag',
@@ -315,7 +327,8 @@ export const de: Translations = {
 		dismiss: 'Verwerfen',
 		applied: 'KI-Vorschlag übernommen — {n} Felder aktualisiert',
 		undo: 'Rückgängig',
-		errorMessage: 'Identifikation fehlgeschlagen. Der KI-Dienst ist möglicherweise vorübergehend nicht verfügbar.',
+		errorMessage:
+			'Identifikation fehlgeschlagen. Der KI-Dienst ist möglicherweise vorübergehend nicht verfügbar.',
 		retry: 'Erneut versuchen',
 		confidence: '{n} %',
 		suggestionCount: '{current} / {total}',

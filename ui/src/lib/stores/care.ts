@@ -12,7 +12,9 @@ export async function loadCareEvents(plantId: number) {
 		const data = await api.fetchCareEvents(plantId);
 		careEvents.set(data);
 	} catch (e) {
-		careError.set(e instanceof Error ? e.message : get(translations).error.loadCareEvents);
+		careError.set(
+			e instanceof Error ? e.message : get(translations).error.loadCareEvents
+		);
 	}
 }
 
@@ -25,26 +27,36 @@ function sortEvents(events: CareEvent[]): CareEvent[] {
 	return [...events].sort((a, b) => eventTime(b) - eventTime(a));
 }
 
-export async function addCareEvent(plantId: number, data: CreateCareEvent): Promise<CareEvent | null> {
+export async function addCareEvent(
+	plantId: number,
+	data: CreateCareEvent
+): Promise<CareEvent | null> {
 	careError.set(null);
 	try {
 		const event = await api.createCareEvent(plantId, data);
 		careEvents.update((list) => sortEvents([event, ...list]));
 		return event;
 	} catch (e) {
-		careError.set(e instanceof Error ? e.message : get(translations).error.addCareEvent);
+		careError.set(
+			e instanceof Error ? e.message : get(translations).error.addCareEvent
+		);
 		return null;
 	}
 }
 
-export async function removeCareEvent(plantId: number, eventId: number): Promise<boolean> {
+export async function removeCareEvent(
+	plantId: number,
+	eventId: number
+): Promise<boolean> {
 	careError.set(null);
 	try {
 		await api.deleteCareEvent(plantId, eventId);
 		careEvents.update((list) => list.filter((e) => e.id !== eventId));
 		return true;
 	} catch (e) {
-		careError.set(e instanceof Error ? e.message : get(translations).error.deleteCareEvent);
+		careError.set(
+			e instanceof Error ? e.message : get(translations).error.deleteCareEvent
+		);
 		return false;
 	}
 }

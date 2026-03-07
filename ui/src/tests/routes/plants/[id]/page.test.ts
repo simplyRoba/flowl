@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor
+} from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Page from '../../../../routes/plants/[id]/+page.svelte';
@@ -17,7 +23,9 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // jsdom doesn't implement HTMLDialogElement.showModal/close
-HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
+HTMLDialogElement.prototype.showModal = vi.fn(function (
+	this: HTMLDialogElement
+) {
 	this.setAttribute('open', '');
 });
 HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
@@ -77,7 +85,6 @@ vi.mock('$lib/emoji', () => ({
 
 import * as api from '$lib/api';
 const mockSummarizeChat = vi.spyOn(api, 'summarizeChat');
-const mockCreateCareEvent = vi.spyOn(api, 'createCareEvent');
 const mockUploadCareEventPhoto = vi.spyOn(api, 'uploadCareEventPhoto');
 
 const mockLoadAiStatus = vi.fn();
@@ -167,7 +174,9 @@ describe('hero thumbnail', () => {
 describe('plant detail lightbox', () => {
 	it('opens and closes the lightbox for a photo', async () => {
 		await renderWithPlant();
-		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		const openButton = await screen.findByRole('button', {
+			name: 'Open photo'
+		});
 		await fireEvent.click(openButton);
 		expect(getLightbox().hasAttribute('open')).toBe(true);
 
@@ -187,7 +196,9 @@ describe('plant detail lightbox', () => {
 
 	it('updates zoom on wheel input', async () => {
 		await renderWithPlant();
-		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		const openButton = await screen.findByRole('button', {
+			name: 'Open photo'
+		});
 		await fireEvent.click(openButton);
 		const img = document.querySelector('.lightbox-image') as HTMLImageElement;
 		expect(img).toBeTruthy();
@@ -198,7 +209,9 @@ describe('plant detail lightbox', () => {
 
 	it('pans the image when zoomed', async () => {
 		await renderWithPlant();
-		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		const openButton = await screen.findByRole('button', {
+			name: 'Open photo'
+		});
 		await fireEvent.click(openButton);
 		const img = document.querySelector('.lightbox-image') as HTMLImageElement;
 		expect(img).toBeTruthy();
@@ -214,7 +227,9 @@ describe('plant detail lightbox', () => {
 
 	it('closes the lightbox via close button', async () => {
 		await renderWithPlant();
-		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		const openButton = await screen.findByRole('button', {
+			name: 'Open photo'
+		});
 		await fireEvent.click(openButton);
 		expect(getLightbox().hasAttribute('open')).toBe(true);
 
@@ -228,7 +243,9 @@ describe('plant detail lightbox', () => {
 	it('locks body scroll while lightbox is open and restores on close', async () => {
 		document.body.style.overflow = '';
 		await renderWithPlant();
-		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		const openButton = await screen.findByRole('button', {
+			name: 'Open photo'
+		});
 
 		await fireEvent.click(openButton);
 		expect(document.body.style.overflow).toBe('hidden');
@@ -242,7 +259,9 @@ describe('plant detail lightbox', () => {
 
 	it('zooms via touch pinch gesture', async () => {
 		await renderWithPlant();
-		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		const openButton = await screen.findByRole('button', {
+			name: 'Open photo'
+		});
 		await fireEvent.click(openButton);
 		const img = document.querySelector('.lightbox-image') as HTMLImageElement;
 		expect(img).toBeTruthy();
@@ -255,7 +274,10 @@ describe('plant detail lightbox', () => {
 		];
 		await fireEvent(window, startEvent);
 
-		const moveEvent = new Event('touchmove', { bubbles: true, cancelable: true }) as any;
+		const moveEvent = new Event('touchmove', {
+			bubbles: true,
+			cancelable: true
+		}) as any;
 		moveEvent.touches = [
 			{ clientX: 50, clientY: 50 },
 			{ clientX: 250, clientY: 250 }
@@ -267,7 +289,9 @@ describe('plant detail lightbox', () => {
 
 	it('closes the lightbox via backdrop click', async () => {
 		await renderWithPlant();
-		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		const openButton = await screen.findByRole('button', {
+			name: 'Open photo'
+		});
 		await fireEvent.click(openButton);
 		const lightbox = getLightbox();
 		expect(lightbox.hasAttribute('open')).toBe(true);
@@ -421,7 +445,9 @@ describe('care event delete reloads plant', () => {
 		mockLoadPlant.mockResolvedValue(makePlant());
 
 		// Click the delete button on the care event
-		const deleteButton = screen.getByRole('button', { name: 'Delete log entry' });
+		const deleteButton = screen.getByRole('button', {
+			name: 'Delete log entry'
+		});
 		const user = userEvent.setup();
 		await user.click(deleteButton);
 
@@ -440,7 +466,11 @@ describe('care event delete reloads plant', () => {
 
 describe('chat drawer save note', () => {
 	beforeEach(() => {
-		aiStatus.set({ enabled: true, base_url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' });
+		aiStatus.set({
+			enabled: true,
+			base_url: 'https://api.openai.com/v1',
+			model: 'gpt-4o-mini'
+		});
 	});
 
 	async function openChatAndSendMessage() {
@@ -503,7 +533,9 @@ describe('care event photo in timeline', () => {
 		]);
 
 		await waitFor(() => {
-			const img = document.querySelector('.timeline-photo img') as HTMLImageElement;
+			const img = document.querySelector(
+				'.timeline-photo img'
+			) as HTMLImageElement;
 			expect(img).toBeTruthy();
 			expect(img.src).toContain('/uploads/care/20_200.jpg');
 		});
@@ -548,7 +580,9 @@ describe('care event photo in timeline', () => {
 		await waitFor(() => {
 			expect(document.querySelector('.timeline-photo')).toBeTruthy();
 		});
-		const photoBtn = document.querySelector('.timeline-photo') as HTMLButtonElement;
+		const photoBtn = document.querySelector(
+			'.timeline-photo'
+		) as HTMLButtonElement;
 		await fireEvent.click(photoBtn);
 		expect(getLightbox().hasAttribute('open')).toBe(true);
 
@@ -559,7 +593,9 @@ describe('care event photo in timeline', () => {
 
 	it('lightbox uses original photo_url for hero photo', async () => {
 		await renderWithPlant({ photo_url: '/uploads/fern.jpg' });
-		const openButton = await screen.findByRole('button', { name: 'Open photo' });
+		const openButton = await screen.findByRole('button', {
+			name: 'Open photo'
+		});
 		await fireEvent.click(openButton);
 		expect(getLightbox().hasAttribute('open')).toBe(true);
 
@@ -584,11 +620,15 @@ describe('care event photo in timeline', () => {
 		]);
 
 		await waitFor(() => {
-			const img = document.querySelector('.timeline-photo img') as HTMLImageElement;
+			const img = document.querySelector(
+				'.timeline-photo img'
+			) as HTMLImageElement;
 			expect(img).toBeTruthy();
 			expect(img.src).toContain('/uploads/care/23_200.jpg');
 		});
-		const img = document.querySelector('.timeline-photo img') as HTMLImageElement;
+		const img = document.querySelector(
+			'.timeline-photo img'
+		) as HTMLImageElement;
 		await fireEvent.error(img);
 		expect(img.src).toContain('/uploads/care/23.png');
 		expect(img.src).not.toContain('_200');
@@ -617,19 +657,28 @@ describe('log form photo upload', () => {
 			expect(screen.getByLabelText('Add photo')).toBeTruthy();
 		});
 
-		const fileInput = document.querySelector('.care-entry-form input[type="file"]') as HTMLInputElement;
+		const fileInput = document.querySelector(
+			'.care-entry-form input[type="file"]'
+		) as HTMLInputElement;
 		expect(fileInput).toBeTruthy();
 
 		const file = new File(['img'], 'test.jpg', { type: 'image/jpeg' });
-		Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+		Object.defineProperty(fileInput, 'files', {
+			value: [file],
+			writable: false
+		});
 		await fireEvent.change(fileInput);
 
 		await waitFor(() => {
-			const preview = document.querySelector('.toolbar-thumb img') as HTMLImageElement;
+			const preview = document.querySelector(
+				'.toolbar-thumb img'
+			) as HTMLImageElement;
 			expect(preview).toBeTruthy();
 		});
 
-		const removeBtn = document.querySelector('.toolbar-dismiss') as HTMLButtonElement;
+		const removeBtn = document.querySelector(
+			'.toolbar-dismiss'
+		) as HTMLButtonElement;
 		await fireEvent.click(removeBtn);
 
 		await waitFor(() => {
@@ -650,7 +699,10 @@ describe('log form photo upload', () => {
 			created_at: '2025-02-01T10:00:00Z'
 		};
 		mockAddCareEvent.mockResolvedValue(createdEvent);
-		mockUploadCareEventPhoto.mockResolvedValue({ ...createdEvent, photo_url: '/uploads/care/30.jpg' });
+		mockUploadCareEventPhoto.mockResolvedValue({
+			...createdEvent,
+			photo_url: '/uploads/care/30.jpg'
+		});
 
 		await renderWithPlant();
 		await screen.findByText('Fern');
@@ -662,9 +714,14 @@ describe('log form photo upload', () => {
 		});
 		await fireEvent.click(screen.getByText('Fertilized'));
 
-		const fileInput = document.querySelector('.care-entry-form input[type="file"]') as HTMLInputElement;
+		const fileInput = document.querySelector(
+			'.care-entry-form input[type="file"]'
+		) as HTMLInputElement;
 		const file = new File(['img'], 'test.jpg', { type: 'image/jpeg' });
-		Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+		Object.defineProperty(fileInput, 'files', {
+			value: [file],
+			writable: false
+		});
 		await fireEvent.change(fileInput);
 
 		await waitFor(() => {
@@ -675,7 +732,10 @@ describe('log form photo upload', () => {
 		await fireEvent.click(saveBtn);
 
 		await waitFor(() => {
-			expect(mockAddCareEvent).toHaveBeenCalledWith(1, expect.objectContaining({ event_type: 'fertilized' }));
+			expect(mockAddCareEvent).toHaveBeenCalledWith(
+				1,
+				expect.objectContaining({ event_type: 'fertilized' })
+			);
 			expect(mockUploadCareEventPhoto).toHaveBeenCalledWith(1, 30, file);
 		});
 	});
@@ -690,9 +750,14 @@ describe('log form photo upload', () => {
 			expect(screen.getByLabelText('Add photo')).toBeTruthy();
 		});
 
-		const fileInput = document.querySelector('.care-entry-form input[type="file"]') as HTMLInputElement;
+		const fileInput = document.querySelector(
+			'.care-entry-form input[type="file"]'
+		) as HTMLInputElement;
 		const file = new File(['img'], 'test.jpg', { type: 'image/jpeg' });
-		Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+		Object.defineProperty(fileInput, 'files', {
+			value: [file],
+			writable: false
+		});
 		await fireEvent.change(fileInput);
 
 		await waitFor(() => {

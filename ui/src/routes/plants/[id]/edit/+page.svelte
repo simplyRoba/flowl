@@ -3,7 +3,14 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import type { CreatePlant } from '$lib/api';
-	import { currentPlant, plantsError, loadPlant, updatePlant, uploadPhoto, deletePhoto } from '$lib/stores/plants';
+	import {
+		currentPlant,
+		plantsError,
+		loadPlant,
+		updatePlant,
+		uploadPhoto,
+		deletePhoto
+	} from '$lib/stores/plants';
 	import { translations } from '$lib/stores/locale';
 	import PlantForm from '$lib/components/PlantForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -37,8 +44,16 @@
 </script>
 
 <div class="page">
-	<PageHeader backHref={$currentPlant ? `/plants/${$currentPlant.id}` : '/'} backLabel={$translations.common.cancel}>
-		<button type="submit" form="plant-form" class="btn btn-primary" disabled={saving}>
+	<PageHeader
+		backHref={$currentPlant ? `/plants/${$currentPlant.id}` : '/'}
+		backLabel={$translations.common.cancel}
+	>
+		<button
+			type="submit"
+			form="plant-form"
+			class="btn btn-primary"
+			disabled={saving}
+		>
 			{saving ? $translations.common.saving : $translations.common.save}
 		</button>
 	</PageHeader>
@@ -48,7 +63,13 @@
 	{#if $plantsError}
 		<p class="error">{$plantsError}</p>
 	{:else if loaded && $currentPlant}
-		<PlantForm initial={$currentPlant} onsave={handleSave} onremovephoto={handleRemovePhoto} {saving} showFooterActions={false} />
+		<PlantForm
+			initial={$currentPlant}
+			onsave={handleSave}
+			onremovephoto={handleRemovePhoto}
+			{saving}
+			showFooterActions={false}
+		/>
 	{:else}
 		<p class="loading">{$translations.common.loading}</p>
 	{/if}
