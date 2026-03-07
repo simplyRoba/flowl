@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.23.0](https://github.com/simplyRoba/flowl/compare/v0.22.0...v0.23.0) (2026-03-07)
+
+
+### Features
+
+* add notification system with toast messages for user feedback ([#91](https://github.com/simplyRoba/flowl/issues/91)) ([2478d75](https://github.com/simplyRoba/flowl/commit/2478d75aee263c85c2f9bbcfe4f5867746c30908))
+* **ui:** lazy-load non-default locale dictionaries ([dc5e99b](https://github.com/simplyRoba/flowl/commit/dc5e99b85d444cb960d90e1473306c7e8704ac6d))
+* **ui:** support backdated watering entries ([f0c25ea](https://github.com/simplyRoba/flowl/commit/f0c25ea06060998eff0e70694dfd30c586d6215a))
+
+
+### Bug Fixes
+
+* **ui:** align toast and attention card accents ([163ce94](https://github.com/simplyRoba/flowl/commit/163ce94019c26ef3553369ffe51eee7a4d3b020c))
+* **ui:** clarify chat drawer note action ([a8ed4f1](https://github.com/simplyRoba/flowl/commit/a8ed4f16179f8ae87c2ae2e5af7146592f52bce7))
+* **ui:** sort dashboard plants by due date ([f29f28b](https://github.com/simplyRoba/flowl/commit/f29f28b442d7c85960c6bd5178c1b40d0f2fc30b))
+* **ui:** surface localized location create errors ([b7930d5](https://github.com/simplyRoba/flowl/commit/b7930d5591c7eff3f4de534a1c4f90a40cd9800e))
+
 ## [0.22.0](https://github.com/simplyRoba/flowl/compare/v0.21.1...v0.22.0) (2026-03-06)
 
 
