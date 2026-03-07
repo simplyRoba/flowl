@@ -8,6 +8,7 @@
     loadPlants,
     waterPlant,
   } from "$lib/stores/plants";
+  import { pushNotification } from "$lib/stores/notifications";
   import { translations } from "$lib/stores/locale";
   import { emojiToSvgPath } from "$lib/emoji";
   import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
@@ -64,8 +65,18 @@
 
   async function handleWater(plantId: number) {
     wateringIds = new Set([...wateringIds, plantId]);
-    await waterPlant(plantId);
-    wateringIds = new Set([...wateringIds].filter((id) => id !== plantId));
+    try {
+      const plant = await waterPlant(plantId);
+      if (!plant) {
+        pushNotification({
+          variant: "error",
+          message: $plantsError || $translations.error.waterPlant,
+        });
+        plantsError.set(null);
+      }
+    } finally {
+      wateringIds = new Set([...wateringIds].filter((id) => id !== plantId));
+    }
   }
 
   const BG_GRADIENTS = [

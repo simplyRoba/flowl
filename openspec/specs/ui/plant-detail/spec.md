@@ -56,6 +56,17 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 - **AND** the dialog message includes the plant name
 - **AND** deletion only proceeds when the user confirms
 
+#### Scenario: Delete action success
+
+- **WHEN** the user confirms deletion and the plant is deleted successfully
+- **THEN** the app navigates away from the detail page
+- **AND** a global toast notification is displayed on the destination page acknowledging the deletion
+
+#### Scenario: Delete care event failure
+
+- **WHEN** the user tries to delete a care event and the request fails
+- **THEN** a global toast notification is displayed describing the failure
+
 #### Scenario: Plant not found
 
 - **WHEN** the user navigates to `/plants/999`
@@ -172,6 +183,17 @@ The plant detail view SHALL display watering status and a "Water now" action.
 - **WHEN** the user clicks "Water now" on a plant that is already `ok`
 - **THEN** the watering is recorded (last_watered updates)
 - **AND** the status remains `ok` with a new next_due date
+
+#### Scenario: Water now success feedback
+
+- **WHEN** the user clicks the "Water now" button and the request succeeds
+- **THEN** the view refreshes to show updated watering status
+- **AND** no toast notification is required for success
+
+#### Scenario: Water now failure feedback
+
+- **WHEN** the user clicks the "Water now" button and the request fails
+- **THEN** a global toast notification is displayed describing the failure
 
 ### Requirement: API Client
 

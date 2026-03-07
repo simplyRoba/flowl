@@ -9,6 +9,7 @@ export const es: Translations = {
   common: {
     save: "Guardar",
     saving: "Guardando...",
+    retry: "Reintentar",
     cancel: "Cancelar",
     delete: "Eliminar",
     back: "Volver",
@@ -167,6 +168,7 @@ export const es: Translations = {
     today: "Hoy",
     yesterday: "Ayer",
     failedToLoad: "No se pudieron cargar los eventos",
+    selectTypeError: "Elige un tipo de cuidado",
   },
   status: {
     overdue: "Atrasado",
@@ -228,6 +230,9 @@ export const es: Translations = {
     importConfirm:
       '¿Importar "{name}"? Todos los datos y fotos existentes serán reemplazados.',
     importFailed: "Importación fallida",
+    importRefreshFailed:
+      "La importación se completó, pero no se pudieron cargar los totales actualizados.",
+    exportFailed: "Exportación fallida",
     importResult:
       "{plants} plantas, {photos} fotos, {care_events} entradas, {locations} ubicaciones importadas",
     statsLabel: "Plantas",
@@ -357,6 +362,10 @@ export const es: Translations = {
     attachPhoto: "Adjuntar foto",
     removePhoto: "Eliminar foto",
     attachChatPhoto: "Adjuntar foto del chat",
+  },
+  notifications: {
+    locationDeleted: 'Ubicación "{name}" eliminada',
+    plantDeleted: 'Planta "{name}" eliminada',
   },
   error: {
     loadPlants: "No se pudieron cargar las plantas",

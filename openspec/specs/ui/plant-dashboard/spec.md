@@ -115,7 +115,7 @@ The dashboard SHALL display a "Needs Attention" section between the greeting and
 
 ### Requirement: Dashboard Attention Card Water Action
 
-Each attention card SHALL include a "Water" button that waters the plant directly from the dashboard.
+Each attention card SHALL include a "Water" button that waters the plant directly from the dashboard and provides visible feedback for the result.
 
 #### Scenario: Water from attention card
 
@@ -128,6 +128,19 @@ Each attention card SHALL include a "Water" button that waters the plant directl
 
 - **WHEN** the user clicks the "Water" button and the request is in progress
 - **THEN** the button SHALL indicate a loading state
+
+#### Scenario: Water success feedback
+
+- **WHEN** watering from an attention card succeeds
+- **THEN** the updated card state and/or removal from the section SHALL serve as the success feedback
+- **AND** no toast notification is required for success
+
+#### Scenario: Water failure feedback
+
+- **WHEN** watering from an attention card fails
+- **THEN** a visible error acknowledgement SHALL be shown at the time of the action
+- **AND** the error SHALL NOT rely solely on distant route-level error text
+- **AND** a global toast notification MAY be used for the failure acknowledgement
 
 ### Requirement: Dashboard Attention Section Responsive Layout
 

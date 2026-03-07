@@ -2,22 +2,47 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import type { CreatePlant } from "$lib/api";
-  import { createPlant, uploadPhoto } from "$lib/stores/plants";
+  import { createPlant, updatePlant, uploadPhoto } from "$lib/stores/plants";
   import { translations } from "$lib/stores/locale";
+  import { pushNotification } from "$lib/stores/notifications";
   import PlantForm from "$lib/components/PlantForm.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
 
   let saving = $state(false);
+  let draftPlantId: number | null = $state(null);
 
   async function handleSave(data: CreatePlant, photo?: File) {
     saving = true;
-    const plant = await createPlant(data);
-    if (plant) {
-      if (photo) {
-        await uploadPhoto(plant.id, photo);
-      }
-      goto(resolve(`/plants/${plant.id}`));
+    const plant = draftPlantId
+      ? await updatePlant(draftPlantId, data)
+      : await createPlant(data);
+
+    if (!plant) {
+      pushNotification({
+        variant: "error",
+        message: draftPlantId
+          ? $translations.error.updatePlant
+          : $translations.error.createPlant,
+      });
+      saving = false;
+      return;
     }
+
+    if (photo) {
+      const uploaded = await uploadPhoto(plant.id, photo);
+      if (!uploaded) {
+        draftPlantId = plant.id;
+        pushNotification({
+          variant: "error",
+          message: $translations.error.uploadPhoto,
+        });
+        saving = false;
+        return;
+      }
+    }
+
+    draftPlantId = null;
+    goto(resolve(`/plants/${plant.id}`));
     saving = false;
   }
 </script>

@@ -146,6 +146,18 @@ async function request<T>(
   return resp.json();
 }
 
+function parseFilename(contentDisposition: string | null): string {
+  if (!contentDisposition) return "flowl-export.zip";
+
+  const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const filenameMatch = /filename="?([^";]+)"?/i.exec(contentDisposition);
+  return filenameMatch?.[1] ?? "flowl-export.zip";
+}
+
 export function fetchAppInfo(): Promise<AppInfo> {
   return request("GET", "/api/info");
 }
@@ -237,6 +249,29 @@ export function importData(file: File): Promise<ImportResult> {
   const body = new FormData();
   body.append("file", file);
   return request("POST", "/api/data/import", body);
+}
+
+export async function exportData(): Promise<void> {
+  const resp = await fetch("/api/data/export", { method: "GET" });
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({ message: resp.statusText }));
+    throw new ApiError(resp.status, data.message || resp.statusText);
+  }
+
+  const blob = await resp.blob();
+  const filename = parseFilename(resp.headers.get("Content-Disposition"));
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  link.style.display = "none";
+
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 // --- Settings ---

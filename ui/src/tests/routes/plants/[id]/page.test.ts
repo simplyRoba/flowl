@@ -39,6 +39,8 @@ const mockWaterPlant = vi.fn();
 const mockLoadCareEvents = vi.fn();
 const mockAddCareEvent = vi.fn();
 const mockRemoveCareEvent = vi.fn();
+const mockPushNotification = vi.fn();
+const mockGoto = vi.fn();
 
 vi.mock("$app/stores", async () => {
   const { readable } = await import("svelte/store");
@@ -51,7 +53,7 @@ vi.mock("$app/stores", async () => {
 });
 
 vi.mock("$app/navigation", () => ({
-  goto: vi.fn(),
+  goto: (...args: unknown[]) => mockGoto(...args),
 }));
 
 vi.mock("$lib/stores/plants", async () => {
@@ -84,7 +86,13 @@ vi.mock("$lib/emoji", () => ({
   emojiToSvgPath: (emoji: string) => `/emoji/${emoji}.svg`,
 }));
 
+vi.mock("$lib/stores/notifications", () => ({
+  pushNotification: (...args: unknown[]) => mockPushNotification(...args),
+}));
+
 import * as api from "$lib/api";
+const mockChatPlant = vi.spyOn(api, "chatPlant");
+const mockCreateCareEventApi = vi.spyOn(api, "createCareEvent");
 const mockSummarizeChat = vi.spyOn(api, "summarizeChat");
 const mockUploadCareEventPhoto = vi.spyOn(api, "uploadCareEventPhoto");
 
@@ -100,8 +108,8 @@ vi.mock("$lib/stores/ai", async () => {
 });
 
 import { aiStatus } from "$lib/stores/ai";
-import { currentPlant } from "$lib/stores/plants";
-import { careEvents } from "$lib/stores/care";
+import { currentPlant, plantsError } from "$lib/stores/plants";
+import { careError, careEvents } from "$lib/stores/care";
 
 function makePlant(overrides: Partial<Plant> = {}) {
   return {
@@ -141,6 +149,7 @@ async function renderWithPlant(plantOverrides: Partial<Plant> = {}) {
 beforeEach(() => {
   currentPlant.set(null);
   aiStatus.set(null);
+  careError.set(null);
   vi.clearAllMocks();
 });
 
@@ -341,6 +350,16 @@ describe("plant delete confirmation", () => {
 
     await waitFor(() => {
       expect(mockDeletePlant).toHaveBeenCalledWith(1);
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "success",
+          message: 'Plant "My Fern" deleted',
+        }),
+      );
+      expect(mockGoto).toHaveBeenCalledWith("/");
+      expect(mockPushNotification.mock.invocationCallOrder[0]).toBeLessThan(
+        mockGoto.mock.invocationCallOrder[0],
+      );
     });
   });
 
@@ -358,6 +377,63 @@ describe("plant delete confirmation", () => {
 
     await new Promise((r) => setTimeout(r, 50));
     expect(mockDeletePlant).not.toHaveBeenCalled();
+  });
+});
+
+describe("watering feedback", () => {
+  it("keeps watering success silent", async () => {
+    mockWaterPlant.mockResolvedValue(
+      makePlant({ last_watered: "2025-02-01T10:00:00Z" }),
+    );
+    await renderWithPlant();
+    await screen.findByText("Fern");
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Water now" }));
+
+    await waitFor(() => {
+      expect(mockWaterPlant).toHaveBeenCalledWith(1);
+    });
+    expect(mockPushNotification).not.toHaveBeenCalled();
+  });
+
+  it("shows a toast when watering fails", async () => {
+    mockWaterPlant.mockResolvedValue(null);
+    await renderWithPlant();
+    await screen.findByText("Fern");
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Water now" }));
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "error",
+          message: "Failed to water plant",
+        }),
+      );
+    });
+  });
+
+  it("uses the store error details when watering fails", async () => {
+    mockWaterPlant.mockImplementation(async () => {
+      plantsError.set("Watering service offline");
+      return null;
+    });
+    await renderWithPlant();
+    await screen.findByText("Fern");
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Water now" }));
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "error",
+          message: "Watering service offline",
+        }),
+      );
+    });
   });
 });
 
@@ -467,6 +543,52 @@ describe("care event delete reloads plant", () => {
       expect(mockLoadPlant).toHaveBeenCalledWith(1);
     });
   });
+
+  it("shows a toast when deleting a care event fails", async () => {
+    mockRemoveCareEvent.mockImplementation(async () => {
+      careError.set("Delete failed");
+      return false;
+    });
+
+    await renderWithPlant();
+    await screen.findByText("Fern");
+
+    careEvents.set([
+      {
+        id: 10,
+        plant_id: 1,
+        plant_name: "Fern",
+        event_type: "watered",
+        notes: null,
+        photo_url: null,
+        occurred_at: "2025-01-01T10:00:00Z",
+        created_at: "2025-01-01T10:00:00Z",
+      },
+    ]);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Delete log entry" }),
+      ).toBeTruthy();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Delete log entry" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Delete this care entry/)).toBeTruthy();
+    });
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "error",
+          message: "Delete failed",
+        }),
+      );
+    });
+  });
 });
 
 describe("chat drawer save note", () => {
@@ -503,6 +625,109 @@ describe("chat drawer save note", () => {
 
     // Verify summarizeChat function exists and is callable
     expect(typeof api.summarizeChat).toBe("function");
+  });
+
+  it("shows a toast after saving a note successfully", async () => {
+    mockChatPlant.mockImplementation(async function* () {
+      yield "Looks healthy";
+    });
+    mockSummarizeChat.mockResolvedValue("Healthy and growing well");
+    mockCreateCareEventApi.mockResolvedValue({
+      id: 99,
+      plant_id: 1,
+      plant_name: "Fern",
+      event_type: "ai-consultation",
+      notes: "Healthy and growing well",
+      photo_url: null,
+      occurred_at: "2025-02-01T10:00:00Z",
+      created_at: "2025-02-01T10:00:00Z",
+    });
+
+    await openChatAndSendMessage();
+    const user = userEvent.setup();
+
+    const input = screen.getByPlaceholderText("Ask about your plant...");
+    await user.type(input, "How is my plant?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Looks healthy")).toBeTruthy();
+      expect(screen.getByText("Save note")).toBeTruthy();
+    });
+
+    await user.click(screen.getByText("Save note"));
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Healthy and growing well")).toBeTruthy();
+    });
+
+    const saveButtons = screen.getAllByText("Save");
+    await user.click(saveButtons[saveButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "success",
+          message: "Saved to care journal",
+        }),
+      );
+      expect(screen.queryByText("Quick questions")).toBeNull();
+    });
+  });
+
+  it("keeps stream failures inline in the drawer", async () => {
+    mockChatPlant.mockImplementation(async function* () {
+      yield* [];
+      throw new Error("stream failed");
+    });
+
+    await openChatAndSendMessage();
+    const user = userEvent.setup();
+
+    const input = screen.getByPlaceholderText("Ask about your plant...");
+    await user.type(input, "How is my plant?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Something went wrong. Please try again."),
+      ).toBeTruthy();
+    });
+    expect(mockPushNotification).not.toHaveBeenCalled();
+  });
+
+  it("keeps save-note failures inline in the drawer", async () => {
+    mockChatPlant.mockImplementation(async function* () {
+      yield "Looks healthy";
+    });
+    mockSummarizeChat.mockResolvedValue("Healthy and growing well");
+    mockCreateCareEventApi.mockRejectedValue(new Error("save failed"));
+
+    await openChatAndSendMessage();
+    const user = userEvent.setup();
+
+    const input = screen.getByPlaceholderText("Ask about your plant...");
+    await user.type(input, "How is my plant?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Looks healthy")).toBeTruthy();
+      expect(screen.getByText("Save note")).toBeTruthy();
+    });
+
+    await user.click(screen.getByText("Save note"));
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Healthy and growing well")).toBeTruthy();
+    });
+
+    const saveButtons = screen.getAllByText("Save");
+    await user.click(saveButtons[saveButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to save note")).toBeTruthy();
+    });
+    expect(mockPushNotification).not.toHaveBeenCalled();
   });
 
   it("summarizeChat calls the correct API endpoint", async () => {
@@ -742,6 +967,47 @@ describe("log form photo upload", () => {
         expect.objectContaining({ event_type: "fertilized" }),
       );
       expect(mockUploadCareEventPhoto).toHaveBeenCalledWith(1, 30, file);
+    });
+  });
+
+  it("shows inline validation and blocks submit when no care type is selected", async () => {
+    await renderWithPlant();
+    await screen.findByText("Fern");
+    await fireEvent.click(screen.getByText("+ Add log entry"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Save")).toBeTruthy();
+    });
+
+    await fireEvent.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Choose a care entry type")).toBeTruthy();
+    });
+    expect(mockAddCareEvent).not.toHaveBeenCalled();
+  });
+
+  it("shows a toast and keeps the form open when care entry creation fails", async () => {
+    mockAddCareEvent.mockResolvedValue(null);
+
+    await renderWithPlant();
+    await screen.findByText("Fern");
+    await fireEvent.click(screen.getByText("+ Add log entry"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Fertilized")).toBeTruthy();
+    });
+    await fireEvent.click(screen.getByText("Fertilized"));
+    await fireEvent.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "error",
+          message: "Failed to add care event",
+        }),
+      );
+      expect(document.querySelector(".care-entry-form")).toBeTruthy();
     });
   });
 

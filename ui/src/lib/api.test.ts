@@ -8,6 +8,7 @@ import {
   createLocation,
   fetchCareEvents,
   fetchAllCareEvents,
+  exportData,
   importData,
 } from "./api";
 
@@ -198,5 +199,50 @@ describe("importData", () => {
     });
     const file = new File(["bad"], "bad.zip", { type: "application/zip" });
     await expect(importData(file)).rejects.toThrow("Version mismatch");
+  });
+});
+
+describe("exportData", () => {
+  it("downloads the export archive from the shared API helper", async () => {
+    const blob = new Blob(["zip"], { type: "application/zip" });
+    const fn = mockFetch({
+      ok: true,
+      status: 200,
+      blob: vi.fn().mockResolvedValue(blob),
+      headers: new Headers({
+        "Content-Disposition": 'attachment; filename="flowl-export.zip"',
+      }),
+    });
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+    const appendSpy = vi.spyOn(document.body, "append");
+    const createObjectUrlSpy = vi
+      .spyOn(URL, "createObjectURL")
+      .mockReturnValue("blob:export");
+    const revokeObjectUrlSpy = vi
+      .spyOn(URL, "revokeObjectURL")
+      .mockImplementation(() => {});
+
+    await exportData();
+
+    expect(fn).toHaveBeenCalledWith("/api/data/export", { method: "GET" });
+    const link = appendSpy.mock.calls[0]?.[0] as HTMLAnchorElement;
+    expect(link.download).toBe("flowl-export.zip");
+    expect(link.href).toBe("blob:export");
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(createObjectUrlSpy).toHaveBeenCalledWith(blob);
+    expect(revokeObjectUrlSpy).toHaveBeenCalledWith("blob:export");
+  });
+
+  it("throws ApiError when export fails before download starts", async () => {
+    mockFetch({
+      ok: false,
+      status: 503,
+      statusText: "Service Unavailable",
+      json: vi.fn().mockResolvedValue({ message: "Export unavailable" }),
+    });
+
+    await expect(exportData()).rejects.toThrow("Export unavailable");
   });
 });

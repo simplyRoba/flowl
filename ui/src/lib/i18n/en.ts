@@ -7,6 +7,7 @@ const en = {
   common: {
     save: "Save",
     saving: "Saving...",
+    retry: "Retry",
     cancel: "Cancel",
     delete: "Delete",
     back: "Back",
@@ -164,6 +165,7 @@ const en = {
     today: "Today",
     yesterday: "Yesterday",
     failedToLoad: "Failed to load events",
+    selectTypeError: "Choose a care entry type",
   },
   status: {
     overdue: "Overdue",
@@ -224,6 +226,9 @@ const en = {
     importConfirm:
       'Import "{name}"? All existing data and photos will be replaced.',
     importFailed: "Import failed",
+    importRefreshFailed:
+      "Import completed, but the refreshed totals could not be loaded.",
+    exportFailed: "Export failed",
     importResult:
       "Imported {plants} plants, {photos} photos, {care_events} log entries, {locations} locations",
     statsLabel: "Plants",
@@ -353,6 +358,10 @@ const en = {
     attachPhoto: "Attach photo",
     removePhoto: "Remove photo",
     attachChatPhoto: "Attach photo from chat",
+  },
+  notifications: {
+    locationDeleted: 'Location "{name}" deleted',
+    plantDeleted: 'Plant "{name}" deleted',
   },
   error: {
     loadPlants: "Failed to load plants",

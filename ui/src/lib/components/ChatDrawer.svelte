@@ -10,6 +10,7 @@
     type ChatMessage,
     type Plant,
   } from "$lib/api";
+  import { pushNotification } from "$lib/stores/notifications";
 
   let {
     plant,
@@ -87,11 +88,13 @@
   let showChips = $derived(messages.length === 0);
 
   function scrollToBottom() {
-    if (messagesEl) {
-      requestAnimationFrame(() => {
-        messagesEl!.scrollTop = messagesEl!.scrollHeight;
-      });
-    }
+    const el = messagesEl;
+    if (!el) return;
+
+    requestAnimationFrame(() => {
+      if (!el.isConnected) return;
+      el.scrollTop = el.scrollHeight;
+    });
   }
 
   function getHistory(): ChatMessage[] {
@@ -278,6 +281,10 @@
       if (lastUserPhotoPreview) URL.revokeObjectURL(lastUserPhotoPreview);
       lastUserPhotoPreview = null;
       onsave?.();
+      pushNotification({
+        variant: "success",
+        message: $translations.chat.noteSaved,
+      });
       handleClose();
     } catch {
       noteSavedMessage = $translations.chat.noteSaveFailed;

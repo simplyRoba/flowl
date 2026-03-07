@@ -148,7 +148,7 @@ Callers cannot do `e instanceof ApiError` for status-code-specific error handlin
 
 **Fix:** Add a `loading` flag and show a skeleton or spinner until the first fetch completes.
 
-### 10. `handleWater` error is invisible on dashboard
+### ~~10. `handleWater` error is invisible on dashboard~~ DONE
 
 **File:** `ui/src/routes/+page.svelte:49-53`
 
@@ -449,7 +449,7 @@ The `void` expression forces Svelte to track `events.length` as a dependency. Wh
 
 Focus after opening uses a 300ms delay to outlast the CSS animation. Use `animationend` event or `tick()` instead.
 
-### 50. No toast/snackbar notification system
+### ~~50. No toast/snackbar notification system~~ DONE
 
 Error and success feedback is handled ad-hoc per page (inline text, error stores, or nothing). A global toast system would provide consistent feedback.
 

@@ -3,6 +3,7 @@
   import { onMount } from "svelte";
   import { Leaf, BookOpen, Settings } from "lucide-svelte";
   import Logo from "$lib/components/Logo.svelte";
+  import ToastHost from "$lib/components/ToastHost.svelte";
   import { page } from "$app/state";
   import { initTheme, isThemePreference } from "$lib/stores/theme";
   import { initLocale, isLocale, translations } from "$lib/stores/locale";
@@ -72,6 +73,7 @@
   <main class="content">
     {@render children()}
   </main>
+  <ToastHost />
 </div>
 
 <style>

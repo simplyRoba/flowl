@@ -271,6 +271,12 @@ The chat drawer SHALL provide a save-note flow that summarizes the conversation 
 - **AND** the `onsave` callback SHALL be invoked to notify the parent component
 - **AND** the drawer SHALL close
 
+#### Scenario: Save confirmed success feedback
+
+- **WHEN** the user clicks "Save" on the summary editor and the care event is created successfully
+- **THEN** the drawer SHALL close
+- **AND** a global toast notification is displayed acknowledging that the note was saved
+
 #### Scenario: Save cancelled
 
 - **WHEN** the user clicks "Cancel" on the summary editor
