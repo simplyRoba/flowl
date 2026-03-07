@@ -11,6 +11,7 @@
   import { addCareEvent } from "$lib/stores/care";
   import { uploadCareEventPhoto } from "$lib/api";
   import { translations } from "$lib/stores/locale";
+  import { pushNotification } from "$lib/stores/notifications";
 
   let {
     plantId,
@@ -73,22 +74,41 @@
   async function handleSubmit() {
     if (!eventType || submitting) return;
     submitting = true;
-    const occ = showOccurredAt ? occurredAt.trim() : "";
-    const occDate = occ ? new Date(occ) : null;
-    const occIso =
-      occDate && !isNaN(occDate.getTime()) ? occDate.toISOString() : undefined;
-    const photoFile = photo;
-    const event = await addCareEvent(plantId, {
-      event_type: eventType,
-      notes: notes.trim() || undefined,
-      occurred_at: occIso,
-    });
-    if (event && photoFile) {
-      await uploadCareEventPhoto(plantId, event.id, photoFile);
+    try {
+      const occ = showOccurredAt ? occurredAt.trim() : "";
+      const occDate = occ ? new Date(occ) : null;
+      const occIso =
+        occDate && !isNaN(occDate.getTime()) ? occDate.toISOString() : undefined;
+      const photoFile = photo;
+      const event = await addCareEvent(plantId, {
+        event_type: eventType,
+        notes: notes.trim() || undefined,
+        occurred_at: occIso,
+      });
+
+      if (!event) {
+        pushNotification({
+          variant: "error",
+          message: $translations.error.addCareEvent,
+        });
+        return;
+      }
+
+      if (photoFile) {
+        await uploadCareEventPhoto(plantId, event.id, photoFile);
+      }
+
+      resetForm();
+      onsubmit();
+    } catch {
+      pushNotification({
+        variant: "error",
+        message: $translations.error.addCareEvent,
+      });
+      return;
+    } finally {
+      submitting = false;
     }
-    resetForm();
-    submitting = false;
-    onsubmit();
   }
 </script>
 

@@ -25,6 +25,7 @@ HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
 
 const mockDeleteLocation = vi.fn();
 const mockUpdateLocation = vi.fn();
+const mockPushNotification = vi.fn();
 
 vi.mock("$lib/stores/locations", async () => {
   const { writable } = await import("svelte/store");
@@ -36,6 +37,10 @@ vi.mock("$lib/stores/locations", async () => {
     updateLocation: (...args: unknown[]) => mockUpdateLocation(...args),
   };
 });
+
+vi.mock("$lib/stores/notifications", () => ({
+  pushNotification: (...args: unknown[]) => mockPushNotification(...args),
+}));
 
 beforeEach(() => {
   localStorage.clear();
@@ -264,7 +269,12 @@ describe("settings data section export/import", () => {
     await user.click(importButtons[importButtons.length - 1]);
 
     await waitFor(() => {
-      expect(screen.getByText("Version mismatch")).toBeTruthy();
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "error",
+          message: "Version mismatch",
+        }),
+      );
     });
   });
 
@@ -300,7 +310,12 @@ describe("settings data section export/import", () => {
     await user.click(importButtons[importButtons.length - 1]);
 
     await waitFor(() => {
-      expect(screen.getByText(/Imported 3 plants/)).toBeTruthy();
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "success",
+          message: expect.stringMatching(/Imported 3 plants/),
+        }),
+      );
     });
   });
 
@@ -343,6 +358,7 @@ describe("settings delete location confirmation", () => {
 
   it("deletes immediately when location has no plants", async () => {
     locations.set([{ id: 1, name: "Bedroom", plant_count: 0 }]);
+    mockDeleteLocation.mockResolvedValue(true);
     render(Page);
 
     const user = userEvent.setup();
@@ -350,6 +366,12 @@ describe("settings delete location confirmation", () => {
 
     await waitFor(() => {
       expect(mockDeleteLocation).toHaveBeenCalledWith(1);
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "success",
+          message: 'Location "Bedroom" deleted',
+        }),
+      );
     });
   });
 
@@ -370,6 +392,7 @@ describe("settings delete location confirmation", () => {
 
   it("calls deleteLocation when confirmed", async () => {
     locations.set([{ id: 1, name: "Bedroom", plant_count: 2 }]);
+    mockDeleteLocation.mockResolvedValue(true);
     render(Page);
 
     const user = userEvent.setup();
@@ -382,6 +405,33 @@ describe("settings delete location confirmation", () => {
 
     await waitFor(() => {
       expect(mockDeleteLocation).toHaveBeenCalledWith(1);
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "success",
+          message: 'Location "Bedroom" deleted',
+        }),
+      );
+    });
+  });
+
+  it("shows a toast when deleting a location fails", async () => {
+    locations.set([{ id: 1, name: "Bedroom", plant_count: 0 }]);
+    mockDeleteLocation.mockImplementation(async () => {
+      locationsError.set("Failed to delete location");
+      return false;
+    });
+    render(Page);
+
+    const user = userEvent.setup();
+    await user.click(getDeleteButtons()[0]);
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "error",
+          message: "Failed to delete location",
+        }),
+      );
     });
   });
 
@@ -446,7 +496,12 @@ describe("settings MQTT repair confirmation", () => {
     await user.click(repairButtons[repairButtons.length - 1]);
 
     await waitFor(() => {
-      expect(screen.getByText(/Cleared 5, published 3/)).toBeTruthy();
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "success",
+          message: "Cleared 5, published 3",
+        }),
+      );
     });
   });
 

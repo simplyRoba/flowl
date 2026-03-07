@@ -358,6 +358,10 @@ export const es: Translations = {
     removePhoto: "Eliminar foto",
     attachChatPhoto: "Adjuntar foto del chat",
   },
+  notifications: {
+    locationDeleted: 'Ubicación "{name}" eliminada',
+    plantDeleted: 'Planta "{name}" eliminada',
+  },
   error: {
     loadPlants: "No se pudieron cargar las plantas",
     loadPlant: "No se pudo cargar la planta",

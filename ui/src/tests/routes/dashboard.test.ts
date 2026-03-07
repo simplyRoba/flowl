@@ -5,6 +5,7 @@ import type { Plant } from "$lib/api";
 
 const mockLoadPlants = vi.fn().mockResolvedValue(undefined);
 const mockWaterPlant = vi.fn();
+const mockPushNotification = vi.fn();
 
 vi.mock("$lib/stores/plants", async () => {
   const { writable } = await import("svelte/store");
@@ -20,6 +21,10 @@ vi.mock("$lib/stores/plants", async () => {
 
 vi.mock("$lib/emoji", () => ({
   emojiToSvgPath: (emoji: string) => `/emoji/${emoji}.svg`,
+}));
+
+vi.mock("$lib/stores/notifications", () => ({
+  pushNotification: (...args: unknown[]) => mockPushNotification(...args),
 }));
 
 import { plants, plantsError } from "$lib/stores/plants";
@@ -228,6 +233,23 @@ describe("needs attention section", () => {
     const names = attentionSection!.querySelectorAll(".attention-card-name");
     expect(names.length).toBe(1);
     expect(names[0].textContent).toBe("Cactus");
+  });
+
+  it("shows a toast when watering from the attention card fails", async () => {
+    plants.set([makePlant({ id: 1, name: "Fern", watering_status: "due" })]);
+    mockWaterPlant.mockResolvedValue(null);
+    render(Page);
+
+    await vi.waitFor(() => {
+      expect(screen.getByRole("button", { name: "Water" })).toBeTruthy();
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Water" }));
+
+    await vi.waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ variant: "error" }),
+      );
+    });
   });
 
   it("shows photo when plant has photo_url", () => {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/stores";
@@ -13,15 +14,20 @@
     deletePhoto,
   } from "$lib/stores/plants";
   import { translations } from "$lib/stores/locale";
+  import { pushNotification } from "$lib/stores/notifications";
   import PlantForm from "$lib/components/PlantForm.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
 
   let saving = $state(false);
   let loaded = $state(false);
+  let loadError = $state<string | null>(null);
 
   onMount(async () => {
     const id = Number($page.params.id);
-    await loadPlant(id);
+    const plant = await loadPlant(id);
+    if (!plant) {
+      loadError = get(plantsError) ?? get(translations).error.loadPlant;
+    }
     loaded = true;
   });
 
@@ -29,12 +35,30 @@
     if (!$currentPlant) return;
     saving = true;
     const plant = await updatePlant($currentPlant.id, data);
-    if (plant) {
-      if (photo) {
-        await uploadPhoto(plant.id, photo);
-      }
-      goto(resolve(`/plants/${plant.id}`));
+    if (!plant) {
+      pushNotification({
+        variant: "error",
+        message: $translations.error.updatePlant,
+      });
+      plantsError.set(null);
+      saving = false;
+      return;
     }
+
+    if (photo) {
+      const uploaded = await uploadPhoto(plant.id, photo);
+      if (!uploaded) {
+        pushNotification({
+          variant: "error",
+          message: $translations.error.uploadPhoto,
+        });
+        plantsError.set(null);
+        saving = false;
+        return;
+      }
+    }
+
+    goto(resolve(`/plants/${plant.id}`));
     saving = false;
   }
 
@@ -61,8 +85,8 @@
 
   <h1>{$translations.plant.editPlant}</h1>
 
-  {#if $plantsError}
-    <p class="error">{$plantsError}</p>
+  {#if loadError}
+    <p class="error">{loadError}</p>
   {:else if loaded && $currentPlant}
     <PlantForm
       initial={$currentPlant}

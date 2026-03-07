@@ -37,10 +37,12 @@
   } from "$lib/stores/plants";
   import {
     careEvents,
+    careError,
     loadCareEvents,
     removeCareEvent,
   } from "$lib/stores/care";
   import { translations } from "$lib/stores/locale";
+  import { pushNotification } from "$lib/stores/notifications";
   import { emojiToSvgPath } from "$lib/emoji";
   import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
   import StatusBadge from "$lib/components/StatusBadge.svelte";
@@ -103,6 +105,13 @@
     try {
       const success = await deletePlant($currentPlant.id);
       if (success) {
+        pushNotification({
+          variant: "success",
+          message: $translations.notifications.plantDeleted.replace(
+            "{name}",
+            $currentPlant.name,
+          ),
+        });
         goto(resolve("/"));
       }
     } finally {
@@ -126,7 +135,15 @@
     if (!$currentPlant || watering) return;
     watering = true;
     try {
-      await waterPlant($currentPlant.id);
+      const plant = await waterPlant($currentPlant.id);
+      if (!plant) {
+        pushNotification({
+          variant: "error",
+          message: $translations.error.waterPlant,
+        });
+        plantsError.set(null);
+        return;
+      }
       await loadCareEvents($currentPlant.id);
     } finally {
       watering = false;
@@ -172,7 +189,16 @@
     deleteEventDialogTarget = null;
     if (!$currentPlant || !event || deletingEventId === event.id) return;
     deletingEventId = event.id;
-    await removeCareEvent($currentPlant.id, event.id);
+    const removed = await removeCareEvent($currentPlant.id, event.id);
+    if (!removed) {
+      pushNotification({
+        variant: "error",
+        message: $careError || $translations.error.deleteCareEvent,
+      });
+      careError.set(null);
+      deletingEventId = null;
+      return;
+    }
     await loadPlant($currentPlant.id);
     deletingEventId = null;
   }

@@ -354,6 +354,10 @@ const en = {
     removePhoto: "Remove photo",
     attachChatPhoto: "Attach photo from chat",
   },
+  notifications: {
+    locationDeleted: 'Location "{name}" deleted',
+    plantDeleted: 'Plant "{name}" deleted',
+  },
   error: {
     loadPlants: "Failed to load plants",
     loadPlant: "Failed to load plant",

@@ -45,6 +45,7 @@
     type MqttStatus,
   } from "$lib/api";
   import { aiStatus as aiStatusStore, loadAiStatus } from "$lib/stores/ai";
+  import { pushNotification } from "$lib/stores/notifications";
   import ModalDialog from "$lib/components/ModalDialog.svelte";
 
   const themeOptions: {
@@ -78,11 +79,7 @@
     }
   });
   let repairLoading = $state(false);
-  let repairMessage = $state("");
-  let repairError = $state("");
   let importLoading = $state(false);
-  let importMessage = $state("");
-  let importError = $state("");
   let fileInput: HTMLInputElement = $state() as HTMLInputElement;
 
   // Dialog state
@@ -147,6 +144,7 @@
       editError = "";
     } else {
       editError = result.error;
+      locationsError.set(null);
     }
   }
 
@@ -173,19 +171,23 @@
   async function handleRepairConfirm() {
     repairDialogOpen = false;
     repairLoading = true;
-    repairMessage = "";
-    repairError = "";
     try {
       const result = await repairMqtt();
       const t = get(translations);
-      repairMessage = t.settings.repairResult
-        .replace("{cleared}", String(result.cleared))
-        .replace("{published}", String(result.published));
+      pushNotification({
+        variant: "success",
+        message: t.settings.repairResult
+          .replace("{cleared}", String(result.cleared))
+          .replace("{published}", String(result.published)),
+      });
     } catch (e: unknown) {
-      repairError =
-        e instanceof Error
-          ? e.message
-          : get(translations).settings.repairFailed;
+      pushNotification({
+        variant: "error",
+        message:
+          e instanceof Error
+            ? e.message
+            : get(translations).settings.repairFailed,
+      });
     } finally {
       repairLoading = false;
     }
@@ -218,16 +220,17 @@
     if (!file) return;
 
     importLoading = true;
-    importMessage = "";
-    importError = "";
     try {
       const result = await importData(file);
       const t = get(translations);
-      importMessage = t.settings.importResult
-        .replace("{plants}", String(result.plants))
-        .replace("{photos}", String(result.photos))
-        .replace("{care_events}", String(result.care_events))
-        .replace("{locations}", String(result.locations));
+      pushNotification({
+        variant: "success",
+        message: t.settings.importResult
+          .replace("{plants}", String(result.plants))
+          .replace("{photos}", String(result.photos))
+          .replace("{care_events}", String(result.care_events))
+          .replace("{locations}", String(result.locations)),
+      });
       fetchStats()
         .then((s) => {
           stats = s;
@@ -235,10 +238,13 @@
         .catch(() => {});
       loadLocations();
     } catch (e: unknown) {
-      importError =
-        e instanceof Error
-          ? e.message
-          : get(translations).settings.importFailed;
+      pushNotification({
+        variant: "error",
+        message:
+          e instanceof Error
+            ? e.message
+            : get(translations).settings.importFailed,
+      });
     } finally {
       importLoading = false;
     }
@@ -246,7 +252,22 @@
 
   async function handleDelete(id: number, name: string, plantCount: number) {
     if (plantCount === 0) {
-      await deleteLocation(id);
+      const success = await deleteLocation(id);
+      if (success) {
+        pushNotification({
+          variant: "success",
+          message: get(translations).notifications.locationDeleted.replace(
+            "{name}",
+            name,
+          ),
+        });
+      } else {
+        pushNotification({
+          variant: "error",
+          message: $locationsError || get(translations).error.deleteLocation,
+        });
+        locationsError.set(null);
+      }
       return;
     }
     deleteTarget = { id, name, plantCount };
@@ -256,7 +277,22 @@
   async function handleDeleteConfirm() {
     deleteDialogOpen = false;
     if (!deleteTarget) return;
-    await deleteLocation(deleteTarget.id);
+    const success = await deleteLocation(deleteTarget.id);
+    if (success) {
+      pushNotification({
+        variant: "success",
+        message: get(translations).notifications.locationDeleted.replace(
+          "{name}",
+          deleteTarget.name,
+        ),
+      });
+    } else {
+      pushNotification({
+        variant: "error",
+        message: $locationsError || get(translations).error.deleteLocation,
+      });
+      locationsError.set(null);
+    }
     deleteTarget = null;
   }
 </script>
@@ -436,12 +472,6 @@
             </div>
           </div>
           <span class="repair-actions">
-            {#if repairMessage}
-              <span class="repair-success">{repairMessage}</span>
-            {/if}
-            {#if repairError}
-              <span class="repair-error">{repairError}</span>
-            {/if}
             <button
               class="btn btn-outline btn-sm"
               disabled={mqttStatus.status !== "connected" || repairLoading}
@@ -514,12 +544,6 @@
           </div>
         </div>
         <span class="backup-actions">
-          {#if importMessage}
-            <span class="backup-success">{importMessage}</span>
-          {/if}
-          {#if importError}
-            <span class="backup-error">{importError}</span>
-          {/if}
           <button
             class="btn btn-outline btn-sm"
             disabled={importLoading}
@@ -881,32 +905,12 @@
     gap: 8px;
   }
 
-  .repair-success {
-    font-size: var(--fs-chip);
-    color: var(--color-success);
-  }
-
-  .repair-error {
-    font-size: var(--fs-chip);
-    color: var(--color-danger);
-  }
-
   .backup-actions {
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
     flex-wrap: wrap;
-  }
-
-  .backup-success {
-    font-size: var(--fs-chip);
-    color: var(--color-success);
-  }
-
-  .backup-error {
-    font-size: var(--fs-chip);
-    color: var(--color-danger);
   }
 
   .hidden {

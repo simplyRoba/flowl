@@ -10,6 +10,7 @@
     type ChatMessage,
     type Plant,
   } from "$lib/api";
+  import { pushNotification } from "$lib/stores/notifications";
 
   let {
     plant,
@@ -278,6 +279,10 @@
       if (lastUserPhotoPreview) URL.revokeObjectURL(lastUserPhotoPreview);
       lastUserPhotoPreview = null;
       onsave?.();
+      pushNotification({
+        variant: "success",
+        message: $translations.chat.noteSaved,
+      });
       handleClose();
     } catch {
       noteSavedMessage = $translations.chat.noteSaveFailed;
