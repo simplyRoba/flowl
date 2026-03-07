@@ -108,6 +108,7 @@ Warm, organic, calm. The UI should feel like a plant journal — not a corporate
 | Primary Dark| Forest       | `#4A6B4F` | Hover, pressed states               |
 | Secondary   | Terracotta   | `#C4775B` | Accents, highlights, overdue badges |
 | Water       | Stream       | `#5B9BC4` | Watering indicators, water actions  |
+| AI          | Iris         | `#9B7ED8` | AI actions, assistant states        |
 | Text        | Bark         | `#2C2418` | Primary text                        |
 | Text Muted  | Driftwood    | `#8C7E6E` | Secondary text, captions            |
 | Border      | Sand         | `#E5DDD3` | Dividers, card borders              |
@@ -125,6 +126,7 @@ Warm, organic, calm. The UI should feel like a plant journal — not a corporate
 | Primary Dark| Mint         | `#A3CDA9` | Hover, pressed states               |
 | Secondary   | Clay         | `#D49478` | Accents, highlights                 |
 | Water       | Sky          | `#78B4D8` | Watering indicators                 |
+| AI          | Lilac        | `#B89EE8` | AI actions, assistant states        |
 | Text        | Parchment    | `#EDE6DB` | Primary text                        |
 | Text Muted  | Sandstone    | `#9C8E7E` | Secondary text                      |
 | Border      | Root         | `#3A3228` | Dividers, card borders              |
