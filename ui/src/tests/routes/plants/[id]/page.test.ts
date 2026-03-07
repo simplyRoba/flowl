@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -1008,6 +1009,76 @@ describe("log form photo upload", () => {
         }),
       );
       expect(document.querySelector(".care-entry-form")).toBeTruthy();
+    });
+  });
+
+  it("supports adding backdated watering entries from the log form", async () => {
+    const occurredAt = "2025-01-15T09:30";
+    const createdEvent = {
+      id: 31,
+      plant_id: 1,
+      plant_name: "Fern",
+      event_type: "watered",
+      notes: "Watered a few days ago",
+      photo_url: null,
+      occurred_at: "2025-01-15T09:30:00Z",
+      created_at: "2025-02-01T10:00:00Z",
+    };
+    mockAddCareEvent.mockResolvedValue(createdEvent);
+    await renderWithPlant({
+      last_watered: "2025-01-01",
+      next_due: "2025-01-08",
+      watering_status: "overdue",
+    });
+    mockLoadPlant.mockImplementationOnce(async () => {
+      const updatedPlant = makePlant({
+        last_watered: "2025-01-15T09:30:00Z",
+        next_due: "2025-01-22T09:30:00Z",
+        watering_status: "ok",
+      });
+      currentPlant.set(updatedPlant);
+      return updatedPlant;
+    });
+
+    await screen.findByText("Fern");
+    await fireEvent.click(screen.getByText("+ Add log entry"));
+    const form = document.querySelector(".care-entry-form") as HTMLElement;
+
+    await waitFor(() => {
+      expect(within(form).getByText("Watered")).toBeTruthy();
+    });
+    await fireEvent.click(within(form).getByText("Watered"));
+
+    const dateToggle = document.querySelectorAll(
+      ".care-entry-form .toolbar-btn",
+    )[1] as HTMLButtonElement;
+    await fireEvent.click(dateToggle);
+
+    const dateInput = document.querySelector(
+      ".care-entry-form .toolbar-date-input",
+    ) as HTMLInputElement;
+    await fireEvent.input(dateInput, { target: { value: occurredAt } });
+
+    const notesInput = document.querySelector(
+      ".care-entry-form .log-notes",
+    ) as HTMLTextAreaElement;
+    await fireEvent.input(notesInput, {
+      target: { value: "Watered a few days ago" },
+    });
+
+    await fireEvent.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(mockAddCareEvent).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          event_type: "watered",
+          notes: "Watered a few days ago",
+          occurred_at: new Date(occurredAt).toISOString(),
+        }),
+      );
+      expect(mockLoadCareEvents).toHaveBeenCalledTimes(2);
+      expect(mockLoadPlant).toHaveBeenCalledTimes(2);
     });
   });
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    Droplets,
     Leaf,
     Shovel,
     Scissors,
@@ -19,7 +20,7 @@
     oncancel,
   }: {
     plantId: number;
-    onsubmit: () => void;
+    onsubmit: () => void | Promise<void>;
     oncancel: () => void;
   } = $props();
 
@@ -108,7 +109,7 @@
       }
 
       resetForm();
-      onsubmit();
+      await onsubmit();
     } catch {
       pushNotification({
         variant: "error",
@@ -129,7 +130,7 @@
     aria-label={$translations.plant.addLogEntry}
     aria-describedby={eventTypeError ? "care-entry-type-error" : undefined}
   >
-    {#each [{ value: "fertilized", label: $translations.care.fertilized, icon: Leaf }, { value: "repotted", label: $translations.care.repotted, icon: Shovel }, { value: "pruned", label: $translations.care.pruned, icon: Scissors }, { value: "custom", label: $translations.care.custom, icon: PencilIcon }] as chip (chip.value)}
+    {#each [{ value: "watered", label: $translations.care.watered, icon: Droplets }, { value: "fertilized", label: $translations.care.fertilized, icon: Leaf }, { value: "repotted", label: $translations.care.repotted, icon: Shovel }, { value: "pruned", label: $translations.care.pruned, icon: Scissors }, { value: "custom", label: $translations.care.custom, icon: PencilIcon }] as chip (chip.value)}
       <button
         class="chip chip-solid"
         class:active={eventType === chip.value}

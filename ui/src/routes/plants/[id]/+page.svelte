@@ -556,8 +556,12 @@
           {#if showLogForm}
             <CareEntryForm
               plantId={$currentPlant.id}
-              onsubmit={() => {
-                loadCareEvents($currentPlant.id);
+              onsubmit={async () => {
+                const plantId = $currentPlant.id;
+                await Promise.all([
+                  loadCareEvents(plantId),
+                  loadPlant(plantId),
+                ]);
                 showLogForm = false;
               }}
               oncancel={() => {
