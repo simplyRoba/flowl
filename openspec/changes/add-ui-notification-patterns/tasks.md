@@ -14,12 +14,14 @@
 - [ ] 2.2 Replace MQTT repair and import row-inline status text with global toast feedback
 - [ ] 2.3 Add feedback for actions that navigate away or remove their own context (for example delete plant, delete location, save-note success)
 - [ ] 2.4 Keep contextual inline flows inline (identify, chat stream errors, field validation)
+- [ ] 2.5 Use toast feedback for plant create/update submission failures that are not field-validation issues
 
 ## 3. Fill weak or silent error paths
 
-- [ ] 3.1 Add inline form-level submission errors where retry happens in place (plant create/edit, care entry form)
+- [ ] 3.1 Add or refine submission-failure feedback for retry-in-place flows, including care entry form behavior
 - [ ] 3.2 Review export feedback and decide whether detectable failures should toast while success remains silent
-- [ ] 3.3 Review photo-upload-after-save behavior and choose between post-navigation toast vs staying on the form with inline recovery
+- [ ] 3.3 Treat selected photo upload as part of save completion for create/edit flows, so navigation does not complete when the photo step fails
+- [ ] 3.4 Define the retry/recovery UX for partial success when plant create/update succeeds but photo upload fails
 
 ## 4. Verification
 
