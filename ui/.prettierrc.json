@@ -1,6 +1,3 @@
 {
-	"singleQuote": true,
-	"trailingComma": "none",
-	"useTabs": true,
-	"plugins": ["prettier-plugin-svelte"]
+  "plugins": ["prettier-plugin-svelte"]
 }
