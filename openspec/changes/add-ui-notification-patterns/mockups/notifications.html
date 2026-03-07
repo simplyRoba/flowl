@@ -466,18 +466,15 @@
 
             <div class="example">
               <span class="label">Section inline</span>
-              <div class="section-row">
+              <div class="section-row" style="align-items: flex-start">
                 <div>
-                  <strong>MQTT repair</strong><br />
-                  <span class="muted">Republish retained discovery state.</span>
+                  <strong>Plant identify</strong><br />
+                  <span class="muted">AI result could not be generated from the photo set.</span>
                 </div>
-                <button class="btn ghost">Repair</button>
-              </div>
-              <div class="section-note success">
-                Cleared 12 retained topics and republished 34 entities.
+                <button class="btn ghost">Retry</button>
               </div>
               <div class="section-note error">
-                Could not connect to broker. Try again when MQTT is online.
+                Identification failed. Try again with a clearer, brighter photo.
               </div>
               <div class="caption">Best for detailed, local outcomes.</div>
             </div>
@@ -489,6 +486,57 @@
                 again.
               </div>
               <div class="caption">Best when the route cannot render normally.</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <h2>Scenario D: settings actions now use toast</h2>
+          <p>
+            Import and MQTT repair no longer reserve inline status space inside the
+            row. The action stays compact, and the result is acknowledged globally.
+          </p>
+
+          <div class="device desktop" style="min-height: 360px">
+            <div class="content-card" style="max-width: 760px">
+              <span class="label">Settings</span>
+
+              <div class="section-row">
+                <div>
+                  <strong>MQTT repair</strong><br />
+                  <span class="muted">Clear retained discovery topics and republish entities.</span>
+                </div>
+                <button class="btn ghost">Repair</button>
+              </div>
+
+              <div class="section-row" style="margin-top: 22px">
+                <div>
+                  <strong>Data import</strong><br />
+                  <span class="muted">Restore a backup ZIP and refresh stats.</span>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button class="btn ghost">Import</button>
+                  <button class="btn ghost">Export</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="toast-stack desktop-stack">
+              <div class="toast success">
+                <div>
+                  <div class="toast-title">MQTT state repaired</div>
+                  <div class="toast-body">Cleared 12 topics and republished 34 entities.</div>
+                </div>
+                <div class="close">x</div>
+              </div>
+
+              <div class="toast error">
+                <div>
+                  <div class="toast-title">Import failed</div>
+                  <div class="toast-body">Backup version does not match this app.</div>
+                </div>
+                <div class="close">x</div>
+              </div>
             </div>
           </div>
         </article>

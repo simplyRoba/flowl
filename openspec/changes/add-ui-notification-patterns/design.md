@@ -3,7 +3,7 @@
 The app already uses several feedback patterns:
 
 - Field-inline errors for direct correction, such as location rename conflicts and plant name validation.
-- Section-inline feedback for contextual flows such as identify errors, chat errors, MQTT repair status, and import results.
+- Section-inline feedback for contextual flows such as identify errors and chat errors.
 - Page-level error text for route data fetch failures.
 - Silent success paths for some actions.
 - An invisible or poorly placed error path for some quick actions, most notably dashboard watering from the attention cards.
@@ -137,7 +137,8 @@ The HTML artifact includes these scenarios:
 - desktop dashboard with bottom-right toast stack
 - mobile screen with top-anchored toast stack
 - field-inline error example
-- section-inline success/error example
+- section-inline contextual error example
+- settings action toast example
 - page-level error example
 
 That artifact should be treated as the visual source of truth for this change rather than ASCII sketches embedded in markdown.
@@ -154,10 +155,12 @@ This is the main review artifact for confirmation or adjustment.
 | Settings: rename location conflict | Inline below input | Keep inline field error | User must fix the typed value in that exact input | None |
 | Settings: delete location success | Silent row disappearance | Toast | The row disappears, so a short acknowledgement helps | Silent is acceptable if you prefer minimalism |
 | Settings: delete location failure | Store-level error text at section level | Toast | The failed action is row-scoped but not tied to editable input | Section-inline list error if you want more persistence |
-| Settings: MQTT repair success | Inline result text next to action | Keep inline section feedback | The message includes counts and is best understood in place | Optional companion success toast if you want stronger acknowledgement |
-| Settings: MQTT repair failure | Inline error next to action | Keep inline section feedback | Retry is right there and the action remains visible | Optional toast only as supplement |
-| Settings: import success | Inline result with imported counts | Keep inline section feedback | Detailed result belongs in the Data section | Optional success toast saying import completed |
-| Settings: import failure | Inline error | Keep inline section feedback | Import is a heavy contextual operation with local controls | Optional toast only as supplement |
+| Settings: MQTT repair success | Inline result text next to action | Toast | The user needs acknowledgement, not persistent row text; toast keeps the row compact across breakpoints | Silent success if you want less noise |
+| Settings: MQTT repair failure | Inline error next to action | Toast | Failure does not require local correction input, and row-inline text is cramped on mobile | Modal alert only for unusually severe failures |
+| Settings: import success | Inline result with imported counts | Toast | Import completion is a short acknowledgement; the page itself can reflect the new data via refreshed stats | Toast can include a compact count summary if desired |
+| Settings: import failure | Inline error | Toast | No local corrective field exists, and toast gives cleaner, more consistent feedback | Modal alert for version-mismatch-style hard stops if stronger emphasis is desired |
+| Settings: export success | Native download only | Usually no toast | Browser download behavior is normally sufficient and success may not be detectable reliably | Toast only if implementation can detect a meaningful failure or completion state |
+| Settings: export failure | Usually browser/network level only | Toast if detectable | Failure is global and not tied to a nearby editable control | Inline fallback if the export row later gains richer local status |
 | Plants new: field validation | Inline field errors | Keep inline field errors | Direct correction flow | None |
 | Plants new: create failure | Currently effectively silent at page level because the route does not render `$plantsError` | Inline form-level error near save area | The user must remain in the form and retry | Toast should not be the primary surface |
 | Plants new/edit: photo upload failure after successful save | Failure can be easy to miss, especially if navigation happens | Toast after navigation or persistent detail-page banner | The source screen may disappear | If implementation is simplified, keep user on form and show inline |
@@ -180,7 +183,9 @@ If we want a minimal first implementation with high value and low churn, the def
 
 1. Add the global toast host and taxonomy.
 2. Fix the dashboard watering feedback with toast success/error.
-3. Add toast support for actions that navigate away or remove their own context:
+3. Add toast support for settings actions and actions that navigate away or remove their own context:
+   - MQTT repair success/failure
+   - import success/failure
    - delete plant success
    - delete location success
    - chat save-note success
@@ -188,7 +193,6 @@ If we want a minimal first implementation with high value and low churn, the def
    - rename conflicts
    - identify errors
    - chat stream errors
-   - import and repair details
    - route load failures
 5. Add missing inline form-level errors where failures are currently weak or silent:
    - plant create failure
@@ -200,7 +204,7 @@ These are the places most worth confirming before implementation:
 
 1. Should delete-success flows stay silent, or should they toast?
 2. Should dashboard watering success toast, or only failure?
-3. Should settings import/repair keep only inline detail, or also emit lightweight success toasts?
+3. Should import and MQTT repair use concise toast copy only, or should either one escalate to a modal alert for specific hard failures?
 4. Should plant-detail watering stay purely in-place, or match dashboard watering with toast feedback?
 5. For photo-upload-after-save failures, do we prefer post-navigation toast or keeping the user on the originating form?
 

@@ -18,6 +18,7 @@ Before implementing a toast/snackbar system, we should define the global concept
 - `ui/notifications`: Global notification taxonomy and toast/snackbar behavior
 
 ### Modified Capabilities
+- `ui/settings`: Use global toast feedback for import and MQTT repair outcomes instead of row-inline status text
 - `ui/plant-dashboard`: Define visible feedback for attention-card watering actions
 
 ## Impact

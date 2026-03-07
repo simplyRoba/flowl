@@ -11,13 +11,15 @@
 ## 2. Apply the taxonomy to high-value flows
 
 - [ ] 2.1 Update dashboard attention-card watering to show visible success/error feedback near the action time
-- [ ] 2.2 Add feedback for actions that navigate away or remove their own context (for example delete plant, delete location, save-note success)
-- [ ] 2.3 Keep contextual inline flows inline (identify, chat stream errors, MQTT repair/import details, field validation)
+- [ ] 2.2 Replace MQTT repair and import row-inline status text with global toast feedback
+- [ ] 2.3 Add feedback for actions that navigate away or remove their own context (for example delete plant, delete location, save-note success)
+- [ ] 2.4 Keep contextual inline flows inline (identify, chat stream errors, field validation)
 
 ## 3. Fill weak or silent error paths
 
 - [ ] 3.1 Add inline form-level submission errors where retry happens in place (plant create/edit, care entry form)
-- [ ] 3.2 Review photo-upload-after-save behavior and choose between post-navigation toast vs staying on the form with inline recovery
+- [ ] 3.2 Review export feedback and decide whether detectable failures should toast while success remains silent
+- [ ] 3.3 Review photo-upload-after-save behavior and choose between post-navigation toast vs staying on the form with inline recovery
 
 ## 4. Verification
 
