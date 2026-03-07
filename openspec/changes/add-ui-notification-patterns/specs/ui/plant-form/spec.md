@@ -28,7 +28,7 @@ The route `/plants/new` SHALL display a form to create a new plant.
 - **WHEN** the plant create request succeeds but the selected photo upload fails
 - **THEN** the user remains on the form
 - **AND** the save flow is treated as incomplete
-- **AND** a visible failure message is displayed so the user understands that the plant exists but the photo did not save
+- **AND** a global toast notification is displayed using the same failure pattern as other save failures
 
 ### Requirement: Edit Plant Form
 
@@ -58,7 +58,7 @@ The route `/plants/[id]/edit` SHALL display a pre-filled form to update an exist
 - **WHEN** the plant update request succeeds but the selected photo upload fails
 - **THEN** the user remains on the form
 - **AND** the save flow is treated as incomplete
-- **AND** a visible failure message is displayed so the user understands that the plant changes succeeded but the photo did not save
+- **AND** a global toast notification is displayed using the same failure pattern as other save failures
 
 ### Requirement: Photo Section in Form
 

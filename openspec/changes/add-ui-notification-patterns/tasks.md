@@ -14,7 +14,7 @@
 - [ ] 2.2 Replace MQTT repair and import row-inline status text with global toast feedback
 - [ ] 2.3 Add feedback for actions that navigate away or remove their own context (for example delete plant, delete location, save-note success)
 - [ ] 2.4 Keep contextual inline flows inline (identify, chat stream errors, field validation)
-- [ ] 2.5 Use toast feedback for plant create/update submission failures that are not field-validation issues
+- [ ] 2.5 Use the same toast failure pattern for plant create/update failures and photo-upload-during-save failures
 
 ## 3. Fill weak or silent error paths
 

@@ -150,7 +150,7 @@ This is the main review artifact for confirmation or adjustment.
 | Surface | Current behavior | Recommended primary pattern | Why | Secondary option |
 |---|---|---|---|---|
 | Dashboard: initial `loadPlants()` failure | Page-level error text far above empty state | Page-level error | The route cannot render its core content | Optional toast only as a supplement, not primary |
-| Dashboard: attention-card `waterPlant()` success | No explicit acknowledgement besides list changes | Toast | Trigger may be high on page, card may disappear after success, message is short | None |
+| Dashboard: attention-card `waterPlant()` success | No explicit acknowledgement besides list changes | No toast | The card disappearing and status updating is sufficient feedback for success | Toast only if later testing shows users miss the state change |
 | Dashboard: attention-card `waterPlant()` failure | Error falls into `$plantsError` far away | Toast | This is the review bug; local action needs visible feedback near the time of action | Inline card error if you want a more anchored feel |
 | Settings: rename location conflict | Inline below input | Keep inline field error | User must fix the typed value in that exact input | None |
 | Settings: delete location success | Silent row disappearance | Toast | The row disappears, so a short acknowledgement helps | Silent is acceptable if you prefer minimalism |
@@ -162,14 +162,14 @@ This is the main review artifact for confirmation or adjustment.
 | Settings: export success | Native download only | Usually no toast | Browser download behavior is normally sufficient and success may not be detectable reliably | Toast only if implementation can detect a meaningful failure or completion state |
 | Settings: export failure | Usually browser/network level only | Toast if detectable | Failure is global and not tied to a nearby editable control | Inline fallback if the export row later gains richer local status |
 | Plants new: field validation | Inline field errors | Keep inline field errors | Direct correction flow | None |
-| Plants new: create failure | Currently effectively silent at page level because the route does not render `$plantsError` | Toast | This is a submission/server failure, not a nearby field-correction problem, and the save trigger lives in the action bar | Top-of-form banner if you want more persistence |
-| Plants new/edit: photo upload failure after successful save | Current flow can still navigate because upload failure is treated as non-blocking | Stay on the form and treat photo upload as part of save completion | If the user selected a photo, navigating away without saving it forces an immediate return trip and breaks the expectation that media is part of save | Toast may still supplement the inline error, but should not replace blocking the navigation |
+| Plants new: create failure | Currently effectively silent at page level because the route does not render `$plantsError` | Toast | This is a submission/server failure, not a nearby field-correction problem, and the save trigger lives in the action bar | None |
+| Plants new/edit: photo upload failure during save | Current flow can still navigate because upload failure is treated as non-blocking | Toast | If photo is part of save, this should use the same failure surface as create/update failure while keeping the user on the form | None |
 | Plant detail: initial `loadPlant()` failure | Page-level error / not-found handling | Keep page-level | Route cannot proceed normally | None |
-| Plant detail: `waterPlant()` success | Visual state refresh only | Usually no toast needed | The result is visible in place via status/date changes | Toast if you want parity with dashboard watering |
+| Plant detail: `waterPlant()` success | Visual state refresh only | No toast | The result is already visible in place via status/date changes | None |
 | Plant detail: `waterPlant()` failure | Store error outside action area | Inline section or toast | The action is local, but current error placement is weak | Toast is simpler if no dedicated inline slot is added |
 | Plant detail: delete plant success | Navigation away only | Toast on destination page | The source page disappears after success | Silent redirect is acceptable but less explicit |
 | Plant detail: delete care event success | Silent item removal | Usually no toast | The deletion is obvious in the visible list | Toast only if users need stronger reassurance |
-| Plant detail: delete care event failure | Weakly surfaced through shared store | Inline journal-section error or toast | Failure belongs to the journal area, not whole route | Toast if implementation cost should stay low |
+| Plant detail: delete care event failure | Weakly surfaced through shared store | Toast | Failure should be visible immediately and does not need nearby corrective input | Inline journal-section error only if a dedicated persistent error slot is later added |
 | Care entry form: submission failure | Not clearly surfaced in-form | Inline form/toolbar error | User remains inside the form and may retry immediately | Toast only as supplement |
 | Care journal route: initial load failure | Page-level error | Keep page-level | Route content cannot load | None |
 | Plant identify: identify request failure | Inline error state with retry | Keep inline section feedback | Retry belongs to the identify panel | None |
@@ -182,7 +182,7 @@ This is the main review artifact for confirmation or adjustment.
 If we want a minimal first implementation with high value and low churn, the default rollout should be:
 
 1. Add the global toast host and taxonomy.
-2. Fix the dashboard watering feedback with toast success/error.
+2. Fix watering and care-event deletion failure feedback without adding watering success toasts.
 3. Add toast support for settings actions and actions that navigate away or remove their own context:
    - MQTT repair success/failure
    - import success/failure
@@ -194,20 +194,21 @@ If we want a minimal first implementation with high value and low churn, the def
    - identify errors
    - chat stream errors
    - route load failures
-5. Add missing or corrected submission feedback for retry-in-place flows:
+5. Add corrected submission feedback for save flows:
    - plant create failure -> toast
+   - plant update failure -> toast
+   - photo upload failure during create/edit save -> same toast pattern, keep user on form, block navigation completion
    - care entry submit failure -> inline or toast depending on final toolbar placement decision
-   - photo upload failure after create/edit -> keep user on form and block navigation completion
 
 ## Review Checkpoints
 
 These are the places most worth confirming before implementation:
 
 1. Should delete-success flows stay silent, or should they toast?
-2. Should dashboard watering success toast, or only failure?
+2. Keep watering success silent and use toast only for watering failures.
 3. Should import and MQTT repair use concise toast copy only, or should either one escalate to a modal alert for specific hard failures?
-4. Should plant-detail watering stay purely in-place, or match dashboard watering with toast feedback?
-5. For selected-photo saves, confirm the contract that navigation completes only after photo upload succeeds, and photo failure keeps the user on the originating form.
+4. Plant-detail watering should stay purely in-place on success and use toast on failure.
+5. Confirm that selected-photo saves use the same toast failure pattern as create/update failure, while still keeping the user on the originating form until save fully completes.
 
 ## Risks / Trade-offs
 
@@ -215,4 +216,4 @@ These are the places most worth confirming before implementation:
 - Converting contextual failures to toasts can reduce clarity if the user still needs a nearby retry/input.
 - A global system is easy to overuse once it exists; the taxonomy must remain the gatekeeper.
 - If warning/error toasts persist too aggressively, they can become clutter; if they auto-dismiss too quickly, they become easy to miss.
-- Treating photo upload as part of save completion improves user trust, but it requires careful handling of partial success so users do not accidentally create duplicate plants after a create succeeded but photo upload failed.
+- Treating photo upload as part of save completion improves user trust, but retry handling must avoid duplicate plants if create succeeded before photo upload failed.
