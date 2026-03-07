@@ -1,556 +1,558 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { Plus, TriangleAlert, Droplet } from 'lucide-svelte';
-	import {
-		plants,
-		plantsError,
-		loadPlants,
-		waterPlant
-	} from '$lib/stores/plants';
-	import { translations } from '$lib/stores/locale';
-	import { emojiToSvgPath } from '$lib/emoji';
-	import { thumbUrl, thumbSrcset } from '$lib/thumbUrl';
-	import StatusBadge from '$lib/components/StatusBadge.svelte';
+  import { resolve } from "$app/paths";
+  import { onMount } from "svelte";
+  import { Plus, TriangleAlert, Droplet } from "lucide-svelte";
+  import {
+    plants,
+    plantsError,
+    loadPlants,
+    waterPlant,
+  } from "$lib/stores/plants";
+  import { translations } from "$lib/stores/locale";
+  import { emojiToSvgPath } from "$lib/emoji";
+  import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
+  import StatusBadge from "$lib/components/StatusBadge.svelte";
 
-	function getTimeOfDay(): string {
-		const hour = new Date().getHours();
-		if (hour >= 5 && hour < 12) return 'morning';
-		if (hour >= 12 && hour < 17) return 'afternoon';
-		if (hour >= 17 && hour < 22) return 'evening';
-		return 'night';
-	}
+  function getTimeOfDay(): string {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "morning";
+    if (hour >= 12 && hour < 17) return "afternoon";
+    if (hour >= 17 && hour < 22) return "evening";
+    return "night";
+  }
 
-	const timeOfDay =
-		getTimeOfDay() as keyof typeof $translations.dashboard.greetings;
-	const greetingIndex = Math.floor(Math.random() * 5);
-	const subtitleIndex = Math.floor(Math.random() * 4);
-	const attentionMsgIndex = Math.floor(Math.random() * 5);
+  const timeOfDay =
+    getTimeOfDay() as keyof typeof $translations.dashboard.greetings;
+  const greetingIndex = Math.floor(Math.random() * 5);
+  const subtitleIndex = Math.floor(Math.random() * 4);
+  const attentionMsgIndex = Math.floor(Math.random() * 5);
 
-	let greeting = $derived(
-		$translations.dashboard.greetings[timeOfDay][greetingIndex]
-	);
-	let defaultSubtitle = $derived(
-		$translations.dashboard.subtitles[timeOfDay][subtitleIndex]
-	);
+  let greeting = $derived(
+    $translations.dashboard.greetings[timeOfDay][greetingIndex],
+  );
+  let defaultSubtitle = $derived(
+    $translations.dashboard.subtitles[timeOfDay][subtitleIndex],
+  );
 
-	let attentionPlants = $derived(
-		$plants
-			.filter(
-				(p) => p.watering_status === 'overdue' || p.watering_status === 'due'
-			)
-			.sort((a, b) => {
-				if (a.watering_status === 'overdue' && b.watering_status !== 'overdue')
-					return -1;
-				if (a.watering_status !== 'overdue' && b.watering_status === 'overdue')
-					return 1;
-				return 0;
-			})
-	);
+  let attentionPlants = $derived(
+    $plants
+      .filter(
+        (p) => p.watering_status === "overdue" || p.watering_status === "due",
+      )
+      .sort((a, b) => {
+        if (a.watering_status === "overdue" && b.watering_status !== "overdue")
+          return -1;
+        if (a.watering_status !== "overdue" && b.watering_status === "overdue")
+          return 1;
+        return 0;
+      }),
+  );
 
-	let subtitle = $derived(
-		attentionPlants.length === 0
-			? defaultSubtitle
-			: attentionPlants.length === 1
-				? $translations.dashboard.attentionSingular[attentionMsgIndex]
-				: $translations.dashboard.attentionPlural[attentionMsgIndex].replace(
-						'{n}',
-						String(attentionPlants.length)
-					)
-	);
+  let subtitle = $derived(
+    attentionPlants.length === 0
+      ? defaultSubtitle
+      : attentionPlants.length === 1
+        ? $translations.dashboard.attentionSingular[attentionMsgIndex]
+        : $translations.dashboard.attentionPlural[attentionMsgIndex].replace(
+            "{n}",
+            String(attentionPlants.length),
+          ),
+  );
 
-	let loading = $state(true);
-	let wateringIds: Set<number> = $state(new Set());
+  let loading = $state(true);
+  let wateringIds: Set<number> = $state(new Set());
 
-	async function handleWater(plantId: number) {
-		wateringIds = new Set([...wateringIds, plantId]);
-		await waterPlant(plantId);
-		wateringIds = new Set([...wateringIds].filter((id) => id !== plantId));
-	}
+  async function handleWater(plantId: number) {
+    wateringIds = new Set([...wateringIds, plantId]);
+    await waterPlant(plantId);
+    wateringIds = new Set([...wateringIds].filter((id) => id !== plantId));
+  }
 
-	const BG_GRADIENTS = [
-		'linear-gradient(135deg, color-mix(in srgb, var(--color-success) 35%, transparent), color-mix(in srgb, var(--color-success) 15%, transparent))',
-		'linear-gradient(135deg, color-mix(in srgb, var(--color-water) 35%, transparent), color-mix(in srgb, var(--color-water) 15%, transparent))',
-		'linear-gradient(135deg, color-mix(in srgb, var(--color-warning) 35%, transparent), color-mix(in srgb, var(--color-warning) 15%, transparent))',
-		'linear-gradient(135deg, color-mix(in srgb, var(--color-secondary) 30%, transparent), color-mix(in srgb, var(--color-secondary) 12%, transparent))',
-		'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 35%, transparent), color-mix(in srgb, var(--color-primary) 15%, transparent))',
-		'linear-gradient(135deg, color-mix(in srgb, var(--color-text-muted) 25%, transparent), color-mix(in srgb, var(--color-text-muted) 10%, transparent))'
-	];
+  const BG_GRADIENTS = [
+    "linear-gradient(135deg, color-mix(in srgb, var(--color-success) 35%, transparent), color-mix(in srgb, var(--color-success) 15%, transparent))",
+    "linear-gradient(135deg, color-mix(in srgb, var(--color-water) 35%, transparent), color-mix(in srgb, var(--color-water) 15%, transparent))",
+    "linear-gradient(135deg, color-mix(in srgb, var(--color-warning) 35%, transparent), color-mix(in srgb, var(--color-warning) 15%, transparent))",
+    "linear-gradient(135deg, color-mix(in srgb, var(--color-secondary) 30%, transparent), color-mix(in srgb, var(--color-secondary) 12%, transparent))",
+    "linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 35%, transparent), color-mix(in srgb, var(--color-primary) 15%, transparent))",
+    "linear-gradient(135deg, color-mix(in srgb, var(--color-text-muted) 25%, transparent), color-mix(in srgb, var(--color-text-muted) 10%, transparent))",
+  ];
 
-	function cardBg(id: number): string {
-		return BG_GRADIENTS[id % BG_GRADIENTS.length];
-	}
+  function cardBg(id: number): string {
+    return BG_GRADIENTS[id % BG_GRADIENTS.length];
+  }
 
-	onMount(async () => {
-		await loadPlants();
-		loading = false;
-	});
+  onMount(async () => {
+    await loadPlants();
+    loading = false;
+  });
 </script>
 
 <div class="dashboard">
-	<div class="greeting">
-		<h2>{greeting}</h2>
-		<p>{subtitle}</p>
-	</div>
+  <div class="greeting">
+    <h2>{greeting}</h2>
+    <p>{subtitle}</p>
+  </div>
 
-	{#if attentionPlants.length > 0}
-		<div class="attention-section">
-			<div class="attention-title">
-				<TriangleAlert size={16} />
-				{$translations.dashboard.needsAttention}
-			</div>
-			<div class="attention-cards">
-				{#each attentionPlants as plant (plant.id)}
-					<div class="attention-card">
-						<div
-							class="attention-card-accent"
-							class:accent-overdue={plant.watering_status === 'overdue'}
-							class:accent-due={plant.watering_status === 'due'}
-						></div>
-						{#if plant.photo_url}
-							<div class="attention-card-photo">
-								<img
-									src={thumbUrl(plant.photo_url, 200)}
-									srcset={thumbSrcset(plant.photo_url)}
-									sizes="120px"
-									alt={plant.name}
-									class="attention-photo-img"
-									onerror={(e) => {
-										const img = e.currentTarget as HTMLImageElement;
-										img.onerror = null;
-										img.src = plant.photo_url!;
-									}}
-								/>
-							</div>
-						{:else}
-							<div
-								class="attention-card-photo attention-card-photo-emoji"
-								style:background={cardBg(plant.id)}
-							>
-								<img
-									src={emojiToSvgPath(plant.icon)}
-									alt={plant.name}
-									class="attention-icon"
-								/>
-							</div>
-						{/if}
-						<div class="attention-card-body">
-							<a href="/plants/{plant.id}?from=/" class="attention-card-name"
-								>{plant.name}</a
-							>
-							{#if plant.location_name}
-								<span class="attention-card-location"
-									>{plant.location_name}</span
-								>
-							{/if}
-							<StatusBadge
-								status={plant.watering_status}
-								nextDue={plant.next_due ?? null}
-							/>
-							<div class="attention-card-actions">
-								<button
-									class="btn btn-water btn-sm"
-									disabled={wateringIds.has(plant.id)}
-									onclick={() => handleWater(plant.id)}
-								>
-									<Droplet size={16} />
-									<span class="water-btn-label">
-										{wateringIds.has(plant.id)
-											? $translations.dashboard.watering
-											: $translations.dashboard.water}
-									</span>
-								</button>
-							</div>
-						</div>
-					</div>
-				{/each}
-			</div>
-		</div>
-	{/if}
+  {#if attentionPlants.length > 0}
+    <div class="attention-section">
+      <div class="attention-title">
+        <TriangleAlert size={16} />
+        {$translations.dashboard.needsAttention}
+      </div>
+      <div class="attention-cards">
+        {#each attentionPlants as plant (plant.id)}
+          <div class="attention-card">
+            <div
+              class="attention-card-accent"
+              class:accent-overdue={plant.watering_status === "overdue"}
+              class:accent-due={plant.watering_status === "due"}
+            ></div>
+            {#if plant.photo_url}
+              <div class="attention-card-photo">
+                <img
+                  src={thumbUrl(plant.photo_url, 200)}
+                  srcset={thumbSrcset(plant.photo_url)}
+                  sizes="120px"
+                  alt={plant.name}
+                  class="attention-photo-img"
+                  onerror={(e) => {
+                    const img = e.currentTarget as HTMLImageElement;
+                    img.onerror = null;
+                    img.src = plant.photo_url!;
+                  }}
+                />
+              </div>
+            {:else}
+              <div
+                class="attention-card-photo attention-card-photo-emoji"
+                style:background={cardBg(plant.id)}
+              >
+                <img
+                  src={emojiToSvgPath(plant.icon)}
+                  alt={plant.name}
+                  class="attention-icon"
+                />
+              </div>
+            {/if}
+            <div class="attention-card-body">
+              <a
+                href={resolve(`/plants/${plant.id}?from=/`)}
+                class="attention-card-name">{plant.name}</a
+              >
+              {#if plant.location_name}
+                <span class="attention-card-location"
+                  >{plant.location_name}</span
+                >
+              {/if}
+              <StatusBadge
+                status={plant.watering_status}
+                nextDue={plant.next_due ?? null}
+              />
+              <div class="attention-card-actions">
+                <button
+                  class="btn btn-water btn-sm"
+                  disabled={wateringIds.has(plant.id)}
+                  onclick={() => handleWater(plant.id)}
+                >
+                  <Droplet size={16} />
+                  <span class="water-btn-label">
+                    {wateringIds.has(plant.id)
+                      ? $translations.dashboard.watering
+                      : $translations.dashboard.water}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
 
-	<header class="page-header">
-		<h1>{$translations.dashboard.myPlants}</h1>
-		{#if $plants.length > 0}
-			<a href="/plants/new" class="btn btn-primary btn-sm">
-				<Plus size={18} />
-				{$translations.dashboard.addPlant}
-			</a>
-		{/if}
-	</header>
+  <header class="page-header">
+    <h1>{$translations.dashboard.myPlants}</h1>
+    {#if $plants.length > 0}
+      <a href={resolve("/plants/new")} class="btn btn-primary btn-sm">
+        <Plus size={18} />
+        {$translations.dashboard.addPlant}
+      </a>
+    {/if}
+  </header>
 
-	{#if $plantsError}
-		<p class="error">{$plantsError}</p>
-	{:else if loading}
-		<!-- prevent empty-state flash while plants are loading -->
-	{:else if $plants.length === 0}
-		<div class="empty-state">
-			<img
-				src={emojiToSvgPath('🪴')}
-				alt={$translations.dashboard.emptyIconAlt}
-				class="empty-icon"
-			/>
-			<h2>{$translations.dashboard.noPlants}</h2>
-			<p>{$translations.dashboard.noPlantsHint}</p>
-			<a href="/plants/new" class="btn btn-primary btn-sm">
-				<Plus size={18} />
-				{$translations.dashboard.addPlant}
-			</a>
-		</div>
-	{:else}
-		<div class="plant-grid">
-			{#each $plants as plant (plant.id)}
-				<a href="/plants/{plant.id}?from=/" class="plant-card">
-					{#if plant.photo_url}
-						<div class="plant-card-photo">
-							<img
-								src={thumbUrl(plant.photo_url, 200)}
-								srcset={thumbSrcset(plant.photo_url)}
-								sizes="(min-width: 1280px) 280px, (min-width: 769px) 240px, 100vw"
-								alt={plant.name}
-								class="photo-img"
-								onerror={(e) => {
-									const img = e.currentTarget as HTMLImageElement;
-									img.onerror = null;
-									img.src = plant.photo_url!;
-								}}
-							/>
-						</div>
-					{:else}
-						<div class="plant-card-photo" style:background={cardBg(plant.id)}>
-							<img
-								src={emojiToSvgPath(plant.icon)}
-								alt={plant.name}
-								class="plant-icon"
-							/>
-						</div>
-					{/if}
-					<div class="plant-card-body">
-						<div class="plant-card-name">{plant.name}</div>
-						{#if plant.location_name}
-							<div class="plant-card-location">{plant.location_name}</div>
-						{/if}
-						<div class="plant-card-footer">
-							<StatusBadge
-								status={plant.watering_status}
-								nextDue={plant.next_due ?? null}
-							/>
-						</div>
-					</div>
-				</a>
-			{/each}
-		</div>
-	{/if}
+  {#if $plantsError}
+    <p class="error">{$plantsError}</p>
+  {:else if loading}
+    <!-- prevent empty-state flash while plants are loading -->
+  {:else if $plants.length === 0}
+    <div class="empty-state">
+      <img
+        src={emojiToSvgPath("🪴")}
+        alt={$translations.dashboard.emptyIconAlt}
+        class="empty-icon"
+      />
+      <h2>{$translations.dashboard.noPlants}</h2>
+      <p>{$translations.dashboard.noPlantsHint}</p>
+      <a href={resolve("/plants/new")} class="btn btn-primary btn-sm">
+        <Plus size={18} />
+        {$translations.dashboard.addPlant}
+      </a>
+    </div>
+  {:else}
+    <div class="plant-grid">
+      {#each $plants as plant (plant.id)}
+        <a href={resolve(`/plants/${plant.id}?from=/`)} class="plant-card">
+          {#if plant.photo_url}
+            <div class="plant-card-photo">
+              <img
+                src={thumbUrl(plant.photo_url, 200)}
+                srcset={thumbSrcset(plant.photo_url)}
+                sizes="(min-width: 1280px) 280px, (min-width: 769px) 240px, 100vw"
+                alt={plant.name}
+                class="photo-img"
+                onerror={(e) => {
+                  const img = e.currentTarget as HTMLImageElement;
+                  img.onerror = null;
+                  img.src = plant.photo_url!;
+                }}
+              />
+            </div>
+          {:else}
+            <div class="plant-card-photo" style:background={cardBg(plant.id)}>
+              <img
+                src={emojiToSvgPath(plant.icon)}
+                alt={plant.name}
+                class="plant-icon"
+              />
+            </div>
+          {/if}
+          <div class="plant-card-body">
+            <div class="plant-card-name">{plant.name}</div>
+            {#if plant.location_name}
+              <div class="plant-card-location">{plant.location_name}</div>
+            {/if}
+            <div class="plant-card-footer">
+              <StatusBadge
+                status={plant.watering_status}
+                nextDue={plant.next_due ?? null}
+              />
+            </div>
+          </div>
+        </a>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
-	.dashboard {
-		max-width: var(--content-width-wide);
-		margin: 0 auto;
-	}
+  .dashboard {
+    max-width: var(--content-width-wide);
+    margin: 0 auto;
+  }
 
-	.greeting {
-		margin-bottom: 20px;
-	}
+  .greeting {
+    margin-bottom: 20px;
+  }
 
-	.greeting h2 {
-		font-size: var(--fs-page-title);
-		font-weight: 600;
-		margin: 0 0 4px;
-	}
+  .greeting h2 {
+    font-size: var(--fs-page-title);
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
 
-	.greeting p {
-		font-size: 14px;
-		color: var(--color-text-muted);
-		margin: 0;
-	}
+  .greeting p {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
 
-	.page-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 24px;
-	}
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
 
-	.page-header h1 {
-		font-size: var(--fs-page-title);
-		font-weight: 700;
-		margin: 0;
-	}
+  .page-header h1 {
+    font-size: var(--fs-page-title);
+    font-weight: 700;
+    margin: 0;
+  }
 
-	.empty-state {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 64px 24px;
-		text-align: center;
-	}
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 24px;
+    text-align: center;
+  }
 
-	.empty-icon {
-		width: 64px;
-		height: 64px;
-		margin-bottom: 16px;
-	}
+  .empty-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+  }
 
-	.empty-state h2 {
-		font-size: var(--fs-page-title);
-		font-weight: 600;
-		margin: 0 0 8px;
-	}
+  .empty-state h2 {
+    font-size: var(--fs-page-title);
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
 
-	.empty-state p {
-		color: var(--color-text-muted);
-		margin: 0 0 24px;
-	}
+  .empty-state p {
+    color: var(--color-text-muted);
+    margin: 0 0 24px;
+  }
 
-	.plant-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-		gap: 16px;
-	}
+  .plant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
 
-	.plant-card {
-		position: relative;
-		border: none;
-		border-radius: var(--radius-card);
-		overflow: hidden;
-		text-decoration: none;
-		color: inherit;
-		cursor: pointer;
-		transition:
-			transform var(--transition-speed),
-			box-shadow var(--transition-speed);
-	}
+  .plant-card {
+    position: relative;
+    border: none;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition:
+      transform var(--transition-speed),
+      box-shadow var(--transition-speed);
+  }
 
-	.plant-card:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-	}
+  .plant-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
 
-	.plant-card-photo {
-		height: 180px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
+  .plant-card-photo {
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-	.plant-icon {
-		width: 64px;
-		height: 64px;
-	}
+  .plant-icon {
+    width: 64px;
+    height: 64px;
+  }
 
-	.photo-img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
+  .photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
-	.plant-card-body {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		padding: 28px 12px 10px;
-		background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
-		border-radius: 0 0 var(--radius-card) var(--radius-card);
-	}
+  .plant-card-body {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 28px 12px 10px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
+    border-radius: 0 0 var(--radius-card) var(--radius-card);
+  }
 
-	.plant-card-name {
-		font-size: 14px;
-		font-weight: 600;
-		margin-bottom: 6px;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		color: #fff;
-		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-	}
+  .plant-card-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
 
-	.plant-card-location {
-		font-size: 12px;
-		color: rgba(255, 255, 255, 0.85);
-		margin-bottom: 6px;
-	}
+  .plant-card-location {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 6px;
+  }
 
-	.plant-card-footer {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
+  .plant-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-	.error {
-		color: var(--color-danger);
-		padding: 16px;
-	}
+  .error {
+    color: var(--color-danger);
+    padding: 16px;
+  }
 
-	/* Needs Attention section */
-	.attention-section {
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-card);
-		padding: 16px;
-		margin-bottom: 24px;
-	}
+  /* Needs Attention section */
+  .attention-section {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 16px;
+    margin-bottom: 24px;
+  }
 
-	.attention-title {
-		font-size: 13px;
-		font-weight: 600;
-		color: var(--color-secondary);
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		margin-bottom: 12px;
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
+  .attention-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-	.attention-cards {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-		gap: 12px;
-	}
+  .attention-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+  }
 
-	.attention-card {
-		position: relative;
-		display: flex;
-		align-items: stretch;
-		border-radius: var(--radius-card);
-		overflow: hidden;
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
-		cursor: pointer;
-		transition:
-			transform var(--transition-speed),
-			box-shadow var(--transition-speed);
-	}
+  .attention-card {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    cursor: pointer;
+    transition:
+      transform var(--transition-speed),
+      box-shadow var(--transition-speed);
+  }
 
-	.attention-card:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-	}
+  .attention-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
 
-	.attention-card-accent {
-		width: 4px;
-		flex-shrink: 0;
-	}
+  .attention-card-accent {
+    width: 4px;
+    flex-shrink: 0;
+  }
 
-	.accent-overdue {
-		background: var(--color-danger);
-	}
+  .accent-overdue {
+    background: var(--color-danger);
+  }
 
-	.accent-due {
-		background: var(--color-warning);
-	}
+  .accent-due {
+    background: var(--color-warning);
+  }
 
-	.attention-card-photo {
-		width: 120px;
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		overflow: hidden;
-		position: relative;
-	}
+  .attention-card-photo {
+    width: 120px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
 
-	.attention-photo-img {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
+  .attention-photo-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
-	.attention-icon {
-		width: 48px;
-		height: 48px;
-	}
+  .attention-icon {
+    width: 48px;
+    height: 48px;
+  }
 
-	.attention-card-body {
-		flex: 1;
-		padding: 12px 14px;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		justify-content: center;
-		gap: 4px;
-		min-width: 0;
-	}
+  .attention-card-body {
+    flex: 1;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+  }
 
-	.attention-card-name {
-		font-size: 15px;
-		font-weight: 600;
-		color: var(--color-text);
-		text-decoration: none;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
+  .attention-card-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-	.attention-card-name::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-	}
+  .attention-card-name::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
 
-	.attention-card-location {
-		font-size: 12px;
-		color: var(--color-text-muted);
-	}
+  .attention-card-location {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
 
-	.attention-card-actions {
-		position: relative;
-		z-index: 1;
-		display: flex;
-		align-items: flex-end;
-		align-self: stretch;
-		justify-content: flex-end;
-		margin-top: auto;
-		padding-top: 8px;
-	}
+  .attention-card-actions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-end;
+    align-self: stretch;
+    justify-content: flex-end;
+    margin-top: auto;
+    padding-top: 8px;
+  }
 
-	@media (min-width: 1280px) {
-		.attention-cards {
-			grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-		}
+  @media (min-width: 1280px) {
+    .attention-cards {
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    }
 
-		.plant-grid {
-			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-			gap: 20px;
-		}
+    .plant-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
 
-		.plant-card-photo {
-			height: 240px;
-		}
+    .plant-card-photo {
+      height: 240px;
+    }
 
-		.plant-card-name {
-			font-size: 16px;
-		}
+    .plant-card-name {
+      font-size: 16px;
+    }
 
-		.plant-card-location {
-			font-size: 13px;
-		}
+    .plant-card-location {
+      font-size: 13px;
+    }
 
-		.plant-icon {
-			width: 80px;
-			height: 80px;
-		}
-	}
+    .plant-icon {
+      width: 80px;
+      height: 80px;
+    }
+  }
 
-	@media (max-width: 768px) {
-		.greeting h2 {
-			font-size: 18px;
-		}
+  @media (max-width: 768px) {
+    .greeting h2 {
+      font-size: 18px;
+    }
 
-		.plant-grid {
-			grid-template-columns: 1fr;
-			gap: 12px;
-		}
+    .plant-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
 
-		.plant-card-name {
-			font-size: 15px;
-		}
+    .plant-card-name {
+      font-size: 15px;
+    }
 
-		.plant-card-location {
-			font-size: 13px;
-		}
-	}
+    .plant-card-location {
+      font-size: 13px;
+    }
+  }
 </style>
