@@ -12,16 +12,6 @@
 - Queue care events (watering, log entries) created offline and sync when back online
 - Show offline indicator in the UI
 
-### Push Notifications
-- Watering reminders via push notifications
-- Requires backend support for web push subscriptions (VAPID keys, push endpoint storage)
-
-## UX — Global Error Notifications
-
-- Add a toast/snackbar notification system for showing errors (and success feedback) globally
-- Replace ad-hoc inline error handling across pages (e.g. dashboard water error only visible far down in grid, settings errors in separate sections)
-- Consistent placement and dismissal behavior across mobile and desktop
-
 ## AI — Additional Providers
 
 - Ollama provider implementation (behind the same trait)
