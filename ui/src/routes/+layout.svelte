@@ -146,6 +146,9 @@
   }
 
   function getEligibility() {
+    if (!isStandalonePwa || !isTouchCapable) {
+      syncPullToRefreshCapabilities();
+    }
     return canStartPullToRefresh({
       pathname: page.url.pathname,
       scrollTop: getScrollTop(),
@@ -483,7 +486,7 @@
     padding: 10px 14px;
     border: 1px solid var(--color-border-subtle);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+    background: var(--color-background);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
     color: var(--color-text);
     font-size: 13px;
@@ -491,7 +494,6 @@
     letter-spacing: 0.01em;
     opacity: 0;
     pointer-events: none;
-    backdrop-filter: blur(10px);
     transition:
       transform 0.18s ease,
       opacity 0.18s ease;
@@ -499,6 +501,22 @@
 
   .pull-indicator.visible {
     opacity: 1;
+  }
+
+  .pull-indicator.visible::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.06), transparent);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  :global([data-theme="dark"]) .pull-indicator.visible::before {
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.25), transparent);
   }
 
   .pull-indicator-spinner {

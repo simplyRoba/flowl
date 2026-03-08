@@ -46,10 +46,11 @@ export function isStandalonePwaSession({
 
 export function readStandalonePwaSession(win: Window): boolean {
   const standaloneMedia = win.matchMedia("(display-mode: standalone)");
+  const fullscreenMedia = win.matchMedia("(display-mode: fullscreen)");
   const navigatorWithStandalone = win.navigator as NavigatorWithStandalone;
 
   return isStandalonePwaSession({
-    displayModeStandalone: standaloneMedia.matches,
+    displayModeStandalone: standaloneMedia.matches || fullscreenMedia.matches,
     navigatorStandalone: navigatorWithStandalone.standalone === true,
   });
 }
