@@ -498,15 +498,19 @@ Real-time dependency makes this test slow and fragile. Use a deterministic appro
 
 While functional, the plant detail page handles the hero section, watering info grid, care info grid, notes, care timeline, inline care form, photo lightbox, chat drawer, and two modal dialogs. Consider extracting sections into sub-components.
 
-### 59. No rate limiting on AI endpoints
+### ~~59. No rate limiting on AI endpoints~~ WONTFIX
 
 **File:** `src/server.rs`
 
 AI endpoints make outbound paid API calls. No rate limiting exists to prevent abuse on the local network.
 
-### 60. No authentication
+**WONTFIX:** Not the focus of this project — self-hosted single-user app on a local network.
+
+### ~~60. No authentication~~ WONTFIX
 
 All routes are unauthenticated. By design for a local-network app, but `/api/data/import` is destructive (wipes the database) and accessible to any process on the network. Consider optional auth or at least a confirmation token for destructive operations.
+
+**WONTFIX:** Not the focus of this project — intentionally unauthenticated local-network app.
 
 ---
 
