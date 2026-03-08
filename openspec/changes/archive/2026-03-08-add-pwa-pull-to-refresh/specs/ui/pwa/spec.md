@@ -1,79 +1,34 @@
-## Requirements
-
-### Requirement: Web app manifest
-
-The app SHALL provide a web app manifest at `/manifest.json` that makes it installable on mobile devices.
-
-#### Scenario: Manifest is served
-
-- **WHEN** a browser requests `/manifest.json`
-- **THEN** a valid JSON manifest SHALL be returned
-- **AND** it SHALL include `name`, `short_name`, `start_url`, `display`, `theme_color`, `background_color`, and `icons`
-
-#### Scenario: Display mode
-
-- **WHEN** the app is installed via "Add to Home Screen"
-- **THEN** it SHALL launch in `standalone` mode without browser chrome
-
-#### Scenario: Theme colors match app
-
-- **WHEN** the manifest is loaded
-- **THEN** `theme_color` SHALL be `#FAF6F1` (light background)
-- **AND** `background_color` SHALL be `#FAF6F1`
-
-### Requirement: PWA icons
-
-The app SHALL provide PNG icons in the sizes required for installability.
-
-#### Scenario: Required icon sizes
-
-- **WHEN** the manifest `icons` array is read
-- **THEN** it SHALL include at least a 192x192 icon with `purpose: "any"`
-- **AND** a 512x512 icon with `purpose: "any"`
-
-### Requirement: Manifest link tag
-
-The HTML document SHALL reference the manifest.
-
-#### Scenario: Link tag present
-
-- **WHEN** the HTML document is loaded
-- **THEN** a `<link rel="manifest" href="/manifest.json">` tag SHALL be present in the `<head>`
+## ADDED Requirements
 
 ### Requirement: Pull-to-refresh in standalone PWA mode
 
 The app SHALL provide a custom pull-to-refresh gesture on allowlisted browse routes when running in standalone PWA mode on touch devices.
 
 #### Scenario: Touch tablet in standalone mode is eligible
-
 - **WHEN** the app is running in standalone PWA mode on a touch-capable tablet
 - **AND** the user is on an allowlisted route
 - **AND** the document is scrolled to the top
 - **THEN** pulling down from the top SHALL arm a refresh gesture
 
 #### Scenario: Pull-to-refresh available on dashboard
-
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user is on `/`
 - **AND** the document is scrolled to the top
 - **THEN** pulling down from the top SHALL arm a refresh gesture
 
 #### Scenario: Pull-to-refresh available on care journal
-
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user is on `/care-journal`
 - **AND** the document is scrolled to the top
 - **THEN** pulling down from the top SHALL arm a refresh gesture
 
 #### Scenario: Pull-to-refresh available on settings
-
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user is on `/settings`
 - **AND** the document is scrolled to the top
 - **THEN** pulling down from the top SHALL arm a refresh gesture
 
 #### Scenario: Pull-to-refresh available on plant detail
-
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user is on `/plants/42`
 - **AND** the document is scrolled to the top
@@ -84,13 +39,11 @@ The app SHALL provide a custom pull-to-refresh gesture on allowlisted browse rou
 The app SHALL NOT provide the custom pull-to-refresh gesture on non-allowlisted routes.
 
 #### Scenario: New plant route excluded
-
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user is on `/plants/new`
 - **THEN** pulling down SHALL NOT arm the custom refresh gesture
 
 #### Scenario: Edit plant route excluded
-
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user is on `/plants/42/edit`
 - **THEN** pulling down SHALL NOT arm the custom refresh gesture
@@ -100,7 +53,6 @@ The app SHALL NOT provide the custom pull-to-refresh gesture on non-allowlisted 
 Once armed on an allowlisted route, the gesture SHALL trigger a full reload of the current route when the user releases beyond the refresh threshold.
 
 #### Scenario: Release beyond threshold reloads page
-
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user is on an allowlisted route
 - **AND** the document is scrolled to the top
@@ -108,7 +60,6 @@ Once armed on an allowlisted route, the gesture SHALL trigger a full reload of t
 - **THEN** the app SHALL perform a full reload of the current route
 
 #### Scenario: Release before threshold does not reload page
-
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user is on an allowlisted route
 - **AND** the document is scrolled to the top
@@ -120,30 +71,25 @@ Once armed on an allowlisted route, the gesture SHALL trigger a full reload of t
 The app SHALL provide visible feedback while the gesture is active and SHALL suppress the gesture when the browsing context is not safe for refresh.
 
 #### Scenario: Feedback shown during pull
-
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user pulls down from the top on an allowlisted route
 - **THEN** the app SHALL display a visible pull-to-refresh indicator
 
 #### Scenario: Brief refreshing state shown after release
-
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user releases beyond the refresh threshold on an allowlisted route
 - **THEN** the pull-to-refresh indicator SHALL transition into a brief refreshing state before the page reload handoff
 
 #### Scenario: Gesture ignored away from top of page
-
 - **WHEN** the user is on an allowlisted route
 - **AND** the document is not scrolled to the top
 - **THEN** the custom pull-to-refresh gesture SHALL NOT arm
 
 #### Scenario: Gesture suppressed while transient overlay is open
-
 - **WHEN** the user is on `/plants/42`
 - **AND** a transient overlay such as a modal dialog, lightbox, chat drawer, or inline care entry flow is open
 - **THEN** the custom pull-to-refresh gesture SHALL NOT arm
 
 #### Scenario: Gesture unavailable outside standalone mode
-
 - **WHEN** the app is running in a normal browser tab instead of standalone PWA mode
 - **THEN** the custom pull-to-refresh gesture SHALL NOT arm
