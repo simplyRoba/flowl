@@ -5,6 +5,7 @@
     Check,
     Pencil,
     Trash2,
+    X,
     Palette,
     MapPin,
     Database,
@@ -170,11 +171,12 @@
     }
   }
 
-  function cancelEdit(target: HTMLInputElement) {
+  function cancelEdit(target?: HTMLInputElement | null) {
     cancelled = true;
     editingId = null;
+    editValue = "";
     editError = "";
-    target.blur();
+    target?.blur();
   }
 
   function handleEditKeydown(e: KeyboardEvent) {
@@ -424,13 +426,28 @@
                     }}
                   />
                   <button
+                    type="button"
                     class="btn btn-icon"
+                    aria-label={$translations.common.save}
                     onmousedown={(e) => {
                       e.preventDefault();
                       commitEdit(location.id, location.name);
                     }}
                   >
                     <Check size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-icon"
+                    aria-label={$translations.common.cancel}
+                    onmousedown={(e) => {
+                      e.preventDefault();
+                      cancelEdit(
+                        document.querySelector<HTMLInputElement>(".edit-input"),
+                      );
+                    }}
+                  >
+                    <X size={16} />
                   </button>
                 </div>
                 {#if editError}
@@ -852,6 +869,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    min-height: 40px;
   }
 
   .location-name {
@@ -881,10 +899,12 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    min-height: 40px;
   }
 
   .edit-input {
     flex: 1;
+    height: 40px;
   }
 
   .field-error {

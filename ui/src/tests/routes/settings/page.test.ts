@@ -185,6 +185,29 @@ describe("settings locations section", () => {
     });
     expect(mockPushNotification).not.toHaveBeenCalled();
   });
+
+  it("cancels inline editing without saving", async () => {
+    locations.set([{ id: 1, name: "Bedroom", plant_count: 0 }]);
+    render(Page);
+
+    const user = userEvent.setup();
+    const editButton = document.querySelector(
+      ".location-actions .btn-icon",
+    ) as HTMLButtonElement;
+    await user.click(editButton);
+
+    const input = document.querySelector(".edit-input") as HTMLInputElement;
+    await user.clear(input);
+    await user.type(input, "Kitchen");
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("textbox")).toBeNull();
+    });
+    expect(screen.getByText("Bedroom")).toBeTruthy();
+    expect(mockUpdateLocation).not.toHaveBeenCalled();
+  });
 });
 
 describe("settings data section export/import", () => {
