@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.24.0](https://github.com/simplyRoba/flowl/compare/v0.23.1...v0.24.0) (2026-03-08)
+
+
+### Features
+
+* **ui:** add standalone pull-to-refresh ([#94](https://github.com/simplyRoba/flowl/issues/94)) ([bec40ae](https://github.com/simplyRoba/flowl/commit/bec40aeed08d8a3154d74ca1fa475ebada8552c2))
+
+
+### Bug Fixes
+
+* **ui:** load plant pages from route data ([c9457a4](https://github.com/simplyRoba/flowl/commit/c9457a49ca66e9dc3384e861a1ec04a27e9bd5c1))
+* **ui:** soften dashboard plant card text shadows ([2411c88](https://github.com/simplyRoba/flowl/commit/2411c88582c2a8764c210b501727d9f3c8a9cfcb))
+* **ui:** stabilize settings location inline editing ([3e1c02f](https://github.com/simplyRoba/flowl/commit/3e1c02f210a57d92ef681756308b555b1c13b66e))
+
 ## [0.23.1](https://github.com/simplyRoba/flowl/compare/v0.23.0...v0.23.1) (2026-03-07)
 
 
