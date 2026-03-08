@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.3](https://github.com/simplyRoba/flowl/compare/v0.24.2...v0.24.3) (2026-03-08)
+
+
+### Bug Fixes
+
+* **ui:** add display-mode:browser fallback for PWA detection ([53f66b0](https://github.com/simplyRoba/flowl/commit/53f66b02c2251f8a69f60f9e3adc68ecdb3c79a3))
+
 ## [0.24.2](https://github.com/simplyRoba/flowl/compare/v0.24.1...v0.24.2) (2026-03-08)
 
 
