@@ -390,18 +390,25 @@
   .plant-card-name {
     font-size: 14px;
     font-weight: 600;
+    line-height: 1.2;
     margin-bottom: 6px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     color: #fff;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.55),
+      0 6px 18px rgba(0, 0, 0, 0.28);
   }
 
   .plant-card-location {
     font-size: 12px;
+    line-height: 1.2;
     color: rgba(255, 255, 255, 0.85);
     margin-bottom: 6px;
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      0 4px 14px rgba(0, 0, 0, 0.24);
   }
 
   .plant-card-footer {
