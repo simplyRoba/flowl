@@ -28,18 +28,28 @@ describe("pull-to-refresh capability detection", () => {
       isStandalonePwaSession({
         displayModeStandalone: true,
         navigatorStandalone: false,
+        notInBrowserMode: false,
       }),
     ).toBe(true);
     expect(
       isStandalonePwaSession({
         displayModeStandalone: false,
         navigatorStandalone: true,
+        notInBrowserMode: false,
       }),
     ).toBe(true);
     expect(
       isStandalonePwaSession({
         displayModeStandalone: false,
         navigatorStandalone: false,
+        notInBrowserMode: true,
+      }),
+    ).toBe(true);
+    expect(
+      isStandalonePwaSession({
+        displayModeStandalone: false,
+        navigatorStandalone: false,
+        notInBrowserMode: false,
       }),
     ).toBe(false);
   });

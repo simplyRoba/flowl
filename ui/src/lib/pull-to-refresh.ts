@@ -9,6 +9,7 @@ export type PullIndicatorState = "idle" | "pulling" | "release" | "refreshing";
 export interface StandaloneDetectionInput {
   displayModeStandalone: boolean;
   navigatorStandalone: boolean;
+  notInBrowserMode: boolean;
 }
 
 export interface TouchDetectionInput {
@@ -40,8 +41,9 @@ export interface RefreshingPullGestureState {
 export function isStandalonePwaSession({
   displayModeStandalone,
   navigatorStandalone,
+  notInBrowserMode,
 }: StandaloneDetectionInput): boolean {
-  return displayModeStandalone || navigatorStandalone;
+  return displayModeStandalone || navigatorStandalone || notInBrowserMode;
 }
 
 export function readStandalonePwaSession(win: Window): boolean {
@@ -49,9 +51,16 @@ export function readStandalonePwaSession(win: Window): boolean {
   const fullscreenMedia = win.matchMedia("(display-mode: fullscreen)");
   const navigatorWithStandalone = win.navigator as NavigatorWithStandalone;
 
+  // Fallback: if browser understands display-mode but reports NOT browser mode,
+  // we must be in standalone/fullscreen/minimal-ui (covers iOS PWA edge cases)
+  const browserMedia = win.matchMedia("(display-mode: browser)");
+  const displayModeSupported = browserMedia.media !== "not all";
+  const notInBrowserMode = displayModeSupported && !browserMedia.matches;
+
   return isStandalonePwaSession({
     displayModeStandalone: standaloneMedia.matches || fullscreenMedia.matches,
     navigatorStandalone: navigatorWithStandalone.standalone === true,
+    notInBrowserMode,
   });
 }
 
