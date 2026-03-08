@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.24.2](https://github.com/simplyRoba/flowl/compare/v0.24.1...v0.24.2) (2026-03-08)
+
+
+### Bug Fixes
+
+* **ui:** fix pull-to-refresh styling and PWA detection ([c8af536](https://github.com/simplyRoba/flowl/commit/c8af536a9f84b09eb9dc4429aaeb46522895d126))
+* **ui:** register lightbox wheel handler as passive ([98d925e](https://github.com/simplyRoba/flowl/commit/98d925e064a08d1cb7b73cbec904f7ab324f4ca4))
+
 ## [0.24.1](https://github.com/simplyRoba/flowl/compare/v0.24.0...v0.24.1) (2026-03-08)
 
 
