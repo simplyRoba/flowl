@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.4](https://github.com/simplyRoba/flowl/compare/v0.24.3...v0.24.4) (2026-03-08)
+
+
+### Bug Fixes
+
+* **ui:** fix pull-to-refresh gesture and visual polish ([2cca5f6](https://github.com/simplyRoba/flowl/commit/2cca5f675b4019978d0f7ff5bc26717aab232602))
+
 ## [0.24.3](https://github.com/simplyRoba/flowl/compare/v0.24.2...v0.24.3) (2026-03-08)
 
 
