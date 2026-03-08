@@ -1,6 +1,6 @@
 ## Context
 
-flowl already supports standalone PWA installation, but the installed app removes browser chrome and with it the normal refresh affordances users rely on in mobile browsers. The UI shell currently uses document-body scrolling via `ui/src/routes/+layout.svelte`, while the allowlisted routes load data through a mix of page-local fetches, store-driven loads, and route `load` functions. That mixed loading model makes a shared soft-refresh abstraction possible, but more invasive than the user problem requires.
+flowl already supports standalone PWA installation, but the installed app removes browser chrome and with it the normal refresh affordances users rely on in mobile browsers. The feature is intended for phones and tablets that use touch input, not desktop-class pointer-only sessions. The UI shell currently uses document-body scrolling via `ui/src/routes/+layout.svelte`, while the allowlisted routes load data through a mix of page-local fetches, store-driven loads, and route `load` functions. That mixed loading model makes a shared soft-refresh abstraction possible, but more invasive than the user problem requires.
 
 The user need is narrow: on phones and tablets, give installed-PWA users a familiar pull-to-refresh interaction on browse routes only, while keeping form-heavy flows safe from accidental refresh.
 
@@ -94,5 +94,4 @@ The user need is narrow: on phones and tablets, give installed-PWA users a famil
 
 ## Open Questions
 
-- Whether tablets should be determined strictly by touch capability or also by viewport width thresholds.
-- Whether the loading indicator should remain visible until `beforeunload`/navigation handoff or disappear immediately after the threshold release.
+- None. The change will apply to any touch-capable device in standalone PWA mode, including tablets, and the indicator will enter a brief refreshing state before the reload handoff.

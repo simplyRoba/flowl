@@ -4,6 +4,12 @@
 
 The app SHALL provide a custom pull-to-refresh gesture on allowlisted browse routes when running in standalone PWA mode on touch devices.
 
+#### Scenario: Touch tablet in standalone mode is eligible
+- **WHEN** the app is running in standalone PWA mode on a touch-capable tablet
+- **AND** the user is on an allowlisted route
+- **AND** the document is scrolled to the top
+- **THEN** pulling down from the top SHALL arm a refresh gesture
+
 #### Scenario: Pull-to-refresh available on dashboard
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user is on `/`
@@ -68,6 +74,11 @@ The app SHALL provide visible feedback while the gesture is active and SHALL sup
 - **WHEN** the app is running in standalone PWA mode on a touch device
 - **AND** the user pulls down from the top on an allowlisted route
 - **THEN** the app SHALL display a visible pull-to-refresh indicator
+
+#### Scenario: Brief refreshing state shown after release
+- **WHEN** the app is running in standalone PWA mode on a touch device
+- **AND** the user releases beyond the refresh threshold on an allowlisted route
+- **THEN** the pull-to-refresh indicator SHALL transition into a brief refreshing state before the page reload handoff
 
 #### Scenario: Gesture ignored away from top of page
 - **WHEN** the user is on an allowlisted route
