@@ -463,13 +463,13 @@ An `AbortController` doesn't need reactive tracking. Use a plain `let`.
 
 Store functions mix `deletePhoto` and `removeCareEvent`. Pick one convention.
 
-### 53. `care.test.ts` uses wrong `event_type` value
+### ~~53. `care.test.ts` uses wrong `event_type` value~~ DONE
 
 **File:** `ui/src/lib/stores/care.test.ts`
 
 Mock data uses `event_type: 'watering'` but the backend uses `'watered'`. Tests pass because the store doesn't validate event types, but the mock data is unrealistic.
 
-### 54. No tests for most complex components
+### ~~54. No tests for most complex components~~ DONE
 
 | Component | Lines | Tests |
 |---|---|---|
@@ -480,9 +480,11 @@ Mock data uses `event_type: 'watering'` but the backend uses `'watered'`. Tests 
 | `IconPicker.svelte` | 54 | None |
 | `PageHeader.svelte` | 133 | None |
 
-### 55. No tests for care journal, plant new, plant edit pages
+All six components now have test files.
 
-Three route-level pages have zero test coverage.
+### ~~55. No tests for care journal, plant new, plant edit pages~~ DONE
+
+Three route-level pages have zero test coverage. All three now have test files.
 
 ### 56. Backend: MQTT publish logic is completely untested
 

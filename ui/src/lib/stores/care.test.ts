@@ -21,7 +21,7 @@ const mockEvent: CareEvent = {
   id: 1,
   plant_id: 10,
   plant_name: "Fern",
-  event_type: "watering",
+  event_type: "watered",
   notes: null,
   photo_url: null,
   occurred_at: "2025-01-10T10:00:00Z",
@@ -76,7 +76,7 @@ describe("addCareEvent", () => {
     };
     vi.mocked(api.createCareEvent).mockResolvedValue(newEvent);
     const result = await addCareEvent(10, {
-      event_type: "watering",
+      event_type: "watered",
     } as CreateCareEvent);
     expect(result).toEqual(newEvent);
     const events = get(careEvents);
@@ -94,7 +94,7 @@ describe("addCareEvent", () => {
     };
     vi.mocked(api.createCareEvent).mockResolvedValue(olderEvent);
     const result = await addCareEvent(10, {
-      event_type: "watering",
+      event_type: "watered",
     } as CreateCareEvent);
     expect(result).toEqual(olderEvent);
     const events = get(careEvents);
@@ -105,7 +105,7 @@ describe("addCareEvent", () => {
   it("sets error on failure", async () => {
     vi.mocked(api.createCareEvent).mockRejectedValue(new Error("Add failed"));
     const result = await addCareEvent(10, {
-      event_type: "watering",
+      event_type: "watered",
     } as CreateCareEvent);
     expect(result).toBeNull();
     expect(get(careError)).toBe("Add failed");
