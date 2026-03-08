@@ -17,6 +17,7 @@
     hasBlockingPullToRefreshOverlay,
     isPullToRefreshRoute,
     PULL_TO_REFRESH_RELOAD_DELAY_MS,
+    PULL_TO_REFRESH_THRESHOLD,
     reloadCurrentPage,
     readStandalonePwaSession,
     schedulePullToRefreshReload,
@@ -48,6 +49,11 @@
   const pullIndicatorVisible = $derived(pullIndicatorState !== "idle");
   const pullIndicatorLabel = $derived(
     getPullIndicatorLabel(pullIndicatorState),
+  );
+  const spinnerRotation = $derived(
+    pullIndicatorState === "pulling"
+      ? Math.min(rawPullDistance / PULL_TO_REFRESH_THRESHOLD, 1) * 360
+      : 0,
   );
 
   function isActive(href: string): boolean {
@@ -168,7 +174,7 @@
       return;
     }
 
-    if (event.touches.length !== 1 || !getEligibility()) {
+    if (event.touches.length !== 1 || hasBlockingOverlay()) {
       resetPullGesture();
       return;
     }
@@ -278,7 +284,13 @@
       ? `translate(-50%, ${Math.max(12, pullOffset)}px)`
       : undefined}
   >
-    <span class="pull-indicator-spinner" aria-hidden="true"></span>
+    <span
+      class="pull-indicator-spinner"
+      aria-hidden="true"
+      style:transform={pullIndicatorState === "pulling"
+        ? `rotate(${spinnerRotation}deg)`
+        : undefined}
+    ></span>
     <span>{pullIndicatorLabel}</span>
   </div>
 
@@ -500,7 +512,8 @@
 
   .pull-indicator.armed .pull-indicator-spinner {
     border-top-color: var(--color-secondary);
-    transform: rotate(180deg);
+    border-right-color: var(--color-secondary);
+    transform: scale(1.3);
   }
 
   .pull-indicator.refreshing .pull-indicator-spinner {
