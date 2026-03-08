@@ -8,12 +8,47 @@
   import { initTheme, isThemePreference } from "$lib/stores/theme";
   import { initLocale, isLocale, translations } from "$lib/stores/locale";
   import { fetchSettings } from "$lib/api";
+  import {
+    calculatePullOffset,
+    canStartPullToRefresh,
+    getPullIndicatorLabel,
+    getPullIndicatorState,
+    getRefreshingPullGestureState,
+    hasBlockingPullToRefreshOverlay,
+    isPullToRefreshRoute,
+    PULL_TO_REFRESH_RELOAD_DELAY_MS,
+    reloadCurrentPage,
+    readStandalonePwaSession,
+    schedulePullToRefreshReload,
+    readTouchCapability,
+    shouldTriggerPullToRefresh,
+    type PullIndicatorState,
+  } from "$lib/pull-to-refresh";
   import "$lib/styles/buttons.css";
   import "$lib/styles/chips.css";
   import "$lib/styles/inputs.css";
   import "$lib/styles/sections.css";
 
   let { children } = $props();
+  let isStandalonePwa = $state(false);
+  let isTouchCapable = $state(false);
+  let pullOffset = $state(0);
+  let rawPullDistance = $state(0);
+  let pullIndicatorState = $state<PullIndicatorState>("idle");
+
+  let touchStartY: number | null = null;
+  let gestureActive = $state(false);
+  let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  const canUsePullToRefresh = $derived(
+    isStandalonePwa &&
+      isTouchCapable &&
+      isPullToRefreshRoute(page.url.pathname),
+  );
+  const pullIndicatorVisible = $derived(pullIndicatorState !== "idle");
+  const pullIndicatorLabel = $derived(
+    getPullIndicatorLabel(pullIndicatorState),
+  );
 
   function isActive(href: string): boolean {
     if (href === "/")
@@ -37,43 +72,254 @@
       initLocale();
     }
   });
+
+  function addMediaListener(
+    query: MediaQueryList,
+    listener: (event: MediaQueryListEvent) => void,
+  ) {
+    if (typeof query.addEventListener === "function") {
+      query.addEventListener("change", listener);
+      return;
+    }
+
+    const legacyQuery = query as MediaQueryList & {
+      addListener?: (event: (event: MediaQueryListEvent) => void) => void;
+    };
+
+    legacyQuery.addListener?.(listener);
+  }
+
+  function removeMediaListener(
+    query: MediaQueryList,
+    listener: (event: MediaQueryListEvent) => void,
+  ) {
+    if (typeof query.removeEventListener === "function") {
+      query.removeEventListener("change", listener);
+      return;
+    }
+
+    const legacyQuery = query as MediaQueryList & {
+      removeListener?: (event: (event: MediaQueryListEvent) => void) => void;
+    };
+
+    legacyQuery.removeListener?.(listener);
+  }
+
+  function clearRefreshTimeout() {
+    if (refreshTimeout === null) {
+      return;
+    }
+
+    clearTimeout(refreshTimeout);
+    refreshTimeout = null;
+  }
+
+  function resetPullGesture() {
+    touchStartY = null;
+    gestureActive = false;
+    rawPullDistance = 0;
+    pullOffset = 0;
+    pullIndicatorState = "idle";
+  }
+
+  function getScrollTop(): number {
+    return Math.max(
+      window.scrollY,
+      document.documentElement.scrollTop,
+      document.body.scrollTop,
+    );
+  }
+
+  function hasBlockingOverlay(): boolean {
+    return hasBlockingPullToRefreshOverlay(document);
+  }
+
+  function syncPullToRefreshCapabilities() {
+    isStandalonePwa = readStandalonePwaSession(window);
+    isTouchCapable = readTouchCapability(window);
+  }
+
+  function getEligibility() {
+    return canStartPullToRefresh({
+      pathname: page.url.pathname,
+      scrollTop: getScrollTop(),
+      standalone: isStandalonePwa,
+      touchCapable: isTouchCapable,
+      overlayOpen: hasBlockingOverlay(),
+    });
+  }
+
+  function handleTouchStart(event: TouchEvent) {
+    if (event.touches.length !== 1 || !getEligibility()) {
+      resetPullGesture();
+      return;
+    }
+
+    clearRefreshTimeout();
+    touchStartY = event.touches[0].clientY;
+    gestureActive = true;
+    rawPullDistance = 0;
+    pullOffset = 0;
+    pullIndicatorState = "idle";
+  }
+
+  function handleTouchMove(event: TouchEvent) {
+    if (!gestureActive || touchStartY === null) {
+      return;
+    }
+
+    if (event.touches.length !== 1 || !getEligibility()) {
+      resetPullGesture();
+      return;
+    }
+
+    const distance = event.touches[0].clientY - touchStartY;
+
+    if (distance <= 0) {
+      rawPullDistance = 0;
+      pullOffset = 0;
+      pullIndicatorState = "idle";
+      return;
+    }
+
+    rawPullDistance = distance;
+    pullOffset = calculatePullOffset(distance);
+    pullIndicatorState = getPullIndicatorState(distance);
+    event.preventDefault();
+  }
+
+  function handleTouchEnd() {
+    if (!gestureActive) {
+      return;
+    }
+
+    if (shouldTriggerPullToRefresh(rawPullDistance)) {
+      const refreshingGesture = getRefreshingPullGestureState();
+
+      gestureActive = refreshingGesture.gestureActive;
+      touchStartY = refreshingGesture.touchStartY;
+      rawPullDistance = refreshingGesture.rawPullDistance;
+      pullOffset = refreshingGesture.pullOffset;
+      pullIndicatorState = refreshingGesture.pullIndicatorState;
+      refreshTimeout = schedulePullToRefreshReload(
+        window,
+        () => {
+          reloadCurrentPage(window);
+        },
+        PULL_TO_REFRESH_RELOAD_DELAY_MS,
+      );
+      return;
+    }
+
+    resetPullGesture();
+  }
+
+  function handleTouchCancel() {
+    resetPullGesture();
+  }
+
+  onMount(() => {
+    syncPullToRefreshCapabilities();
+
+    const standaloneQuery = window.matchMedia("(display-mode: standalone)");
+    const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+    const handleCapabilityChange = () => {
+      syncPullToRefreshCapabilities();
+    };
+
+    addMediaListener(standaloneQuery, handleCapabilityChange);
+    addMediaListener(coarsePointerQuery, handleCapabilityChange);
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd);
+    window.addEventListener("touchcancel", handleTouchCancel);
+
+    return () => {
+      clearRefreshTimeout();
+      removeMediaListener(standaloneQuery, handleCapabilityChange);
+      removeMediaListener(coarsePointerQuery, handleCapabilityChange);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("touchcancel", handleTouchCancel);
+    };
+  });
+
+  $effect(() => {
+    const _pathname = page.url.pathname;
+
+    if (pullIndicatorState !== "refreshing") {
+      resetPullGesture();
+    }
+  });
+
+  $effect(() => {
+    if (!canUsePullToRefresh && pullIndicatorState !== "refreshing") {
+      resetPullGesture();
+    }
+  });
 </script>
 
 <svelte:head>
   <title>flowl</title>
 </svelte:head>
 
-<div class="app">
-  <nav class="sidebar">
-    <div class="logo">
-      <Logo size={28} /><span class="nav-label brand">flowl</span>
-    </div>
-    <a href={resolve("/")} class="nav-item" class:active={isActive("/")}
-      ><Leaf size={20} /><span class="nav-label"
-        >{$translations.nav.plants}</span
-      ></a
+<div class="app-shell">
+  <div
+    class="pull-indicator"
+    class:visible={pullIndicatorVisible}
+    class:armed={pullIndicatorState === "release"}
+    class:refreshing={pullIndicatorState === "refreshing"}
+    aria-live="polite"
+    aria-hidden={!pullIndicatorVisible}
+    data-testid="pull-to-refresh-indicator"
+    style:transform={pullIndicatorVisible
+      ? `translate(-50%, ${Math.max(12, pullOffset)}px)`
+      : undefined}
+  >
+    <span class="pull-indicator-spinner" aria-hidden="true"></span>
+    <span>{pullIndicatorLabel}</span>
+  </div>
+
+  <div class="app">
+    <nav class="sidebar">
+      <div class="logo">
+        <Logo size={28} /><span class="nav-label brand">flowl</span>
+      </div>
+      <a href={resolve("/")} class="nav-item" class:active={isActive("/")}
+        ><Leaf size={20} /><span class="nav-label"
+          >{$translations.nav.plants}</span
+        ></a
+      >
+      <a
+        href={resolve("/care-journal")}
+        class="nav-item"
+        class:active={isActive("/care-journal")}
+        ><BookOpen size={20} /><span class="nav-label"
+          >{$translations.nav.careJournal}</span
+        ></a
+      >
+      <a
+        href={resolve("/settings")}
+        class="nav-item bottom"
+        class:active={isActive("/settings")}
+        ><Settings size={20} /><span class="nav-label"
+          >{$translations.nav.settings}</span
+        ></a
+      >
+    </nav>
+    <main
+      class="content"
+      class:settling={!gestureActive}
+      style:transform={pullOffset > 0
+        ? `translateY(${pullOffset}px)`
+        : undefined}
     >
-    <a
-      href={resolve("/care-journal")}
-      class="nav-item"
-      class:active={isActive("/care-journal")}
-      ><BookOpen size={20} /><span class="nav-label"
-        >{$translations.nav.careJournal}</span
-      ></a
-    >
-    <a
-      href={resolve("/settings")}
-      class="nav-item bottom"
-      class:active={isActive("/settings")}
-      ><Settings size={20} /><span class="nav-label"
-        >{$translations.nav.settings}</span
-      ></a
-    >
-  </nav>
-  <main class="content">
-    {@render children()}
-  </main>
-  <ToastHost />
+      {@render children()}
+    </main>
+    <ToastHost />
+  </div>
 </div>
 
 <style>
@@ -209,6 +455,58 @@
     color: var(--color-text);
   }
 
+  .app-shell {
+    position: relative;
+  }
+
+  .pull-indicator {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    z-index: 160;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 148px;
+    padding: 10px 14px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    color: var(--color-text);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    opacity: 0;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    transition:
+      transform 0.18s ease,
+      opacity 0.18s ease;
+  }
+
+  .pull-indicator.visible {
+    opacity: 1;
+  }
+
+  .pull-indicator-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 999px;
+    transition: transform 0.18s ease;
+  }
+
+  .pull-indicator.armed .pull-indicator-spinner {
+    border-top-color: var(--color-secondary);
+    transform: rotate(180deg);
+  }
+
+  .pull-indicator.refreshing .pull-indicator-spinner {
+    animation: pull-refresh-spin 0.8s linear infinite;
+  }
+
   .app {
     display: block;
   }
@@ -270,6 +568,20 @@
   .content {
     margin-left: 64px;
     padding: 24px;
+  }
+
+  .content.settling {
+    transition: transform 0.18s ease;
+  }
+
+  @keyframes pull-refresh-spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   @media (min-width: 1280px) {
