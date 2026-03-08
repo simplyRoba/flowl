@@ -66,7 +66,6 @@
 
   function handleWheel(event: WheelEvent) {
     if (!open) return;
-    event.preventDefault();
     zoom = clamp(zoom + event.deltaY * -0.002, MIN_ZOOM, MAX_ZOOM);
     const clamped = clampTranslate(translateX, translateY);
     translateX = clamped.x;
@@ -151,6 +150,10 @@
 
   $effect(() => {
     if (!open || typeof window === "undefined") return;
+    const img = imageEl;
+    if (img) {
+      img.addEventListener("wheel", handleWheel, { passive: true });
+    }
     window.addEventListener("pointermove", handleWindowPointerMove);
     window.addEventListener("pointerup", handleWindowPointerUp);
     window.addEventListener("touchstart", handleWindowTouchStart, {
@@ -161,6 +164,9 @@
     });
     window.addEventListener("touchend", handleWindowTouchEnd);
     return () => {
+      if (img) {
+        img.removeEventListener("wheel", handleWheel);
+      }
       window.removeEventListener("pointermove", handleWindowPointerMove);
       window.removeEventListener("pointerup", handleWindowPointerUp);
       window.removeEventListener("touchstart", handleWindowTouchStart);
@@ -191,7 +197,6 @@
       {alt}
       class="lightbox-image"
       bind:this={imageEl}
-      onwheel={handleWheel}
       onpointerdown={handlePointerDown}
       style={`transform: translate(${translateX}px, ${translateY}px) scale(${zoom});`}
     />
