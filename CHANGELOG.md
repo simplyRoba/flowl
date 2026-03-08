@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.24.1](https://github.com/simplyRoba/flowl/compare/v0.24.0...v0.24.1) (2026-03-08)
+
+
+### Bug Fixes
+
+* **ui:** correct test mock data and add missing component tests ([e9ff6cd](https://github.com/simplyRoba/flowl/commit/e9ff6cd7b4d1c52b71b45105bb1bacb64e42af04))
+* **ui:** fix pull-to-refresh on iOS PWA and add spinner rotation ([e082c77](https://github.com/simplyRoba/flowl/commit/e082c77feeab81f3aea0cfa6045e970a61a05eb6))
+
 ## [0.24.0](https://github.com/simplyRoba/flowl/compare/v0.23.1...v0.24.0) (2026-03-08)
 
 
