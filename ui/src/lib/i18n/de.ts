@@ -18,6 +18,9 @@ export const de: Translations = {
     ok: "OK",
     close: "Schließen",
     or: "oder",
+    pullToRefresh: "Zum Aktualisieren ziehen",
+    releaseToRefresh: "Loslassen zum Aktualisieren",
+    refreshing: "Aktualisiere",
   },
   dashboard: {
     myPlants: "Meine Pflanzen",

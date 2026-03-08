@@ -1,7 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import { onMount } from "svelte";
-  import { Leaf, BookOpen, Settings } from "lucide-svelte";
+  import { onMount, untrack } from "svelte";
+  import { Leaf, BookOpen, Settings, Check } from "lucide-svelte";
   import Logo from "$lib/components/Logo.svelte";
   import ToastHost from "$lib/components/ToastHost.svelte";
   import { page } from "$app/state";
@@ -11,11 +11,10 @@
   import {
     calculatePullOffset,
     canStartPullToRefresh,
-    getPullIndicatorLabel,
     getPullIndicatorState,
-    getRefreshingPullGestureState,
     hasBlockingPullToRefreshOverlay,
     isPullToRefreshRoute,
+    MAX_PULL_TO_REFRESH_OFFSET,
     PULL_TO_REFRESH_RELOAD_DELAY_MS,
     PULL_TO_REFRESH_THRESHOLD,
     reloadCurrentPage,
@@ -40,6 +39,7 @@
   let touchStartY: number | null = null;
   let gestureActive = $state(false);
   let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
+  const PULL_REVERSE_BUFFER = 8;
 
   const canUsePullToRefresh = $derived(
     isStandalonePwa &&
@@ -48,7 +48,11 @@
   );
   const pullIndicatorVisible = $derived(pullIndicatorState !== "idle");
   const pullIndicatorLabel = $derived(
-    getPullIndicatorLabel(pullIndicatorState),
+    pullIndicatorState === "release"
+      ? $translations.common.releaseToRefresh
+      : pullIndicatorState === "refreshing"
+        ? $translations.common.refreshing
+        : $translations.common.pullToRefresh,
   );
   const spinnerRotation = $derived(
     pullIndicatorState === "pulling"
@@ -146,9 +150,6 @@
   }
 
   function getEligibility() {
-    if (!isStandalonePwa || !isTouchCapable) {
-      syncPullToRefreshCapabilities();
-    }
     return canStartPullToRefresh({
       pathname: page.url.pathname,
       scrollTop: getScrollTop(),
@@ -191,9 +192,18 @@
       return;
     }
 
-    rawPullDistance = distance;
-    pullOffset = calculatePullOffset(distance);
-    pullIndicatorState = getPullIndicatorState(distance);
+    // Rebase origin so finger stays within buffer of visual max.
+    // This prevents the finger from drifting far ahead of the clamped
+    // visual offset, so reversing direction responds after ~8px.
+    const maxWithBuffer = MAX_PULL_TO_REFRESH_OFFSET + PULL_REVERSE_BUFFER;
+    if (distance > maxWithBuffer) {
+      touchStartY = event.touches[0].clientY - maxWithBuffer;
+    }
+
+    const effectiveDistance = event.touches[0].clientY - touchStartY!;
+    rawPullDistance = effectiveDistance;
+    pullOffset = calculatePullOffset(effectiveDistance);
+    pullIndicatorState = getPullIndicatorState(effectiveDistance);
     event.preventDefault();
   }
 
@@ -203,13 +213,9 @@
     }
 
     if (shouldTriggerPullToRefresh(rawPullDistance)) {
-      const refreshingGesture = getRefreshingPullGestureState();
-
-      gestureActive = refreshingGesture.gestureActive;
-      touchStartY = refreshingGesture.touchStartY;
-      rawPullDistance = refreshingGesture.rawPullDistance;
-      pullOffset = refreshingGesture.pullOffset;
-      pullIndicatorState = refreshingGesture.pullIndicatorState;
+      gestureActive = false;
+      touchStartY = null;
+      pullIndicatorState = "refreshing";
       refreshTimeout = schedulePullToRefreshReload(
         window,
         () => {
@@ -258,13 +264,16 @@
   $effect(() => {
     const _pathname = page.url.pathname;
 
-    if (pullIndicatorState !== "refreshing") {
+    if (untrack(() => pullIndicatorState) !== "refreshing") {
       resetPullGesture();
     }
   });
 
   $effect(() => {
-    if (!canUsePullToRefresh && pullIndicatorState !== "refreshing") {
+    if (
+      !canUsePullToRefresh &&
+      untrack(() => pullIndicatorState) !== "refreshing"
+    ) {
       resetPullGesture();
     }
   });
@@ -283,17 +292,25 @@
     aria-live="polite"
     aria-hidden={!pullIndicatorVisible}
     data-testid="pull-to-refresh-indicator"
-    style:transform={pullIndicatorVisible
-      ? `translate(-50%, ${Math.max(12, pullOffset)}px)`
-      : undefined}
+    class:settling={!gestureActive && pullIndicatorState !== "refreshing"}
+    style:transform="translateY({pullIndicatorVisible
+      ? pullOffset - 48
+      : -60}px)"
   >
-    <span
-      class="pull-indicator-spinner"
-      aria-hidden="true"
-      style:transform={pullIndicatorState === "pulling"
-        ? `rotate(${spinnerRotation}deg)`
-        : undefined}
-    ></span>
+    {#if pullIndicatorState === "release"}
+      <span class="pull-indicator-check" aria-hidden="true">
+        <Check size={14} strokeWidth={3} />
+      </span>
+    {:else}
+      <span
+        class="pull-indicator-spinner"
+        class:spinning={pullIndicatorState === "refreshing"}
+        aria-hidden="true"
+        style:transform={pullIndicatorState === "pulling"
+          ? `rotate(${spinnerRotation}deg)`
+          : undefined}
+      ></span>
+    {/if}
     <span>{pullIndicatorLabel}</span>
   </div>
 
@@ -326,7 +343,7 @@
     </nav>
     <main
       class="content"
-      class:settling={!gestureActive}
+      class:settling={!gestureActive && pullIndicatorState !== "refreshing"}
       style:transform={pullOffset > 0
         ? `translateY(${pullOffset}px)`
         : undefined}
@@ -477,46 +494,29 @@
   .pull-indicator {
     position: fixed;
     top: 0;
-    left: 50%;
+    left: 0;
+    right: 0;
     z-index: 160;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
-    min-width: 148px;
+    width: fit-content;
+    margin: 0 auto;
     padding: 10px 14px;
     border: 1px solid var(--color-border-subtle);
     border-radius: 999px;
     background: var(--color-background);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     color: var(--color-text);
     font-size: 13px;
     font-weight: 600;
     letter-spacing: 0.01em;
-    opacity: 0;
     pointer-events: none;
-    transition:
-      transform 0.18s ease,
-      opacity 0.18s ease;
   }
 
-  .pull-indicator.visible {
-    opacity: 1;
-  }
-
-  .pull-indicator.visible::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 64px;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.06), transparent);
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  :global([data-theme="dark"]) .pull-indicator.visible::before {
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.25), transparent);
+  .pull-indicator.settling {
+    transition: transform 0.18s ease;
   }
 
   .pull-indicator-spinner {
@@ -525,17 +525,17 @@
     border: 2px solid var(--color-border);
     border-top-color: var(--color-primary);
     border-radius: 999px;
-    transition: transform 0.18s ease;
   }
 
-  .pull-indicator.armed .pull-indicator-spinner {
-    border-top-color: var(--color-secondary);
-    border-right-color: var(--color-secondary);
-    transform: scale(1.3);
-  }
-
-  .pull-indicator.refreshing .pull-indicator-spinner {
+  .pull-indicator-spinner.spinning {
     animation: pull-refresh-spin 0.8s linear infinite;
+  }
+
+  .pull-indicator-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-primary);
   }
 
   .app {

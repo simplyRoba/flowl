@@ -16,6 +16,9 @@ const en = {
     ok: "OK",
     close: "Close",
     or: "or",
+    pullToRefresh: "Pull to refresh",
+    releaseToRefresh: "Release to refresh",
+    refreshing: "Refreshing",
   },
   dashboard: {
     myPlants: "My Plants",
