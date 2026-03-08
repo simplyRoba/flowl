@@ -4,22 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../../../../routes/plants/[id]/edit/+page.svelte";
 import type { Plant } from "$lib/api";
 
-const mockLoadPlant = vi.fn();
 const mockUpdatePlant = vi.fn();
 const mockUploadPhoto = vi.fn();
 const mockDeletePhoto = vi.fn();
 const mockPushNotification = vi.fn();
 const mockGoto = vi.fn();
-
-vi.mock("$app/stores", async () => {
-  const { readable } = await import("svelte/store");
-  return {
-    page: readable({
-      params: { id: "1" },
-      url: new URL("http://localhost/plants/1/edit"),
-    }),
-  };
-});
 
 vi.mock("$app/navigation", () => ({
   goto: (...args: unknown[]) => mockGoto(...args),
@@ -27,12 +16,9 @@ vi.mock("$app/navigation", () => ({
 
 vi.mock("$lib/stores/plants", async () => {
   const { writable } = await import("svelte/store");
-  const currentPlant = writable<Plant | null>(null);
   const plantsError = writable<string | null>(null);
   return {
-    currentPlant,
     plantsError,
-    loadPlant: (...args: unknown[]) => mockLoadPlant(...args),
     updatePlant: (...args: unknown[]) => mockUpdatePlant(...args),
     uploadPhoto: (...args: unknown[]) => mockUploadPhoto(...args),
     deletePhoto: (...args: unknown[]) => mockDeletePhoto(...args),
@@ -48,9 +34,7 @@ vi.mock("$lib/components/PlantForm.svelte", async () => {
   return { default: component.default };
 });
 
-import { currentPlant } from "$lib/stores/plants";
-
-function plant(): Plant {
+function plant(overrides: Partial<Plant> = {}): Plant {
   return {
     id: 1,
     name: "Fern",
@@ -72,17 +56,25 @@ function plant(): Plant {
     notes: null,
     created_at: "2025-01-01T00:00:00Z",
     updated_at: "2025-01-01T00:00:00Z",
+    ...overrides,
   };
+}
+
+function renderPage(overrides: Partial<Plant> = {}) {
+  return render(Page, {
+    props: {
+      data: {
+        plant: plant(overrides),
+        notFound: false,
+        loadError: null,
+      },
+    },
+  });
 }
 
 describe("edit plant page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLoadPlant.mockImplementation(async () => {
-      const value = plant();
-      currentPlant.set(value);
-      return value;
-    });
   });
 
   afterEach(() => {
@@ -91,7 +83,7 @@ describe("edit plant page", () => {
 
   it("shows a toast when update fails", async () => {
     mockUpdatePlant.mockResolvedValue(null);
-    render(Page);
+    renderPage();
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -113,7 +105,7 @@ describe("edit plant page", () => {
 
   it("navigates after updating without a new photo", async () => {
     mockUpdatePlant.mockResolvedValue(plant());
-    render(Page);
+    renderPage();
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -138,7 +130,7 @@ describe("edit plant page", () => {
           resolveUpload = () => finishUpload(plant());
         }),
     );
-    render(Page);
+    renderPage();
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -161,7 +153,7 @@ describe("edit plant page", () => {
   it("keeps the user on the form when photo upload fails", async () => {
     mockUpdatePlant.mockResolvedValue(plant());
     mockUploadPhoto.mockResolvedValue(null);
-    render(Page);
+    renderPage();
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -179,5 +171,25 @@ describe("edit plant page", () => {
       );
     });
     expect(mockGoto).not.toHaveBeenCalled();
+  });
+
+  it("resets the form when route data switches to another plant", async () => {
+    const view = renderPage({ id: 1, name: "Fern" });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("draft-name").textContent).toBe("Fern");
+    });
+
+    view.rerender({
+      data: {
+        plant: plant({ id: 2, name: "Monstera" }),
+        notFound: false,
+        loadError: null,
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("draft-name").textContent).toBe("Monstera");
+    });
   });
 });

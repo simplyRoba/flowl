@@ -34,12 +34,9 @@ HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
   this.removeAttribute("open");
 });
 
-const mockLoadPlant = vi.fn();
 const mockDeletePlant = vi.fn();
 const mockWaterPlant = vi.fn();
-const mockLoadCareEvents = vi.fn();
 const mockAddCareEvent = vi.fn();
-const mockRemoveCareEvent = vi.fn();
 const mockPushNotification = vi.fn();
 const mockGoto = vi.fn();
 
@@ -59,12 +56,9 @@ vi.mock("$app/navigation", () => ({
 
 vi.mock("$lib/stores/plants", async () => {
   const { writable } = await import("svelte/store");
-  const currentPlant = writable<Plant | null>(null);
   const plantsError = writable<string | null>(null);
   return {
-    currentPlant,
     plantsError,
-    loadPlant: (...args: unknown[]) => mockLoadPlant(...args),
     deletePlant: (...args: unknown[]) => mockDeletePlant(...args),
     waterPlant: (...args: unknown[]) => mockWaterPlant(...args),
   };
@@ -72,14 +66,10 @@ vi.mock("$lib/stores/plants", async () => {
 
 vi.mock("$lib/stores/care", async () => {
   const { writable } = await import("svelte/store");
-  const careEvents = writable<CareEvent[]>([]);
   const careError = writable<string | null>(null);
   return {
-    careEvents,
     careError,
-    loadCareEvents: (...args: unknown[]) => mockLoadCareEvents(...args),
     addCareEvent: (...args: unknown[]) => mockAddCareEvent(...args),
-    removeCareEvent: (...args: unknown[]) => mockRemoveCareEvent(...args),
   };
 });
 
@@ -94,6 +84,9 @@ vi.mock("$lib/stores/notifications", () => ({
 import * as api from "$lib/api";
 const mockChatPlant = vi.spyOn(api, "chatPlant");
 const mockCreateCareEventApi = vi.spyOn(api, "createCareEvent");
+const mockDeleteCareEventApi = vi.spyOn(api, "deleteCareEvent");
+const mockFetchCareEventsApi = vi.spyOn(api, "fetchCareEvents");
+const mockFetchPlantApi = vi.spyOn(api, "fetchPlant");
 const mockSummarizeChat = vi.spyOn(api, "summarizeChat");
 const mockUploadCareEventPhoto = vi.spyOn(api, "uploadCareEventPhoto");
 
@@ -109,8 +102,8 @@ vi.mock("$lib/stores/ai", async () => {
 });
 
 import { aiStatus } from "$lib/stores/ai";
-import { currentPlant, plantsError } from "$lib/stores/plants";
-import { careError, careEvents } from "$lib/stores/care";
+import { plantsError } from "$lib/stores/plants";
+import { careError } from "$lib/stores/care";
 
 function makePlant(overrides: Partial<Plant> = {}) {
   return {
@@ -138,20 +131,44 @@ function makePlant(overrides: Partial<Plant> = {}) {
   };
 }
 
-async function renderWithPlant(plantOverrides: Partial<Plant> = {}) {
+function makeCareEvent(overrides: Partial<CareEvent> = {}): CareEvent {
+  return {
+    id: 10,
+    plant_id: 1,
+    plant_name: "Fern",
+    event_type: "watered",
+    notes: null,
+    photo_url: null,
+    occurred_at: "2025-01-01T10:00:00Z",
+    created_at: "2025-01-01T10:00:00Z",
+    ...overrides,
+  };
+}
+
+async function renderWithPlant(
+  plantOverrides: Partial<Plant> = {},
+  initialCareEvents: CareEvent[] = [],
+) {
   const plant = makePlant(plantOverrides);
-  mockLoadPlant.mockImplementationOnce(async () => {
-    currentPlant.set(plant);
-    return plant;
+  return render(Page, {
+    props: {
+      data: {
+        plant,
+        careEvents: initialCareEvents,
+        notFound: false,
+        loadError: null,
+      },
+    },
   });
-  return render(Page);
 }
 
 beforeEach(() => {
-  currentPlant.set(null);
   aiStatus.set(null);
   careError.set(null);
   vi.clearAllMocks();
+  mockDeleteCareEventApi.mockResolvedValue(undefined);
+  mockFetchCareEventsApi.mockResolvedValue([]);
+  mockFetchPlantApi.mockResolvedValue(makePlant());
 });
 
 afterEach(() => {
@@ -161,6 +178,28 @@ afterEach(() => {
 function getLightbox() {
   return document.querySelector("dialog.lightbox") as HTMLDialogElement;
 }
+
+describe("route data updates", () => {
+  it("switches to the new plant immediately when page data changes", async () => {
+    const view = await renderWithPlant({ id: 1, name: "Fern" });
+
+    await screen.findByText("Fern");
+
+    view.rerender({
+      data: {
+        plant: makePlant({ id: 2, name: "Monstera" }),
+        careEvents: [],
+        notFound: false,
+        loadError: null,
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Monstera")).toBeTruthy();
+      expect(screen.queryByText("Fern")).toBeNull();
+    });
+  });
+});
 
 describe("hero thumbnail", () => {
   it("uses 200px thumbnail for hero photo", async () => {
@@ -501,74 +540,40 @@ describe("Ask AI button", () => {
 
 describe("care event delete reloads plant", () => {
   it("calls loadPlant after deleting a care event", async () => {
-    mockRemoveCareEvent.mockResolvedValue(true);
-    mockLoadPlant.mockResolvedValue(makePlant());
+    mockDeleteCareEventApi.mockResolvedValue(undefined);
+    mockFetchPlantApi.mockResolvedValue(makePlant());
+    mockFetchCareEventsApi.mockResolvedValue([]);
 
-    await renderWithPlant();
+    await renderWithPlant({}, [makeCareEvent()]);
     await screen.findByText("Fern");
-
-    // Inject a care event into the store
-    careEvents.set([
-      {
-        id: 10,
-        plant_id: 1,
-        plant_name: "Fern",
-        event_type: "watered",
-        notes: null,
-        photo_url: null,
-        occurred_at: "2025-01-01T10:00:00Z",
-        created_at: "2025-01-01T10:00:00Z",
-      },
-    ]);
 
     await waitFor(() => {
       expect(screen.getByText("Watered")).toBeTruthy();
     });
 
-    // Clear mock call history from initial render
-    mockLoadPlant.mockClear();
-    mockLoadPlant.mockResolvedValue(makePlant());
-
-    // Click the delete button on the care event
     const deleteButton = screen.getByRole("button", {
       name: "Delete log entry",
     });
     const user = userEvent.setup();
     await user.click(deleteButton);
 
-    // Confirm the delete dialog
     await waitFor(() => {
       expect(screen.getByText(/Delete this care entry/)).toBeTruthy();
     });
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
     await waitFor(() => {
-      expect(mockRemoveCareEvent).toHaveBeenCalledWith(1, 10);
-      expect(mockLoadPlant).toHaveBeenCalledWith(1);
+      expect(mockDeleteCareEventApi).toHaveBeenCalledWith(1, 10);
+      expect(mockFetchPlantApi).toHaveBeenCalledWith(1);
+      expect(mockFetchCareEventsApi).toHaveBeenCalledWith(1);
     });
   });
 
   it("shows a toast when deleting a care event fails", async () => {
-    mockRemoveCareEvent.mockImplementation(async () => {
-      careError.set("Delete failed");
-      return false;
-    });
+    mockDeleteCareEventApi.mockRejectedValue(new Error("Delete failed"));
 
-    await renderWithPlant();
+    await renderWithPlant({}, [makeCareEvent()]);
     await screen.findByText("Fern");
-
-    careEvents.set([
-      {
-        id: 10,
-        plant_id: 1,
-        plant_name: "Fern",
-        event_type: "watered",
-        notes: null,
-        photo_url: null,
-        occurred_at: "2025-01-01T10:00:00Z",
-        created_at: "2025-01-01T10:00:00Z",
-      },
-    ]);
 
     await waitFor(() => {
       expect(
@@ -754,18 +759,15 @@ describe("chat drawer save note", () => {
 
 describe("care event photo in timeline", () => {
   it("renders a thumbnail when a care event has a photo_url", async () => {
-    await renderWithPlant();
-    careEvents.set([
-      {
+    await renderWithPlant({}, [
+      makeCareEvent({
         id: 20,
-        plant_id: 1,
-        plant_name: "Fern",
         event_type: "fertilized",
         notes: "Fed with liquid fertilizer",
         photo_url: "/uploads/care/20.jpg",
         occurred_at: "2025-02-01T10:00:00Z",
         created_at: "2025-02-01T10:00:00Z",
-      },
+      }),
     ]);
 
     await waitFor(() => {
@@ -778,18 +780,12 @@ describe("care event photo in timeline", () => {
   });
 
   it("does not render a thumbnail when care event has no photo_url", async () => {
-    await renderWithPlant();
-    careEvents.set([
-      {
+    await renderWithPlant({}, [
+      makeCareEvent({
         id: 21,
-        plant_id: 1,
-        plant_name: "Fern",
-        event_type: "watered",
-        notes: null,
-        photo_url: null,
         occurred_at: "2025-02-01T10:00:00Z",
         created_at: "2025-02-01T10:00:00Z",
-      },
+      }),
     ]);
 
     await waitFor(() => {
@@ -799,18 +795,14 @@ describe("care event photo in timeline", () => {
   });
 
   it("opens lightbox when clicking a care event thumbnail", async () => {
-    await renderWithPlant();
-    careEvents.set([
-      {
+    await renderWithPlant({}, [
+      makeCareEvent({
         id: 22,
-        plant_id: 1,
-        plant_name: "Fern",
         event_type: "repotted",
-        notes: null,
         photo_url: "/uploads/care/22.jpg",
         occurred_at: "2025-02-01T10:00:00Z",
         created_at: "2025-02-01T10:00:00Z",
-      },
+      }),
     ]);
 
     await waitFor(() => {
@@ -841,18 +833,13 @@ describe("care event photo in timeline", () => {
   });
 
   it("falls back to original photo_url on timeline thumbnail error", async () => {
-    await renderWithPlant();
-    careEvents.set([
-      {
+    await renderWithPlant({}, [
+      makeCareEvent({
         id: 23,
-        plant_id: 1,
-        plant_name: "Fern",
-        event_type: "watered",
-        notes: null,
         photo_url: "/uploads/care/23.png",
         occurred_at: "2025-02-01T10:00:00Z",
         created_at: "2025-02-01T10:00:00Z",
-      },
+      }),
     ]);
 
     await waitFor(() => {
@@ -1031,19 +1018,18 @@ describe("log form photo upload", () => {
       created_at: "2025-02-01T10:00:00Z",
     };
     mockAddCareEvent.mockResolvedValue(createdEvent);
+    mockFetchPlantApi.mockResolvedValue(
+      makePlant({
+        last_watered: "2025-01-15T09:30:00Z",
+        next_due: "2025-01-22T09:30:00Z",
+        watering_status: "ok",
+      }),
+    );
+    mockFetchCareEventsApi.mockResolvedValue([createdEvent]);
     await renderWithPlant({
       last_watered: "2025-01-01",
       next_due: "2025-01-08",
       watering_status: "overdue",
-    });
-    mockLoadPlant.mockImplementationOnce(async () => {
-      const updatedPlant = makePlant({
-        last_watered: "2025-01-15T09:30:00Z",
-        next_due: "2025-01-22T09:30:00Z",
-        watering_status: "ok",
-      });
-      currentPlant.set(updatedPlant);
-      return updatedPlant;
     });
 
     await screen.findByText("Fern");
@@ -1083,8 +1069,8 @@ describe("log form photo upload", () => {
           occurred_at: new Date(occurredAt).toISOString(),
         }),
       );
-      expect(mockLoadCareEvents).toHaveBeenCalledTimes(2);
-      expect(mockLoadPlant).toHaveBeenCalledTimes(2);
+      expect(mockFetchCareEventsApi).toHaveBeenCalledWith(1);
+      expect(mockFetchPlantApi).toHaveBeenCalledWith(1);
     });
   });
 

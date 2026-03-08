@@ -1,14 +1,9 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { get } from "svelte/store";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { page } from "$app/stores";
   import type { CreatePlant } from "$lib/api";
   import {
-    currentPlant,
     plantsError,
-    loadPlant,
     updatePlant,
     uploadPhoto,
     deletePhoto,
@@ -18,24 +13,34 @@
   import PlantForm from "$lib/components/PlantForm.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
 
-  let saving = $state(false);
-  let loaded = $state(false);
-  let loadError = $state<string | null>(null);
+  interface Props {
+    data: {
+      plant: import("$lib/api").Plant | null;
+      notFound: boolean;
+      loadError: string | null;
+    };
+  }
 
-  onMount(async () => {
-    const id = Number($page.params.id);
-    const plant = await loadPlant(id);
-    if (!plant) {
-      loadError = get(plantsError) ?? get(translations).error.loadPlant;
-    }
-    loaded = true;
+  const props = $props();
+  let data = $derived((props as Props).data);
+
+  let plant = $state<import("$lib/api").Plant | null>(null);
+  let loadError = $state<string | null>(null);
+  let notFound = $state(false);
+  let saving = $state(false);
+
+  $effect(() => {
+    plant = data.plant;
+    loadError = data.loadError;
+    notFound = data.notFound;
+    saving = false;
   });
 
   async function handleSave(data: CreatePlant, photo?: File) {
-    if (!$currentPlant) return;
+    if (!plant) return;
     saving = true;
-    const plant = await updatePlant($currentPlant.id, data);
-    if (!plant) {
+    const updatedPlant = await updatePlant(plant.id, data);
+    if (!updatedPlant) {
       pushNotification({
         title: $translations.plant.editPlant,
         variant: "error",
@@ -46,8 +51,10 @@
       return;
     }
 
+    plant = updatedPlant;
+
     if (photo) {
-      const uploaded = await uploadPhoto(plant.id, photo);
+      const uploaded = await uploadPhoto(updatedPlant.id, photo);
       if (!uploaded) {
         pushNotification({
           title: $translations.form.media,
@@ -58,21 +65,26 @@
         saving = false;
         return;
       }
+
+      plant = uploaded;
     }
 
-    goto(resolve(`/plants/${plant.id}`));
+    goto(resolve(`/plants/${updatedPlant.id}`));
     saving = false;
   }
 
   async function handleRemovePhoto() {
-    if (!$currentPlant) return;
-    await deletePhoto($currentPlant.id);
+    if (!plant) return;
+    const removed = await deletePhoto(plant.id);
+    if (removed) {
+      plant = { ...plant, photo_url: null };
+    }
   }
 </script>
 
 <div class="page">
   <PageHeader
-    backHref={$currentPlant ? `/plants/${$currentPlant.id}` : "/"}
+    backHref={plant ? `/plants/${plant.id}` : "/"}
     backLabel={$translations.common.cancel}
   >
     <button
@@ -87,16 +99,20 @@
 
   <h1>{$translations.plant.editPlant}</h1>
 
-  {#if loadError}
+  {#if notFound}
+    <p class="error">{$translations.plant.notFound}</p>
+  {:else if loadError}
     <p class="error">{loadError}</p>
-  {:else if loaded && $currentPlant}
-    <PlantForm
-      initial={$currentPlant}
-      onsave={handleSave}
-      onremovephoto={handleRemovePhoto}
-      {saving}
-      showFooterActions={false}
-    />
+  {:else if plant}
+    {#key plant.id}
+      <PlantForm
+        initial={plant}
+        onsave={handleSave}
+        onremovephoto={handleRemovePhoto}
+        {saving}
+        showFooterActions={false}
+      />
+    {/key}
   {:else}
     <p class="loading">{$translations.common.loading}</p>
   {/if}

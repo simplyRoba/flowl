@@ -28,21 +28,17 @@
     CalendarClock,
     Sparkles,
   } from "lucide-svelte";
-  import {
-    currentPlant,
-    plantsError,
-    loadPlant,
-    deletePlant,
-    waterPlant,
-  } from "$lib/stores/plants";
-  import {
-    careEvents,
-    careError,
-    loadCareEvents,
-    removeCareEvent,
-  } from "$lib/stores/care";
+  import { plantsError, deletePlant, waterPlant } from "$lib/stores/plants";
+  import { careError } from "$lib/stores/care";
   import { translations } from "$lib/stores/locale";
   import { pushNotification } from "$lib/stores/notifications";
+  import {
+    deleteCareEvent,
+    fetchCareEvents,
+    fetchPlant,
+    type CareEvent,
+    type Plant,
+  } from "$lib/api";
   import { emojiToSvgPath } from "$lib/emoji";
   import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
   import StatusBadge from "$lib/components/StatusBadge.svelte";
@@ -51,11 +47,25 @@
   import ModalDialog from "$lib/components/ModalDialog.svelte";
   import ChatDrawer from "$lib/components/ChatDrawer.svelte";
   import CareEntryForm from "$lib/components/CareEntryForm.svelte";
-  import type { CareEvent } from "$lib/api";
   import { aiStatus, loadAiStatus } from "$lib/stores/ai";
+
+  interface Props {
+    data: {
+      plant: Plant | null;
+      careEvents: CareEvent[];
+      notFound: boolean;
+      loadError: string | null;
+    };
+  }
+
+  const props = $props();
+  let data = $derived((props as Props).data);
 
   type BackPath = "/" | "/care-journal" | "/plants" | "/settings";
 
+  let plant = $state<Plant | null>(null);
+  let plantLoadError = $state<string | null>(null);
+  let careEvents = $state<CareEvent[]>([]);
   let notFound = $state(false);
   let deleting = $state(false);
   let watering = $state(false);
@@ -78,15 +88,23 @@
 
   const EVENT_LIMIT = 20;
 
-  onMount(async () => {
-    const id = Number($page.params.id);
-    const plant = await loadPlant(id);
-    if (!plant) {
-      notFound = true;
-    } else {
-      await loadCareEvents(id);
-    }
+  onMount(() => {
     loadAiStatus();
+  });
+
+  $effect(() => {
+    plant = data.plant;
+    plantLoadError = data.loadError;
+    careEvents = data.careEvents;
+    notFound = data.notFound;
+    showLogForm = false;
+    showAllEvents = false;
+    deletingEventId = null;
+    deleteEventDialogTarget = null;
+    deleteDialogOpen = false;
+    lightboxOpen = false;
+    lightboxSrc = "";
+    chatOpen = false;
   });
 
   $effect(() => {
@@ -94,23 +112,35 @@
     backHref = from && BACK_PATHS.has(from) ? from : "/";
   });
 
+  async function refreshPlantDetails(plantId: number) {
+    const [nextPlant, nextCareEvents] = await Promise.all([
+      fetchPlant(plantId),
+      fetchCareEvents(plantId),
+    ]);
+
+    plant = nextPlant;
+    careEvents = nextCareEvents;
+    plantLoadError = null;
+  }
+
   function handleDelete() {
     deleteDialogOpen = true;
   }
 
   async function handleDeleteConfirm() {
     deleteDialogOpen = false;
-    if (!$currentPlant) return;
+    if (!plant) return;
     deleting = true;
     try {
-      const success = await deletePlant($currentPlant.id);
+      const plantName = plant.name;
+      const success = await deletePlant(plant.id);
       if (success) {
         pushNotification({
           title: $translations.plant.deletePlant,
           variant: "success",
           message: $translations.notifications.plantDeleted.replace(
             "{name}",
-            $currentPlant.name,
+            plantName,
           ),
         });
         goto(resolve("/"));
@@ -133,11 +163,11 @@
   }
 
   async function handleWater() {
-    if (!$currentPlant || watering) return;
+    if (!plant || watering) return;
     watering = true;
     try {
-      const plant = await waterPlant($currentPlant.id);
-      if (!plant) {
+      const wateredPlant = await waterPlant(plant.id);
+      if (!wateredPlant) {
         pushNotification({
           title: $translations.plant.wateringSection,
           variant: "error",
@@ -146,7 +176,8 @@
         plantsError.set(null);
         return;
       }
-      await loadCareEvents($currentPlant.id);
+      plant = wateredPlant;
+      careEvents = await fetchCareEvents(wateredPlant.id);
     } finally {
       watering = false;
     }
@@ -189,32 +220,34 @@
   async function handleEventDeleteConfirm() {
     const event = deleteEventDialogTarget;
     deleteEventDialogTarget = null;
-    if (!$currentPlant || !event || deletingEventId === event.id) return;
+    if (!plant || !event || deletingEventId === event.id) return;
     deletingEventId = event.id;
-    const removed = await removeCareEvent($currentPlant.id, event.id);
-    if (!removed) {
+    try {
+      await deleteCareEvent(plant.id, event.id);
+      await refreshPlantDetails(plant.id);
+    } catch (error) {
+      careError.set(
+        error instanceof Error
+          ? error.message
+          : $translations.error.deleteCareEvent,
+      );
       pushNotification({
         title: $translations.plant.careJournalSection,
         variant: "error",
         message: $careError || $translations.error.deleteCareEvent,
       });
       careError.set(null);
-      deletingEventId = null;
-      return;
     }
-    await loadPlant($currentPlant.id);
     deletingEventId = null;
   }
 
   let displayEvents = $derived(
-    showAllEvents ? $careEvents : $careEvents.slice(0, EVENT_LIMIT),
+    showAllEvents ? careEvents : careEvents.slice(0, EVENT_LIMIT),
   );
 
-  let hasMoreEvents = $derived($careEvents.length > EVENT_LIMIT);
+  let hasMoreEvents = $derived(careEvents.length > EVENT_LIMIT);
 
-  let LightNeedsIcon = $derived(
-    $currentPlant ? lightIcon($currentPlant.light_needs) : Sun,
-  );
+  let LightNeedsIcon = $derived(plant ? lightIcon(plant.light_needs) : Sun);
 
   function difficultyLabel(val: string): string {
     if (val === "easy") return $translations.plant.difficultyEasy;
@@ -248,7 +281,7 @@
   }
 
   function openLightbox(src?: string) {
-    const url = src || $currentPlant?.photo_url;
+    const url = src || plant?.photo_url;
     if (!url) return;
     lightboxSrc = url;
     lightboxOpen = true;
@@ -267,17 +300,14 @@
       ><ArrowLeft size={16} /> {$translations.plant.backToPlants}</a
     >
   </div>
-{:else if $currentPlant}
+{:else if plant}
   <div class="detail">
     <div class="detail-content">
       <PageHeader
         backHref={backHref as BackPath}
         backLabel={$translations.common.back}
       >
-        <a
-          href={resolve(`/plants/${$currentPlant.id}/edit`)}
-          class="btn btn-icon"
-        >
+        <a href={resolve(`/plants/${plant.id}/edit`)} class="btn btn-icon">
           <Pencil size={16} />
         </a>
         <button
@@ -291,7 +321,7 @@
 
       <div class="detail-hero">
         <div class="detail-photo">
-          {#if $currentPlant.photo_url}
+          {#if plant.photo_url}
             <button
               type="button"
               class="detail-photo-button"
@@ -299,43 +329,43 @@
               onclick={() => openLightbox()}
             >
               <img
-                src={thumbUrl($currentPlant.photo_url, 200)}
-                srcset={thumbSrcset($currentPlant.photo_url)}
+                src={thumbUrl(plant.photo_url, 200)}
+                srcset={thumbSrcset(plant.photo_url)}
                 sizes="(max-width: 768px) 100vw, (min-width: 1280px) 300px, 260px"
-                alt={$currentPlant.name}
+                alt={plant.name}
                 class="detail-photo-img"
                 onerror={(e) => {
                   const img = e.currentTarget as HTMLImageElement;
                   img.onerror = null;
-                  img.src = $currentPlant!.photo_url!;
+                  img.src = plant!.photo_url!;
                 }}
               />
             </button>
           {:else}
             <img
-              src={emojiToSvgPath($currentPlant.icon)}
-              alt={$currentPlant.name}
+              src={emojiToSvgPath(plant.icon)}
+              alt={plant.name}
               class="detail-photo-icon"
             />
           {/if}
         </div>
         <div class="detail-info">
           <div class="detail-name">
-            <h2>{$currentPlant.name}</h2>
-            {#if $currentPlant.species}
-              <span class="detail-species">{$currentPlant.species}</span>
+            <h2>{plant.name}</h2>
+            {#if plant.species}
+              <span class="detail-species">{plant.species}</span>
             {/if}
           </div>
-          {#if $currentPlant.location_name}
+          {#if plant.location_name}
             <p class="detail-location">
               <MapPin size={14} />
-              {$currentPlant.location_name}
+              {plant.location_name}
             </p>
           {/if}
           <div class="detail-status">
             <StatusBadge
-              status={$currentPlant.watering_status}
-              nextDue={$currentPlant.next_due ?? null}
+              status={plant.watering_status}
+              nextDue={plant.next_due ?? null}
             />
           </div>
           <div class="hero-actions">
@@ -375,7 +405,7 @@
               ><span class="detail-row-value"
                 >{$translations.plant.everyNDays.replace(
                   "{n}",
-                  String($currentPlant.watering_interval_days),
+                  String(plant.watering_interval_days),
                 )}
                 <Repeat size={14} /></span
               >
@@ -384,26 +414,26 @@
               <span class="detail-row-label"
                 >{$translations.plant.lastWatered}</span
               ><span class="detail-row-value"
-                >{formatDate($currentPlant.last_watered)}
+                >{formatDate(plant.last_watered)}
                 <CalendarCheck size={14} /></span
               >
             </div>
             <div class="detail-row">
               <span class="detail-row-label">{$translations.plant.nextDue}</span
               ><span class="detail-row-value"
-                >{$currentPlant.next_due
-                  ? formatDate($currentPlant.next_due)
+                >{plant.next_due
+                  ? formatDate(plant.next_due)
                   : $translations.plant.na}
                 <CalendarClock size={14} /></span
               >
             </div>
-            {#if $currentPlant.soil_moisture}
+            {#if plant.soil_moisture}
               <div class="detail-row">
                 <span class="detail-row-label"
                   >{$translations.plant.soilMoisture}</span
                 >
                 <span class="detail-row-value"
-                  >{soilMoistureLabel($currentPlant.soil_moisture)}
+                  >{soilMoistureLabel(plant.soil_moisture)}
                   <Droplets size={14} /></span
                 >
               </div>
@@ -417,48 +447,48 @@
             <div class="detail-row">
               <span class="detail-row-label">{$translations.plant.light}</span>
               <span class="detail-row-value">
-                {lightLabel($currentPlant.light_needs)}
+                {lightLabel(plant.light_needs)}
                 <LightNeedsIcon size={14} />
               </span>
             </div>
-            {#if $currentPlant.difficulty}
+            {#if plant.difficulty}
               <div class="detail-row">
                 <span class="detail-row-label"
                   >{$translations.plant.difficulty}</span
                 >
                 <span class="detail-row-value"
-                  >{difficultyLabel($currentPlant.difficulty)}
+                  >{difficultyLabel(plant.difficulty)}
                   <Gauge size={14} /></span
                 >
               </div>
             {/if}
-            {#if $currentPlant.pet_safety}
+            {#if plant.pet_safety}
               <div class="detail-row">
                 <span class="detail-row-label"
                   >{$translations.plant.petSafety}</span
                 >
                 <span class="detail-row-value"
-                  >{petSafetyLabel($currentPlant.pet_safety)}
+                  >{petSafetyLabel(plant.pet_safety)}
                   <PawPrint size={14} /></span
                 >
               </div>
             {/if}
-            {#if $currentPlant.growth_speed}
+            {#if plant.growth_speed}
               <div class="detail-row">
                 <span class="detail-row-label"
                   >{$translations.plant.growth}</span
                 >
                 <span class="detail-row-value"
-                  >{growthSpeedLabel($currentPlant.growth_speed)}
+                  >{growthSpeedLabel(plant.growth_speed)}
                   <TrendingUp size={14} /></span
                 >
               </div>
             {/if}
-            {#if $currentPlant.soil_type}
+            {#if plant.soil_type}
               <div class="detail-row">
                 <span class="detail-row-label">{$translations.plant.soil}</span>
                 <span class="detail-row-value"
-                  >{soilTypeLabel($currentPlant.soil_type)}
+                  >{soilTypeLabel(plant.soil_type)}
                   <Layers size={14} /></span
                 >
               </div>
@@ -466,13 +496,13 @@
           </div>
         </div>
 
-        {#if $currentPlant.notes}
+        {#if plant.notes}
           <div class="section">
             <div class="section-title">
               <PencilIcon size={14} />
               {$translations.plant.notesSection}
             </div>
-            <div class="detail-notes">{$currentPlant.notes}</div>
+            <div class="detail-notes">{plant.notes}</div>
           </div>
         {/if}
 
@@ -482,7 +512,7 @@
             {$translations.plant.careJournalSection}
           </div>
 
-          {#if $careEvents.length === 0}
+          {#if careEvents.length === 0}
             <p class="journal-empty">{$translations.plant.noCareEvents}</p>
           {:else}
             <ul class="timeline">
@@ -558,13 +588,10 @@
 
           {#if showLogForm}
             <CareEntryForm
-              plantId={$currentPlant.id}
+              plantId={plant.id}
               onsubmit={async () => {
-                const plantId = $currentPlant.id;
-                await Promise.all([
-                  loadCareEvents(plantId),
-                  loadPlant(plantId),
-                ]);
+                const plantId = plant!.id;
+                await refreshPlantDetails(plantId);
                 showLogForm = false;
               }}
               oncancel={() => {
@@ -582,22 +609,22 @@
       <PhotoLightbox
         open={lightboxOpen}
         src={lightboxSrc}
-        alt={$currentPlant.name}
+        alt={plant.name}
         onclose={closeLightbox}
       />
     </div>
 
     <ChatDrawer
-      plant={$currentPlant}
+      {plant}
       open={chatOpen}
       onclose={() => {
         chatOpen = false;
       }}
-      onsave={() => loadCareEvents($currentPlant.id)}
+      onsave={() => refreshPlantDetails(plant!.id)}
     />
   </div>
-{:else if $plantsError}
-  <p class="error">{$plantsError}</p>
+{:else if plantLoadError || $plantsError}
+  <p class="error">{plantLoadError || $plantsError}</p>
 {:else}
   <p class="loading">{$translations.common.loading}</p>
 {/if}
@@ -605,8 +632,8 @@
 <ModalDialog
   open={deleteDialogOpen}
   title={$translations.plant.deletePlant}
-  message={$currentPlant
-    ? $translations.plant.deleteConfirm.replace("{name}", $currentPlant.name)
+  message={plant
+    ? $translations.plant.deleteConfirm.replace("{name}", plant.name)
     : ""}
   mode="confirm"
   variant="danger"
