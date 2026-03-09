@@ -90,6 +90,74 @@ mod tests {
             None
         );
     }
+
+    #[test]
+    fn discovery_payload_structure() {
+        let (topic, payload) = discovery_topic_and_payload("flowl", 42, "Monstera");
+        assert_eq!(topic, "homeassistant/sensor/flowl_plant_42/config");
+
+        let json: serde_json::Value = serde_json::from_str(&payload).unwrap();
+        assert_eq!(json["name"], "Monstera");
+        assert_eq!(json["unique_id"], "flowl_plant_42");
+        assert_eq!(json["state_topic"], "flowl/plant/42/state");
+        assert_eq!(json["json_attributes_topic"], "flowl/plant/42/attributes");
+        assert_eq!(json["icon"], "mdi:flower");
+        assert_eq!(json["device"]["identifiers"][0], "flowl");
+        assert_eq!(json["device"]["manufacturer"], "flowl");
+    }
+
+    #[test]
+    fn discovery_payload_custom_prefix() {
+        let (topic, payload) = discovery_topic_and_payload("myplants", 1, "Cactus");
+        assert_eq!(topic, "homeassistant/sensor/myplants_plant_1/config");
+
+        let json: serde_json::Value = serde_json::from_str(&payload).unwrap();
+        assert_eq!(json["unique_id"], "myplants_plant_1");
+        assert_eq!(json["state_topic"], "myplants/plant/1/state");
+        assert_eq!(json["device"]["identifiers"][0], "myplants");
+        assert_eq!(json["device"]["name"], "myplants");
+    }
+
+    #[test]
+    fn state_topic_format() {
+        assert_eq!(state_topic("flowl", 1), "flowl/plant/1/state");
+        assert_eq!(state_topic("myplants", 99), "myplants/plant/99/state");
+    }
+
+    #[test]
+    fn attributes_payload_with_all_fields() {
+        let (topic, payload) = attributes_topic_and_payload(
+            "flowl",
+            7,
+            Some("2026-03-01T10:00:00Z"),
+            Some("2026-03-08T10:00:00Z"),
+            7,
+        );
+        assert_eq!(topic, "flowl/plant/7/attributes");
+
+        let json: serde_json::Value = serde_json::from_str(&payload).unwrap();
+        assert_eq!(json["last_watered"], "2026-03-01T10:00:00Z");
+        assert_eq!(json["next_due"], "2026-03-08T10:00:00Z");
+        assert_eq!(json["watering_interval_days"], 7);
+    }
+
+    #[test]
+    fn attributes_payload_with_null_fields() {
+        let (_, payload) = attributes_topic_and_payload("flowl", 1, None, None, 14);
+
+        let json: serde_json::Value = serde_json::from_str(&payload).unwrap();
+        assert!(json["last_watered"].is_null());
+        assert!(json["next_due"].is_null());
+        assert_eq!(json["watering_interval_days"], 14);
+    }
+
+    #[test]
+    fn removal_topics_format() {
+        let topics = removal_topics("flowl", 5);
+        assert_eq!(topics[0], "homeassistant/sensor/flowl_plant_5/config");
+        assert_eq!(topics[1], "flowl/plant/5/state");
+        assert_eq!(topics[2], "flowl/plant/5/attributes");
+    }
 }
 
 impl MqttHandle {
@@ -142,15 +210,11 @@ pub fn connect(
     Some(MqttHandle { client, task })
 }
 
-/// Publish HA auto-discovery config for a plant sensor entity.
-pub async fn publish_discovery(
-    client: Option<&AsyncClient>,
+fn discovery_topic_and_payload(
     prefix: &str,
     plant_id: i64,
     plant_name: &str,
-) {
-    let Some(client) = client else { return };
-
+) -> (String, String) {
     let topic = format!("homeassistant/sensor/{prefix}_plant_{plant_id}/config");
     let payload = json!({
         "name": plant_name,
@@ -164,9 +228,49 @@ pub async fn publish_discovery(
             "manufacturer": "flowl"
         }
     });
+    (topic, payload.to_string())
+}
+
+fn state_topic(prefix: &str, plant_id: i64) -> String {
+    format!("{prefix}/plant/{plant_id}/state")
+}
+
+fn attributes_topic_and_payload(
+    prefix: &str,
+    plant_id: i64,
+    last_watered: Option<&str>,
+    next_due: Option<&str>,
+    interval_days: i64,
+) -> (String, String) {
+    let topic = format!("{prefix}/plant/{plant_id}/attributes");
+    let payload = json!({
+        "last_watered": last_watered,
+        "next_due": next_due,
+        "watering_interval_days": interval_days,
+    });
+    (topic, payload.to_string())
+}
+
+fn removal_topics(prefix: &str, plant_id: i64) -> [String; 3] {
+    [
+        format!("homeassistant/sensor/{prefix}_plant_{plant_id}/config"),
+        format!("{prefix}/plant/{plant_id}/state"),
+        format!("{prefix}/plant/{plant_id}/attributes"),
+    ]
+}
+
+/// Publish HA auto-discovery config for a plant sensor entity.
+pub async fn publish_discovery(
+    client: Option<&AsyncClient>,
+    prefix: &str,
+    plant_id: i64,
+    plant_name: &str,
+) {
+    let Some(client) = client else { return };
+    let (topic, payload) = discovery_topic_and_payload(prefix, plant_id, plant_name);
 
     match client
-        .publish(&topic, QoS::AtLeastOnce, true, payload.to_string())
+        .publish(&topic, QoS::AtLeastOnce, true, payload)
         .await
     {
         Ok(()) => debug!(plant_id, "MQTT published discovery"),
@@ -182,8 +286,7 @@ pub async fn publish_state(
     status: &str,
 ) {
     let Some(client) = client else { return };
-
-    let topic = format!("{prefix}/plant/{plant_id}/state");
+    let topic = state_topic(prefix, plant_id);
 
     match client.publish(&topic, QoS::AtLeastOnce, true, status).await {
         Ok(()) => debug!(plant_id, status, "MQTT published state"),
@@ -201,16 +304,11 @@ pub async fn publish_attributes(
     interval_days: i64,
 ) {
     let Some(client) = client else { return };
-
-    let topic = format!("{prefix}/plant/{plant_id}/attributes");
-    let payload = json!({
-        "last_watered": last_watered,
-        "next_due": next_due,
-        "watering_interval_days": interval_days,
-    });
+    let (topic, payload) =
+        attributes_topic_and_payload(prefix, plant_id, last_watered, next_due, interval_days);
 
     match client
-        .publish(&topic, QoS::AtLeastOnce, true, payload.to_string())
+        .publish(&topic, QoS::AtLeastOnce, true, payload)
         .await
     {
         Ok(()) => debug!(plant_id, "MQTT published attributes"),
@@ -222,13 +320,7 @@ pub async fn publish_attributes(
 pub async fn remove_plant(client: Option<&AsyncClient>, prefix: &str, plant_id: i64) {
     let Some(client) = client else { return };
 
-    let topics = [
-        format!("homeassistant/sensor/{prefix}_plant_{plant_id}/config"),
-        format!("{prefix}/plant/{plant_id}/state"),
-        format!("{prefix}/plant/{plant_id}/attributes"),
-    ];
-
-    for topic in &topics {
+    for topic in &removal_topics(prefix, plant_id) {
         if let Err(e) = client
             .publish(topic, QoS::AtLeastOnce, true, Vec::<u8>::new())
             .await

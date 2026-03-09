@@ -486,7 +486,7 @@ All six components now have test files.
 
 Three route-level pages have zero test coverage. All three now have test files.
 
-### 56. Backend: MQTT publish logic is completely untested
+### ~~56. Backend: MQTT publish logic is completely untested~~ DONE
 
 The MQTT state checker and publish functions (`publish_discovery`, `publish_state`, `publish_attributes`) are never exercised in tests. All MQTT tests only check the `/api/mqtt/status` endpoint with a disabled/disconnected client.
 
@@ -498,7 +498,7 @@ The MQTT state checker and publish functions (`publish_discovery`, `publish_stat
 
 Real-time dependency makes this test slow and fragile. Use a deterministic approach (e.g., set timestamps explicitly).
 
-### 58. Plant detail page is 744 lines
+### ~~58. Plant detail page is 744 lines~~ WONTFIX
 
 While functional, the plant detail page handles the hero section, watering info grid, care info grid, notes, care timeline, inline care form, photo lightbox, chat drawer, and two modal dialogs. Consider extracting sections into sub-components.
 
