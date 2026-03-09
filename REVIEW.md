@@ -459,7 +459,7 @@ Error and success feedback is handled ad-hoc per page (inline text, error stores
 
 An `AbortController` doesn't need reactive tracking. Use a plain `let`.
 
-### 52. Naming inconsistency: delete vs remove
+### ~~52. Naming inconsistency: delete vs remove~~ DONE
 
 Store functions mix `deletePhoto` and `removeCareEvent`. Pick one convention.
 

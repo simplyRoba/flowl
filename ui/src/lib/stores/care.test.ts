@@ -6,7 +6,7 @@ import {
   careError,
   loadCareEvents,
   addCareEvent,
-  removeCareEvent,
+  deleteCareEvent,
 } from "./care";
 
 vi.mock("$lib/api", () => ({
@@ -112,11 +112,11 @@ describe("addCareEvent", () => {
   });
 });
 
-describe("removeCareEvent", () => {
+describe("deleteCareEvent", () => {
   it("removes event from list", async () => {
     careEvents.set([mockEvent, mockEvent2]);
     vi.mocked(api.deleteCareEvent).mockResolvedValue(undefined);
-    const result = await removeCareEvent(10, 1);
+    const result = await deleteCareEvent(10, 1);
     expect(result).toBe(true);
     expect(get(careEvents)).toEqual([mockEvent2]);
   });
@@ -125,7 +125,7 @@ describe("removeCareEvent", () => {
     vi.mocked(api.deleteCareEvent).mockRejectedValue(
       new Error("Delete failed"),
     );
-    const result = await removeCareEvent(10, 1);
+    const result = await deleteCareEvent(10, 1);
     expect(result).toBe(false);
     expect(get(careError)).toBe("Delete failed");
   });

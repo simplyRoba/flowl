@@ -44,7 +44,7 @@ export async function addCareEvent(
   }
 }
 
-export async function removeCareEvent(
+export async function deleteCareEvent(
   plantId: number,
   eventId: number,
 ): Promise<boolean> {
