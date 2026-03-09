@@ -130,7 +130,7 @@ async fn update_plant() {
     let id = plant["id"].as_i64().unwrap();
     let original_updated_at = plant["updated_at"].as_str().unwrap().to_string();
 
-    // Small delay to ensure timestamp changes
+    // Small delay to ensure timestamp changes (seconds-precision timestamps)
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
     let resp = app

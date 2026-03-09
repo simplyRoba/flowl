@@ -490,7 +490,9 @@ Three route-level pages have zero test coverage. All three now have test files.
 
 The MQTT state checker and publish functions (`publish_discovery`, `publish_state`, `publish_attributes`) are never exercised in tests. All MQTT tests only check the `/api/mqtt/status` endpoint with a disabled/disconnected client.
 
-### 57. `update_plant` test uses `sleep(1s)`
+### ~~57. `update_plant` test uses `sleep(1s)`~~ SKIPPED
+
+**SKIPPED:** The sleep is the minimum needed with seconds-precision timestamps. Removing it weakens the assertion. Would require switching to millisecond-precision timestamps to eliminate the sleep, which is a larger change.
 
 **File:** `tests/plants.rs:134`
 
