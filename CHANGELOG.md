@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.24.5](https://github.com/simplyRoba/flowl/compare/v0.24.4...v0.24.5) (2026-03-09)
+
+
+### Bug Fixes
+
+* add tests for MQTT publish payload and topic construction ([339dc50](https://github.com/simplyRoba/flowl/commit/339dc50e6457fd3acdad95da471009e22a457b55))
+* **api:** add light_needs validation and track review progress ([6b44efa](https://github.com/simplyRoba/flowl/commit/6b44efa78ae883bae69fe3264d24b263d83e4140))
+* **deps:** bump axum-extra from 0.10.3 to 0.12.5 ([911897e](https://github.com/simplyRoba/flowl/commit/911897ee1469329531ce1d77fcf0dc0768f0681e))
+* **deps:** bump eslint and @eslint/js from 9 to 10 in /ui ([782a81d](https://github.com/simplyRoba/flowl/commit/782a81d40d5129767f064618d55f75871cd03f1d))
+* **deps:** bump globals from 16.5.0 to 17.4.0 in /ui ([25cd96e](https://github.com/simplyRoba/flowl/commit/25cd96e37641f977684cf34a43da79d4afcfe730))
+* **deps:** bump svelte-check from 4.4.4 to 4.4.5 in /ui ([35ea362](https://github.com/simplyRoba/flowl/commit/35ea362ad7fbcc407fe9437888917c70d2781680))
+* **ui:** keep stale plant data visible on transient load error ([06d6154](https://github.com/simplyRoba/flowl/commit/06d61541812dc98a8067e8ab2b772102d68090d0))
+* **ui:** minor code quality cleanups from review ([7fac6e5](https://github.com/simplyRoba/flowl/commit/7fac6e54b4db11fe97a077494b77f10d9e51d396))
+* **ui:** rename removeCareEvent to deleteCareEvent for consistency ([2e80035](https://github.com/simplyRoba/flowl/commit/2e800352a2792c0b865ae7a9041179ea6c60ebba))
+
 ## [0.24.4](https://github.com/simplyRoba/flowl/compare/v0.24.3...v0.24.4) (2026-03-08)
 
 
