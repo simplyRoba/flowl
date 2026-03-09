@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { Sparkles, X, Send, BookOpen, Camera } from "lucide-svelte";
   import { translations } from "$lib/stores/locale";
   import {
@@ -29,7 +29,7 @@
   );
   let inputText = $state("");
   let streaming = $state(false);
-  let abortController: AbortController | null = $state(null);
+  let abortController: AbortController | null = null;
   let messagesEl: HTMLDivElement | undefined = $state();
   let inputEl: HTMLInputElement | undefined = $state();
   let dialogEl: HTMLDialogElement | undefined = $state();
@@ -355,7 +355,7 @@
   // Focus input when opened
   $effect(() => {
     if (open && inputEl) {
-      setTimeout(() => inputEl?.focus(), 300);
+      tick().then(() => inputEl?.focus());
     }
   });
 

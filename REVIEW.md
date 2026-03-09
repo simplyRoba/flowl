@@ -346,7 +346,7 @@ At the default `info` log level, no access log is emitted. Access logs should be
 
 Fixed 5-second reconnect interval. Against an unreachable broker, this hammers it indefinitely.
 
-### 35. Per-plant care events endpoint has no pagination
+### 35. Per-plant care events endpoint has no pagination DEFERRED
 
 **File:** `src/api/care_events.rs:120-133`
 
@@ -433,7 +433,7 @@ Loading states are plain text ("Loading...") with no skeleton UI. Skeleton scree
 
 When a filter returns zero results, the empty state says "No care events" with no mention of the active filter. Users might think their data is missing.
 
-### 48. `IntersectionObserver` dependency trick
+### ~~48. `IntersectionObserver` dependency trick~~ DONE
 
 **File:** `ui/src/routes/care-journal/+page.svelte:119`
 
@@ -443,7 +443,7 @@ void events.length; // force dependency
 
 The `void` expression forces Svelte to track `events.length` as a dependency. While functional, it's a code smell. Restructure to make the dependency explicit.
 
-### 49. `chatPlant` focus uses magic `setTimeout(300)`
+### ~~49. `chatPlant` focus uses magic `setTimeout(300)`~~ DONE
 
 **File:** `ui/src/lib/components/ChatDrawer.svelte:322-325`
 
@@ -453,7 +453,7 @@ Focus after opening uses a 300ms delay to outlast the CSS animation. Use `animat
 
 Error and success feedback is handled ad-hoc per page (inline text, error stores, or nothing). A global toast system would provide consistent feedback.
 
-### 51. `abortController` as reactive `$state`
+### ~~51. `abortController` as reactive `$state`~~ DONE
 
 **File:** `ui/src/lib/components/ChatDrawer.svelte:22`
 

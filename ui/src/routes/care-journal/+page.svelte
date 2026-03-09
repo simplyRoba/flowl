@@ -160,8 +160,7 @@
   });
 
   $effect(() => {
-    void events.length;
-    if (!hasMore || !sentinel) return;
+    if (events.length === 0 || !hasMore || !sentinel) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
