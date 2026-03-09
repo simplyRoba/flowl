@@ -210,11 +210,7 @@ pub fn connect(
     Some(MqttHandle { client, task })
 }
 
-fn discovery_topic_and_payload(
-    prefix: &str,
-    plant_id: i64,
-    plant_name: &str,
-) -> (String, String) {
+fn discovery_topic_and_payload(prefix: &str, plant_id: i64, plant_name: &str) -> (String, String) {
     let topic = format!("homeassistant/sensor/{prefix}_plant_{plant_id}/config");
     let payload = json!({
         "name": plant_name,
