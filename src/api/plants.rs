@@ -97,6 +97,7 @@ pub fn compute_watering_status(
     (status.to_string(), Some(next_due.to_string()))
 }
 
+const VALID_LIGHT_NEEDS: &[&str] = &["direct", "indirect", "low"];
 const VALID_DIFFICULTY: &[&str] = &["easy", "moderate", "demanding"];
 const VALID_PET_SAFETY: &[&str] = &["safe", "caution", "toxic"];
 const VALID_GROWTH_SPEED: &[&str] = &["slow", "moderate", "fast"];
@@ -135,6 +136,17 @@ pub fn validate_care_info(
     {
         return Err(ApiError::Validation(format!(
             "Invalid value for {field}: \"{v}\""
+        )));
+    }
+    Ok(())
+}
+
+/// # Errors
+/// Returns `ApiError::Validation` if the value is not in the allowed set.
+pub fn validate_light_needs(value: &str) -> Result<(), ApiError> {
+    if !VALID_LIGHT_NEEDS.contains(&value) {
+        return Err(ApiError::Validation(format!(
+            "Invalid value for light_needs: \"{value}\""
         )));
     }
     Ok(())
@@ -295,6 +307,7 @@ pub async fn create_plant(
         .light_needs
         .filter(|l| !l.trim().is_empty())
         .unwrap_or_else(|| "indirect".to_string());
+    validate_light_needs(&light_needs)?;
 
     validate_all_care_info(
         body.difficulty.as_deref(),
@@ -392,6 +405,7 @@ pub async fn update_plant(
         .unwrap_or(current.watering_interval_days);
     validate_watering_interval(watering_interval_days)?;
     let light_needs = body.light_needs.unwrap_or(current.light_needs);
+    validate_light_needs(&light_needs)?;
     let difficulty = body.difficulty.unwrap_or(current.difficulty);
     let pet_safety = body.pet_safety.unwrap_or(current.pet_safety);
     let growth_speed = body.growth_speed.unwrap_or(current.growth_speed);

@@ -22,19 +22,19 @@ Difficulty: 1 = trivial, 5 = very hard
 
 ### Issues
 
-| # | Issue | Imp. | Diff. | Details |
-|---|-------|------|-------|---------|
-| B1 | **All DB errors mapped to `BadRequest`** | 2 | 2 | Every `sqlx` error becomes `ApiError::BadRequest(e.to_string())`. Internal DB failures (connection issues, constraint violations) should be `InternalError(500)`, not `400`. Raw sqlx error messages are leaked to clients. |
-| B2 | **No request validation for `light_needs`** | 2 | 1 | `difficulty`, `pet_safety`, `growth_speed`, `soil_type`, `soil_moisture` are validated against allowed values. `light_needs` is not — any string is accepted. |
-| B3 | **MQTT publish functions silently swallow failures** | 3 | 3 | All `publish_*` functions only `warn!()` on failure. If MQTT publishing is critical to HA integration, there's no retry or user feedback mechanism. The state checker only runs hourly after initial publish (`sleep(3600)`). |
-| B4 | **`compute_watering_status` has a dead branch** | 3 | 1 | `if today > next_due { "overdue" } else if today >= next_due { "due" }` — the `>=` branch is unreachable because `>` already covers `today == next_due` being false. When `today == next_due`, the `>` check fails, falling through to `"ok"`. The intent is likely that `today == next_due` should be `"due"`, but the current code returns `"ok"` for that case. |
-| B5 | **SQL strings built via `format!`** | 3 | 3 | `PLANT_SELECT` is concatenated with format strings like `format!("{PLANT_SELECT} WHERE p.id = ?")`. While the dynamic parts are just static strings (not user input), this pattern makes it harder to reason about SQL injection safety. Consider using a constant for each variant. |
-| B6 | **Stats counts photos from plants only** | 4 | 1 | `photo_count` query is `SELECT COUNT(*) FROM plants WHERE photo_path IS NOT NULL` — care event photos aren't counted. |
-| B7 | **No WAL mode for SQLite** | 4 | 2 | SQLite WAL mode isn't explicitly enabled. Under concurrent writes (API + background state checker), the default journal mode may cause `SQLITE_BUSY`. |
-| B8 | **`Option<Option<T>>` complexity in UpdatePlant** | 4 | 2 | While functionally correct for distinguishing "not sent" vs "sent as null", having 8 fields with `#[allow(clippy::option_option)]` is complex. A PATCH semantics crate or explicit "unset" sentinel could be cleaner. |
-| B9 | **No rate limiting on AI endpoints** | 3 | 3 | AI endpoints forward requests to OpenAI without any rate limiting or cost protection. A malicious or buggy client could burn through API credits. |
-| B10 | **Duplicate `last_watered` subquery** | 4 | 2 | The same `(SELECT MAX(occurred_at) FROM care_events WHERE plant_id = ... AND event_type = 'watered')` subquery is repeated in `PLANT_SELECT`, `republish_all`, `spawn_state_checker`, `export_data`, and `build_plant_context`. Should be a shared SQL fragment or view. |
-| B11 | **Import clears photos before DB transaction** | 3 | 3 | `import_data` runs Phase 2 (clear uploads + write new photos) before Phase 3 (replace DB in transaction). If the DB transaction fails and rolls back, the original photos are already deleted from disk. Could lose data on partial failure. |
+| # | Issue | Imp. | Diff. | Done | Details |
+|---|-------|------|-------|------|---------|
+| B1 | **All DB errors mapped to `BadRequest`** | 2 | 2 | | Every `sqlx` error becomes `ApiError::BadRequest(e.to_string())`. Internal DB failures (connection issues, constraint violations) should be `InternalError(500)`, not `400`. Raw sqlx error messages are leaked to clients. |
+| B2 | **No request validation for `light_needs`** | 2 | 1 | ✅ | `difficulty`, `pet_safety`, `growth_speed`, `soil_type`, `soil_moisture` are validated against allowed values. `light_needs` is not — any string is accepted. |
+| B3 | **MQTT publish functions silently swallow failures** | 3 | 3 | | All `publish_*` functions only `warn!()` on failure. If MQTT publishing is critical to HA integration, there's no retry or user feedback mechanism. The state checker only runs hourly after initial publish (`sleep(3600)`). |
+| B4 | **`compute_watering_status` has a dead branch** | 3 | 1 | | `if today > next_due { "overdue" } else if today >= next_due { "due" }` — the `>=` branch is unreachable because `>` already covers `today == next_due` being false. When `today == next_due`, the `>` check fails, falling through to `"ok"`. The intent is likely that `today == next_due` should be `"due"`, but the current code returns `"ok"` for that case. |
+| B5 | **SQL strings built via `format!`** | 3 | 3 | | `PLANT_SELECT` is concatenated with format strings like `format!("{PLANT_SELECT} WHERE p.id = ?")`. While the dynamic parts are just static strings (not user input), this pattern makes it harder to reason about SQL injection safety. Consider using a constant for each variant. |
+| B6 | **Stats counts photos from plants only** | 4 | 1 | | `photo_count` query is `SELECT COUNT(*) FROM plants WHERE photo_path IS NOT NULL` — care event photos aren't counted. |
+| B7 | **No WAL mode for SQLite** | 4 | 2 | | SQLite WAL mode isn't explicitly enabled. Under concurrent writes (API + background state checker), the default journal mode may cause `SQLITE_BUSY`. |
+| B8 | **`Option<Option<T>>` complexity in UpdatePlant** | 4 | 2 | | While functionally correct for distinguishing "not sent" vs "sent as null", having 8 fields with `#[allow(clippy::option_option)]` is complex. A PATCH semantics crate or explicit "unset" sentinel could be cleaner. |
+| B9 | **No rate limiting on AI endpoints** | 3 | 3 | | AI endpoints forward requests to OpenAI without any rate limiting or cost protection. A malicious or buggy client could burn through API credits. |
+| B10 | **Duplicate `last_watered` subquery** | 4 | 2 | | The same `(SELECT MAX(occurred_at) FROM care_events WHERE plant_id = ... AND event_type = 'watered')` subquery is repeated in `PLANT_SELECT`, `republish_all`, `spawn_state_checker`, `export_data`, and `build_plant_context`. Should be a shared SQL fragment or view. |
+| B11 | **Import clears photos before DB transaction** | 3 | 3 | | `import_data` runs Phase 2 (clear uploads + write new photos) before Phase 3 (replace DB in transaction). If the DB transaction fails and rolls back, the original photos are already deleted from disk. Could lose data on partial failure. |
 
 ---
 
@@ -56,18 +56,18 @@ Difficulty: 1 = trivial, 5 = very hard
 
 ### Issues
 
-| # | Issue | Imp. | Diff. | Details |
-|---|-------|------|-------|---------|
-| U1 | **Backend error strings shown directly in UI** | 2 | 4 | Already noted in `TODO.md`. Store error handlers do `e instanceof Error ? e.message : t.error.xxx` — the first branch shows raw backend English strings (e.g., "Plant name is required") regardless of active locale. Needs error codes from the API mapped to i18n keys. |
-| U2 | **No loading states for many operations** | 3 | 2 | Settings page, locations management, import/export — many operations don't show loading indicators. The user gets no feedback during network calls. |
-| U3 | **Plant detail page re-fetches everything on every action** | 3 | 2 | `refreshPlantDetails` fetches both plant and care events after any action (water, delete event, add event). This works but is wasteful — watering only changes plant state, not care event photos. |
-| U4 | **No offline support** | 3 | 5 | `TODO.md` lists this. As a self-hosted service often used on mobile, losing connectivity means a blank screen. |
-| U5 | **Large component files** | 3 | 3 | `PlantForm.svelte` is 1400+ lines, `plants/[id]/+page.svelte` is 967 lines. These could be broken into smaller sub-components for maintainability. |
-| U6 | **CSS duplication across components** | 4 | 3 | CSS is all in `<style>` blocks within components. Shared CSS files exist (`buttons.css`, `chips.css`, etc.) but many page-level styles are duplicated (`.error`, `.loading`, card patterns). |
-| U7 | **Hardcoded color values in component styles** | 4 | 2 | Most colors use CSS vars, but some components have hardcoded `rgba(0,0,0,...)` and `#fff` values, especially in card overlays and shadows. |
-| U8 | **Stringly-typed status fields** | 4 | 2 | `Plant.watering_status` is `string` but only has 3 values. Should be a union type `"ok" \| "due" \| "overdue"`. Same for `event_type`, `light_needs`, `difficulty`, etc. |
-| U9 | **Notification auto-dismiss missing** | 4 | 2 | `ToastHost` shows notifications but they stack without automatic dismissal (only `MAX_VISIBLE=3` limit). No timeout-based auto-dismiss. |
-| U10 | **Accessibility gaps** | 3 | 3 | Some good patterns (aria-labels on icon buttons, `aria-live` on pull indicator), but no comprehensive a11y testing. Interactive cards use `<a>` with nested `<button>` children which can cause nested interactive element issues. |
+| # | Issue | Imp. | Diff. | Done | Details |
+|---|-------|------|-------|------|---------|
+| U1 | **Backend error strings shown directly in UI** | 2 | 4 | | Already noted in `TODO.md`. Store error handlers do `e instanceof Error ? e.message : t.error.xxx` — the first branch shows raw backend English strings (e.g., "Plant name is required") regardless of active locale. Needs error codes from the API mapped to i18n keys. |
+| U2 | **No loading states for many operations** | 3 | 2 | | Settings page, locations management, import/export — many operations don't show loading indicators. The user gets no feedback during network calls. |
+| U3 | **Plant detail page re-fetches everything on every action** | 3 | 2 | | `refreshPlantDetails` fetches both plant and care events after any action (water, delete event, add event). This works but is wasteful — watering only changes plant state, not care event photos. |
+| U4 | **No offline support** | 3 | 5 | | `TODO.md` lists this. As a self-hosted service often used on mobile, losing connectivity means a blank screen. |
+| U5 | **Large component files** | 3 | 3 | | `PlantForm.svelte` is 1400+ lines, `plants/[id]/+page.svelte` is 967 lines. These could be broken into smaller sub-components for maintainability. |
+| U6 | **CSS duplication across components** | 4 | 3 | | CSS is all in `<style>` blocks within components. Shared CSS files exist (`buttons.css`, `chips.css`, etc.) but many page-level styles are duplicated (`.error`, `.loading`, card patterns). |
+| U7 | **Hardcoded color values in component styles** | 4 | 2 | | Most colors use CSS vars, but some components have hardcoded `rgba(0,0,0,...)` and `#fff` values, especially in card overlays and shadows. |
+| U8 | **Stringly-typed status fields** | 4 | 2 | | `Plant.watering_status` is `string` but only has 3 values. Should be a union type `"ok" \| "due" \| "overdue"`. Same for `event_type`, `light_needs`, `difficulty`, etc. |
+| U9 | **Notification auto-dismiss missing** | 4 | 2 | | `ToastHost` shows notifications but they stack without automatic dismissal (only `MAX_VISIBLE=3` limit). No timeout-based auto-dismiss. |
+| U10 | **Accessibility gaps** | 3 | 3 | | Some good patterns (aria-labels on icon buttons, `aria-live` on pull indicator), but no comprehensive a11y testing. Interactive cards use `<a>` with nested `<button>` children which can cause nested interactive element issues. |
 
 ---
 
@@ -86,17 +86,17 @@ Difficulty: 1 = trivial, 5 = very hard
 
 ### Issues
 
-| # | Issue | Imp. | Diff. | Details |
-|---|-------|------|-------|---------|
-| X1 | **No authentication** | 2 | 4 | The service binds to `0.0.0.0` with no authentication. Anyone on the network can access/modify all data, trigger AI calls (spending API credits), export/import. Typical for HA add-ons behind a reverse proxy, but should at minimum be documented as a requirement, or optionally support basic auth. |
-| X2 | **No automated database backup** | 3 | 3 | No automated backup mechanism. The export feature exists but requires manual action. A corrupted DB means data loss. |
-| X3 | **`build.rs` runs UI build on every compile** | 3 | 2 | Only skipped if `SKIP_UI_BUILD` is set. For Rust developers iterating on backend code, this adds significant build time. The `rerun-if-changed` hints help but don't cover all cases. |
-| X4 | **No E2E tests** | 3 | 4 | Unit and integration tests are solid, but no Playwright/Cypress tests verify the full stack. The `tests/ui.rs` file is just 29 lines testing static file serving. |
-| X5 | **Import version check is too strict** | 4 | 1 | `check_version` requires matching major.minor. A 0.24 export can't be imported into 0.25 even if the schema hasn't changed. Could check migration compatibility instead. |
-| X6 | **No structured logging output** | 4 | 2 | Uses `tracing_subscriber::fmt()` which outputs human-readable logs. For a Docker service, JSON structured logging would be better for log aggregation. |
-| X7 | **Health check doesn't verify DB** | 4 | 1 | `/health` returns `{"status": "ok"}` unconditionally without checking if the DB pool is healthy. |
-| X8 | **Test upload directories not cleaned up** | 5 | 1 | `test_app_with_uploads` creates temp dirs with UUIDs under `std::env::temp_dir()` but there's no cleanup. They accumulate over time on dev machines. |
-| X9 | **`unsafe` env var manipulation in config tests** | 4 | 2 | `env::set_var`/`env::remove_var` are `unsafe` in Rust 2024 edition and require `unsafe` blocks. The tests work but the pattern is fragile with parallel test execution (mitigated by `ENV_LOCK` mutex). |
+| # | Issue | Imp. | Diff. | Done | Details |
+|---|-------|------|-------|------|---------|
+| X1 | **No authentication** | 2 | 4 | | The service binds to `0.0.0.0` with no authentication. Anyone on the network can access/modify all data, trigger AI calls (spending API credits), export/import. Typical for HA add-ons behind a reverse proxy, but should at minimum be documented as a requirement, or optionally support basic auth. |
+| X2 | **No automated database backup** | 3 | 3 | | No automated backup mechanism. The export feature exists but requires manual action. A corrupted DB means data loss. |
+| X3 | **`build.rs` runs UI build on every compile** | 3 | 2 | | Only skipped if `SKIP_UI_BUILD` is set. For Rust developers iterating on backend code, this adds significant build time. The `rerun-if-changed` hints help but don't cover all cases. |
+| X4 | **No E2E tests** | 3 | 4 | | Unit and integration tests are solid, but no Playwright/Cypress tests verify the full stack. The `tests/ui.rs` file is just 29 lines testing static file serving. |
+| X5 | **Import version check is too strict** | 4 | 1 | | `check_version` requires matching major.minor. A 0.24 export can't be imported into 0.25 even if the schema hasn't changed. Could check migration compatibility instead. |
+| X6 | **No structured logging output** | 4 | 2 | | Uses `tracing_subscriber::fmt()` which outputs human-readable logs. For a Docker service, JSON structured logging would be better for log aggregation. |
+| X7 | **Health check doesn't verify DB** | 4 | 1 | | `/health` returns `{"status": "ok"}` unconditionally without checking if the DB pool is healthy. |
+| X8 | **Test upload directories not cleaned up** | 5 | 1 | | `test_app_with_uploads` creates temp dirs with UUIDs under `std::env::temp_dir()` but there's no cleanup. They accumulate over time on dev machines. |
+| X9 | **`unsafe` env var manipulation in config tests** | 4 | 2 | | `env::set_var`/`env::remove_var` are `unsafe` in Rust 2024 edition and require `unsafe` blocks. The tests work but the pattern is fragile with parallel test execution (mitigated by `ENV_LOCK` mutex). |
 
 ---
 
@@ -106,13 +106,13 @@ Difficulty: 1 = trivial, 5 = very hard
 
 1. **B1 + U1: Error handling overhaul** (imp 2, diff 3) — Fix the `BadRequest` catch-all on the backend, introduce error codes, map them to i18n keys on the frontend. This is the single biggest UX issue.
 2. **B4: `compute_watering_status` logic bug** (imp 3, diff 1) — The `"due"` status is unreachable when `today == next_due`. Quick fix with real user impact.
-3. **B2: Validate `light_needs`** (imp 2, diff 1) — One-liner to add the same validation pattern used for all other enum fields.
+3. ~~**B2: Validate `light_needs`** (imp 2, diff 1) — One-liner to add the same validation pattern used for all other enum fields.~~
 4. **X7: Health check DB verification** (imp 4, diff 1) — Add a simple `SELECT 1` to the health endpoint.
 5. **X1: Auth documentation or implementation** (imp 2, diff 1-4) — At minimum add a security note to README. Optionally add basic auth or API key support.
 
 ### Quick wins (low difficulty, meaningful impact)
 
-- B2: Validate `light_needs` (diff 1)
+- ~~B2: Validate `light_needs` (diff 1)~~
 - B4: Fix watering status logic (diff 1)
 - B6: Count care event photos in stats (diff 1)
 - X7: DB health check (diff 1)
