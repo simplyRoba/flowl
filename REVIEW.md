@@ -168,7 +168,7 @@ A `<button>` inside an `<a>` is invalid HTML. Screen readers handle this inconsi
 
 A `<div role="link">` does not get Space-bar activation, middle-click, or "open in new tab" context menu. Use a real `<a>` element.
 
-### 13. `currentPlant` blanked on transient error
+### ~~13. `currentPlant` blanked on transient error~~ DONE
 
 **File:** `ui/src/lib/stores/plants.ts:27-29`
 

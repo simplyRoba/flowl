@@ -96,11 +96,12 @@ describe("loadPlant", () => {
     expect(get(plantsError)).toBeNull();
   });
 
-  it("sets error and clears currentPlant on failure", async () => {
+  it("sets error and keeps stale currentPlant on failure", async () => {
+    currentPlant.set(mockPlant);
     vi.mocked(api.fetchPlant).mockRejectedValue(new Error("Not found"));
     const result = await loadPlant(99);
     expect(result).toBeNull();
-    expect(get(currentPlant)).toBeNull();
+    expect(get(currentPlant)).toEqual(mockPlant);
     expect(get(plantsError)).toBe("Not found");
   });
 });

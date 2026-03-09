@@ -29,7 +29,6 @@ export async function loadPlant(id: number) {
     plantsError.set(
       e instanceof Error ? e.message : get(translations).error.loadPlant,
     );
-    currentPlant.set(null);
     return null;
   }
 }
