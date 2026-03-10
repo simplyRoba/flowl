@@ -123,7 +123,7 @@ Difficulty: 1 = trivial, 5 = very hard
 ### Longer-term improvements
 
 - U4: Offline support / service worker (diff 5)
-- X1: Authentication system (diff 4)
+- ~~X1: Authentication system (diff 4) — documented, use reverse proxy~~
 - X4: E2E test suite (diff 4)
 - ~~U1: Full error code system (diff 4)~~
 - B9: AI rate limiting (diff 3)
