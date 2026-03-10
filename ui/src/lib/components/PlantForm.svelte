@@ -17,7 +17,17 @@
     ChevronLeft,
     ChevronRight,
   } from "lucide-svelte";
-  import type { Plant, CreatePlant, IdentifyResult } from "$lib/api";
+  import type {
+    Plant,
+    CreatePlant,
+    IdentifyResult,
+    LightNeeds,
+    Difficulty,
+    PetSafety,
+    GrowthSpeed,
+    SoilType,
+    SoilMoisture,
+  } from "$lib/api";
   import { identifyPlant } from "$lib/api";
   import { aiStatus, loadAiStatus } from "$lib/stores/ai";
   import {
@@ -465,12 +475,12 @@
     if (species.trim()) data.species = species.trim();
     data.location_id = locationId;
     data.watering_interval_days = wateringDays;
-    data.light_needs = lightNeeds;
-    data.difficulty = difficulty;
-    data.pet_safety = petSafety;
-    data.growth_speed = growthSpeed;
-    data.soil_type = soilType;
-    data.soil_moisture = soilMoisture;
+    data.light_needs = lightNeeds as LightNeeds;
+    data.difficulty = difficulty as Difficulty | null;
+    data.pet_safety = petSafety as PetSafety | null;
+    data.growth_speed = growthSpeed as GrowthSpeed | null;
+    data.soil_type = soilType as SoilType | null;
+    data.soil_moisture = soilMoisture as SoilMoisture | null;
     if (notes.trim()) data.notes = notes.trim();
 
     onsave(data, photoFile ?? undefined);

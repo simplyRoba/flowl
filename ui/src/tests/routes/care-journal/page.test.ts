@@ -37,7 +37,7 @@ vi.mock("$app/navigation", () => ({
   },
 }));
 
-function makeEvent(overrides: Partial<CareEvent> = {}) {
+function makeEvent(overrides: Partial<CareEvent> = {}): CareEvent {
   return {
     id: 1,
     plant_id: 1,

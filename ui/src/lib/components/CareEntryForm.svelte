@@ -10,7 +10,7 @@
     X as XIcon,
   } from "lucide-svelte";
   import { addCareEvent } from "$lib/stores/care";
-  import { uploadCareEventPhoto } from "$lib/api";
+  import { uploadCareEventPhoto, type EventType } from "$lib/api";
   import { translations } from "$lib/stores/locale";
   import { pushNotification } from "$lib/stores/notifications";
 
@@ -91,7 +91,7 @@
           : undefined;
       const photoFile = photo;
       const event = await addCareEvent(plantId, {
-        event_type: eventType,
+        event_type: eventType as EventType,
         notes: notes.trim() || undefined,
         occurred_at: occIso,
       });

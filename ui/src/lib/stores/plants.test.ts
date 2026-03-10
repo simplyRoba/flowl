@@ -180,7 +180,7 @@ describe("deletePlant", () => {
 describe("waterPlant", () => {
   it("updates plant in list on success", async () => {
     plants.set([mockPlant]);
-    const watered = {
+    const watered: Plant = {
       ...mockPlant,
       last_watered: "2025-01-10",
       watering_status: "ok",

@@ -105,7 +105,7 @@ import { aiStatus } from "$lib/stores/ai";
 import { plantsError } from "$lib/stores/plants";
 import { careError } from "$lib/stores/care";
 
-function makePlant(overrides: Partial<Plant> = {}) {
+function makePlant(overrides: Partial<Plant> = {}): Plant {
   return {
     id: 1,
     name: "Fern",
@@ -911,7 +911,7 @@ describe("log form photo upload", () => {
   });
 
   it("uploads photo after creating care event on submit", async () => {
-    const createdEvent = {
+    const createdEvent: CareEvent = {
       id: 30,
       plant_id: 1,
       plant_name: "Fern",
@@ -1007,7 +1007,7 @@ describe("log form photo upload", () => {
 
   it("supports adding backdated watering entries from the log form", async () => {
     const occurredAt = "2025-01-15T09:30";
-    const createdEvent = {
+    const createdEvent: CareEvent = {
       id: 31,
       plant_id: 1,
       plant_name: "Fern",

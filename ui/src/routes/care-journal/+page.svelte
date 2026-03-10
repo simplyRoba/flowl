@@ -16,7 +16,7 @@
     Pencil,
     Sparkles,
   } from "lucide-svelte";
-  import type { CareEvent } from "$lib/api";
+  import type { CareEvent, EventType } from "$lib/api";
   import { fetchAllCareEvents } from "$lib/api";
   import { translations } from "$lib/stores/locale";
   import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
@@ -88,7 +88,8 @@
     error = null;
     const before =
       reset || events.length === 0 ? undefined : events[events.length - 1].id;
-    const types = activeTypes.size > 0 ? [...activeTypes] : undefined;
+    const types =
+      activeTypes.size > 0 ? ([...activeTypes] as EventType[]) : undefined;
     try {
       const page = await fetchAllCareEvents(PAGE_SIZE, before, types);
       if (reset) {

@@ -1,3 +1,18 @@
+export type WateringStatus = "ok" | "due" | "overdue";
+export type LightNeeds = "direct" | "indirect" | "low";
+export type Difficulty = "easy" | "moderate" | "demanding";
+export type PetSafety = "safe" | "caution" | "toxic";
+export type GrowthSpeed = "slow" | "moderate" | "fast";
+export type SoilType = "standard" | "cactus-mix" | "orchid-bark" | "peat-moss";
+export type SoilMoisture = "dry" | "moderate" | "moist";
+export type EventType =
+  | "watered"
+  | "fertilized"
+  | "repotted"
+  | "pruned"
+  | "custom"
+  | "ai-consultation";
+
 export interface Location {
   id: number;
   name: string;
@@ -13,15 +28,15 @@ export interface Plant {
   location_id: number | null;
   location_name: string | null;
   watering_interval_days: number;
-  watering_status: string;
+  watering_status: WateringStatus;
   last_watered: string | null;
   next_due: string | null;
-  light_needs: string;
-  difficulty: string | null;
-  pet_safety: string | null;
-  growth_speed: string | null;
-  soil_type: string | null;
-  soil_moisture: string | null;
+  light_needs: LightNeeds;
+  difficulty: Difficulty | null;
+  pet_safety: PetSafety | null;
+  growth_speed: GrowthSpeed | null;
+  soil_type: SoilType | null;
+  soil_moisture: SoilMoisture | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -33,12 +48,12 @@ export interface CreatePlant {
   icon?: string;
   location_id?: number | null;
   watering_interval_days?: number;
-  light_needs?: string;
-  difficulty?: string | null;
-  pet_safety?: string | null;
-  growth_speed?: string | null;
-  soil_type?: string | null;
-  soil_moisture?: string | null;
+  light_needs?: LightNeeds;
+  difficulty?: Difficulty | null;
+  pet_safety?: PetSafety | null;
+  growth_speed?: GrowthSpeed | null;
+  soil_type?: SoilType | null;
+  soil_moisture?: SoilMoisture | null;
   notes?: string;
 }
 
@@ -48,12 +63,12 @@ export interface UpdatePlant {
   icon?: string;
   location_id?: number | null;
   watering_interval_days?: number;
-  light_needs?: string;
-  difficulty?: string | null;
-  pet_safety?: string | null;
-  growth_speed?: string | null;
-  soil_type?: string | null;
-  soil_moisture?: string | null;
+  light_needs?: LightNeeds;
+  difficulty?: Difficulty | null;
+  pet_safety?: PetSafety | null;
+  growth_speed?: GrowthSpeed | null;
+  soil_type?: SoilType | null;
+  soil_moisture?: SoilMoisture | null;
   notes?: string;
 }
 
@@ -84,12 +99,12 @@ export interface AiStatus {
 
 export interface CareProfile {
   watering_interval_days: number | null;
-  light_needs: string | null;
-  difficulty: string | null;
-  pet_safety: string | null;
-  growth_speed: string | null;
-  soil_type: string | null;
-  soil_moisture: string | null;
+  light_needs: LightNeeds | null;
+  difficulty: Difficulty | null;
+  pet_safety: PetSafety | null;
+  growth_speed: GrowthSpeed | null;
+  soil_type: SoilType | null;
+  soil_moisture: SoilMoisture | null;
 }
 
 export interface IdentifyResult {
@@ -311,7 +326,7 @@ export interface CareEvent {
   id: number;
   plant_id: number;
   plant_name: string;
-  event_type: string;
+  event_type: EventType;
   notes: string | null;
   photo_url: string | null;
   occurred_at: string;
@@ -319,7 +334,7 @@ export interface CareEvent {
 }
 
 export interface CreateCareEvent {
-  event_type: string;
+  event_type: EventType;
   notes?: string;
   occurred_at?: string;
 }
@@ -336,7 +351,7 @@ export function fetchCareEvents(plantId: number): Promise<CareEvent[]> {
 export function fetchAllCareEvents(
   limit?: number,
   before?: number,
-  types?: string[],
+  types?: EventType[],
 ): Promise<CareEventsPage> {
   const params = new URLSearchParams();
   if (limit !== undefined) params.set("limit", String(limit));

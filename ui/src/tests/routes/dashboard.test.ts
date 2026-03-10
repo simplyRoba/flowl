@@ -29,7 +29,7 @@ vi.mock("$lib/stores/notifications", () => ({
 
 import { plants, plantsError } from "$lib/stores/plants";
 
-function makePlant(overrides: Partial<Plant> = {}) {
+function makePlant(overrides: Partial<Plant> = {}): Plant {
   return {
     id: 1,
     name: "Fern",
