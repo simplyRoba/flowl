@@ -161,6 +161,7 @@ async fn identify_returns_503_when_ai_not_configured() {
     assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
 
     let body = common::body_json(response).await;
+    assert_eq!(body["code"], "AI_NOT_CONFIGURED");
     assert!(body["message"].as_str().is_some());
 }
 
@@ -183,6 +184,7 @@ async fn identify_returns_422_when_no_photos() {
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
 
     let body = common::body_json(response).await;
+    assert_eq!(body["code"], "PHOTO_NO_FILE");
     assert!(body["message"].as_str().is_some());
 }
 
@@ -203,6 +205,7 @@ async fn identify_returns_422_for_invalid_content_type() {
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
 
     let body = common::body_json(response).await;
+    assert_eq!(body["code"], "PHOTO_INVALID_TYPE");
     assert!(body["message"].as_str().is_some());
 }
 
@@ -276,6 +279,7 @@ async fn identify_returns_500_when_ai_provider_fails() {
     assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
 
     let body = common::body_json(response).await;
+    assert_eq!(body["code"], "AI_PROVIDER_FAILED");
     assert!(body["message"].as_str().is_some());
 }
 

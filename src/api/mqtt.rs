@@ -48,7 +48,7 @@ pub async fn post_mqtt_repair(
     State(state): State<AppState>,
 ) -> Result<Json<mqtt::RepairResult>, ApiError> {
     if state.mqtt_disabled {
-        return Err(ApiError::Conflict("MQTT is disabled".to_string()));
+        return Err(ApiError::Conflict("MQTT_DISABLED"));
     }
 
     let connected = state
@@ -57,15 +57,13 @@ pub async fn post_mqtt_repair(
         .is_some_and(|b| b.load(Ordering::Relaxed));
 
     if !connected {
-        return Err(ApiError::ServiceUnavailable(
-            "MQTT is not connected".to_string(),
-        ));
+        return Err(ApiError::ServiceUnavailable("MQTT_UNAVAILABLE"));
     }
 
     let client = state
         .mqtt_client
         .as_ref()
-        .ok_or_else(|| ApiError::ServiceUnavailable("MQTT client unavailable".to_string()))?;
+        .ok_or(ApiError::ServiceUnavailable("MQTT_UNAVAILABLE"))?;
 
     let result = mqtt::repair(
         &state.pool,

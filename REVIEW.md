@@ -24,7 +24,7 @@ Difficulty: 1 = trivial, 5 = very hard
 
 | # | Issue | Imp. | Diff. | Done | Details |
 |---|-------|------|-------|------|---------|
-| B1 | **All DB errors mapped to `BadRequest`** | 2 | 2 | | Every `sqlx` error becomes `ApiError::BadRequest(e.to_string())`. Internal DB failures (connection issues, constraint violations) should be `InternalError(500)`, not `400`. Raw sqlx error messages are leaked to clients. |
+| B1 | **All DB errors mapped to `BadRequest`** | 2 | 2 | ✅ | Every `sqlx` error becomes `ApiError::BadRequest(e.to_string())`. Internal DB failures (connection issues, constraint violations) should be `InternalError(500)`, not `400`. Raw sqlx error messages are leaked to clients. |
 | B2 | **No request validation for `light_needs`** | 2 | 1 | ✅ | `difficulty`, `pet_safety`, `growth_speed`, `soil_type`, `soil_moisture` are validated against allowed values. `light_needs` is not — any string is accepted. |
 | B3 | **MQTT publish functions silently swallow failures** | 3 | 3 | | All `publish_*` functions only `warn!()` on failure. If MQTT publishing is critical to HA integration, there's no retry or user feedback mechanism. The state checker only runs hourly after initial publish (`sleep(3600)`). |
 | B4 | ~~**`compute_watering_status` has a dead branch**~~ | 3 | 1 | ❌ | ~~Not a bug. When `today == next_due`, the `>` check is false so execution correctly falls to `>=` which returns `"due"`.~~ |
@@ -104,7 +104,7 @@ Difficulty: 1 = trivial, 5 = very hard
 
 ### Top priorities (high importance, reasonable difficulty)
 
-1. **B1 + U1: Error handling overhaul** (imp 2, diff 3) — Fix the `BadRequest` catch-all on the backend, introduce error codes, map them to i18n keys on the frontend. This is the single biggest UX issue.
+1. ~~**B1 + U1: Error handling overhaul** (imp 2, diff 3) — Backend error codes done. Frontend error mapping pending.~~
 2. ~~**B4: `compute_watering_status` logic bug** (imp 3, diff 1) — Not a bug; the code is correct.~~
 3. ~~**B2: Validate `light_needs`** (imp 2, diff 1) — One-liner to add the same validation pattern used for all other enum fields.~~
 4. **X7: Health check DB verification** (imp 4, diff 1) — Add a simple `SELECT 1` to the health endpoint.

@@ -6,7 +6,7 @@ use sqlx::SqlitePool;
 
 use tracing::debug;
 
-use super::error::{ApiError, JsonBody};
+use super::error::{ApiError, JsonBody, db_error};
 use super::plants::validate_required_name;
 
 #[derive(Serialize)]
@@ -34,7 +34,7 @@ pub struct UpdateLocation {
 }
 
 /// # Errors
-/// Returns `ApiError::BadRequest` on database failures.
+/// Returns `ApiError::InternalError` on database failures.
 pub async fn list_locations(
     State(pool): State<SqlitePool>,
 ) -> Result<Json<Vec<Location>>, ApiError> {
@@ -45,7 +45,7 @@ pub async fn list_locations(
     )
     .fetch_all(&pool)
     .await
-    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    .map_err(db_error)?;
 
     Ok(Json(
         rows.into_iter()
@@ -61,15 +61,15 @@ pub async fn list_locations(
 /// # Errors
 /// Returns `ApiError::Validation` if name is missing,
 /// `ApiError::Conflict` if a location with the same name exists, or
-/// `ApiError::BadRequest` on database failures.
+/// `ApiError::InternalError` on database failures.
 pub async fn create_location(
     State(pool): State<SqlitePool>,
     JsonBody(body): JsonBody<CreateLocation>,
 ) -> Result<(StatusCode, Json<Location>), ApiError> {
     let name = body
         .name
-        .ok_or_else(|| ApiError::Validation("Location name is required".to_string()))?;
-    validate_required_name("Location", &name)?;
+        .ok_or(ApiError::Validation("LOCATION_NAME_REQUIRED"))?;
+    validate_required_name(&name, "LOCATION_NAME_REQUIRED")?;
     let name = name.trim().to_string();
 
     // Check for duplicate
@@ -77,12 +77,10 @@ pub async fn create_location(
         .bind(&name)
         .fetch_optional(&pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     if existing.is_some() {
-        return Err(ApiError::Conflict(format!(
-            "Location '{name}' already exists"
-        )));
+        return Err(ApiError::Conflict("LOCATION_ALREADY_EXISTS"));
     }
 
     let row = sqlx::query_as::<_, LocationRow>(
@@ -91,7 +89,7 @@ pub async fn create_location(
     .bind(&name)
     .fetch_one(&pool)
     .await
-    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    .map_err(db_error)?;
 
     debug!(location_id = row.id, name = %row.name, "Location created");
     Ok((
@@ -108,7 +106,7 @@ pub async fn create_location(
 /// Returns `ApiError::NotFound` if the location does not exist,
 /// `ApiError::Validation` if name is missing,
 /// `ApiError::Conflict` if a location with the same name exists, or
-/// `ApiError::BadRequest` on database failures.
+/// `ApiError::InternalError` on database failures.
 pub async fn update_location(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
@@ -119,16 +117,16 @@ pub async fn update_location(
         .bind(id)
         .fetch_optional(&pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     if exists.is_none() {
-        return Err(ApiError::NotFound("Location not found".to_string()));
+        return Err(ApiError::NotFound("LOCATION_NOT_FOUND"));
     }
 
     let name = body
         .name
-        .ok_or_else(|| ApiError::Validation("Location name is required".to_string()))?;
-    validate_required_name("Location", &name)?;
+        .ok_or(ApiError::Validation("LOCATION_NAME_REQUIRED"))?;
+    validate_required_name(&name, "LOCATION_NAME_REQUIRED")?;
     let name = name.trim().to_string();
 
     // Check for duplicate (different id)
@@ -138,12 +136,10 @@ pub async fn update_location(
             .bind(id)
             .fetch_optional(&pool)
             .await
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+            .map_err(db_error)?;
 
     if duplicate.is_some() {
-        return Err(ApiError::Conflict(format!(
-            "Location '{name}' already exists"
-        )));
+        return Err(ApiError::Conflict("LOCATION_ALREADY_EXISTS"));
     }
 
     sqlx::query("UPDATE locations SET name = ? WHERE id = ?")
@@ -151,7 +147,7 @@ pub async fn update_location(
         .bind(id)
         .execute(&pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     // Get plant count for response
     let plant_count =
@@ -159,7 +155,7 @@ pub async fn update_location(
             .bind(id)
             .fetch_one(&pool)
             .await
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+            .map_err(db_error)?;
 
     Ok(Json(Location {
         id,
@@ -170,7 +166,7 @@ pub async fn update_location(
 
 /// # Errors
 /// Returns `ApiError::NotFound` if the location does not exist, or
-/// `ApiError::BadRequest` on database failures.
+/// `ApiError::InternalError` on database failures.
 pub async fn delete_location(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
@@ -180,16 +176,16 @@ pub async fn delete_location(
         .bind(id)
         .execute(&pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     let result = sqlx::query("DELETE FROM locations WHERE id = ?")
         .bind(id)
         .execute(&pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     if result.rows_affected() == 0 {
-        return Err(ApiError::NotFound("Location not found".to_string()));
+        return Err(ApiError::NotFound("LOCATION_NOT_FOUND"));
     }
 
     debug!(location_id = id, "Location deleted");

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use super::care_events::validate_event_type;
-use super::error::ApiError;
+use super::error::{ApiError, db_error};
 use super::plants::{
     validate_all_care_info, validate_light_needs, validate_required_name,
     validate_watering_interval,
@@ -76,15 +76,11 @@ fn check_version(archive_version: &str) -> Result<(), ApiError> {
     let archive_parts: Vec<&str> = archive_version.split('.').collect();
 
     if server_parts.len() < 2 || archive_parts.len() < 2 {
-        return Err(ApiError::BadRequest(format!(
-            "Invalid version format: expected '{server_version}', got '{archive_version}'"
-        )));
+        return Err(ApiError::BadRequest("IMPORT_VERSION_MISMATCH"));
     }
 
     if server_parts[0] != archive_parts[0] || server_parts[1] != archive_parts[1] {
-        return Err(ApiError::BadRequest(format!(
-            "Version mismatch: server is {server_version}, archive is {archive_version}"
-        )));
+        return Err(ApiError::BadRequest("IMPORT_VERSION_MISMATCH"));
     }
 
     Ok(())
@@ -92,9 +88,7 @@ fn check_version(archive_version: &str) -> Result<(), ApiError> {
 
 fn validate_filename(name: &str) -> Result<(), ApiError> {
     if name.contains("..") || name.starts_with('/') || name.starts_with('\\') {
-        return Err(ApiError::BadRequest(format!(
-            "Invalid filename in archive: {name}"
-        )));
+        return Err(ApiError::BadRequest("IMPORT_INVALID_FILENAME"));
     }
     Ok(())
 }
@@ -103,27 +97,28 @@ fn validate_dest_path(
     dest: &std::path::Path,
     upload_dir: &std::path::Path,
 ) -> Result<(), ApiError> {
-    let canonical_dir = upload_dir
-        .canonicalize()
-        .map_err(|e| ApiError::InternalError(format!("Failed to resolve upload dir: {e}")))?;
+    let canonical_dir = upload_dir.canonicalize().map_err(|e| {
+        tracing::error!("Failed to resolve upload dir: {e}");
+        ApiError::InternalError("INTERNAL_ERROR")
+    })?;
     let canonical_dest = dest.canonicalize().or_else(|_| {
-        // File doesn't exist yet — canonicalize the parent and append the filename
+        // File doesn't exist yet -- canonicalize the parent and append the filename
         let parent = dest.parent().unwrap_or(dest);
         let name = dest
             .file_name()
-            .ok_or_else(|| ApiError::BadRequest("Invalid destination filename".to_string()))?;
+            .ok_or(ApiError::BadRequest("IMPORT_INVALID_FILENAME"))?;
         Ok::<_, ApiError>(
             parent
                 .canonicalize()
-                .map_err(|e| ApiError::InternalError(format!("Failed to resolve path: {e}")))?
+                .map_err(|e| {
+                    tracing::error!("Failed to resolve path: {e}");
+                    ApiError::InternalError("INTERNAL_ERROR")
+                })?
                 .join(name),
         )
     })?;
     if !canonical_dest.starts_with(&canonical_dir) {
-        return Err(ApiError::BadRequest(format!(
-            "Path traversal detected: {}",
-            dest.display()
-        )));
+        return Err(ApiError::BadRequest("IMPORT_INVALID_FILENAME"));
     }
     Ok(())
 }
@@ -134,17 +129,17 @@ type PhotoEntry = (String, Vec<u8>);
 /// This keeps all `ZipArchive` usage in a non-async context so the future remains Send.
 fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError> {
     const MAX_JSON_SIZE: u64 = 50 * 1024 * 1024; // 50 MB
-    const MAX_PHOTO_SIZE: usize = 5 * 1024 * 1024; // 5 MB — matches upload limit
+    const MAX_PHOTO_SIZE: usize = 5 * 1024 * 1024; // 5 MB -- matches upload limit
 
     let cursor = std::io::Cursor::new(bytes);
-    let mut archive = zip::ZipArchive::new(cursor)
-        .map_err(|e| ApiError::BadRequest(format!("Invalid ZIP archive: {e}")))?;
+    let mut archive =
+        zip::ZipArchive::new(cursor).map_err(|_| ApiError::BadRequest("IMPORT_INVALID_ARCHIVE"))?;
 
     // Validate all filenames
     for i in 0..archive.len() {
         let file = archive
             .by_index(i)
-            .map_err(|e| ApiError::BadRequest(format!("Invalid archive entry: {e}")))?;
+            .map_err(|_| ApiError::BadRequest("IMPORT_INVALID_ARCHIVE"))?;
         validate_filename(file.name())?;
     }
 
@@ -152,23 +147,20 @@ fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError
     let data: ImportData = {
         let data_file = archive
             .by_name("data.json")
-            .map_err(|_| ApiError::BadRequest("Archive missing data.json".to_string()))?;
+            .map_err(|_| ApiError::BadRequest("IMPORT_INVALID_DATA"))?;
 
         let mut json_bytes = Vec::new();
         data_file
             .take(MAX_JSON_SIZE + 1)
             .read_to_end(&mut json_bytes)
-            .map_err(|e| ApiError::BadRequest(format!("Failed to read data.json: {e}")))?;
+            .map_err(|_| ApiError::BadRequest("IMPORT_INVALID_DATA"))?;
         if json_bytes.len() as u64 > MAX_JSON_SIZE {
-            return Err(ApiError::BadRequest(
-                "data.json exceeds maximum size".to_string(),
-            ));
+            return Err(ApiError::BadRequest("IMPORT_FILE_TOO_LARGE"));
         }
         let json_str = String::from_utf8(json_bytes)
-            .map_err(|e| ApiError::BadRequest(format!("data.json is not valid UTF-8: {e}")))?;
+            .map_err(|_| ApiError::BadRequest("IMPORT_INVALID_DATA"))?;
 
-        serde_json::from_str(&json_str)
-            .map_err(|e| ApiError::BadRequest(format!("Invalid data.json: {e}")))?
+        serde_json::from_str(&json_str).map_err(|_| ApiError::BadRequest("IMPORT_INVALID_DATA"))?
     };
 
     check_version(&data.version)?;
@@ -178,7 +170,7 @@ fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError
     for i in 0..archive.len() {
         let file = archive
             .by_index(i)
-            .map_err(|e| ApiError::BadRequest(format!("Invalid archive entry: {e}")))?;
+            .map_err(|_| ApiError::BadRequest("IMPORT_INVALID_ARCHIVE"))?;
 
         let name = file.name().to_string();
         if let Some(filename) = name.strip_prefix("photos/") {
@@ -188,11 +180,9 @@ fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError
             let mut contents = Vec::new();
             file.take(MAX_PHOTO_SIZE as u64 + 1)
                 .read_to_end(&mut contents)
-                .map_err(|e| ApiError::BadRequest(format!("Failed to read {name}: {e}")))?;
+                .map_err(|_| ApiError::BadRequest("IMPORT_INVALID_DATA"))?;
             if contents.len() > MAX_PHOTO_SIZE {
-                return Err(ApiError::BadRequest(format!(
-                    "File {name} exceeds maximum size of {MAX_PHOTO_SIZE} bytes"
-                )));
+                return Err(ApiError::BadRequest("IMPORT_FILE_TOO_LARGE"));
             }
             photos.push((filename.to_string(), contents));
         }
@@ -202,38 +192,35 @@ fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError
 }
 
 async fn replace_database(pool: &sqlx::SqlitePool, data: &ImportData) -> Result<(), ApiError> {
-    let mut tx = pool
-        .begin()
-        .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    let mut tx = pool.begin().await.map_err(db_error)?;
 
     // Delete in correct FK order
     sqlx::query("DELETE FROM care_events")
         .execute(&mut *tx)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
     sqlx::query("DELETE FROM plants")
         .execute(&mut *tx)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
     sqlx::query("DELETE FROM locations")
         .execute(&mut *tx)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     for loc in &data.locations {
-        validate_required_name("Location", &loc.name)?;
+        validate_required_name(&loc.name, "LOCATION_NAME_REQUIRED")?;
 
         sqlx::query("INSERT INTO locations (id, name) VALUES (?, ?)")
             .bind(loc.id)
             .bind(&loc.name)
             .execute(&mut *tx)
             .await
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+            .map_err(db_error)?;
     }
 
     for plant in &data.plants {
-        validate_required_name("Plant", &plant.name)?;
+        validate_required_name(&plant.name, "PLANT_NAME_REQUIRED")?;
         validate_watering_interval(plant.watering_interval_days)?;
         validate_light_needs(&plant.light_needs)?;
         validate_all_care_info(
@@ -268,7 +255,7 @@ async fn replace_database(pool: &sqlx::SqlitePool, data: &ImportData) -> Result<
         .bind(&plant.updated_at)
         .execute(&mut *tx)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
     }
 
     for event in &data.care_events {
@@ -287,19 +274,17 @@ async fn replace_database(pool: &sqlx::SqlitePool, data: &ImportData) -> Result<
         .bind(&event.created_at)
         .execute(&mut *tx)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
     }
 
-    tx.commit()
-        .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    tx.commit().await.map_err(db_error)?;
 
     Ok(())
 }
 
 /// # Errors
 /// Returns `ApiError::BadRequest` for malformed uploads, invalid archives,
-/// or version mismatches, or on database failures.
+/// or version mismatches, or `ApiError::InternalError` on database failures.
 pub async fn import_data(
     State(state): State<AppState>,
     mut multipart: Multipart,
@@ -308,17 +293,17 @@ pub async fn import_data(
     let field = multipart
         .next_field()
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?
-        .ok_or_else(|| ApiError::BadRequest("No file provided".to_string()))?;
+        .map_err(|_| ApiError::BadRequest("INVALID_REQUEST_BODY"))?
+        .ok_or(ApiError::BadRequest("IMPORT_NO_FILE"))?;
 
     let bytes = field
         .bytes()
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(|_| ApiError::BadRequest("INVALID_REQUEST_BODY"))?;
 
     info!(size_bytes = bytes.len(), "Data import started");
 
-    // Phase 1: Parse and validate the archive (synchronous — keeps future Send)
+    // Phase 1: Parse and validate the archive (synchronous -- keeps future Send)
     let (data, photos) = parse_archive(&bytes)?;
 
     info!(
@@ -338,9 +323,10 @@ pub async fn import_data(
     for (filename, contents) in &photos {
         let dest = upload_dir.join(filename);
         validate_dest_path(&dest, upload_dir)?;
-        tokio::fs::write(&dest, contents)
-            .await
-            .map_err(|e| ApiError::BadRequest(format!("Failed to write {filename}: {e}")))?;
+        tokio::fs::write(&dest, contents).await.map_err(|e| {
+            tracing::error!("Failed to write {filename}: {e}");
+            ApiError::InternalError("INTERNAL_ERROR")
+        })?;
     }
 
     // Phase 3: Replace database data in a transaction
@@ -506,7 +492,7 @@ mod tests {
     fn validate_dest_path_works_for_nonexistent_file() {
         let dir = tempfile::tempdir().unwrap();
         let dest = dir.path().join("new_photo.jpg");
-        // File doesn't exist yet — should still validate via parent
+        // File doesn't exist yet -- should still validate via parent
         assert!(super::validate_dest_path(&dest, dir.path()).is_ok());
     }
 }

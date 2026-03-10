@@ -4,7 +4,7 @@ use axum::http::StatusCode;
 
 use tracing::info;
 
-use super::error::ApiError;
+use super::error::{ApiError, db_error};
 use super::plants::{PLANT_SELECT, Plant, PlantRow};
 use crate::images::ImageError;
 use crate::state::AppState;
@@ -12,7 +12,7 @@ use crate::state::AppState;
 /// # Errors
 /// Returns `ApiError::NotFound` if the plant does not exist,
 /// `ApiError::Validation` for invalid file types or oversized files, or
-/// `ApiError::BadRequest` on multipart parsing or database failures.
+/// `ApiError::InternalError` on multipart parsing or database failures.
 pub async fn upload_photo(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -23,30 +23,32 @@ pub async fn upload_photo(
             .bind(id)
             .fetch_optional(&state.pool)
             .await
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?
-            .ok_or_else(|| ApiError::NotFound("Plant not found".to_string()))?;
+            .map_err(db_error)?
+            .ok_or(ApiError::NotFound("PLANT_NOT_FOUND"))?;
 
     let field = multipart
         .next_field()
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?
-        .ok_or_else(|| ApiError::Validation("No file provided".to_string()))?;
+        .map_err(|_| ApiError::BadRequest("INVALID_REQUEST_BODY"))?
+        .ok_or(ApiError::Validation("PHOTO_NO_FILE"))?;
 
     let content_type = field.content_type().unwrap_or("").to_string();
     let data = field
         .bytes()
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(|_| ApiError::BadRequest("INVALID_REQUEST_BODY"))?;
 
     let filename = state
         .image_store
         .save(&data, &content_type)
         .await
         .map_err(|e| match e {
-            ImageError::InvalidContentType | ImageError::TooLarge => {
-                ApiError::Validation(e.to_string())
+            ImageError::InvalidContentType => ApiError::Validation("PHOTO_INVALID_TYPE"),
+            ImageError::TooLarge => ApiError::Validation("PHOTO_TOO_LARGE"),
+            ImageError::Io(ref io_err) => {
+                tracing::error!("Photo save failed: {io_err}");
+                ApiError::InternalError("PHOTO_SAVE_FAILED")
             }
-            ImageError::Io(_) => ApiError::BadRequest(format!("Failed to save file: {e}")),
         })?;
 
     let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
@@ -56,7 +58,7 @@ pub async fn upload_photo(
         .bind(id)
         .execute(&state.pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     if let Some(ref old_filename) = current_photo {
         state.image_store.delete(old_filename).await;
@@ -69,14 +71,14 @@ pub async fn upload_photo(
         .bind(id)
         .fetch_one(&state.pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     Ok(Json(Plant::from(row)))
 }
 
 /// # Errors
 /// Returns `ApiError::NotFound` if the plant does not exist or has no photo, or
-/// `ApiError::BadRequest` on database failures.
+/// `ApiError::InternalError` on database failures.
 pub async fn delete_photo(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -86,11 +88,10 @@ pub async fn delete_photo(
             .bind(id)
             .fetch_optional(&state.pool)
             .await
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?
-            .ok_or_else(|| ApiError::NotFound("Plant not found".to_string()))?;
+            .map_err(db_error)?
+            .ok_or(ApiError::NotFound("PLANT_NOT_FOUND"))?;
 
-    let filename =
-        photo_path.ok_or_else(|| ApiError::NotFound("Plant has no photo".to_string()))?;
+    let filename = photo_path.ok_or(ApiError::NotFound("PHOTO_NOT_FOUND"))?;
 
     let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
     sqlx::query("UPDATE plants SET photo_path = NULL, updated_at = ? WHERE id = ?")
@@ -98,7 +99,7 @@ pub async fn delete_photo(
         .bind(id)
         .execute(&state.pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     state.image_store.delete(&filename).await;
 

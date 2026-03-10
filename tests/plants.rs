@@ -52,6 +52,7 @@ async fn create_without_name() {
         .unwrap();
     assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
     let json = body_json(resp).await;
+    assert_eq!(json["code"], "PLANT_NAME_REQUIRED");
     assert!(json["message"].is_string());
 }
 
@@ -110,6 +111,7 @@ async fn get_nonexistent() {
         .unwrap();
     assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     let json = body_json(resp).await;
+    assert_eq!(json["code"], "PLANT_NOT_FOUND");
     assert!(json["message"].is_string());
 }
 
@@ -211,6 +213,7 @@ async fn invalid_json_returns_400() {
         .unwrap();
     assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
     let json = body_json(resp).await;
+    assert_eq!(json["code"], "INVALID_REQUEST_BODY");
     assert!(json["message"].is_string());
 }
 
@@ -388,37 +391,49 @@ fn status_overdue() {
 fn care_info_valid_values() {
     assert!(
         validate_care_info(
-            "difficulty",
             Some("easy"),
-            &["easy", "moderate", "demanding"]
+            &["easy", "moderate", "demanding"],
+            "PLANT_INVALID_DIFFICULTY",
         )
         .is_ok()
     );
     assert!(
         validate_care_info(
-            "difficulty",
             Some("moderate"),
-            &["easy", "moderate", "demanding"]
+            &["easy", "moderate", "demanding"],
+            "PLANT_INVALID_DIFFICULTY",
         )
         .is_ok()
     );
     assert!(
         validate_care_info(
-            "difficulty",
             Some("demanding"),
-            &["easy", "moderate", "demanding"]
+            &["easy", "moderate", "demanding"],
+            "PLANT_INVALID_DIFFICULTY",
         )
         .is_ok()
     );
-    assert!(validate_care_info("pet_safety", Some("safe"), &["safe", "caution", "toxic"]).is_ok());
     assert!(
-        validate_care_info("growth_speed", Some("slow"), &["slow", "moderate", "fast"]).is_ok()
+        validate_care_info(
+            Some("safe"),
+            &["safe", "caution", "toxic"],
+            "PLANT_INVALID_PET_SAFETY"
+        )
+        .is_ok()
     );
     assert!(
         validate_care_info(
-            "soil_type",
+            Some("slow"),
+            &["slow", "moderate", "fast"],
+            "PLANT_INVALID_GROWTH_SPEED"
+        )
+        .is_ok()
+    );
+    assert!(
+        validate_care_info(
             Some("cactus-mix"),
-            &["standard", "cactus-mix", "orchid-bark", "peat-moss"]
+            &["standard", "cactus-mix", "orchid-bark", "peat-moss"],
+            "PLANT_INVALID_SOIL_TYPE",
         )
         .is_ok()
     );
@@ -426,15 +441,22 @@ fn care_info_valid_values() {
 
 #[test]
 fn care_info_null_allowed() {
-    assert!(validate_care_info("difficulty", None, &["easy", "moderate", "demanding"]).is_ok());
+    assert!(
+        validate_care_info(
+            None,
+            &["easy", "moderate", "demanding"],
+            "PLANT_INVALID_DIFFICULTY"
+        )
+        .is_ok()
+    );
 }
 
 #[test]
 fn care_info_invalid_value() {
     let result = validate_care_info(
-        "difficulty",
         Some("impossible"),
         &["easy", "moderate", "demanding"],
+        "PLANT_INVALID_DIFFICULTY",
     );
     assert!(result.is_err());
 }

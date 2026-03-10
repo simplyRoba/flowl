@@ -273,7 +273,7 @@ async fn import_invalid_zip() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     let body = common::body_json(response).await;
-    assert!(body["message"].as_str().unwrap().contains("Invalid ZIP"));
+    assert_eq!(body["code"], "IMPORT_INVALID_ARCHIVE");
 }
 
 #[tokio::test]
@@ -293,12 +293,7 @@ async fn import_missing_data_json() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     let body = common::body_json(response).await;
-    assert!(
-        body["message"]
-            .as_str()
-            .unwrap()
-            .contains("missing data.json")
-    );
+    assert_eq!(body["code"], "IMPORT_INVALID_DATA");
 }
 
 #[tokio::test]
@@ -321,9 +316,7 @@ async fn import_version_mismatch() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     let body = common::body_json(response).await;
-    let msg = body["message"].as_str().unwrap();
-    assert!(msg.contains("Version mismatch"));
-    assert!(msg.contains("99.0.0"));
+    assert_eq!(body["code"], "IMPORT_VERSION_MISMATCH");
 }
 
 #[tokio::test]
@@ -370,12 +363,7 @@ async fn import_path_traversal_rejected() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     let body = common::body_json(response).await;
-    assert!(
-        body["message"]
-            .as_str()
-            .unwrap()
-            .contains("Invalid filename")
-    );
+    assert_eq!(body["code"], "IMPORT_INVALID_FILENAME");
 }
 
 // --- Validation tests ---
@@ -401,12 +389,7 @@ async fn import_rejects_empty_location_name() {
 
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     let body = common::body_json(response).await;
-    assert!(
-        body["message"]
-            .as_str()
-            .unwrap()
-            .contains("name is required")
-    );
+    assert_eq!(body["code"], "LOCATION_NAME_REQUIRED");
 }
 
 #[tokio::test]
@@ -437,12 +420,7 @@ async fn import_rejects_empty_plant_name() {
 
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     let body = common::body_json(response).await;
-    assert!(
-        body["message"]
-            .as_str()
-            .unwrap()
-            .contains("name is required")
-    );
+    assert_eq!(body["code"], "PLANT_NAME_REQUIRED");
 }
 
 #[tokio::test]
@@ -477,12 +455,7 @@ async fn import_rejects_invalid_event_type() {
 
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     let body = common::body_json(response).await;
-    assert!(
-        body["message"]
-            .as_str()
-            .unwrap()
-            .contains("Invalid event_type")
-    );
+    assert_eq!(body["code"], "CARE_EVENT_INVALID_TYPE");
 }
 
 #[tokio::test]
@@ -514,7 +487,7 @@ async fn import_rejects_invalid_care_info() {
 
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     let body = common::body_json(response).await;
-    assert!(body["message"].as_str().unwrap().contains("difficulty"));
+    assert_eq!(body["code"], "PLANT_INVALID_DIFFICULTY");
 }
 
 // --- Round-trip test ---

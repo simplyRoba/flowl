@@ -42,7 +42,7 @@ async fn mqtt_repair_disabled_returns_409() {
     assert_eq!(response.status(), StatusCode::CONFLICT);
 
     let json = common::body_json(response).await;
-    assert_eq!(json["message"], "MQTT is disabled");
+    assert_eq!(json["code"], "MQTT_DISABLED");
 }
 
 #[tokio::test]
@@ -57,5 +57,5 @@ async fn mqtt_repair_disconnected_returns_503() {
     assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
 
     let json = common::body_json(response).await;
-    assert_eq!(json["message"], "MQTT is not connected");
+    assert_eq!(json["code"], "MQTT_UNAVAILABLE");
 }

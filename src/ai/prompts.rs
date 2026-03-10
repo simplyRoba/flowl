@@ -95,8 +95,11 @@ pub async fn build_plant_context(
     .bind(plant_id)
     .fetch_optional(pool)
     .await
-    .map_err(|e| ApiError::InternalError(e.to_string()))?
-    .ok_or_else(|| ApiError::NotFound("Plant not found".to_string()))?;
+    .map_err(|e| {
+        tracing::error!("Database error: {e}");
+        ApiError::InternalError("INTERNAL_ERROR")
+    })?
+    .ok_or(ApiError::NotFound("PLANT_NOT_FOUND"))?;
 
     let (watering_status, _) = crate::api::plants::compute_watering_status(
         row.last_watered.as_deref(),
@@ -110,7 +113,10 @@ pub async fn build_plant_context(
     .bind(plant_id)
     .fetch_all(pool)
     .await
-    .map_err(|e| ApiError::InternalError(e.to_string()))?;
+    .map_err(|e| {
+        tracing::error!("Database error: {e}");
+        ApiError::InternalError("INTERNAL_ERROR")
+    })?;
 
     let recent_care_events = events
         .into_iter()

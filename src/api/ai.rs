@@ -48,14 +48,14 @@ pub async fn identify_plant(
     let provider = state
         .ai_provider
         .as_ref()
-        .ok_or_else(|| ApiError::ServiceUnavailable("AI provider is not configured".to_string()))?;
+        .ok_or(ApiError::ServiceUnavailable("AI_NOT_CONFIGURED"))?;
 
     let mut photos: Vec<Vec<u8>> = Vec::new();
 
     while let Some(field) = multipart
         .next_field()
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?
+        .map_err(|_| ApiError::BadRequest("INVALID_REQUEST_BODY"))?
     {
         let name = field.name().unwrap_or("").to_string();
         if name != "photos" && name != "photo" {
@@ -66,24 +66,20 @@ pub async fn identify_plant(
         match content_type.as_str() {
             "image/jpeg" | "image/png" | "image/webp" => {}
             _ => {
-                return Err(ApiError::Validation(
-                    "Invalid file type. Allowed: JPEG, PNG, WebP".to_string(),
-                ));
+                return Err(ApiError::Validation("PHOTO_INVALID_TYPE"));
             }
         }
 
         let data = field
             .bytes()
             .await
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+            .map_err(|_| ApiError::BadRequest("INVALID_REQUEST_BODY"))?;
 
         photos.push(data.to_vec());
     }
 
     if photos.is_empty() {
-        return Err(ApiError::Validation(
-            "At least one photo is required".to_string(),
-        ));
+        return Err(ApiError::Validation("PHOTO_NO_FILE"));
     }
 
     let locale = sqlx::query_scalar::<_, String>("SELECT locale FROM user_settings WHERE id = 1")
@@ -98,7 +94,7 @@ pub async fn identify_plant(
 
     let result = provider.identify(&image_refs, &locale).await.map_err(|e| {
         warn!(error = %e, "AI identify failed");
-        ApiError::InternalError(format!("AI identification failed: {e}"))
+        ApiError::InternalError("AI_PROVIDER_FAILED")
     })?;
 
     debug!(
@@ -159,7 +155,7 @@ pub async fn chat(
     let provider = state
         .ai_provider
         .as_ref()
-        .ok_or_else(|| ApiError::ServiceUnavailable("AI provider is not configured".to_string()))?;
+        .ok_or(ApiError::ServiceUnavailable("AI_NOT_CONFIGURED"))?;
 
     let context = prompts::build_plant_context(&state.pool, body.plant_id).await?;
     let locale = get_locale(&state.pool).await;
@@ -170,7 +166,7 @@ pub async fn chat(
         .as_ref()
         .map(|b64| STANDARD.decode(b64))
         .transpose()
-        .map_err(|e| ApiError::BadRequest(format!("Invalid base64 image: {e}")))?;
+        .map_err(|_| ApiError::BadRequest("AI_INVALID_IMAGE"))?;
 
     let image_ref = image_bytes.as_deref();
 
@@ -194,7 +190,7 @@ pub async fn chat(
         .await
         .map_err(|e| {
             warn!(error = %e, "AI chat failed");
-            ApiError::InternalError(format!("AI chat failed: {e}"))
+            ApiError::InternalError("AI_PROVIDER_FAILED")
         })?;
 
     let sse_stream = stream.map(|result| {
@@ -226,12 +222,10 @@ pub async fn summarize(
     let provider = state
         .ai_provider
         .as_ref()
-        .ok_or_else(|| ApiError::ServiceUnavailable("AI provider is not configured".to_string()))?;
+        .ok_or(ApiError::ServiceUnavailable("AI_NOT_CONFIGURED"))?;
 
     if body.history.is_empty() {
-        return Err(ApiError::Validation(
-            "History must contain at least one message".to_string(),
-        ));
+        return Err(ApiError::Validation("AI_HISTORY_EMPTY"));
     }
 
     let context = prompts::build_plant_context(&state.pool, body.plant_id).await?;
@@ -250,7 +244,7 @@ pub async fn summarize(
         .await
         .map_err(|e| {
             warn!(error = %e, "AI summarize failed");
-            ApiError::InternalError(format!("AI summarize failed: {e}"))
+            ApiError::InternalError("AI_PROVIDER_FAILED")
         })?;
 
     Ok(Json(SummarizeResponse { summary }))

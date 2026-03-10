@@ -131,7 +131,7 @@ async fn chat_returns_503_when_ai_not_configured() {
     assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
 
     let body = common::body_json(response).await;
-    assert_eq!(body["message"], "AI provider is not configured");
+    assert_eq!(body["code"], "AI_NOT_CONFIGURED");
 }
 
 #[tokio::test]
@@ -249,5 +249,5 @@ async fn chat_returns_500_when_provider_fails() {
     assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
 
     let body = common::body_json(response).await;
-    assert!(body["message"].as_str().unwrap().contains("AI chat failed"));
+    assert_eq!(body["code"], "AI_PROVIDER_FAILED");
 }

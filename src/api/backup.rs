@@ -9,7 +9,7 @@ use zip::write::SimpleFileOptions;
 
 use tracing::info;
 
-use super::error::ApiError;
+use super::error::{ApiError, db_error};
 use crate::images::is_thumbnail_filename;
 use crate::state::AppState;
 
@@ -61,13 +61,12 @@ pub struct ExportCareEvent {
 }
 
 /// # Errors
-/// Returns `ApiError::BadRequest` on database failures, or
-/// `ApiError::InternalError` if the ZIP archive cannot be created.
+/// Returns `ApiError::InternalError` on database failures or if the ZIP archive cannot be created.
 pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiError> {
     let locations = sqlx::query_as::<_, ExportLocation>("SELECT id, name FROM locations")
         .fetch_all(&state.pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     let plants = sqlx::query_as::<_, ExportPlant>(
         "SELECT id, name, species, icon, photo_path, location_id, watering_interval_days, \
@@ -77,14 +76,14 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
     )
     .fetch_all(&state.pool)
     .await
-    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    .map_err(db_error)?;
 
     let care_events = sqlx::query_as::<_, ExportCareEvent>(
         "SELECT id, plant_id, event_type, notes, photo_path, occurred_at, created_at FROM care_events",
     )
     .fetch_all(&state.pool)
     .await
-    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    .map_err(db_error)?;
 
     let data = ExportData {
         version: env!("CARGO_PKG_VERSION").to_string(),
@@ -101,18 +100,24 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
         "Data export started"
     );
 
-    let json =
-        serde_json::to_string_pretty(&data).map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    let json = serde_json::to_string_pretty(&data).map_err(|e| {
+        tracing::error!("JSON serialization failed: {e}");
+        ApiError::InternalError("INTERNAL_ERROR")
+    })?;
 
     let mut buf = Vec::new();
     {
         let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
         let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 
-        zip.start_file("data.json", options)
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
-        zip.write_all(json.as_bytes())
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        zip.start_file("data.json", options).map_err(|e| {
+            tracing::error!("ZIP write failed: {e}");
+            ApiError::InternalError("INTERNAL_ERROR")
+        })?;
+        zip.write_all(json.as_bytes()).map_err(|e| {
+            tracing::error!("ZIP write failed: {e}");
+            ApiError::InternalError("INTERNAL_ERROR")
+        })?;
 
         // Add original photo files (plants + care events), excluding thumbnails
         let photo_paths: Vec<&str> = data
@@ -131,15 +136,21 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
             let file_path = state.image_store.upload_dir().join(photo_path);
             if let Ok(photo_data) = tokio::fs::read(&file_path).await {
                 let archive_path = format!("photos/{photo_path}");
-                zip.start_file(&archive_path, options)
-                    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
-                zip.write_all(&photo_data)
-                    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+                zip.start_file(&archive_path, options).map_err(|e| {
+                    tracing::error!("ZIP write failed: {e}");
+                    ApiError::InternalError("INTERNAL_ERROR")
+                })?;
+                zip.write_all(&photo_data).map_err(|e| {
+                    tracing::error!("ZIP write failed: {e}");
+                    ApiError::InternalError("INTERNAL_ERROR")
+                })?;
             }
         }
 
-        zip.finish()
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        zip.finish().map_err(|e| {
+            tracing::error!("ZIP finalize failed: {e}");
+            ApiError::InternalError("INTERNAL_ERROR")
+        })?;
     }
 
     Ok((

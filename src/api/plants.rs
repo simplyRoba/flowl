@@ -7,7 +7,7 @@ use sqlx::SqlitePool;
 
 use tracing::{debug, info};
 
-use super::error::{ApiError, JsonBody};
+use super::error::{ApiError, JsonBody, db_error};
 use crate::mqtt;
 use crate::state::AppState;
 
@@ -106,20 +106,18 @@ const VALID_SOIL_MOISTURE: &[&str] = &["dry", "moderate", "moist"];
 
 /// # Errors
 /// Returns `ApiError::Validation` if the name is empty or whitespace-only.
-pub fn validate_required_name(entity: &str, name: &str) -> Result<(), ApiError> {
+pub fn validate_required_name(name: &str, code: &'static str) -> Result<(), ApiError> {
     if name.trim().is_empty() {
-        return Err(ApiError::Validation(format!("{entity} name is required")));
+        return Err(ApiError::Validation(code));
     }
     Ok(())
 }
 
 /// # Errors
-/// Returns `ApiError::Validation` if the value is outside the 1–365 range.
+/// Returns `ApiError::Validation` if the value is outside the 1-365 range.
 pub fn validate_watering_interval(days: i64) -> Result<(), ApiError> {
     if !(1..=365).contains(&days) {
-        return Err(ApiError::Validation(
-            "watering_interval_days must be between 1 and 365".to_string(),
-        ));
+        return Err(ApiError::Validation("PLANT_INVALID_WATERING_INTERVAL"));
     }
     Ok(())
 }
@@ -127,16 +125,14 @@ pub fn validate_watering_interval(days: i64) -> Result<(), ApiError> {
 /// # Errors
 /// Returns `ApiError::Validation` if the value is not in the allowed set.
 pub fn validate_care_info(
-    field: &str,
     value: Option<&str>,
     allowed: &[&str],
+    code: &'static str,
 ) -> Result<(), ApiError> {
     if let Some(v) = value
         && !allowed.contains(&v)
     {
-        return Err(ApiError::Validation(format!(
-            "Invalid value for {field}: \"{v}\""
-        )));
+        return Err(ApiError::Validation(code));
     }
     Ok(())
 }
@@ -145,9 +141,7 @@ pub fn validate_care_info(
 /// Returns `ApiError::Validation` if the value is not in the allowed set.
 pub fn validate_light_needs(value: &str) -> Result<(), ApiError> {
     if !VALID_LIGHT_NEEDS.contains(&value) {
-        return Err(ApiError::Validation(format!(
-            "Invalid value for light_needs: \"{value}\""
-        )));
+        return Err(ApiError::Validation("PLANT_INVALID_LIGHT_NEEDS"));
     }
     Ok(())
 }
@@ -161,11 +155,19 @@ pub fn validate_all_care_info(
     soil_type: Option<&str>,
     soil_moisture: Option<&str>,
 ) -> Result<(), ApiError> {
-    validate_care_info("difficulty", difficulty, VALID_DIFFICULTY)?;
-    validate_care_info("pet_safety", pet_safety, VALID_PET_SAFETY)?;
-    validate_care_info("growth_speed", growth_speed, VALID_GROWTH_SPEED)?;
-    validate_care_info("soil_type", soil_type, VALID_SOIL_TYPE)?;
-    validate_care_info("soil_moisture", soil_moisture, VALID_SOIL_MOISTURE)?;
+    validate_care_info(difficulty, VALID_DIFFICULTY, "PLANT_INVALID_DIFFICULTY")?;
+    validate_care_info(pet_safety, VALID_PET_SAFETY, "PLANT_INVALID_PET_SAFETY")?;
+    validate_care_info(
+        growth_speed,
+        VALID_GROWTH_SPEED,
+        "PLANT_INVALID_GROWTH_SPEED",
+    )?;
+    validate_care_info(soil_type, VALID_SOIL_TYPE, "PLANT_INVALID_SOIL_TYPE")?;
+    validate_care_info(
+        soil_moisture,
+        VALID_SOIL_MOISTURE,
+        "PLANT_INVALID_SOIL_MOISTURE",
+    )?;
     Ok(())
 }
 
@@ -255,20 +257,20 @@ pub struct UpdatePlant {
 }
 
 /// # Errors
-/// Returns `ApiError::BadRequest` on database failures.
+/// Returns `ApiError::InternalError` on database failures.
 pub async fn list_plants(State(pool): State<SqlitePool>) -> Result<Json<Vec<Plant>>, ApiError> {
     let query = format!("{PLANT_SELECT} ORDER BY p.name");
     let rows = sqlx::query_as::<_, PlantRow>(&query)
         .fetch_all(&pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     Ok(Json(rows.into_iter().map(Plant::from).collect()))
 }
 
 /// # Errors
 /// Returns `ApiError::NotFound` if the plant does not exist, or
-/// `ApiError::BadRequest` on database failures.
+/// `ApiError::InternalError` on database failures.
 pub async fn get_plant(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
@@ -278,23 +280,23 @@ pub async fn get_plant(
         .bind(id)
         .fetch_optional(&pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?
-        .ok_or_else(|| ApiError::NotFound("Plant not found".to_string()))?;
+        .map_err(db_error)?
+        .ok_or(ApiError::NotFound("PLANT_NOT_FOUND"))?;
 
     Ok(Json(Plant::from(row)))
 }
 
 /// # Errors
 /// Returns `ApiError::Validation` if name is missing or care info values are invalid, or
-/// `ApiError::BadRequest` on database failures.
+/// `ApiError::InternalError` on database failures.
 pub async fn create_plant(
     State(state): State<AppState>,
     JsonBody(body): JsonBody<CreatePlant>,
 ) -> Result<(StatusCode, Json<Plant>), ApiError> {
     let name = body
         .name
-        .ok_or_else(|| ApiError::Validation("Plant name is required".to_string()))?;
-    validate_required_name("Plant", &name)?;
+        .ok_or(ApiError::Validation("PLANT_NAME_REQUIRED"))?;
+    validate_required_name(&name, "PLANT_NAME_REQUIRED")?;
     let name = name.trim().to_string();
 
     let icon = body
@@ -340,14 +342,14 @@ pub async fn create_plant(
     .bind(&now)
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    .map_err(db_error)?;
 
     let query = format!("{PLANT_SELECT} WHERE p.id = ?");
     let row = sqlx::query_as::<_, PlantRow>(&query)
         .bind(id)
         .fetch_one(&state.pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     let plant = Plant::from(row);
     info!(plant_id = id, name = %plant.name, "Plant created");
@@ -382,7 +384,7 @@ pub async fn create_plant(
 /// # Errors
 /// Returns `ApiError::NotFound` if the plant does not exist,
 /// `ApiError::Validation` if care info values are invalid, or
-/// `ApiError::BadRequest` on database failures.
+/// `ApiError::InternalError` on database failures.
 pub async fn update_plant(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -393,8 +395,8 @@ pub async fn update_plant(
         .bind(id)
         .fetch_optional(&state.pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?
-        .ok_or_else(|| ApiError::NotFound("Plant not found".to_string()))?;
+        .map_err(db_error)?
+        .ok_or(ApiError::NotFound("PLANT_NOT_FOUND"))?;
 
     let name = body.name.unwrap_or(current.name);
     let species = body.species.unwrap_or(current.species);
@@ -444,13 +446,13 @@ pub async fn update_plant(
     .bind(id)
     .execute(&state.pool)
     .await
-    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    .map_err(db_error)?;
 
     let row = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
         .bind(id)
         .fetch_one(&state.pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     let plant = Plant::from(row);
     debug!(plant_id = id, "Plant updated");
@@ -484,7 +486,7 @@ pub async fn update_plant(
 
 /// # Errors
 /// Returns `ApiError::NotFound` if the plant does not exist, or
-/// `ApiError::BadRequest` on database failures.
+/// `ApiError::InternalError` on database failures.
 pub async fn water_plant(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -496,13 +498,13 @@ pub async fn water_plant(
         .bind(id)
         .execute(&state.pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     if result.rows_affected() == 0 {
-        return Err(ApiError::NotFound("Plant not found".to_string()));
+        return Err(ApiError::NotFound("PLANT_NOT_FOUND"));
     }
 
-    // Record the watering care event — last_watered is computed from this
+    // Record the watering care event -- last_watered is computed from this
     sqlx::query(
         "INSERT INTO care_events (plant_id, event_type, occurred_at, created_at) VALUES (?, 'watered', ?, ?)",
     )
@@ -511,13 +513,13 @@ pub async fn water_plant(
     .bind(&now)
     .execute(&state.pool)
     .await
-    .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+    .map_err(db_error)?;
 
     let row = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
         .bind(id)
         .fetch_one(&state.pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     let plant = Plant::from(row);
     debug!(plant_id = id, "Plant watered");
@@ -544,7 +546,7 @@ pub async fn water_plant(
 
 /// # Errors
 /// Returns `ApiError::NotFound` if the plant does not exist, or
-/// `ApiError::BadRequest` on database failures.
+/// `ApiError::InternalError` on database failures.
 pub async fn delete_plant(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -555,17 +557,17 @@ pub async fn delete_plant(
             .bind(id)
             .fetch_optional(&state.pool)
             .await
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?
-            .ok_or_else(|| ApiError::NotFound("Plant not found".to_string()))?;
+            .map_err(db_error)?
+            .ok_or(ApiError::NotFound("PLANT_NOT_FOUND"))?;
 
     let result = sqlx::query("DELETE FROM plants WHERE id = ?")
         .bind(id)
         .execute(&state.pool)
         .await
-        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+        .map_err(db_error)?;
 
     if result.rows_affected() == 0 {
-        return Err(ApiError::NotFound("Plant not found".to_string()));
+        return Err(ApiError::NotFound("PLANT_NOT_FOUND"));
     }
 
     // Delete photo file if exists
