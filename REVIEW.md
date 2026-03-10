@@ -94,7 +94,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | X4 | **No E2E tests** | 3 | 4 | | Unit and integration tests are solid, but no Playwright/Cypress tests verify the full stack. The `tests/ui.rs` file is just 29 lines testing static file serving. |
 | X5 | **Import version check is too strict** | 4 | 1 | | `check_version` requires matching major.minor. A 0.24 export can't be imported into 0.25 even if the schema hasn't changed. Could check migration compatibility instead. |
 | X6 | **No structured logging output** | 4 | 2 | | Uses `tracing_subscriber::fmt()` which outputs human-readable logs. For a Docker service, JSON structured logging would be better for log aggregation. |
-| X7 | **Health check doesn't verify DB** | 4 | 1 | | `/health` returns `{"status": "ok"}` unconditionally without checking if the DB pool is healthy. |
+| X7 | **Health check doesn't verify DB** | 4 | 1 | ✅ | `/health` returns `{"status": "ok"}` unconditionally without checking if the DB pool is healthy. |
 | X8 | **Test upload directories not cleaned up** | 5 | 1 | | `test_app_with_uploads` creates temp dirs with UUIDs under `std::env::temp_dir()` but there's no cleanup. They accumulate over time on dev machines. |
 | X9 | **`unsafe` env var manipulation in config tests** | 4 | 2 | | `env::set_var`/`env::remove_var` are `unsafe` in Rust 2024 edition and require `unsafe` blocks. The tests work but the pattern is fragile with parallel test execution (mitigated by `ENV_LOCK` mutex). |
 
@@ -107,7 +107,7 @@ Difficulty: 1 = trivial, 5 = very hard
 1. ~~**B1 + U1: Error handling overhaul** (imp 2, diff 3) — Backend error codes done. Frontend error mapping pending.~~
 2. ~~**B4: `compute_watering_status` logic bug** (imp 3, diff 1) — Not a bug; the code is correct.~~
 3. ~~**B2: Validate `light_needs`** (imp 2, diff 1) — One-liner to add the same validation pattern used for all other enum fields.~~
-4. **X7: Health check DB verification** (imp 4, diff 1) — Add a simple `SELECT 1` to the health endpoint.
+4. ~~**X7: Health check DB verification** (imp 4, diff 1) — Add a simple `SELECT 1` to the health endpoint.~~
 5. **X1: Auth documentation or implementation** (imp 2, diff 1-4) — At minimum add a security note to README. Optionally add basic auth or API key support.
 
 ### Quick wins (low difficulty, meaningful impact)
@@ -115,7 +115,7 @@ Difficulty: 1 = trivial, 5 = very hard
 - ~~B2: Validate `light_needs` (diff 1)~~
 - ~~B4: Fix watering status logic (diff 1) — not a bug~~
 - B6: Count care event photos in stats (diff 1)
-- X7: DB health check (diff 1)
+- ~~X7: DB health check (diff 1)~~
 - X5: Relax import version check (diff 1)
 - U8: Add union types for status fields (diff 2)
 - U9: Add toast auto-dismiss timeout (diff 2)
