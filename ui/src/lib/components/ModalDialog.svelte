@@ -134,7 +134,7 @@
 
   .btn-danger-fill {
     background: var(--color-danger);
-    color: #fff;
+    color: var(--color-text-on-danger);
   }
 
   .btn-danger-fill:hover:not(:disabled) {

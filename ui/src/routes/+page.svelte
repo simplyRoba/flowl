@@ -395,7 +395,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #fff;
+    color: var(--color-text-on-image);
     text-shadow:
       0 1px 2px rgba(0, 0, 0, 0.55),
       0 6px 18px rgba(0, 0, 0, 0.28);
