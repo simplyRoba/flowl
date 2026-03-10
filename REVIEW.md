@@ -66,7 +66,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | U6 | **CSS duplication across components** | 4 | 3 | | CSS is all in `<style>` blocks within components. Shared CSS files exist (`buttons.css`, `chips.css`, etc.) but many page-level styles are duplicated (`.error`, `.loading`, card patterns). |
 | U7 | **Hardcoded color values in component styles** | 4 | 2 | | Most colors use CSS vars, but some components have hardcoded `rgba(0,0,0,...)` and `#fff` values, especially in card overlays and shadows. |
 | U8 | **Stringly-typed status fields** | 4 | 2 | | `Plant.watering_status` is `string` but only has 3 values. Should be a union type `"ok" \| "due" \| "overdue"`. Same for `event_type`, `light_needs`, `difficulty`, etc. |
-| U9 | **Notification auto-dismiss missing** | 4 | 2 | | `ToastHost` shows notifications but they stack without automatic dismissal (only `MAX_VISIBLE=3` limit). No timeout-based auto-dismiss. |
+| U9 | **Notification auto-dismiss missing** | 4 | 2 | ✅ | `ToastHost` shows notifications but they stack without automatic dismissal (only `MAX_VISIBLE=3` limit). No timeout-based auto-dismiss. |
 | U10 | **Accessibility gaps** | 3 | 3 | | Some good patterns (aria-labels on icon buttons, `aria-live` on pull indicator), but no comprehensive a11y testing. Interactive cards use `<a>` with nested `<button>` children which can cause nested interactive element issues. |
 
 ---
@@ -118,7 +118,7 @@ Difficulty: 1 = trivial, 5 = very hard
 - ~~X7: DB health check (diff 1)~~
 - ~~X5: Relax import version check (diff 1) — won't fix, version added to export filename~~
 - U8: Add union types for status fields (diff 2)
-- U9: Add toast auto-dismiss timeout (diff 2)
+- ~~U9: Add toast auto-dismiss timeout (diff 2) — already implemented~~
 
 ### Longer-term improvements
 
