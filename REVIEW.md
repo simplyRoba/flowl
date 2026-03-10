@@ -58,7 +58,7 @@ Difficulty: 1 = trivial, 5 = very hard
 
 | # | Issue | Imp. | Diff. | Done | Details |
 |---|-------|------|-------|------|---------|
-| U1 | **Backend error strings shown directly in UI** | 2 | 4 | | Already noted in `TODO.md`. Store error handlers do `e instanceof Error ? e.message : t.error.xxx` — the first branch shows raw backend English strings (e.g., "Plant name is required") regardless of active locale. Needs error codes from the API mapped to i18n keys. |
+| U1 | **Backend error strings shown directly in UI** | 2 | 4 | ✅ | Already noted in `TODO.md`. Store error handlers do `e instanceof Error ? e.message : t.error.xxx` — the first branch shows raw backend English strings (e.g., "Plant name is required") regardless of active locale. Needs error codes from the API mapped to i18n keys. |
 | U2 | **No loading states for many operations** | 3 | 2 | | Settings page, locations management, import/export — many operations don't show loading indicators. The user gets no feedback during network calls. |
 | U3 | **Plant detail page re-fetches everything on every action** | 3 | 2 | | `refreshPlantDetails` fetches both plant and care events after any action (water, delete event, add event). This works but is wasteful — watering only changes plant state, not care event photos. |
 | U4 | **No offline support** | 3 | 5 | | `TODO.md` lists this. As a self-hosted service often used on mobile, losing connectivity means a blank screen. |
@@ -125,5 +125,5 @@ Difficulty: 1 = trivial, 5 = very hard
 - U4: Offline support / service worker (diff 5)
 - X1: Authentication system (diff 4)
 - X4: E2E test suite (diff 4)
-- U1: Full error code system (diff 4)
+- ~~U1: Full error code system (diff 4)~~
 - B9: AI rate limiting (diff 3)

@@ -110,12 +110,14 @@ export interface ChatMessage {
   image?: string;
 }
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number;
+  code: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, code: string, message: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -136,7 +138,7 @@ async function request<T>(
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({ message: resp.statusText }));
-    throw new ApiError(resp.status, data.message || resp.statusText);
+    throw new ApiError(resp.status, data.code || "UNKNOWN_ERROR", data.message || resp.statusText);
   }
 
   if (resp.status === 204) {
@@ -187,7 +189,7 @@ export async function identifyPlant(photos: File[]): Promise<IdentifyResponse> {
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({ message: resp.statusText }));
-    throw new ApiError(resp.status, data.message || resp.statusText);
+    throw new ApiError(resp.status, data.code || "UNKNOWN_ERROR", data.message || resp.statusText);
   }
 
   return resp.json();
@@ -256,7 +258,7 @@ export async function exportData(): Promise<void> {
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({ message: resp.statusText }));
-    throw new ApiError(resp.status, data.message || resp.statusText);
+    throw new ApiError(resp.status, data.code || "UNKNOWN_ERROR", data.message || resp.statusText);
   }
 
   const blob = await resp.blob();
@@ -408,7 +410,7 @@ export async function* chatPlant(
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({ message: resp.statusText }));
-    throw new ApiError(resp.status, data.message || resp.statusText);
+    throw new ApiError(resp.status, data.code || "UNKNOWN_ERROR", data.message || resp.statusText);
   }
 
   const reader = resp.body!.getReader();

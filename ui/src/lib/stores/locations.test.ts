@@ -10,12 +10,16 @@ import {
   deleteLocation,
 } from "./locations";
 
-vi.mock("$lib/api", () => ({
-  fetchLocations: vi.fn(),
-  createLocation: vi.fn(),
-  updateLocation: vi.fn(),
-  deleteLocation: vi.fn(),
-}));
+vi.mock("$lib/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("$lib/api")>();
+  return {
+    ...actual,
+    fetchLocations: vi.fn(),
+    createLocation: vi.fn(),
+    updateLocation: vi.fn(),
+    deleteLocation: vi.fn(),
+  };
+});
 
 import * as api from "$lib/api";
 
@@ -40,15 +44,18 @@ describe("loadLocations", () => {
     expect(get(locationsError)).toBeNull();
   });
 
-  it("sets error on failure", async () => {
-    vi.mocked(api.fetchLocations).mockRejectedValue(new Error("Network error"));
+  it("resolves ApiError code to i18n message", async () => {
+    const { ApiError } = await import("$lib/api");
+    vi.mocked(api.fetchLocations).mockRejectedValue(
+      new ApiError(500, "INTERNAL_ERROR", "An internal error occurred"),
+    );
     await loadLocations();
     expect(get(locations)).toEqual([]);
-    expect(get(locationsError)).toBe("Network error");
+    expect(get(locationsError)).toBe("Something went wrong. Please try again.");
   });
 
-  it("uses fallback message for non-Error throws", async () => {
-    vi.mocked(api.fetchLocations).mockRejectedValue(42);
+  it("uses fallback message for non-ApiError throws", async () => {
+    vi.mocked(api.fetchLocations).mockRejectedValue(new Error("Network error"));
     await loadLocations();
     expect(get(locationsError)).toBe("Failed to load locations");
   });
@@ -65,22 +72,23 @@ describe("createLocation", () => {
     expect(list[1].name).toBe("Kitchen");
   });
 
-  it("sets error on failure", async () => {
-    vi.mocked(api.createLocation).mockRejectedValue(new Error("Duplicate"));
+  it("resolves ApiError code to i18n message", async () => {
+    const { ApiError } = await import("$lib/api");
+    vi.mocked(api.createLocation).mockRejectedValue(
+      new ApiError(409, "LOCATION_ALREADY_EXISTS", "A location with this name already exists"),
+    );
     const result = await createLocation("Bedroom");
-    expect(result).toEqual({ error: "Duplicate" });
-    expect(get(locationsError)).toBe("Duplicate");
+    expect(result).toEqual({
+      error: "A location with this name already exists",
+    });
+    expect(get(locationsError)).toBe("A location with this name already exists");
   });
 
-  it("translates duplicate create errors from the backend", async () => {
-    vi.mocked(api.createLocation).mockRejectedValue(
-      new Error("Location 'Bedroom' already exists"),
-    );
-
+  it("uses fallback for non-ApiError", async () => {
+    vi.mocked(api.createLocation).mockRejectedValue(new Error("Network error"));
     const result = await createLocation("Bedroom");
-
-    expect(result).toEqual({ error: 'Location "Bedroom" already exists' });
-    expect(get(locationsError)).toBe('Location "Bedroom" already exists');
+    expect(result).toEqual({ error: "Failed to create location" });
+    expect(get(locationsError)).toBe("Failed to create location");
   });
 });
 
@@ -96,22 +104,23 @@ describe("updateLocation", () => {
     expect(list[1].name).toBe("Patio");
   });
 
-  it("sets error on failure", async () => {
-    vi.mocked(api.updateLocation).mockRejectedValue(new Error("Update failed"));
-    const result = await updateLocation(1, "New Name");
-    expect(result).toEqual({ error: "Update failed" });
-    expect(get(locationsError)).toBe("Update failed");
+  it("resolves ApiError code to i18n message", async () => {
+    const { ApiError } = await import("$lib/api");
+    vi.mocked(api.updateLocation).mockRejectedValue(
+      new ApiError(409, "LOCATION_ALREADY_EXISTS", "A location with this name already exists"),
+    );
+    const result = await updateLocation(1, "Kitchen");
+    expect(result).toEqual({
+      error: "A location with this name already exists",
+    });
+    expect(get(locationsError)).toBe("A location with this name already exists");
   });
 
-  it("translates duplicate update errors from the backend", async () => {
-    vi.mocked(api.updateLocation).mockRejectedValue(
-      new Error("Location 'Kitchen' already exists"),
-    );
-
-    const result = await updateLocation(1, "Kitchen");
-
-    expect(result).toEqual({ error: 'Location "Kitchen" already exists' });
-    expect(get(locationsError)).toBe('Location "Kitchen" already exists');
+  it("uses fallback for non-ApiError", async () => {
+    vi.mocked(api.updateLocation).mockRejectedValue(new Error("Update failed"));
+    const result = await updateLocation(1, "New Name");
+    expect(result).toEqual({ error: "Failed to update location" });
+    expect(get(locationsError)).toBe("Failed to update location");
   });
 });
 
@@ -128,6 +137,6 @@ describe("deleteLocation", () => {
     vi.mocked(api.deleteLocation).mockRejectedValue(new Error("Delete failed"));
     const result = await deleteLocation(1);
     expect(result).toBe(false);
-    expect(get(locationsError)).toBe("Delete failed");
+    expect(get(locationsError)).toBe("Failed to delete location");
   });
 });

@@ -17,10 +17,8 @@
 - Ollama provider implementation (behind the same trait)
 - Provider selection via env var or Settings UI
 
-## Error Handling & Localization
+## Error Handling — SSE Streams
 
-- Stop showing backend-provided error strings directly in the UI; they bypass frontend localization and are never translated correctly for the active locale
-- Introduce stable error codes / translation keys for API validation and conflict responses, then map them to localized frontend messages
 - SSE mid-stream errors in `src/api/ai.rs` send raw provider error strings (`{"error": err}`), bypassing the structured `{"code", "message"}` format. Consider redacting internal details or using a code-based format.
 
 ## PWA Level 2 — Enhanced Install Experience

@@ -1,7 +1,7 @@
-import { writable, get } from "svelte/store";
+import { writable } from "svelte/store";
 import type { CareEvent, CreateCareEvent } from "$lib/api";
 import * as api from "$lib/api";
-import { translations } from "./locale";
+import { resolveError } from "./errors";
 
 export const careEvents = writable<CareEvent[]>([]);
 export const careError = writable<string | null>(null);
@@ -12,9 +12,7 @@ export async function loadCareEvents(plantId: number) {
     const data = await api.fetchCareEvents(plantId);
     careEvents.set(data);
   } catch (e) {
-    careError.set(
-      e instanceof Error ? e.message : get(translations).error.loadCareEvents,
-    );
+    careError.set(resolveError(e, "loadCareEvents"));
   }
 }
 
@@ -37,9 +35,7 @@ export async function addCareEvent(
     careEvents.update((list) => sortEvents([event, ...list]));
     return event;
   } catch (e) {
-    careError.set(
-      e instanceof Error ? e.message : get(translations).error.addCareEvent,
-    );
+    careError.set(resolveError(e, "addCareEvent"));
     return null;
   }
 }
@@ -54,9 +50,7 @@ export async function deleteCareEvent(
     careEvents.update((list) => list.filter((e) => e.id !== eventId));
     return true;
   } catch (e) {
-    careError.set(
-      e instanceof Error ? e.message : get(translations).error.deleteCareEvent,
-    );
+    careError.set(resolveError(e, "deleteCareEvent"));
     return false;
   }
 }

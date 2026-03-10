@@ -1,21 +1,12 @@
-import { writable, get } from "svelte/store";
+import { writable } from "svelte/store";
 import type { Location } from "$lib/api";
 import * as api from "$lib/api";
-import { translations } from "./locale";
+import { resolveError } from "./errors";
 
 export const locations = writable<Location[]>([]);
 export const locationsError = writable<string | null>(null);
 
 export type CreateLocationResult = { location: Location } | { error: string };
-
-function localizeLocationError(message: string): string {
-  const match = /^Location ['"](.+?)['"] already exists$/.exec(message);
-  if (match) {
-    return get(translations).form.locationExists.replace("{name}", match[1]);
-  }
-
-  return message;
-}
 
 export async function loadLocations() {
   locationsError.set(null);
@@ -23,9 +14,7 @@ export async function loadLocations() {
     const data = await api.fetchLocations();
     locations.set(data);
   } catch (e) {
-    locationsError.set(
-      e instanceof Error ? e.message : get(translations).error.loadLocations,
-    );
+    locationsError.set(resolveError(e, "loadLocations"));
   }
 }
 
@@ -40,10 +29,7 @@ export async function createLocation(
     );
     return { location };
   } catch (e) {
-    const message =
-      e instanceof Error
-        ? localizeLocationError(e.message)
-        : get(translations).error.createLocation;
+    const message = resolveError(e, "createLocation");
     locationsError.set(message);
     return { error: message };
   }
@@ -63,10 +49,7 @@ export async function updateLocation(
     );
     return { location };
   } catch (e) {
-    const message =
-      e instanceof Error
-        ? localizeLocationError(e.message)
-        : get(translations).error.updateLocation;
+    const message = resolveError(e, "updateLocation");
     locationsError.set(message);
     return { error: message };
   }
@@ -79,9 +62,7 @@ export async function deleteLocation(id: number): Promise<boolean> {
     locations.update((list) => list.filter((l) => l.id !== id));
     return true;
   } catch (e) {
-    locationsError.set(
-      e instanceof Error ? e.message : get(translations).error.deleteLocation,
-    );
+    locationsError.set(resolveError(e, "deleteLocation"));
     return false;
   }
 }

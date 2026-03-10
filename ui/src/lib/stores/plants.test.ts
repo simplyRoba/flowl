@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Plant, CreatePlant, UpdatePlant } from "$lib/api";
+import { ApiError } from "$lib/api";
 import {
   plants,
   currentPlant,
@@ -15,16 +16,20 @@ import {
   deletePhoto,
 } from "./plants";
 
-vi.mock("$lib/api", () => ({
-  fetchPlants: vi.fn(),
-  fetchPlant: vi.fn(),
-  createPlant: vi.fn(),
-  updatePlant: vi.fn(),
-  deletePlant: vi.fn(),
-  waterPlant: vi.fn(),
-  uploadPlantPhoto: vi.fn(),
-  deletePlantPhoto: vi.fn(),
-}));
+vi.mock("$lib/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("$lib/api")>();
+  return {
+    ...actual,
+    fetchPlants: vi.fn(),
+    fetchPlant: vi.fn(),
+    createPlant: vi.fn(),
+    updatePlant: vi.fn(),
+    deletePlant: vi.fn(),
+    waterPlant: vi.fn(),
+    uploadPlantPhoto: vi.fn(),
+    deletePlantPhoto: vi.fn(),
+  };
+});
 
 import * as api from "$lib/api";
 
@@ -73,15 +78,17 @@ describe("loadPlants", () => {
     expect(get(plantsError)).toBeNull();
   });
 
-  it("sets error on failure", async () => {
-    vi.mocked(api.fetchPlants).mockRejectedValue(new Error("Network error"));
+  it("resolves ApiError code to i18n message", async () => {
+    vi.mocked(api.fetchPlants).mockRejectedValue(
+      new ApiError(500, "INTERNAL_ERROR", "An internal error occurred"),
+    );
     await loadPlants();
     expect(get(plants)).toEqual([]);
-    expect(get(plantsError)).toBe("Network error");
+    expect(get(plantsError)).toBe("Something went wrong. Please try again.");
   });
 
-  it("sets fallback error for non-Error throws", async () => {
-    vi.mocked(api.fetchPlants).mockRejectedValue("unknown");
+  it("sets fallback error for non-ApiError throws", async () => {
+    vi.mocked(api.fetchPlants).mockRejectedValue(new Error("Network error"));
     await loadPlants();
     expect(get(plantsError)).toBe("Failed to load plants");
   });
@@ -98,11 +105,13 @@ describe("loadPlant", () => {
 
   it("sets error and keeps stale currentPlant on failure", async () => {
     currentPlant.set(mockPlant);
-    vi.mocked(api.fetchPlant).mockRejectedValue(new Error("Not found"));
+    vi.mocked(api.fetchPlant).mockRejectedValue(
+      new ApiError(404, "PLANT_NOT_FOUND", "Plant not found"),
+    );
     const result = await loadPlant(99);
     expect(result).toBeNull();
     expect(get(currentPlant)).toEqual(mockPlant);
-    expect(get(plantsError)).toBe("Not found");
+    expect(get(plantsError)).toBe("Plant not found");
   });
 });
 
@@ -118,11 +127,11 @@ describe("createPlant", () => {
 
   it("sets error on failure", async () => {
     vi.mocked(api.createPlant).mockRejectedValue(
-      new Error("Validation failed"),
+      new ApiError(422, "PLANT_NAME_REQUIRED", "Plant name is required"),
     );
     const result = await createPlant({ name: "" } as CreatePlant);
     expect(result).toBeNull();
-    expect(get(plantsError)).toBe("Validation failed");
+    expect(get(plantsError)).toBe("Plant name is required");
   });
 });
 
@@ -140,10 +149,12 @@ describe("updatePlant", () => {
   });
 
   it("sets error on failure", async () => {
-    vi.mocked(api.updatePlant).mockRejectedValue(new Error("Update failed"));
+    vi.mocked(api.updatePlant).mockRejectedValue(
+      new ApiError(500, "INTERNAL_ERROR", "An internal error occurred"),
+    );
     const result = await updatePlant(1, { name: "" } as UpdatePlant);
     expect(result).toBeNull();
-    expect(get(plantsError)).toBe("Update failed");
+    expect(get(plantsError)).toBe("Something went wrong. Please try again.");
   });
 });
 
@@ -162,7 +173,7 @@ describe("deletePlant", () => {
     vi.mocked(api.deletePlant).mockRejectedValue(new Error("Delete failed"));
     const result = await deletePlant(1);
     expect(result).toBe(false);
-    expect(get(plantsError)).toBe("Delete failed");
+    expect(get(plantsError)).toBe("Failed to delete plant");
   });
 });
 
@@ -185,7 +196,7 @@ describe("waterPlant", () => {
     vi.mocked(api.waterPlant).mockRejectedValue(new Error("Water failed"));
     const result = await waterPlant(1);
     expect(result).toBeNull();
-    expect(get(plantsError)).toBe("Water failed");
+    expect(get(plantsError)).toBe("Failed to water plant");
   });
 });
 
@@ -203,12 +214,12 @@ describe("uploadPhoto", () => {
 
   it("sets error on failure", async () => {
     vi.mocked(api.uploadPlantPhoto).mockRejectedValue(
-      new Error("Upload failed"),
+      new ApiError(413, "PHOTO_TOO_LARGE", "File is too large"),
     );
     const file = new File(["test"], "photo.jpg", { type: "image/jpeg" });
     const result = await uploadPhoto(1, file);
     expect(result).toBeNull();
-    expect(get(plantsError)).toBe("Upload failed");
+    expect(get(plantsError)).toBe("File is too large");
   });
 });
 
@@ -230,6 +241,6 @@ describe("deletePhoto", () => {
     );
     const result = await deletePhoto(1);
     expect(result).toBe(false);
-    expect(get(plantsError)).toBe("Delete photo failed");
+    expect(get(plantsError)).toBe("Failed to delete photo");
   });
 });

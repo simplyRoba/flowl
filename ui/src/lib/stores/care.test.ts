@@ -9,11 +9,15 @@ import {
   deleteCareEvent,
 } from "./care";
 
-vi.mock("$lib/api", () => ({
-  fetchCareEvents: vi.fn(),
-  createCareEvent: vi.fn(),
-  deleteCareEvent: vi.fn(),
-}));
+vi.mock("$lib/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("$lib/api")>();
+  return {
+    ...actual,
+    fetchCareEvents: vi.fn(),
+    createCareEvent: vi.fn(),
+    deleteCareEvent: vi.fn(),
+  };
+});
 
 import * as api from "$lib/api";
 
@@ -49,17 +53,18 @@ describe("loadCareEvents", () => {
     expect(get(careError)).toBeNull();
   });
 
-  it("sets error on failure", async () => {
+  it("resolves ApiError code to i18n message", async () => {
+    const { ApiError } = await import("$lib/api");
     vi.mocked(api.fetchCareEvents).mockRejectedValue(
-      new Error("Network error"),
+      new ApiError(500, "INTERNAL_ERROR", "An internal error occurred"),
     );
     await loadCareEvents(10);
     expect(get(careEvents)).toEqual([]);
-    expect(get(careError)).toBe("Network error");
+    expect(get(careError)).toBe("Something went wrong. Please try again.");
   });
 
-  it("uses fallback message for non-Error throws", async () => {
-    vi.mocked(api.fetchCareEvents).mockRejectedValue(null);
+  it("uses fallback message for non-ApiError throws", async () => {
+    vi.mocked(api.fetchCareEvents).mockRejectedValue(new Error("Network error"));
     await loadCareEvents(10);
     expect(get(careError)).toBe("Failed to load care events");
   });
@@ -108,7 +113,7 @@ describe("addCareEvent", () => {
       event_type: "watered",
     } as CreateCareEvent);
     expect(result).toBeNull();
-    expect(get(careError)).toBe("Add failed");
+    expect(get(careError)).toBe("Failed to add care event");
   });
 });
 
@@ -127,6 +132,6 @@ describe("deleteCareEvent", () => {
     );
     const result = await deleteCareEvent(10, 1);
     expect(result).toBe(false);
-    expect(get(careError)).toBe("Delete failed");
+    expect(get(careError)).toBe("Failed to delete care event");
   });
 });

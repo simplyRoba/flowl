@@ -1,7 +1,7 @@
-import { writable, get } from "svelte/store";
+import { writable } from "svelte/store";
 import type { Plant, CreatePlant, UpdatePlant } from "$lib/api";
 import * as api from "$lib/api";
-import { translations } from "./locale";
+import { resolveError } from "./errors";
 
 export const plants = writable<Plant[]>([]);
 export const currentPlant = writable<Plant | null>(null);
@@ -14,7 +14,7 @@ export async function loadPlants() {
     plants.set(data);
   } catch (e) {
     plantsError.set(
-      e instanceof Error ? e.message : get(translations).error.loadPlants,
+      resolveError(e, "loadPlants"),
     );
   }
 }
@@ -27,7 +27,7 @@ export async function loadPlant(id: number) {
     return data;
   } catch (e) {
     plantsError.set(
-      e instanceof Error ? e.message : get(translations).error.loadPlant,
+      resolveError(e, "loadPlant"),
     );
     return null;
   }
@@ -41,7 +41,7 @@ export async function createPlant(data: CreatePlant): Promise<Plant | null> {
     return plant;
   } catch (e) {
     plantsError.set(
-      e instanceof Error ? e.message : get(translations).error.createPlant,
+      resolveError(e, "createPlant"),
     );
     return null;
   }
@@ -59,7 +59,7 @@ export async function updatePlant(
     return plant;
   } catch (e) {
     plantsError.set(
-      e instanceof Error ? e.message : get(translations).error.updatePlant,
+      resolveError(e, "updatePlant"),
     );
     return null;
   }
@@ -74,7 +74,7 @@ export async function deletePlant(id: number): Promise<boolean> {
     return true;
   } catch (e) {
     plantsError.set(
-      e instanceof Error ? e.message : get(translations).error.deletePlant,
+      resolveError(e, "deletePlant"),
     );
     return false;
   }
@@ -92,7 +92,7 @@ export async function uploadPhoto(
     return plant;
   } catch (e) {
     plantsError.set(
-      e instanceof Error ? e.message : get(translations).error.uploadPhoto,
+      resolveError(e, "uploadPhoto"),
     );
     return null;
   }
@@ -107,7 +107,7 @@ export async function waterPlant(id: number): Promise<Plant | null> {
     return plant;
   } catch (e) {
     plantsError.set(
-      e instanceof Error ? e.message : get(translations).error.waterPlant,
+      resolveError(e, "waterPlant"),
     );
     return null;
   }
@@ -126,7 +126,7 @@ export async function deletePhoto(plantId: number): Promise<boolean> {
     return true;
   } catch (e) {
     plantsError.set(
-      e instanceof Error ? e.message : get(translations).error.deletePhoto,
+      resolveError(e, "deletePhoto"),
     );
     return false;
   }
