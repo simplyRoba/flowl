@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.25.0](https://github.com/simplyRoba/flowl/compare/v0.24.5...v0.25.0) (2026-03-10)
+
+
+### Features
+
+* **api:** add structured error codes to all API error responses ([eb5a588](https://github.com/simplyRoba/flowl/commit/eb5a588810f5f3d1457f8f7926a01d23e3860cbe))
+* **ui:** map API error codes to localized i18n messages ([3d61a88](https://github.com/simplyRoba/flowl/commit/3d61a88b0e6e73757c65959036099af38a6dfdfe))
+
+
+### Bug Fixes
+
+* **api:** count care event photos in stats endpoint ([ee58a64](https://github.com/simplyRoba/flowl/commit/ee58a647778663d00e95e80dc92cebdf8640e199))
+* **api:** preserve existing photos when import fails ([4f13029](https://github.com/simplyRoba/flowl/commit/4f13029af507e3b4a3add10b9741fd447b6f13c3))
+* **api:** verify database connectivity in health endpoint ([c3f91f5](https://github.com/simplyRoba/flowl/commit/c3f91f51a7112c964430b4c60e274d69e0527838))
+* **db:** enable WAL journal mode and busy timeout for SQLite ([a49e1fa](https://github.com/simplyRoba/flowl/commit/a49e1fa752cf151dc45d002617507aab91cc1c9b))
+* **deps:** bump svelte from 5.53.7 to 5.53.9 in /ui in the svelte group ([b065284](https://github.com/simplyRoba/flowl/commit/b0652842ecdb82e0e9cf7214f2cca1156331238f))
+* **deps:** bump the eslint group across 1 directory with 2 updates ([4295776](https://github.com/simplyRoba/flowl/commit/42957760f22e0f8071ec22713d9d351736ab2356))
+* **tests:** use tempfile::TempDir for automatic test directory cleanup ([2321d95](https://github.com/simplyRoba/flowl/commit/2321d9537cb4e154a96e5a342948117bb0277c3c))
+* **ui:** replace hardcoded #fff with CSS custom properties ([d5497bb](https://github.com/simplyRoba/flowl/commit/d5497bb437160a79c845f06cf518e4e49dd92b44))
+
 ## [0.24.5](https://github.com/simplyRoba/flowl/compare/v0.24.4...v0.24.5) (2026-03-09)
 
 
