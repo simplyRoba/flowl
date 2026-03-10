@@ -1,5 +1,5 @@
 use sqlx::SqlitePool;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
 use std::path::Path;
 use std::str::FromStr;
 
@@ -13,7 +13,10 @@ pub async fn create_pool(db_path: &str) -> Result<SqlitePool, sqlx::Error> {
         std::fs::create_dir_all(parent).map_err(sqlx::Error::Io)?;
     }
 
-    let options = SqliteConnectOptions::from_str(db_path)?.create_if_missing(true);
+    let options = SqliteConnectOptions::from_str(db_path)?
+        .create_if_missing(true)
+        .journal_mode(SqliteJournalMode::Wal)
+        .busy_timeout(std::time::Duration::from_secs(5));
 
     SqlitePoolOptions::new()
         .max_connections(5)
