@@ -6,7 +6,7 @@ use tower::ServiceExt;
 
 #[tokio::test]
 async fn stats_returns_counts() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .clone()
@@ -51,7 +51,7 @@ async fn stats_returns_counts() {
 
 #[tokio::test]
 async fn stats_counts_all_photos() {
-    let (app, _upload_dir) = common::test_app_with_uploads().await;
+    let (app, _dir) = common::test_app_with_uploads().await;
 
     // Create a plant
     let resp = app
@@ -134,7 +134,7 @@ fn multipart_request(uri: &str, data: &[u8]) -> Request<Body> {
 
 #[tokio::test]
 async fn stats_empty_database() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .oneshot(

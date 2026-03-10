@@ -5,7 +5,7 @@ use tower::ServiceExt;
 
 #[tokio::test]
 async fn health_returns_200_with_status_ok() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .oneshot(

@@ -5,14 +5,14 @@ use common::{body_json, json_request};
 use flowl::api::plants::{compute_watering_status, validate_care_info};
 use tower::ServiceExt;
 
-async fn app() -> axum::Router {
+async fn app() -> (axum::Router, tempfile::TempDir) {
     common::test_app().await
 }
 
 #[tokio::test]
 async fn list_empty() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("GET", "/api/plants", None))
         .await
         .unwrap();
@@ -23,8 +23,8 @@ async fn list_empty() {
 
 #[tokio::test]
 async fn create_with_defaults() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request(
             "POST",
             "/api/plants",
@@ -45,8 +45,8 @@ async fn create_with_defaults() {
 
 #[tokio::test]
 async fn create_without_name() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("POST", "/api/plants", Some(r"{}")))
         .await
         .unwrap();
@@ -58,7 +58,7 @@ async fn create_without_name() {
 
 #[tokio::test]
 async fn get_plant_with_location() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     // Create location
     let resp = app
@@ -104,8 +104,8 @@ async fn get_plant_with_location() {
 
 #[tokio::test]
 async fn get_nonexistent() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("GET", "/api/plants/999", None))
         .await
         .unwrap();
@@ -117,7 +117,7 @@ async fn get_nonexistent() {
 
 #[tokio::test]
 async fn update_plant() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     let resp = app
         .clone()
@@ -151,8 +151,8 @@ async fn update_plant() {
 
 #[tokio::test]
 async fn update_nonexistent() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request(
             "PUT",
             "/api/plants/999",
@@ -165,7 +165,7 @@ async fn update_nonexistent() {
 
 #[tokio::test]
 async fn delete_plant() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     let resp = app
         .clone()
@@ -196,8 +196,8 @@ async fn delete_plant() {
 
 #[tokio::test]
 async fn delete_nonexistent() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("DELETE", "/api/plants/999", None))
         .await
         .unwrap();
@@ -206,8 +206,8 @@ async fn delete_nonexistent() {
 
 #[tokio::test]
 async fn invalid_json_returns_400() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("POST", "/api/plants", Some("{invalid")))
         .await
         .unwrap();
@@ -219,7 +219,7 @@ async fn invalid_json_returns_400() {
 
 #[tokio::test]
 async fn update_clears_location() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     // Create location
     let resp = app
@@ -266,8 +266,8 @@ async fn update_clears_location() {
 
 #[tokio::test]
 async fn new_plant_has_due_status() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request(
             "POST",
             "/api/plants",
@@ -284,7 +284,7 @@ async fn new_plant_has_due_status() {
 
 #[tokio::test]
 async fn water_plant_sets_last_watered() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     let resp = app
         .clone()
@@ -317,8 +317,8 @@ async fn water_plant_sets_last_watered() {
 
 #[tokio::test]
 async fn water_nonexistent_plant() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("POST", "/api/plants/999/water", None))
         .await
         .unwrap();
@@ -327,7 +327,7 @@ async fn water_nonexistent_plant() {
 
 #[tokio::test]
 async fn get_plant_includes_watering_fields() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     let resp = app
         .clone()
@@ -465,8 +465,8 @@ fn care_info_invalid_value() {
 
 #[tokio::test]
 async fn create_with_care_info() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request(
             "POST",
             "/api/plants",
@@ -485,8 +485,8 @@ async fn create_with_care_info() {
 
 #[tokio::test]
 async fn create_defaults_care_info_null() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request(
             "POST",
             "/api/plants",
@@ -505,8 +505,8 @@ async fn create_defaults_care_info_null() {
 
 #[tokio::test]
 async fn create_invalid_care_info() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request(
             "POST",
             "/api/plants",
@@ -519,7 +519,7 @@ async fn create_invalid_care_info() {
 
 #[tokio::test]
 async fn update_set_care_info() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     let resp = app
         .clone()
@@ -550,7 +550,7 @@ async fn update_set_care_info() {
 
 #[tokio::test]
 async fn update_clear_care_info() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     let resp = app
         .clone()
@@ -580,7 +580,7 @@ async fn update_clear_care_info() {
 
 #[tokio::test]
 async fn update_set_and_clear_soil_moisture() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     let resp = app
         .clone()
@@ -625,7 +625,7 @@ async fn update_set_and_clear_soil_moisture() {
 
 #[tokio::test]
 async fn update_invalid_care_info() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     let resp = app
         .clone()

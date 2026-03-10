@@ -77,14 +77,15 @@ impl AiProvider for FailingSummarizeProvider {
     }
 }
 
-async fn test_app_with_provider(provider: Arc<dyn AiProvider>) -> (Router, sqlx::SqlitePool) {
+async fn test_app_with_provider(
+    provider: Arc<dyn AiProvider>,
+) -> (Router, sqlx::SqlitePool, tempfile::TempDir) {
     let pool = common::test_pool().await;
-    let upload_dir = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir_all(&upload_dir).expect("Failed to create test upload dir");
+    let tmp = tempfile::TempDir::new().expect("Failed to create temp dir");
 
     let state = AppState {
         pool: pool.clone(),
-        image_store: flowl::images::ImageStore::new(upload_dir),
+        image_store: flowl::images::ImageStore::new(tmp.path().to_path_buf()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,
@@ -95,7 +96,7 @@ async fn test_app_with_provider(provider: Arc<dyn AiProvider>) -> (Router, sqlx:
         ai_base_url: "https://api.openai.com/v1".to_string(),
         ai_model: "gpt-4.1-mini".to_string(),
     };
-    (flowl::server::router(state), pool)
+    (flowl::server::router(state), pool, tmp)
 }
 
 async fn insert_test_plant(pool: &sqlx::SqlitePool) -> i64 {
@@ -110,7 +111,7 @@ async fn insert_test_plant(pool: &sqlx::SqlitePool) -> i64 {
 
 #[tokio::test]
 async fn summarize_returns_503_when_ai_not_configured() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let request = common::json_request(
         "POST",
@@ -127,7 +128,7 @@ async fn summarize_returns_503_when_ai_not_configured() {
 
 #[tokio::test]
 async fn summarize_returns_404_when_plant_not_found() {
-    let (app, _pool) = test_app_with_provider(Arc::new(MockSummarizeProvider)).await;
+    let (app, _pool, _dir) = test_app_with_provider(Arc::new(MockSummarizeProvider)).await;
 
     let request = common::json_request(
         "POST",
@@ -141,7 +142,7 @@ async fn summarize_returns_404_when_plant_not_found() {
 
 #[tokio::test]
 async fn summarize_returns_422_for_empty_history() {
-    let (app, pool) = test_app_with_provider(Arc::new(MockSummarizeProvider)).await;
+    let (app, pool, _dir) = test_app_with_provider(Arc::new(MockSummarizeProvider)).await;
     let plant_id = insert_test_plant(&pool).await;
 
     let request = common::json_request(
@@ -159,7 +160,7 @@ async fn summarize_returns_422_for_empty_history() {
 
 #[tokio::test]
 async fn summarize_returns_200_with_summary() {
-    let (app, pool) = test_app_with_provider(Arc::new(MockSummarizeProvider)).await;
+    let (app, pool, _dir) = test_app_with_provider(Arc::new(MockSummarizeProvider)).await;
     let plant_id = insert_test_plant(&pool).await;
 
     let request = common::json_request(
@@ -180,7 +181,7 @@ async fn summarize_returns_200_with_summary() {
 
 #[tokio::test]
 async fn summarize_returns_500_when_provider_fails() {
-    let (app, pool) = test_app_with_provider(Arc::new(FailingSummarizeProvider)).await;
+    let (app, pool, _dir) = test_app_with_provider(Arc::new(FailingSummarizeProvider)).await;
     let plant_id = insert_test_plant(&pool).await;
 
     let request = common::json_request(

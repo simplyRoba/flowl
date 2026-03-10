@@ -460,9 +460,8 @@ mod tests {
             zip.finish().unwrap();
         }
 
-        let (data, photos) = match super::parse_archive(&buf) {
-            Ok(v) => v,
-            Err(_) => panic!("parse_archive failed"),
+        let Ok((data, photos)) = super::parse_archive(&buf) else {
+            panic!("parse_archive failed");
         };
         assert_eq!(data.plants.len(), 1);
         assert_eq!(photos.len(), 1);

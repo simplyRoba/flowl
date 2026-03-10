@@ -8,15 +8,14 @@ use axum::http::StatusCode;
 use flowl::state::AppState;
 use tower::ServiceExt;
 
-async fn test_app_mqtt_enabled(connected: bool) -> Router {
+async fn test_app_mqtt_enabled(connected: bool) -> (Router, tempfile::TempDir) {
     let pool = common::test_pool().await;
-    let upload_dir = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir_all(&upload_dir).expect("Failed to create test upload dir");
+    let tmp = tempfile::TempDir::new().expect("Failed to create temp dir");
 
     let flag = Arc::new(AtomicBool::new(connected));
     let state = AppState {
         pool,
-        image_store: flowl::images::ImageStore::new(upload_dir),
+        image_store: flowl::images::ImageStore::new(tmp.path().to_path_buf()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: Some(flag),
@@ -27,12 +26,12 @@ async fn test_app_mqtt_enabled(connected: bool) -> Router {
         ai_base_url: String::new(),
         ai_model: String::new(),
     };
-    flowl::server::router(state)
+    (flowl::server::router(state), tmp)
 }
 
 #[tokio::test]
 async fn mqtt_status_disabled() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .oneshot(common::json_request("GET", "/api/mqtt/status", None))
@@ -49,7 +48,7 @@ async fn mqtt_status_disabled() {
 
 #[tokio::test]
 async fn mqtt_status_disconnected() {
-    let app = test_app_mqtt_enabled(false).await;
+    let (app, _dir) = test_app_mqtt_enabled(false).await;
 
     let response = app
         .oneshot(common::json_request("GET", "/api/mqtt/status", None))
@@ -66,7 +65,7 @@ async fn mqtt_status_disconnected() {
 
 #[tokio::test]
 async fn mqtt_status_connected() {
-    let app = test_app_mqtt_enabled(true).await;
+    let (app, _dir) = test_app_mqtt_enabled(true).await;
 
     let response = app
         .oneshot(common::json_request("GET", "/api/mqtt/status", None))

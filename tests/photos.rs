@@ -46,7 +46,7 @@ async fn create_plant(app: &axum::Router) -> i64 {
 
 #[tokio::test]
 async fn upload_photo() {
-    let (app, upload_dir) = common::test_app_with_uploads().await;
+    let (app, dir) = common::test_app_with_uploads().await;
     let id = create_plant(&app).await;
 
     let data = vec![0xFF, 0xD8, 0xFF, 0xE0]; // minimal JPEG header bytes
@@ -75,12 +75,12 @@ async fn upload_photo() {
         .unwrap()
         .strip_prefix("/uploads/")
         .unwrap();
-    assert!(upload_dir.join(filename).exists());
+    assert!(dir.path().join(filename).exists());
 }
 
 #[tokio::test]
 async fn upload_to_nonexistent_plant() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
     let data = vec![0xFF, 0xD8, 0xFF, 0xE0];
     let resp = app
         .oneshot(multipart_request(
@@ -95,7 +95,7 @@ async fn upload_to_nonexistent_plant() {
 
 #[tokio::test]
 async fn upload_replaces_existing_photo() {
-    let (app, upload_dir) = common::test_app_with_uploads().await;
+    let (app, dir) = common::test_app_with_uploads().await;
     let id = create_plant(&app).await;
 
     // Upload first photo
@@ -115,7 +115,7 @@ async fn upload_replaces_existing_photo() {
         .strip_prefix("/uploads/")
         .unwrap()
         .to_string();
-    assert!(upload_dir.join(&first_filename).exists());
+    assert!(dir.path().join(&first_filename).exists());
 
     // Upload second photo
     let resp = app
@@ -136,12 +136,12 @@ async fn upload_replaces_existing_photo() {
     );
 
     // Old file should be deleted
-    assert!(!upload_dir.join(&first_filename).exists());
+    assert!(!dir.path().join(&first_filename).exists());
 }
 
 #[tokio::test]
 async fn upload_rejects_invalid_type() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
     let id = create_plant(&app).await;
 
     let resp = app
@@ -158,7 +158,7 @@ async fn upload_rejects_invalid_type() {
 
 #[tokio::test]
 async fn upload_rejects_oversized_file() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
     let id = create_plant(&app).await;
 
     let mut data = vec![0u8; 6 * 1024 * 1024]; // 6 MB
@@ -177,7 +177,7 @@ async fn upload_rejects_oversized_file() {
 
 #[tokio::test]
 async fn delete_photo() {
-    let (app, upload_dir) = common::test_app_with_uploads().await;
+    let (app, dir) = common::test_app_with_uploads().await;
     let id = create_plant(&app).await;
 
     // Upload photo
@@ -197,7 +197,7 @@ async fn delete_photo() {
         .strip_prefix("/uploads/")
         .unwrap()
         .to_string();
-    assert!(upload_dir.join(&filename).exists());
+    assert!(dir.path().join(&filename).exists());
 
     // Delete photo
     let resp = app
@@ -212,7 +212,7 @@ async fn delete_photo() {
     assert_eq!(resp.status(), StatusCode::NO_CONTENT);
 
     // Verify file is removed
-    assert!(!upload_dir.join(&filename).exists());
+    assert!(!dir.path().join(&filename).exists());
 
     // Verify plant has no photo_url
     let resp = app
@@ -225,7 +225,7 @@ async fn delete_photo() {
 
 #[tokio::test]
 async fn delete_photo_when_none_exists() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
     let id = create_plant(&app).await;
 
     let resp = app
@@ -241,7 +241,7 @@ async fn delete_photo_when_none_exists() {
 
 #[tokio::test]
 async fn delete_plant_deletes_photo_file() {
-    let (app, upload_dir) = common::test_app_with_uploads().await;
+    let (app, dir) = common::test_app_with_uploads().await;
     let id = create_plant(&app).await;
 
     // Upload photo
@@ -261,7 +261,7 @@ async fn delete_plant_deletes_photo_file() {
         .strip_prefix("/uploads/")
         .unwrap()
         .to_string();
-    assert!(upload_dir.join(&filename).exists());
+    assert!(dir.path().join(&filename).exists());
 
     // Delete plant
     let resp = app
@@ -272,5 +272,5 @@ async fn delete_plant_deletes_photo_file() {
     assert_eq!(resp.status(), StatusCode::NO_CONTENT);
 
     // Photo file should be cleaned up
-    assert!(!upload_dir.join(&filename).exists());
+    assert!(!dir.path().join(&filename).exists());
 }

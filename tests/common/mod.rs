@@ -1,13 +1,12 @@
 #![allow(dead_code)]
 
-use std::path::PathBuf;
-
 use axum::Router;
 use axum::body::Body;
 use axum::http::Request;
 use flowl::state::AppState;
 use sqlx::SqlitePool;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use tempfile::TempDir;
 
 pub async fn test_pool() -> SqlitePool {
     let pool = SqlitePoolOptions::new()
@@ -28,13 +27,10 @@ pub async fn test_pool() -> SqlitePool {
     pool
 }
 
-pub async fn test_app() -> Router {
-    let pool = test_pool().await;
-    let upload_dir = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir_all(&upload_dir).expect("Failed to create test upload dir");
-    let state = AppState {
+fn make_state(pool: SqlitePool, upload_dir: &std::path::Path) -> AppState {
+    AppState {
         pool,
-        image_store: flowl::images::ImageStore::new(upload_dir),
+        image_store: flowl::images::ImageStore::new(upload_dir.to_path_buf()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,
@@ -44,28 +40,21 @@ pub async fn test_app() -> Router {
         ai_provider: None,
         ai_base_url: String::new(),
         ai_model: String::new(),
-    };
-    flowl::server::router(state)
+    }
 }
 
-pub async fn test_app_with_uploads() -> (Router, PathBuf) {
+pub async fn test_app() -> (Router, TempDir) {
     let pool = test_pool().await;
-    let upload_dir = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir_all(&upload_dir).expect("Failed to create test upload dir");
-    let state = AppState {
-        pool,
-        image_store: flowl::images::ImageStore::new(upload_dir.clone()),
-        mqtt_client: None,
-        mqtt_prefix: "flowl".to_string(),
-        mqtt_connected: None,
-        mqtt_host: "localhost".to_string(),
-        mqtt_port: 1883,
-        mqtt_disabled: true,
-        ai_provider: None,
-        ai_base_url: String::new(),
-        ai_model: String::new(),
-    };
-    (flowl::server::router(state), upload_dir)
+    let tmp = TempDir::new().expect("Failed to create temp dir");
+    let state = make_state(pool, tmp.path());
+    (flowl::server::router(state), tmp)
+}
+
+pub async fn test_app_with_uploads() -> (Router, TempDir) {
+    let pool = test_pool().await;
+    let tmp = TempDir::new().expect("Failed to create temp dir");
+    let state = make_state(pool, tmp.path());
+    (flowl::server::router(state), tmp)
 }
 
 pub fn json_request(method: &str, uri: &str, body: Option<&str>) -> Request<Body> {

@@ -4,7 +4,7 @@ use axum::http::StatusCode;
 use common::{body_json, json_request};
 use tower::ServiceExt;
 
-async fn app() -> axum::Router {
+async fn app() -> (axum::Router, tempfile::TempDir) {
     common::test_app().await
 }
 
@@ -24,7 +24,7 @@ async fn create_plant(app: &axum::Router) -> i64 {
 
 #[tokio::test]
 async fn list_empty() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     let resp = app
@@ -38,7 +38,7 @@ async fn list_empty() {
 
 #[tokio::test]
 async fn create_valid_event() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     let resp = app
@@ -63,7 +63,7 @@ async fn create_valid_event() {
 
 #[tokio::test]
 async fn create_with_explicit_occurred_at() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     let resp = app
@@ -82,7 +82,7 @@ async fn create_with_explicit_occurred_at() {
 
 #[tokio::test]
 async fn create_invalid_type() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     let resp = app
@@ -99,7 +99,7 @@ async fn create_invalid_type() {
 
 #[tokio::test]
 async fn create_missing_type() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     let resp = app
@@ -116,8 +116,8 @@ async fn create_missing_type() {
 
 #[tokio::test]
 async fn create_nonexistent_plant() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request(
             "POST",
             "/api/plants/999/care",
@@ -130,8 +130,8 @@ async fn create_nonexistent_plant() {
 
 #[tokio::test]
 async fn list_nonexistent_plant() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("GET", "/api/plants/999/care", None))
         .await
         .unwrap();
@@ -140,7 +140,7 @@ async fn list_nonexistent_plant() {
 
 #[tokio::test]
 async fn delete_event() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let plant_id = create_plant(&app).await;
 
     let resp = app
@@ -181,7 +181,7 @@ async fn delete_event() {
 
 #[tokio::test]
 async fn delete_nonexistent_event() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let plant_id = create_plant(&app).await;
 
     let resp = app
@@ -197,7 +197,7 @@ async fn delete_nonexistent_event() {
 
 #[tokio::test]
 async fn list_ordered_by_occurred_at_desc() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     // Create events with different occurred_at
@@ -242,8 +242,8 @@ async fn list_ordered_by_occurred_at_desc() {
 
 #[tokio::test]
 async fn global_empty() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("GET", "/api/care", None))
         .await
         .unwrap();
@@ -255,7 +255,7 @@ async fn global_empty() {
 
 #[tokio::test]
 async fn global_returns_events_across_plants() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     // Create two plants
     let resp = app
@@ -312,7 +312,7 @@ async fn global_returns_events_across_plants() {
 
 #[tokio::test]
 async fn global_respects_limit() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     for i in 0..5 {
@@ -340,7 +340,7 @@ async fn global_respects_limit() {
 
 #[tokio::test]
 async fn global_cursor_pagination() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     for i in 0..4 {
@@ -387,7 +387,7 @@ async fn global_cursor_pagination() {
 
 #[tokio::test]
 async fn global_type_filter() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     app.clone()
@@ -420,7 +420,7 @@ async fn global_type_filter() {
 
 #[tokio::test]
 async fn global_multi_type_filter() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     for t in &["watered", "fertilized", "pruned"] {
@@ -457,8 +457,8 @@ async fn global_multi_type_filter() {
 
 #[tokio::test]
 async fn global_invalid_type_filter() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("GET", "/api/care?type=invalid", None))
         .await
         .unwrap();
@@ -467,8 +467,8 @@ async fn global_invalid_type_filter() {
 
 #[tokio::test]
 async fn global_invalid_type_in_multi_filter() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request(
             "GET",
             "/api/care?type=watered&type=invalid",
@@ -481,7 +481,7 @@ async fn global_invalid_type_in_multi_filter() {
 
 #[tokio::test]
 async fn global_no_type_filter_returns_all() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     for t in &["watered", "fertilized", "pruned"] {
@@ -507,7 +507,7 @@ async fn global_no_type_filter_returns_all() {
 
 #[tokio::test]
 async fn water_auto_logs_care_event() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     // Water the plant
@@ -536,7 +536,7 @@ async fn water_auto_logs_care_event() {
 
 #[tokio::test]
 async fn create_watered_event_updates_plant_last_watered() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let plant_id = create_plant(&app).await;
 
     // Plant starts with no last_watered
@@ -577,7 +577,7 @@ async fn create_watered_event_updates_plant_last_watered() {
 
 #[tokio::test]
 async fn delete_watered_event_updates_plant_last_watered() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let plant_id = create_plant(&app).await;
 
     // Create two watered events
@@ -642,7 +642,7 @@ async fn delete_watered_event_updates_plant_last_watered() {
 
 #[tokio::test]
 async fn non_watered_event_does_not_affect_last_watered() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let plant_id = create_plant(&app).await;
 
     // Create a non-watered care event
@@ -672,7 +672,7 @@ async fn non_watered_event_does_not_affect_last_watered() {
 
 #[tokio::test]
 async fn create_ai_consultation_event() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     let resp = app
@@ -692,7 +692,7 @@ async fn create_ai_consultation_event() {
 
 #[tokio::test]
 async fn ai_consultation_does_not_affect_last_watered() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let plant_id = create_plant(&app).await;
 
     app.clone()
@@ -720,7 +720,7 @@ async fn ai_consultation_does_not_affect_last_watered() {
 
 #[tokio::test]
 async fn delete_plant_cascades_care_events() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let id = create_plant(&app).await;
 
     // Create care event

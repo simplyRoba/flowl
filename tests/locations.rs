@@ -4,14 +4,14 @@ use axum::http::StatusCode;
 use common::{body_json, json_request};
 use tower::ServiceExt;
 
-async fn app() -> axum::Router {
+async fn app() -> (axum::Router, tempfile::TempDir) {
     common::test_app().await
 }
 
 #[tokio::test]
 async fn list_empty() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("GET", "/api/locations", None))
         .await
         .unwrap();
@@ -22,8 +22,8 @@ async fn list_empty() {
 
 #[tokio::test]
 async fn create_location() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request(
             "POST",
             "/api/locations",
@@ -40,7 +40,7 @@ async fn create_location() {
 
 #[tokio::test]
 async fn create_duplicate() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     let resp = app
         .clone()
@@ -66,8 +66,8 @@ async fn create_duplicate() {
 
 #[tokio::test]
 async fn create_without_name() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("POST", "/api/locations", Some(r"{}")))
         .await
         .unwrap();
@@ -76,7 +76,7 @@ async fn create_without_name() {
 
 #[tokio::test]
 async fn list_ordered_by_name() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     app.clone()
         .oneshot(json_request(
@@ -116,7 +116,7 @@ async fn list_ordered_by_name() {
 
 #[tokio::test]
 async fn update_location() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     let resp = app
         .clone()
@@ -146,8 +146,8 @@ async fn update_location() {
 
 #[tokio::test]
 async fn update_nonexistent() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request(
             "PUT",
             "/api/locations/999",
@@ -160,7 +160,7 @@ async fn update_nonexistent() {
 
 #[tokio::test]
 async fn update_duplicate_name() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     app.clone()
         .oneshot(json_request(
@@ -195,7 +195,7 @@ async fn update_duplicate_name() {
 
 #[tokio::test]
 async fn delete_location() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     let resp = app
         .clone()
@@ -222,8 +222,8 @@ async fn delete_location() {
 
 #[tokio::test]
 async fn delete_nonexistent() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("DELETE", "/api/locations/999", None))
         .await
         .unwrap();
@@ -232,7 +232,7 @@ async fn delete_nonexistent() {
 
 #[tokio::test]
 async fn delete_nullifies_plant_references() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     // Create location
     let resp = app
@@ -289,7 +289,7 @@ async fn delete_nullifies_plant_references() {
 
 #[tokio::test]
 async fn plant_count_reflects_assigned_plants() {
-    let app = app().await;
+    let (app, _dir) = app().await;
 
     // Create location
     let resp = app

@@ -84,7 +84,7 @@ fn valid_export_json() -> String {
 
 #[tokio::test]
 async fn export_empty_database() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .oneshot(common::json_request("GET", "/api/data/export", None))
@@ -121,22 +121,11 @@ async fn export_empty_database() {
 
 #[tokio::test]
 async fn export_populated_database_with_photo() {
-    let (_app, _upload_dir) = common::test_app_with_uploads().await;
+    let (_app, _dir0) = common::test_app_with_uploads().await;
 
     // Seed data via import into a shared pool so we can then export
-    let (app, upload_dir) = common::test_app_with_uploads().await;
+    let (_, dir) = common::test_app_with_uploads().await;
     // Seed location, plant with photo, care event — then export
-    let app_clone = app;
-    let resp = app_clone
-        .oneshot(common::json_request(
-            "POST",
-            "/api/locations",
-            Some(r#"{"name": "Balcony"}"#),
-        ))
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), StatusCode::CREATED);
-
     // For a proper test we need to use the same pool — let's use a shared test app approach
     // Actually, let's just test that populated data shows up: create data via import, then export
     let json = valid_export_json();
@@ -146,7 +135,7 @@ async fn export_populated_database_with_photo() {
     let pool = common::test_pool().await;
     let state = flowl::state::AppState {
         pool: pool.clone(),
-        image_store: flowl::images::ImageStore::new(upload_dir.clone()),
+        image_store: flowl::images::ImageStore::new(dir.path().to_path_buf()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,
@@ -188,15 +177,13 @@ async fn export_populated_database_with_photo() {
     assert_eq!(data["plants"].as_array().unwrap().len(), 1);
     assert_eq!(data["plants"][0]["name"], "Monstera");
     assert_eq!(data["care_events"].as_array().unwrap().len(), 1);
-
-    let _ = std::fs::remove_dir_all(&upload_dir);
 }
 
 // --- Import tests ---
 
 #[tokio::test]
 async fn import_valid_archive() {
-    let (app, upload_dir) = common::test_app_with_uploads().await;
+    let (app, _dir) = common::test_app_with_uploads().await;
 
     let json = valid_export_json();
     let zip_bytes = build_export_zip(&json);
@@ -217,13 +204,11 @@ async fn import_valid_archive() {
     assert_eq!(body["plants"], 1);
     assert_eq!(body["care_events"], 1);
     assert_eq!(body["photos"], 0);
-
-    let _ = std::fs::remove_dir_all(&upload_dir);
 }
 
 #[tokio::test]
 async fn import_with_photo() {
-    let (app, upload_dir) = common::test_app_with_uploads().await;
+    let (app, dir) = common::test_app_with_uploads().await;
 
     let json = format!(
         r#"{{
@@ -257,17 +242,15 @@ async fn import_with_photo() {
     assert_eq!(body["photos"], 1);
 
     // Verify photo was written to disk
-    let photo_path = upload_dir.join("test-photo.jpg");
+    let photo_path = dir.path().join("test-photo.jpg");
     assert!(photo_path.exists());
     let contents = std::fs::read(&photo_path).unwrap();
     assert_eq!(contents, photo_data);
-
-    let _ = std::fs::remove_dir_all(&upload_dir);
 }
 
 #[tokio::test]
 async fn import_invalid_zip() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .oneshot(multipart_import_request(b"not a zip file"))
@@ -290,7 +273,7 @@ async fn import_missing_data_json() {
         zip.finish().unwrap();
     }
 
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app.oneshot(multipart_import_request(&buf)).await.unwrap();
 
@@ -310,7 +293,7 @@ async fn import_version_mismatch() {
     }"#;
     let zip_bytes = build_export_zip(json);
 
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .oneshot(multipart_import_request(&zip_bytes))
@@ -339,7 +322,7 @@ async fn import_patch_version_difference_allowed() {
     );
     let zip_bytes = build_export_zip(&json);
 
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .oneshot(multipart_import_request(&zip_bytes))
@@ -360,7 +343,7 @@ async fn import_path_traversal_rejected() {
         zip.finish().unwrap();
     }
 
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app.oneshot(multipart_import_request(&buf)).await.unwrap();
 
@@ -383,7 +366,7 @@ async fn import_rejects_empty_location_name() {
         env!("CARGO_PKG_VERSION")
     );
     let zip_bytes = build_export_zip(&json);
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .oneshot(multipart_import_request(&zip_bytes))
@@ -414,7 +397,7 @@ async fn import_rejects_empty_plant_name() {
         env!("CARGO_PKG_VERSION")
     );
     let zip_bytes = build_export_zip(&json);
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .oneshot(multipart_import_request(&zip_bytes))
@@ -449,7 +432,7 @@ async fn import_rejects_invalid_event_type() {
         env!("CARGO_PKG_VERSION")
     );
     let zip_bytes = build_export_zip(&json);
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .oneshot(multipart_import_request(&zip_bytes))
@@ -481,7 +464,7 @@ async fn import_rejects_invalid_care_info() {
         env!("CARGO_PKG_VERSION")
     );
     let zip_bytes = build_export_zip(&json);
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let response = app
         .oneshot(multipart_import_request(&zip_bytes))
@@ -498,12 +481,11 @@ async fn import_rejects_invalid_care_info() {
 #[tokio::test]
 async fn failed_import_preserves_existing_photos() {
     let pool = common::test_pool().await;
-    let upload_dir = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir_all(&upload_dir).expect("create dir");
+    let tmp = tempfile::TempDir::new().expect("Failed to create temp dir");
 
     let state = flowl::state::AppState {
         pool: pool.clone(),
-        image_store: flowl::images::ImageStore::new(upload_dir.clone()),
+        image_store: flowl::images::ImageStore::new(tmp.path().to_path_buf()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,
@@ -541,7 +523,7 @@ async fn failed_import_preserves_existing_photos() {
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
-    assert!(upload_dir.join("existing-photo.jpg").exists());
+    assert!(tmp.path().join("existing-photo.jpg").exists());
 
     // Now attempt an import with invalid data (bad light_needs triggers validation error)
     let bad_json = format!(
@@ -571,7 +553,7 @@ async fn failed_import_preserves_existing_photos() {
 
     // Old photo must still exist on disk
     assert!(
-        upload_dir.join("existing-photo.jpg").exists(),
+        tmp.path().join("existing-photo.jpg").exists(),
         "Existing photo should be preserved after failed import"
     );
 
@@ -584,8 +566,6 @@ async fn failed_import_preserves_existing_photos() {
         count, 1,
         "Original plant should still exist after failed import"
     );
-
-    let _ = std::fs::remove_dir_all(&upload_dir);
 }
 
 // --- Round-trip test ---
@@ -593,12 +573,11 @@ async fn failed_import_preserves_existing_photos() {
 #[tokio::test]
 async fn round_trip_export_import_export() {
     let pool = common::test_pool().await;
-    let upload_dir = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir_all(&upload_dir).expect("create dir");
+    let tmp = tempfile::TempDir::new().expect("Failed to create temp dir");
 
     let state = flowl::state::AppState {
         pool: pool.clone(),
-        image_store: flowl::images::ImageStore::new(upload_dir.clone()),
+        image_store: flowl::images::ImageStore::new(tmp.path().to_path_buf()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,
@@ -642,12 +621,11 @@ async fn round_trip_export_import_export() {
 
     // Import export 1 into a fresh database
     let pool2 = common::test_pool().await;
-    let upload_dir2 = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir_all(&upload_dir2).expect("create dir");
+    let tmp2 = tempfile::TempDir::new().expect("Failed to create temp dir");
 
     let state2 = flowl::state::AppState {
         pool: pool2,
-        image_store: flowl::images::ImageStore::new(upload_dir2.clone()),
+        image_store: flowl::images::ImageStore::new(tmp2.path().to_path_buf()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,
@@ -691,6 +669,6 @@ async fn round_trip_export_import_export() {
 
     assert_eq!(data1, data2);
 
-    let _ = std::fs::remove_dir_all(&upload_dir);
-    let _ = std::fs::remove_dir_all(&upload_dir2);
+    drop(tmp);
+    drop(tmp2);
 }

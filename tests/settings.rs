@@ -5,14 +5,14 @@ use common::{body_json, json_request};
 use serde_json::json;
 use tower::ServiceExt;
 
-async fn app() -> axum::Router {
+async fn app() -> (axum::Router, tempfile::TempDir) {
     common::test_app().await
 }
 
 #[tokio::test]
 async fn get_returns_defaults() {
-    let resp = app()
-        .await
+    let (app, _dir) = app().await;
+    let resp = app
         .oneshot(json_request("GET", "/api/settings", None))
         .await
         .unwrap();
@@ -23,7 +23,7 @@ async fn get_returns_defaults() {
 
 #[tokio::test]
 async fn put_theme_only() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let resp = app
         .oneshot(json_request(
             "PUT",
@@ -39,7 +39,7 @@ async fn put_theme_only() {
 
 #[tokio::test]
 async fn put_locale_only() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let resp = app
         .oneshot(json_request(
             "PUT",
@@ -55,7 +55,7 @@ async fn put_locale_only() {
 
 #[tokio::test]
 async fn put_both_fields() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let resp = app
         .oneshot(json_request(
             "PUT",
@@ -71,7 +71,7 @@ async fn put_both_fields() {
 
 #[tokio::test]
 async fn put_empty_body() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let resp = app
         .oneshot(json_request("PUT", "/api/settings", Some("{}")))
         .await
@@ -83,7 +83,7 @@ async fn put_empty_body() {
 
 #[tokio::test]
 async fn put_invalid_theme() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let resp = app
         .oneshot(json_request(
             "PUT",
@@ -97,7 +97,7 @@ async fn put_invalid_theme() {
 
 #[tokio::test]
 async fn put_invalid_locale() {
-    let app = app().await;
+    let (app, _dir) = app().await;
     let resp = app
         .oneshot(json_request(
             "PUT",

@@ -514,7 +514,7 @@ mod tests {
         let mut app1_payload = b"Exif\x00\x00".to_vec();
         app1_payload.extend_from_slice(&tiff);
 
-        let app1_len = (app1_payload.len() + 2) as u16;
+        let app1_len = u16::try_from(app1_payload.len() + 2).expect("APP1 payload too large");
         let mut out = Vec::new();
         out.extend_from_slice(&jpeg[..2]); // SOI (FF D8)
         out.push(0xFF);

@@ -92,14 +92,13 @@ impl AiProvider for FailingAiProvider {
     }
 }
 
-async fn test_app_with_provider(provider: Arc<dyn AiProvider>) -> Router {
+async fn test_app_with_provider(provider: Arc<dyn AiProvider>) -> (Router, tempfile::TempDir) {
     let pool = common::test_pool().await;
-    let upload_dir = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir_all(&upload_dir).expect("Failed to create test upload dir");
+    let tmp = tempfile::TempDir::new().expect("Failed to create temp dir");
 
     let state = AppState {
         pool,
-        image_store: flowl::images::ImageStore::new(upload_dir),
+        image_store: flowl::images::ImageStore::new(tmp.path().to_path_buf()),
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,
@@ -110,14 +109,14 @@ async fn test_app_with_provider(provider: Arc<dyn AiProvider>) -> Router {
         ai_base_url: "https://api.openai.com/v1".to_string(),
         ai_model: "gpt-4.1-mini".to_string(),
     };
-    flowl::server::router(state)
+    (flowl::server::router(state), tmp)
 }
 
-async fn test_app_mock() -> Router {
+async fn test_app_mock() -> (Router, tempfile::TempDir) {
     test_app_with_provider(Arc::new(MockAiProvider)).await
 }
 
-async fn test_app_failing() -> Router {
+async fn test_app_failing() -> (Router, tempfile::TempDir) {
     test_app_with_provider(Arc::new(FailingAiProvider)).await
 }
 
@@ -146,7 +145,7 @@ fn multipart_body(parts: &[(&str, &str, &[u8])]) -> (String, Vec<u8>) {
 
 #[tokio::test]
 async fn identify_returns_503_when_ai_not_configured() {
-    let app = common::test_app().await;
+    let (app, _dir) = common::test_app().await;
 
     let (content_type, body) = multipart_body(&[("photos", "image/jpeg", &[0xFF, 0xD8, 0xFF])]);
 
@@ -167,7 +166,7 @@ async fn identify_returns_503_when_ai_not_configured() {
 
 #[tokio::test]
 async fn identify_returns_422_when_no_photos() {
-    let app = test_app_mock().await;
+    let (app, _dir) = test_app_mock().await;
 
     let boundary = "----TestBoundary";
     let body = format!("--{boundary}--\r\n");
@@ -190,7 +189,7 @@ async fn identify_returns_422_when_no_photos() {
 
 #[tokio::test]
 async fn identify_returns_422_for_invalid_content_type() {
-    let app = test_app_mock().await;
+    let (app, _dir) = test_app_mock().await;
 
     let (content_type, body) = multipart_body(&[("photos", "application/pdf", b"not an image")]);
 
@@ -211,7 +210,7 @@ async fn identify_returns_422_for_invalid_content_type() {
 
 #[tokio::test]
 async fn identify_returns_200_for_single_photo() {
-    let app = test_app_mock().await;
+    let (app, _dir) = test_app_mock().await;
 
     let (content_type, body) = multipart_body(&[("photos", "image/jpeg", &[0xFF, 0xD8, 0xFF])]);
 
@@ -237,7 +236,7 @@ async fn identify_returns_200_for_single_photo() {
 
 #[tokio::test]
 async fn identify_returns_200_for_multiple_photos() {
-    let app = test_app_mock().await;
+    let (app, _dir) = test_app_mock().await;
 
     let (content_type, body) = multipart_body(&[
         ("photos", "image/jpeg", &[0xFF, 0xD8, 0xFF]),
@@ -264,7 +263,7 @@ async fn identify_returns_200_for_multiple_photos() {
 
 #[tokio::test]
 async fn identify_returns_500_when_ai_provider_fails() {
-    let app = test_app_failing().await;
+    let (app, _dir) = test_app_failing().await;
 
     let (content_type, body) = multipart_body(&[("photos", "image/jpeg", &[0xFF, 0xD8, 0xFF])]);
 
@@ -285,7 +284,7 @@ async fn identify_returns_500_when_ai_provider_fails() {
 
 #[tokio::test]
 async fn identify_rejects_body_exceeding_size_limit() {
-    let app = test_app_mock().await;
+    let (app, _dir) = test_app_mock().await;
 
     // 31 MB payload exceeds the 30 MB limit
     let large_data = vec![0u8; 31 * 1024 * 1024];

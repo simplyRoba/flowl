@@ -95,7 +95,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | X5 | **Import version check is too strict** | 4 | 1 | ❌ | `check_version` requires matching major.minor. Won't fix — strict check is safe. Export filename now includes the version so users know which image version to deploy for import. |
 | X6 | **No structured logging output** | 4 | 2 | | Uses `tracing_subscriber::fmt()` which outputs human-readable logs. For a Docker service, JSON structured logging would be better for log aggregation. |
 | X7 | **Health check doesn't verify DB** | 4 | 1 | ✅ | `/health` returns `{"status": "ok"}` unconditionally without checking if the DB pool is healthy. |
-| X8 | **Test upload directories not cleaned up** | 5 | 1 | | `test_app_with_uploads` creates temp dirs with UUIDs under `std::env::temp_dir()` but there's no cleanup. They accumulate over time on dev machines. |
+| X8 | **Test upload directories not cleaned up** | 5 | 1 | ✅ | `test_app_with_uploads` creates temp dirs with UUIDs under `std::env::temp_dir()` but there's no cleanup. They accumulate over time on dev machines. |
 | X9 | **`unsafe` env var manipulation in config tests** | 4 | 2 | | `env::set_var`/`env::remove_var` are `unsafe` in Rust 2024 edition and require `unsafe` blocks. The tests work but the pattern is fragile with parallel test execution (mitigated by `ENV_LOCK` mutex). |
 
 ---
