@@ -29,7 +29,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | B3 | **MQTT publish functions silently swallow failures** | 3 | 3 | | All `publish_*` functions only `warn!()` on failure. If MQTT publishing is critical to HA integration, there's no retry or user feedback mechanism. The state checker only runs hourly after initial publish (`sleep(3600)`). |
 | B4 | ~~**`compute_watering_status` has a dead branch**~~ | 3 | 1 | ❌ | ~~Not a bug. When `today == next_due`, the `>` check is false so execution correctly falls to `>=` which returns `"due"`.~~ |
 | B5 | **SQL strings built via `format!`** | 3 | 3 | | `PLANT_SELECT` is concatenated with format strings like `format!("{PLANT_SELECT} WHERE p.id = ?")`. While the dynamic parts are just static strings (not user input), this pattern makes it harder to reason about SQL injection safety. Consider using a constant for each variant. |
-| B6 | **Stats counts photos from plants only** | 4 | 1 | | `photo_count` query is `SELECT COUNT(*) FROM plants WHERE photo_path IS NOT NULL` — care event photos aren't counted. |
+| B6 | **Stats counts photos from plants only** | 4 | 1 | ✅ | `photo_count` query is `SELECT COUNT(*) FROM plants WHERE photo_path IS NOT NULL` — care event photos aren't counted. |
 | B7 | **No WAL mode for SQLite** | 4 | 2 | | SQLite WAL mode isn't explicitly enabled. Under concurrent writes (API + background state checker), the default journal mode may cause `SQLITE_BUSY`. |
 | B8 | **`Option<Option<T>>` complexity in UpdatePlant** | 4 | 2 | | While functionally correct for distinguishing "not sent" vs "sent as null", having 8 fields with `#[allow(clippy::option_option)]` is complex. A PATCH semantics crate or explicit "unset" sentinel could be cleaner. |
 | B9 | **No rate limiting on AI endpoints** | 3 | 3 | | AI endpoints forward requests to OpenAI without any rate limiting or cost protection. A malicious or buggy client could burn through API credits. |
@@ -114,7 +114,7 @@ Difficulty: 1 = trivial, 5 = very hard
 
 - ~~B2: Validate `light_needs` (diff 1)~~
 - ~~B4: Fix watering status logic (diff 1) — not a bug~~
-- B6: Count care event photos in stats (diff 1)
+- ~~B6: Count care event photos in stats (diff 1)~~
 - ~~X7: DB health check (diff 1)~~
 - X5: Relax import version check (diff 1)
 - U8: Add union types for status fields (diff 2)

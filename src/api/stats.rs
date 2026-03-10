@@ -29,11 +29,12 @@ pub async fn get_stats(State(pool): State<SqlitePool>) -> Result<Json<Stats>, Ap
         .fetch_one(&pool)
         .await
         .map_err(db_error)?;
-    let photo_count =
-        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM plants WHERE photo_path IS NOT NULL")
-            .fetch_one(&pool)
-            .await
-            .map_err(db_error)?;
+    let photo_count = sqlx::query_scalar::<_, i64>(
+        "SELECT (SELECT COUNT(*) FROM plants WHERE photo_path IS NOT NULL) + (SELECT COUNT(*) FROM care_events WHERE photo_path IS NOT NULL)",
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(db_error)?;
 
     Ok(Json(Stats {
         plant_count,
