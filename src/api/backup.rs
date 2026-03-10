@@ -153,13 +153,15 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
         })?;
     }
 
+    let disposition = format!(
+        "attachment; filename=\"flowl-export-v{}.zip\"",
+        env!("CARGO_PKG_VERSION")
+    );
+
     Ok((
         [
-            (header::CONTENT_TYPE, "application/zip"),
-            (
-                header::CONTENT_DISPOSITION,
-                "attachment; filename=\"flowl-export.zip\"",
-            ),
+            (header::CONTENT_TYPE, "application/zip".to_string()),
+            (header::CONTENT_DISPOSITION, disposition),
         ],
         buf,
     )

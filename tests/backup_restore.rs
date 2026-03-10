@@ -95,7 +95,10 @@ async fn export_empty_database() {
     assert_eq!(response.headers()["content-type"], "application/zip");
     assert_eq!(
         response.headers()["content-disposition"],
-        "attachment; filename=\"flowl-export.zip\""
+        format!(
+            "attachment; filename=\"flowl-export-v{}.zip\"",
+            env!("CARGO_PKG_VERSION")
+        )
     );
 
     let body = axum::body::to_bytes(response.into_body(), usize::MAX)

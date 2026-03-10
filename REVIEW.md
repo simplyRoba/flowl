@@ -92,7 +92,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | X2 | **No automated database backup** | 3 | 3 | | No automated backup mechanism. The export feature exists but requires manual action. A corrupted DB means data loss. |
 | X3 | **`build.rs` runs UI build on every compile** | 3 | 2 | | Only skipped if `SKIP_UI_BUILD` is set. For Rust developers iterating on backend code, this adds significant build time. The `rerun-if-changed` hints help but don't cover all cases. |
 | X4 | **No E2E tests** | 3 | 4 | | Unit and integration tests are solid, but no Playwright/Cypress tests verify the full stack. The `tests/ui.rs` file is just 29 lines testing static file serving. |
-| X5 | **Import version check is too strict** | 4 | 1 | | `check_version` requires matching major.minor. A 0.24 export can't be imported into 0.25 even if the schema hasn't changed. Could check migration compatibility instead. |
+| X5 | **Import version check is too strict** | 4 | 1 | ❌ | `check_version` requires matching major.minor. Won't fix — strict check is safe. Export filename now includes the version so users know which image version to deploy for import. |
 | X6 | **No structured logging output** | 4 | 2 | | Uses `tracing_subscriber::fmt()` which outputs human-readable logs. For a Docker service, JSON structured logging would be better for log aggregation. |
 | X7 | **Health check doesn't verify DB** | 4 | 1 | ✅ | `/health` returns `{"status": "ok"}` unconditionally without checking if the DB pool is healthy. |
 | X8 | **Test upload directories not cleaned up** | 5 | 1 | | `test_app_with_uploads` creates temp dirs with UUIDs under `std::env::temp_dir()` but there's no cleanup. They accumulate over time on dev machines. |
@@ -116,7 +116,7 @@ Difficulty: 1 = trivial, 5 = very hard
 - ~~B4: Fix watering status logic (diff 1) — not a bug~~
 - ~~B6: Count care event photos in stats (diff 1)~~
 - ~~X7: DB health check (diff 1)~~
-- X5: Relax import version check (diff 1)
+- ~~X5: Relax import version check (diff 1) — won't fix, version added to export filename~~
 - U8: Add union types for status fields (diff 2)
 - U9: Add toast auto-dismiss timeout (diff 2)
 
