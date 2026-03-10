@@ -69,10 +69,11 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
         .map_err(db_error)?;
 
     let plants = sqlx::query_as::<_, ExportPlant>(
-        "SELECT id, name, species, icon, photo_path, location_id, watering_interval_days, \
-         (SELECT MAX(occurred_at) FROM care_events WHERE plant_id = plants.id AND event_type = 'watered') AS last_watered, \
-         light_needs, difficulty, pet_safety, growth_speed, soil_type, \
-         soil_moisture, notes, created_at, updated_at FROM plants",
+        "SELECT p.id, p.name, p.species, p.icon, p.photo_path, p.location_id, p.watering_interval_days, \
+         lw.last_watered, \
+         p.light_needs, p.difficulty, p.pet_safety, p.growth_speed, p.soil_type, \
+         p.soil_moisture, p.notes, p.created_at, p.updated_at \
+         FROM plants p LEFT JOIN plant_last_watered lw ON lw.plant_id = p.id",
     )
     .fetch_all(&state.pool)
     .await

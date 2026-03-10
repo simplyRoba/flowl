@@ -86,10 +86,10 @@ pub async fn build_plant_context(
 ) -> Result<PlantContext, ApiError> {
     let row = sqlx::query_as::<_, PlantContextRow>(
         "SELECT p.name, p.species, l.name AS location_name, p.light_needs, \
-         p.watering_interval_days, \
-         (SELECT MAX(occurred_at) FROM care_events WHERE plant_id = p.id AND event_type = 'watered') AS last_watered, \
+         p.watering_interval_days, lw.last_watered, \
          p.difficulty, p.pet_safety, p.growth_speed, p.soil_type, p.soil_moisture, p.notes \
          FROM plants p LEFT JOIN locations l ON p.location_id = l.id \
+         LEFT JOIN plant_last_watered lw ON lw.plant_id = p.id \
          WHERE p.id = ?",
     )
     .bind(plant_id)

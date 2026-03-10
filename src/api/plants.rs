@@ -203,10 +203,11 @@ impl From<PlantRow> for Plant {
 
 pub(crate) const PLANT_SELECT: &str = "SELECT p.id, p.name, p.species, p.icon, p.photo_path, \
     p.location_id, l.name AS location_name, p.watering_interval_days, \
-    (SELECT MAX(occurred_at) FROM care_events WHERE plant_id = p.id AND event_type = 'watered') AS last_watered, \
+    lw.last_watered, \
     p.light_needs, p.difficulty, p.pet_safety, p.growth_speed, p.soil_type, p.soil_moisture, \
     p.notes, p.created_at, p.updated_at \
-    FROM plants p LEFT JOIN locations l ON p.location_id = l.id";
+    FROM plants p LEFT JOIN locations l ON p.location_id = l.id \
+    LEFT JOIN plant_last_watered lw ON lw.plant_id = p.id";
 
 #[derive(Deserialize)]
 pub struct CreatePlant {
