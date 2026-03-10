@@ -72,6 +72,10 @@ To use Mistral, set `FLOWL_AI_BASE_URL=https://api.mistral.ai/v1` and `FLOWL_AI_
 
 Any other provider exposing an OpenAI-compatible `/v1/chat/completions` endpoint (LM Studio, vLLM, Ollama with OpenAI shim, etc.) should also work as long as the model supports the capabilities above.
 
+## Security
+
+flowl has no built-in authentication. It is designed to run on a trusted home network or behind a reverse proxy that handles auth (e.g., Authelia, Authentik, Caddy with basic auth). Do not expose it directly to the internet.
+
 ## Home Assistant
 
 With MQTT enabled, each plant appears as a sensor entity (`sensor.flowl_<name>`) via auto-discovery. The state is `ok`, `due`, or `overdue`. Attributes include `last_watered`, `next_due`, and `watering_interval_days`.

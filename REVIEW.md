@@ -88,7 +88,7 @@ Difficulty: 1 = trivial, 5 = very hard
 
 | # | Issue | Imp. | Diff. | Done | Details |
 |---|-------|------|-------|------|---------|
-| X1 | **No authentication** | 2 | 4 | | The service binds to `0.0.0.0` with no authentication. Anyone on the network can access/modify all data, trigger AI calls (spending API credits), export/import. Typical for HA add-ons behind a reverse proxy, but should at minimum be documented as a requirement, or optionally support basic auth. |
+| X1 | **No authentication** | 2 | 4 | ✅ | The service binds to `0.0.0.0` with no authentication. Anyone on the network can access/modify all data, trigger AI calls (spending API credits), export/import. Typical for HA add-ons behind a reverse proxy, but should at minimum be documented as a requirement, or optionally support basic auth. |
 | X2 | **No automated database backup** | 3 | 3 | | No automated backup mechanism. The export feature exists but requires manual action. A corrupted DB means data loss. |
 | X3 | **`build.rs` runs UI build on every compile** | 3 | 2 | | Only skipped if `SKIP_UI_BUILD` is set. For Rust developers iterating on backend code, this adds significant build time. The `rerun-if-changed` hints help but don't cover all cases. |
 | X4 | **No E2E tests** | 3 | 4 | | Unit and integration tests are solid, but no Playwright/Cypress tests verify the full stack. The `tests/ui.rs` file is just 29 lines testing static file serving. |
@@ -108,7 +108,7 @@ Difficulty: 1 = trivial, 5 = very hard
 2. ~~**B4: `compute_watering_status` logic bug** (imp 3, diff 1) — Not a bug; the code is correct.~~
 3. ~~**B2: Validate `light_needs`** (imp 2, diff 1) — One-liner to add the same validation pattern used for all other enum fields.~~
 4. ~~**X7: Health check DB verification** (imp 4, diff 1) — Add a simple `SELECT 1` to the health endpoint.~~
-5. **X1: Auth documentation or implementation** (imp 2, diff 1-4) — At minimum add a security note to README. Optionally add basic auth or API key support.
+5. ~~**X1: Auth documentation or implementation** (imp 2, diff 1-4) — Security note added to README. No built-in auth; use a reverse proxy.~~
 
 ### Quick wins (low difficulty, meaningful impact)
 
