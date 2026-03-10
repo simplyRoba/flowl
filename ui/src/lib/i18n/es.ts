@@ -387,7 +387,8 @@ export const es: Translations = {
     PLANT_INVALID_GROWTH_SPEED: "Valor no válido para velocidad de crecimiento",
     PLANT_INVALID_SOIL_TYPE: "Valor no válido para tipo de suelo",
     PLANT_INVALID_SOIL_MOISTURE: "Valor no válido para humedad del suelo",
-    PLANT_INVALID_WATERING_INTERVAL: "El intervalo de riego debe ser entre 1 y 365 días",
+    PLANT_INVALID_WATERING_INTERVAL:
+      "El intervalo de riego debe ser entre 1 y 365 días",
     CARE_EVENT_NOT_FOUND: "Evento de cuidado no encontrado",
     CARE_EVENT_TYPE_REQUIRED: "El tipo de evento es obligatorio",
     CARE_EVENT_INVALID_TYPE: "Tipo de evento no válido",

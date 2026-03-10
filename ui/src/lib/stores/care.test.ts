@@ -64,7 +64,9 @@ describe("loadCareEvents", () => {
   });
 
   it("uses fallback message for non-ApiError throws", async () => {
-    vi.mocked(api.fetchCareEvents).mockRejectedValue(new Error("Network error"));
+    vi.mocked(api.fetchCareEvents).mockRejectedValue(
+      new Error("Network error"),
+    );
     await loadCareEvents(10);
     expect(get(careError)).toBe("Failed to load care events");
   });

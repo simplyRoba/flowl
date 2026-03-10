@@ -13,9 +13,7 @@ export async function loadPlants() {
     const data = await api.fetchPlants();
     plants.set(data);
   } catch (e) {
-    plantsError.set(
-      resolveError(e, "loadPlants"),
-    );
+    plantsError.set(resolveError(e, "loadPlants"));
   }
 }
 
@@ -26,9 +24,7 @@ export async function loadPlant(id: number) {
     currentPlant.set(data);
     return data;
   } catch (e) {
-    plantsError.set(
-      resolveError(e, "loadPlant"),
-    );
+    plantsError.set(resolveError(e, "loadPlant"));
     return null;
   }
 }
@@ -40,9 +36,7 @@ export async function createPlant(data: CreatePlant): Promise<Plant | null> {
     plants.update((list) => [...list, plant]);
     return plant;
   } catch (e) {
-    plantsError.set(
-      resolveError(e, "createPlant"),
-    );
+    plantsError.set(resolveError(e, "createPlant"));
     return null;
   }
 }
@@ -58,9 +52,7 @@ export async function updatePlant(
     currentPlant.set(plant);
     return plant;
   } catch (e) {
-    plantsError.set(
-      resolveError(e, "updatePlant"),
-    );
+    plantsError.set(resolveError(e, "updatePlant"));
     return null;
   }
 }
@@ -73,9 +65,7 @@ export async function deletePlant(id: number): Promise<boolean> {
     currentPlant.set(null);
     return true;
   } catch (e) {
-    plantsError.set(
-      resolveError(e, "deletePlant"),
-    );
+    plantsError.set(resolveError(e, "deletePlant"));
     return false;
   }
 }
@@ -91,9 +81,7 @@ export async function uploadPhoto(
     currentPlant.set(plant);
     return plant;
   } catch (e) {
-    plantsError.set(
-      resolveError(e, "uploadPhoto"),
-    );
+    plantsError.set(resolveError(e, "uploadPhoto"));
     return null;
   }
 }
@@ -106,9 +94,7 @@ export async function waterPlant(id: number): Promise<Plant | null> {
     currentPlant.set(plant);
     return plant;
   } catch (e) {
-    plantsError.set(
-      resolveError(e, "waterPlant"),
-    );
+    plantsError.set(resolveError(e, "waterPlant"));
     return null;
   }
 }
@@ -125,9 +111,7 @@ export async function deletePhoto(plantId: number): Promise<boolean> {
     );
     return true;
   } catch (e) {
-    plantsError.set(
-      resolveError(e, "deletePhoto"),
-    );
+    plantsError.set(resolveError(e, "deletePhoto"));
     return false;
   }
 }

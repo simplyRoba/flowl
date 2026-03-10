@@ -383,7 +383,8 @@ const en = {
     PLANT_INVALID_GROWTH_SPEED: "Invalid value for growth speed",
     PLANT_INVALID_SOIL_TYPE: "Invalid value for soil type",
     PLANT_INVALID_SOIL_MOISTURE: "Invalid value for soil moisture",
-    PLANT_INVALID_WATERING_INTERVAL: "Watering interval must be between 1 and 365 days",
+    PLANT_INVALID_WATERING_INTERVAL:
+      "Watering interval must be between 1 and 365 days",
     CARE_EVENT_NOT_FOUND: "Care event not found",
     CARE_EVENT_TYPE_REQUIRED: "Event type is required",
     CARE_EVENT_INVALID_TYPE: "Invalid event type",

@@ -390,7 +390,8 @@ export const de: Translations = {
     PLANT_INVALID_GROWTH_SPEED: "Ungültiger Wert für Wachstumsgeschwindigkeit",
     PLANT_INVALID_SOIL_TYPE: "Ungültiger Wert für Bodenart",
     PLANT_INVALID_SOIL_MOISTURE: "Ungültiger Wert für Bodenfeuchtigkeit",
-    PLANT_INVALID_WATERING_INTERVAL: "Gießintervall muss zwischen 1 und 365 Tagen liegen",
+    PLANT_INVALID_WATERING_INTERVAL:
+      "Gießintervall muss zwischen 1 und 365 Tagen liegen",
     CARE_EVENT_NOT_FOUND: "Pflegeereignis nicht gefunden",
     CARE_EVENT_TYPE_REQUIRED: "Ereignistyp ist erforderlich",
     CARE_EVENT_INVALID_TYPE: "Ungültiger Ereignistyp",

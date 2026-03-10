@@ -75,13 +75,19 @@ describe("createLocation", () => {
   it("resolves ApiError code to i18n message", async () => {
     const { ApiError } = await import("$lib/api");
     vi.mocked(api.createLocation).mockRejectedValue(
-      new ApiError(409, "LOCATION_ALREADY_EXISTS", "A location with this name already exists"),
+      new ApiError(
+        409,
+        "LOCATION_ALREADY_EXISTS",
+        "A location with this name already exists",
+      ),
     );
     const result = await createLocation("Bedroom");
     expect(result).toEqual({
       error: "A location with this name already exists",
     });
-    expect(get(locationsError)).toBe("A location with this name already exists");
+    expect(get(locationsError)).toBe(
+      "A location with this name already exists",
+    );
   });
 
   it("uses fallback for non-ApiError", async () => {
@@ -107,13 +113,19 @@ describe("updateLocation", () => {
   it("resolves ApiError code to i18n message", async () => {
     const { ApiError } = await import("$lib/api");
     vi.mocked(api.updateLocation).mockRejectedValue(
-      new ApiError(409, "LOCATION_ALREADY_EXISTS", "A location with this name already exists"),
+      new ApiError(
+        409,
+        "LOCATION_ALREADY_EXISTS",
+        "A location with this name already exists",
+      ),
     );
     const result = await updateLocation(1, "Kitchen");
     expect(result).toEqual({
       error: "A location with this name already exists",
     });
-    expect(get(locationsError)).toBe("A location with this name already exists");
+    expect(get(locationsError)).toBe(
+      "A location with this name already exists",
+    );
   });
 
   it("uses fallback for non-ApiError", async () => {
