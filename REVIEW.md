@@ -34,7 +34,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | B8 | **`Option<Option<T>>` complexity in UpdatePlant** | 4 | 2 | | While functionally correct for distinguishing "not sent" vs "sent as null", having 8 fields with `#[allow(clippy::option_option)]` is complex. A PATCH semantics crate or explicit "unset" sentinel could be cleaner. |
 | B9 | **No rate limiting on AI endpoints** | 3 | 3 | | AI endpoints forward requests to OpenAI without any rate limiting or cost protection. A malicious or buggy client could burn through API credits. |
 | B10 | **Duplicate `last_watered` subquery** | 4 | 2 | | The same `(SELECT MAX(occurred_at) FROM care_events WHERE plant_id = ... AND event_type = 'watered')` subquery is repeated in `PLANT_SELECT`, `republish_all`, `spawn_state_checker`, `export_data`, and `build_plant_context`. Should be a shared SQL fragment or view. |
-| B11 | **Import clears photos before DB transaction** | 3 | 3 | | `import_data` runs Phase 2 (clear uploads + write new photos) before Phase 3 (replace DB in transaction). If the DB transaction fails and rolls back, the original photos are already deleted from disk. Could lose data on partial failure. |
+| B11 | **Import clears photos before DB transaction** | 3 | 3 | ✅ | `import_data` runs Phase 2 (clear uploads + write new photos) before Phase 3 (replace DB in transaction). If the DB transaction fails and rolls back, the original photos are already deleted from disk. Could lose data on partial failure. |
 
 ---
 

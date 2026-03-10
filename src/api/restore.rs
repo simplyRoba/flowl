@@ -315,9 +315,10 @@ pub async fn import_data(
         "Archive parsed, replacing database"
     );
 
-    // Phase 2: Clear existing uploads and write new photos (before DB commit)
-    // Writing first ensures the DB never references files that don't exist.
-    state.image_store.clear().await;
+    // Phase 2: Write new photos to disk (may overwrite same-named files)
+    // Clear thumbnails so they are regenerated in Phase 4b (e.g. after orientation fixes).
+    // Original photos are preserved so a failed DB transaction doesn't lose data.
+    state.image_store.clear_thumbnails().await;
     let photos_count = photos.len();
     let upload_dir = state.image_store.upload_dir();
     for (filename, contents) in &photos {
@@ -332,7 +333,7 @@ pub async fn import_data(
     // Phase 3: Replace database data in a transaction
     replace_database(&state.pool, &data).await?;
 
-    // Phase 4: Clean up old photos that are no longer referenced
+    // Phase 4: Clean up photos no longer referenced by the new database
     state.image_store.cleanup_orphans(&state.pool).await;
 
     // Phase 4b: Generate thumbnails for imported photos

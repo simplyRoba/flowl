@@ -210,24 +210,24 @@ impl ImageStore {
         }
     }
 
-    /// Remove files in the uploads directory that are not referenced by any
-    /// `plants.photo_path` or `care_events.photo_path` row.
-    /// Thumbnail files whose base original is referenced are preserved.
-    /// Remove all files from the uploads directory.
-    pub async fn clear(&self) {
+    /// Remove only thumbnail files from the uploads directory, preserving originals.
+    pub async fn clear_thumbnails(&self) {
         let Ok(mut entries) = tokio::fs::read_dir(&self.upload_dir).await else {
             return;
         };
         let mut removed = 0u64;
         while let Ok(Some(entry)) = entries.next_entry().await {
-            if entry.file_type().await.is_ok_and(|ft| ft.is_file())
-                && tokio::fs::remove_file(entry.path()).await.is_ok()
-            {
-                removed += 1;
+            if entry.file_type().await.is_ok_and(|ft| ft.is_file()) {
+                let filename = entry.file_name().to_string_lossy().to_string();
+                if is_thumbnail_filename(&filename)
+                    && tokio::fs::remove_file(entry.path()).await.is_ok()
+                {
+                    removed += 1;
+                }
             }
         }
         if removed > 0 {
-            info!(removed, "Cleared uploads directory");
+            info!(removed, "Cleared thumbnail files");
         }
     }
 

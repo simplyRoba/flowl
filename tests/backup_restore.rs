@@ -490,6 +490,101 @@ async fn import_rejects_invalid_care_info() {
     assert_eq!(body["code"], "PLANT_INVALID_DIFFICULTY");
 }
 
+// --- Failed import preserves existing photos ---
+
+#[tokio::test]
+async fn failed_import_preserves_existing_photos() {
+    let pool = common::test_pool().await;
+    let upload_dir = std::env::temp_dir().join(format!("flowl-test-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&upload_dir).expect("create dir");
+
+    let state = flowl::state::AppState {
+        pool: pool.clone(),
+        image_store: flowl::images::ImageStore::new(upload_dir.clone()),
+        mqtt_client: None,
+        mqtt_prefix: "flowl".to_string(),
+        mqtt_connected: None,
+        mqtt_host: "localhost".to_string(),
+        mqtt_port: 1883,
+        mqtt_disabled: true,
+        ai_provider: None,
+        ai_base_url: String::new(),
+        ai_model: String::new(),
+    };
+
+    // Seed a plant with a photo via valid import
+    let seed_json = format!(
+        r#"{{
+            "version": "{}",
+            "locations": [],
+            "plants": [{{
+                "id": 1, "name": "Fern", "species": null, "icon": "🪴",
+                "photo_path": "existing-photo.jpg", "location_id": null,
+                "watering_interval_days": 7, "light_needs": "indirect",
+                "difficulty": null, "pet_safety": null, "growth_speed": null,
+                "soil_type": null, "soil_moisture": null, "notes": null,
+                "created_at": "2026-01-01T00:00:00", "updated_at": "2026-01-01T00:00:00"
+            }}],
+            "care_events": []
+        }}"#,
+        env!("CARGO_PKG_VERSION")
+    );
+    let photo_data = b"old photo bytes";
+    let zip_bytes = build_export_zip_with_photo(&seed_json, "existing-photo.jpg", photo_data);
+
+    let app = flowl::server::router(state.clone());
+    let resp = app
+        .oneshot(multipart_import_request(&zip_bytes))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert!(upload_dir.join("existing-photo.jpg").exists());
+
+    // Now attempt an import with invalid data (bad light_needs triggers validation error)
+    let bad_json = format!(
+        r#"{{
+            "version": "{}",
+            "locations": [],
+            "plants": [{{
+                "id": 1, "name": "Bad Plant", "species": null, "icon": "🪴",
+                "photo_path": null, "location_id": null,
+                "watering_interval_days": 7, "light_needs": "INVALID_VALUE",
+                "difficulty": null, "pet_safety": null, "growth_speed": null,
+                "soil_type": null, "soil_moisture": null, "notes": null,
+                "created_at": "2026-01-01T00:00:00", "updated_at": "2026-01-01T00:00:00"
+            }}],
+            "care_events": []
+        }}"#,
+        env!("CARGO_PKG_VERSION")
+    );
+    let bad_zip = build_export_zip(&bad_json);
+
+    let app = flowl::server::router(state.clone());
+    let resp = app
+        .oneshot(multipart_import_request(&bad_zip))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+
+    // Old photo must still exist on disk
+    assert!(
+        upload_dir.join("existing-photo.jpg").exists(),
+        "Existing photo should be preserved after failed import"
+    );
+
+    // Old DB data should be intact too
+    let count = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM plants WHERE name = 'Fern'")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        count, 1,
+        "Original plant should still exist after failed import"
+    );
+
+    let _ = std::fs::remove_dir_all(&upload_dir);
+}
+
 // --- Round-trip test ---
 
 #[tokio::test]
