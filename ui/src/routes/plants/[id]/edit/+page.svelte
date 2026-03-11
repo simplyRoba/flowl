@@ -17,7 +17,7 @@
     data: {
       plant: import("$lib/api").Plant | null;
       notFound: boolean;
-      loadError: string | null;
+      loadErrorCode: string | null;
     };
   }
 
@@ -25,13 +25,13 @@
   let data = $derived((props as Props).data);
 
   let plant = $state<import("$lib/api").Plant | null>(null);
-  let loadError = $state<string | null>(null);
+  let loadErrorCode = $state<string | null>(null);
   let notFound = $state(false);
   let saving = $state(false);
 
   $effect(() => {
     plant = data.plant;
-    loadError = data.loadError;
+    loadErrorCode = data.loadErrorCode;
     notFound = data.notFound;
     saving = false;
   });
@@ -101,8 +101,12 @@
 
   {#if notFound}
     <p class="error">{$translations.plant.notFound}</p>
-  {:else if loadError}
-    <p class="error">{loadError}</p>
+  {:else if loadErrorCode}
+    <p class="error">
+      {$translations.errorCode[
+        loadErrorCode as keyof typeof $translations.errorCode
+      ] ?? $translations.error.loadPlant}
+    </p>
   {:else if plant}
     {#key plant.id}
       <PlantForm

@@ -216,7 +216,6 @@ export const de: Translations = {
       "Alle gespeicherten MQTT-Topics löschen und aktuellen Stand für alle Pflanzen neu veröffentlichen?",
     repairTitle: "MQTT reparieren",
     repairing: "Reparieren...",
-    repairFailed: "Reparatur fehlgeschlagen",
     repairResult: "{cleared} gelöscht, {published} veröffentlicht",
     mqttMustBeConnected: "MQTT muss verbunden sein",
     ai: "KI-Assistent",
@@ -234,10 +233,8 @@ export const de: Translations = {
     importData: "Daten importieren",
     importConfirm:
       '"{name}" importieren? Alle vorhandenen Daten und Fotos werden ersetzt.',
-    importFailed: "Import fehlgeschlagen",
     importRefreshFailed:
       "Import abgeschlossen, aber die aktualisierten Summen konnten nicht geladen werden.",
-    exportFailed: "Export fehlgeschlagen",
     importResult:
       "{plants} Pflanzen, {photos} Fotos, {care_events} Einträge, {locations} Standorte importiert",
     statsLabel: "Pflanzen",
@@ -436,5 +433,12 @@ export const de: Translations = {
     createLocation: "Standort konnte nicht erstellt werden",
     updateLocation: "Standort konnte nicht aktualisiert werden",
     deleteLocation: "Standort konnte nicht gelöscht werden",
+    identifyPlant: "Pflanze konnte nicht identifiziert werden",
+    chatPlant: "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    summarizeChat: "Notiz konnte nicht gespeichert werden",
+    saveChatNote: "Notiz konnte nicht gespeichert werden",
+    repairMqtt: "Reparatur fehlgeschlagen",
+    importData: "Import fehlgeschlagen",
+    exportData: "Export fehlgeschlagen",
   },
 };

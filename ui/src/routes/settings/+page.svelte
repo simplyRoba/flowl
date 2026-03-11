@@ -47,6 +47,7 @@
     type MqttStatus,
   } from "$lib/api";
   import { aiStatus as aiStatusStore, loadAiStatus } from "$lib/stores/ai";
+  import { resolveError } from "$lib/stores/errors";
   import { pushNotification } from "$lib/stores/notifications";
   import ModalDialog from "$lib/components/ModalDialog.svelte";
 
@@ -209,10 +210,7 @@
       pushNotification({
         title: get(translations).settings.repairTitle,
         variant: "error",
-        message:
-          e instanceof Error
-            ? e.message
-            : get(translations).settings.repairFailed,
+        message: resolveError(e, "repairMqtt"),
       });
     } finally {
       repairLoading = false;
@@ -229,10 +227,7 @@
       pushNotification({
         title: get(translations).settings.exportBtn,
         variant: "error",
-        message:
-          e instanceof Error
-            ? e.message
-            : get(translations).settings.exportFailed,
+        message: resolveError(e, "exportData"),
       });
     } finally {
       exportLoading = false;
@@ -279,10 +274,7 @@
       pushNotification({
         title: get(translations).settings.importData,
         variant: "error",
-        message:
-          e instanceof Error
-            ? e.message
-            : get(translations).settings.importFailed,
+        message: resolveError(e, "importData"),
       });
     } finally {
       importLoading = false;

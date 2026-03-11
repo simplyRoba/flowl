@@ -66,7 +66,7 @@ function renderPage(overrides: Partial<Plant> = {}) {
       data: {
         plant: plant(overrides),
         notFound: false,
-        loadError: null,
+        loadErrorCode: null,
       },
     },
   });
@@ -184,7 +184,7 @@ describe("edit plant page", () => {
       data: {
         plant: plant({ id: 2, name: "Monstera" }),
         notFound: false,
-        loadError: null,
+        loadErrorCode: null,
       },
     });
 

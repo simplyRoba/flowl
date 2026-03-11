@@ -27,7 +27,7 @@ describe("plant detail page load", () => {
       plant,
       careEvents,
       notFound: false,
-      loadError: null,
+      loadErrorCode: null,
     });
   });
 
@@ -48,7 +48,37 @@ describe("plant detail page load", () => {
       plant: null,
       careEvents: [],
       notFound: true,
-      loadError: null,
+      loadErrorCode: null,
+    });
+  });
+
+  it("returns the API error code for non-404 failures", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+        json: async () => ({
+          code: "INTERNAL_ERROR",
+          message: "An internal error occurred",
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      });
+
+    const result = await load({
+      fetch,
+      params: { id: "1" },
+    } as never);
+
+    expect(result).toEqual({
+      plant: null,
+      careEvents: [],
+      notFound: false,
+      loadErrorCode: "INTERNAL_ERROR",
     });
   });
 });

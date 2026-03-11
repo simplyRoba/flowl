@@ -156,7 +156,7 @@ async function renderWithPlant(
         plant,
         careEvents: initialCareEvents,
         notFound: false,
-        loadError: null,
+        loadErrorCode: null,
       },
     },
   });
@@ -190,7 +190,7 @@ describe("route data updates", () => {
         plant: makePlant({ id: 2, name: "Monstera" }),
         careEvents: [],
         notFound: false,
-        loadError: null,
+        loadErrorCode: null,
       },
     });
 
@@ -570,7 +570,9 @@ describe("care event delete reloads plant", () => {
   });
 
   it("shows a toast when deleting a care event fails", async () => {
-    mockDeleteCareEventApi.mockRejectedValue(new Error("Delete failed"));
+    mockDeleteCareEventApi.mockRejectedValue(
+      new api.ApiError(500, "INTERNAL_ERROR", "An internal error occurred"),
+    );
 
     await renderWithPlant({}, [makeCareEvent()]);
     await screen.findByText("Fern");
@@ -594,7 +596,7 @@ describe("care event delete reloads plant", () => {
         expect.objectContaining({
           title: "Care Journal",
           variant: "error",
-          message: "Delete failed",
+          message: "Something went wrong. Please try again.",
         }),
       );
     });

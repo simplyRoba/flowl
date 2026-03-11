@@ -210,7 +210,6 @@ const en = {
       "Clear all retained MQTT topics and republish fresh state for all plants?",
     repairTitle: "Repair MQTT",
     repairing: "Repairing...",
-    repairFailed: "Repair failed",
     repairResult: "Cleared {cleared}, published {published}",
     mqttMustBeConnected: "MQTT must be connected",
     ai: "AI Assistant",
@@ -228,10 +227,8 @@ const en = {
     importData: "Import data",
     importConfirm:
       'Import "{name}"? All existing data and photos will be replaced.',
-    importFailed: "Import failed",
     importRefreshFailed:
       "Import completed, but the refreshed totals could not be loaded.",
-    exportFailed: "Export failed",
     importResult:
       "Imported {plants} plants, {photos} photos, {care_events} log entries, {locations} locations",
     statsLabel: "Plants",
@@ -429,6 +426,13 @@ const en = {
     createLocation: "Failed to create location",
     updateLocation: "Failed to update location",
     deleteLocation: "Failed to delete location",
+    identifyPlant: "Failed to identify plant",
+    chatPlant: "Something went wrong. Please try again.",
+    summarizeChat: "Failed to save note",
+    saveChatNote: "Failed to save note",
+    repairMqtt: "Repair failed",
+    importData: "Import failed",
+    exportData: "Export failed",
   },
 };
 

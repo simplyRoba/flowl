@@ -214,7 +214,6 @@ export const es: Translations = {
       "¿Eliminar todos los topics MQTT retenidos y republicar el estado actual de todas las plantas?",
     repairTitle: "Reparar MQTT",
     repairing: "Reparando...",
-    repairFailed: "Reparación fallida",
     repairResult: "{cleared} eliminados, {published} publicados",
     mqttMustBeConnected: "MQTT debe estar conectado",
     ai: "Asistente IA",
@@ -232,10 +231,8 @@ export const es: Translations = {
     importData: "Importar datos",
     importConfirm:
       '¿Importar "{name}"? Todos los datos y fotos existentes serán reemplazados.',
-    importFailed: "Importación fallida",
     importRefreshFailed:
       "La importación se completó, pero no se pudieron cargar los totales actualizados.",
-    exportFailed: "Exportación fallida",
     importResult:
       "{plants} plantas, {photos} fotos, {care_events} entradas, {locations} ubicaciones importadas",
     statsLabel: "Plantas",
@@ -433,5 +430,12 @@ export const es: Translations = {
     createLocation: "No se pudo crear la ubicación",
     updateLocation: "No se pudo actualizar la ubicación",
     deleteLocation: "No se pudo eliminar la ubicación",
+    identifyPlant: "No se pudo identificar la planta",
+    chatPlant: "Algo salió mal. Por favor, inténtalo de nuevo.",
+    summarizeChat: "No se pudo guardar la nota",
+    saveChatNote: "No se pudo guardar la nota",
+    repairMqtt: "Reparación fallida",
+    importData: "Importación fallida",
+    exportData: "Exportación fallida",
   },
 };

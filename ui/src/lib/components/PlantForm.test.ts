@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Plant } from "$lib/api";
+import { ApiError, type Plant } from "$lib/api";
 
 const mockIdentifyPlant = vi.fn();
 const mockLoadAiStatus = vi.fn();
@@ -81,7 +81,9 @@ describe("PlantForm identify feedback", () => {
   });
 
   it("keeps identify failures inline", async () => {
-    mockIdentifyPlant.mockRejectedValue(new Error("AI unavailable"));
+    mockIdentifyPlant.mockRejectedValue(
+      new ApiError(503, "AI_PROVIDER_FAILED", "AI provider request failed"),
+    );
     render(PlantForm, {
       props: {
         initial: makePlant(),
@@ -96,7 +98,7 @@ describe("PlantForm identify feedback", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("AI unavailable")).toBeTruthy();
+      expect(screen.getByText("AI provider request failed")).toBeTruthy();
       expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
     });
   });

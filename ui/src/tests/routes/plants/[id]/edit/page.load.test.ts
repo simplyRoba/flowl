@@ -18,7 +18,7 @@ describe("plant edit page load", () => {
     expect(result).toEqual({
       plant,
       notFound: false,
-      loadError: null,
+      loadErrorCode: null,
     });
   });
 
@@ -38,7 +38,30 @@ describe("plant edit page load", () => {
     expect(result).toEqual({
       plant: null,
       notFound: true,
-      loadError: null,
+      loadErrorCode: null,
+    });
+  });
+
+  it("returns the API error code for non-404 failures", async () => {
+    const fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      json: async () => ({
+        code: "INTERNAL_ERROR",
+        message: "An internal error occurred",
+      }),
+    });
+
+    const result = await load({
+      fetch,
+      params: { id: "1" },
+    } as never);
+
+    expect(result).toEqual({
+      plant: null,
+      notFound: false,
+      loadErrorCode: "INTERNAL_ERROR",
     });
   });
 });

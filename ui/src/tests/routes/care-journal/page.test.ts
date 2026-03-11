@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../../routes/care-journal/+page.svelte";
-import type { CareEvent } from "$lib/api";
+import { ApiError, type CareEvent } from "$lib/api";
 
 // jsdom doesn't implement HTMLDialogElement.showModal/close
 HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -16,9 +16,13 @@ HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
 const mockFetchAllCareEvents = vi.fn();
 const mockGoto = vi.fn();
 
-vi.mock("$lib/api", () => ({
-  fetchAllCareEvents: (...args: unknown[]) => mockFetchAllCareEvents(...args),
-}));
+vi.mock("$lib/api", async () => {
+  const actual = await vi.importActual<typeof import("$lib/api")>("$lib/api");
+  return {
+    ...actual,
+    fetchAllCareEvents: (...args: unknown[]) => mockFetchAllCareEvents(...args),
+  };
+});
 
 let mockUrl = new URL("http://localhost/care-journal");
 
@@ -246,5 +250,21 @@ describe("care journal filters", () => {
     expect(mockGoto).toHaveBeenCalled();
     const gotoUrl = mockGoto.mock.calls[0][0] as string;
     expect(gotoUrl).not.toContain("type=");
+  });
+});
+
+describe("care journal errors", () => {
+  it("shows translated error for known ApiError codes", async () => {
+    mockFetchAllCareEvents.mockRejectedValue(
+      new ApiError(500, "INTERNAL_ERROR", "An internal error occurred"),
+    );
+
+    const view = render(Page);
+
+    await vi.waitFor(() => {
+      expect(
+        view.getByText("Something went wrong. Please try again."),
+      ).toBeTruthy();
+    });
   });
 });

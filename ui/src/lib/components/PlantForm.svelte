@@ -35,6 +35,7 @@
     loadLocations,
     createLocation,
   } from "$lib/stores/locations";
+  import { resolveError } from "$lib/stores/errors";
   import { translations } from "$lib/stores/locale";
   import IconPicker from "./IconPicker.svelte";
   import LocationChips from "./LocationChips.svelte";
@@ -330,8 +331,7 @@
       currentSuggestion = 0;
       identifyState = "result";
     } catch (e: unknown) {
-      identifyError =
-        e instanceof Error ? e.message : $translations.identify.errorMessage;
+      identifyError = resolveError(e, "identifyPlant");
       identifyState = "error";
     }
   }

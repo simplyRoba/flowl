@@ -18,6 +18,7 @@
   } from "lucide-svelte";
   import type { CareEvent, EventType } from "$lib/api";
   import { fetchAllCareEvents } from "$lib/api";
+  import { resolveError } from "$lib/stores/errors";
   import { translations } from "$lib/stores/locale";
   import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
   import PhotoLightbox from "$lib/components/PhotoLightbox.svelte";
@@ -99,7 +100,7 @@
       }
       hasMore = page.has_more;
     } catch (e) {
-      error = e instanceof Error ? e.message : $translations.care.failedToLoad;
+      error = resolveError(e, "loadCareEvents");
     }
     loading = false;
   }

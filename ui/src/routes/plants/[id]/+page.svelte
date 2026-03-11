@@ -30,6 +30,7 @@
   } from "lucide-svelte";
   import { plantsError, deletePlant, waterPlant } from "$lib/stores/plants";
   import { careError } from "$lib/stores/care";
+  import { resolveError } from "$lib/stores/errors";
   import { translations } from "$lib/stores/locale";
   import { pushNotification } from "$lib/stores/notifications";
   import {
@@ -54,7 +55,7 @@
       plant: Plant | null;
       careEvents: CareEvent[];
       notFound: boolean;
-      loadError: string | null;
+      loadErrorCode: string | null;
     };
   }
 
@@ -64,7 +65,7 @@
   type BackPath = "/" | "/care-journal" | "/plants" | "/settings";
 
   let plant = $state<Plant | null>(null);
-  let plantLoadError = $state<string | null>(null);
+  let plantLoadErrorCode = $state<string | null>(null);
   let careEvents = $state<CareEvent[]>([]);
   let notFound = $state(false);
   let deleting = $state(false);
@@ -94,7 +95,7 @@
 
   $effect(() => {
     plant = data.plant;
-    plantLoadError = data.loadError;
+    plantLoadErrorCode = data.loadErrorCode;
     careEvents = data.careEvents;
     notFound = data.notFound;
     showLogForm = false;
@@ -120,7 +121,7 @@
 
     plant = nextPlant;
     careEvents = nextCareEvents;
-    plantLoadError = null;
+    plantLoadErrorCode = null;
   }
 
   function handleDelete() {
@@ -226,11 +227,7 @@
       await deleteCareEvent(plant.id, event.id);
       await refreshPlantDetails(plant.id);
     } catch (error) {
-      careError.set(
-        error instanceof Error
-          ? error.message
-          : $translations.error.deleteCareEvent,
-      );
+      careError.set(resolveError(error, "deleteCareEvent"));
       pushNotification({
         title: $translations.plant.careJournalSection,
         variant: "error",
@@ -623,8 +620,14 @@
       onsave={() => refreshPlantDetails(plant!.id)}
     />
   </div>
-{:else if plantLoadError || $plantsError}
-  <p class="error">{plantLoadError || $plantsError}</p>
+{:else if plantLoadErrorCode || $plantsError}
+  <p class="error">
+    {plantLoadErrorCode
+      ? ($translations.errorCode[
+          plantLoadErrorCode as keyof typeof $translations.errorCode
+        ] ?? $translations.error.loadPlant)
+      : $plantsError}
+  </p>
 {:else}
   <p class="loading">{$translations.common.loading}</p>
 {/if}

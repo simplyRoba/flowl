@@ -10,6 +10,7 @@
     type ChatMessage,
     type Plant,
   } from "$lib/api";
+  import { resolveError } from "$lib/stores/errors";
   import { pushNotification } from "$lib/stores/notifications";
 
   let {
@@ -210,17 +211,18 @@
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") return;
+      const message = resolveError(err, "chatPlant");
       const errorContent = messages[messages.length - 1].content;
       if (!errorContent) {
         // Replace empty assistant message with error
         messages[messages.length - 1] = {
           role: "assistant",
-          content: $translations.chat.errorMessage,
+          content: message,
         };
       } else {
         messages.push({
           role: "assistant",
-          content: $translations.chat.errorMessage,
+          content: message,
         });
       }
       scrollToBottom();
@@ -255,8 +257,8 @@
       const summary = await summarizeChat(plant.id, history);
       summaryText = summary;
       editingSummary = true;
-    } catch {
-      noteSavedMessage = $translations.chat.noteSaveFailed;
+    } catch (error) {
+      noteSavedMessage = resolveError(error, "summarizeChat");
       noteError = true;
       scrollToBottom();
     } finally {
@@ -287,8 +289,8 @@
         message: $translations.chat.noteSaved,
       });
       handleClose();
-    } catch {
-      noteSavedMessage = $translations.chat.noteSaveFailed;
+    } catch (error) {
+      noteSavedMessage = resolveError(error, "saveChatNote");
       noteError = true;
       scrollToBottom();
     } finally {

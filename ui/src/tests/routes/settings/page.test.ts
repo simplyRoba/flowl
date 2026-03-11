@@ -281,7 +281,7 @@ describe("settings data section export/import", () => {
         expect.objectContaining({
           title: "Export",
           variant: "error",
-          message: "Export unavailable",
+          message: "Export failed",
         }),
       );
     });
@@ -322,9 +322,14 @@ describe("settings data section export/import", () => {
     });
   });
 
-  it("shows import error on failure", async () => {
+  it("shows translated import error for known ApiError codes", async () => {
+    setLocale("de");
     vi.spyOn(api, "importData").mockRejectedValue(
-      new Error("Version mismatch"),
+      new api.ApiError(
+        400,
+        "IMPORT_VERSION_MISMATCH",
+        "Incompatible export version",
+      ),
     );
 
     render(Page);
@@ -344,19 +349,20 @@ describe("settings data section export/import", () => {
 
     // Confirm in dialog
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Import" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Importieren" })).toBeTruthy();
     });
     const user = userEvent.setup();
-    // There are two "Import" buttons (the toolbar one and the dialog one) — click the dialog one
-    const importButtons = screen.getAllByRole("button", { name: "Import" });
+    const importButtons = screen.getAllByRole("button", {
+      name: "Importieren",
+    });
     await user.click(importButtons[importButtons.length - 1]);
 
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
-          title: "Import data",
+          title: "Daten importieren",
           variant: "error",
-          message: "Version mismatch",
+          message: "Inkompatible Exportversion",
         }),
       );
     });
@@ -761,7 +767,7 @@ describe("settings MQTT repair confirmation", () => {
         expect.objectContaining({
           title: "Repair MQTT",
           variant: "error",
-          message: "Repair unavailable",
+          message: "Repair failed",
         }),
       );
     });

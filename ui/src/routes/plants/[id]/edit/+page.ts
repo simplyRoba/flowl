@@ -3,13 +3,14 @@ import type { PageLoad } from "./$types";
 
 interface RouteLoadError {
   status: number;
+  code: string;
   message: string;
 }
 
 interface PlantEditPageData {
   plant: Plant | null;
   notFound: boolean;
-  loadError: string | null;
+  loadErrorCode: string | null;
 }
 
 async function fetchJson<T>(fetchFn: typeof fetch, url: string): Promise<T> {
@@ -18,9 +19,10 @@ async function fetchJson<T>(fetchFn: typeof fetch, url: string): Promise<T> {
   if (!response.ok) {
     const data = await response
       .json()
-      .catch(() => ({ message: response.statusText }));
+      .catch(() => ({ code: "UNKNOWN_ERROR", message: response.statusText }));
     throw {
       status: response.status,
+      code: data.code || "UNKNOWN_ERROR",
       message: data.message || response.statusText,
     } satisfies RouteLoadError;
   }
@@ -34,7 +36,7 @@ function emptyResult(
   return {
     plant: null,
     notFound: false,
-    loadError: null,
+    loadErrorCode: null,
     ...overrides,
   };
 }
@@ -59,12 +61,10 @@ export const load: PageLoad = async ({ fetch, params }) => {
     }
 
     return emptyResult({
-      loadError:
-        error instanceof Error
-          ? error.message
-          : typeof error === "object" && error !== null && "message" in error
-            ? String(error.message)
-            : null,
+      loadErrorCode:
+        typeof error === "object" && error !== null && "code" in error
+          ? String(error.code)
+          : "UNKNOWN_ERROR",
     });
   }
 };
