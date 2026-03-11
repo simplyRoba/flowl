@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.25.1](https://github.com/simplyRoba/flowl/compare/v0.25.0...v0.25.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* **deps:** bump image from 0.25.9 to 0.25.10 ([7520a3b](https://github.com/simplyRoba/flowl/commit/7520a3bdccbf8c41c00736dbb1ff8281691bdf3c))
+* **deps:** bump quinn-proto from 0.11.13 to 0.11.14 ([9ae2d7a](https://github.com/simplyRoba/flowl/commit/9ae2d7ac5e807db9b9ebeffd1bd4a6ec62dbda9d))
+* **deps:** bump svelte from 5.53.9 to 5.53.10 in /ui in the svelte group ([239fdec](https://github.com/simplyRoba/flowl/commit/239fdec351449b5aa34219b52dfa5b4050b658ff))
+* **deps:** bump tempfile from 3.26.0 to 3.27.0 ([6e5c162](https://github.com/simplyRoba/flowl/commit/6e5c162cd5a73a82661e6d5d028ff3e47a2a349c))
+* **mqtt:** retry failed publishes up to 3 times with linear backoff ([50ffcc7](https://github.com/simplyRoba/flowl/commit/50ffcc7083f41d3cf6edac05dee84a8dac8cf0ba))
+* **ui:** use translated API error codes in routes ([33147d5](https://github.com/simplyRoba/flowl/commit/33147d537eb10f2942f1c0281f7038b2fc1358e9))
+
 ## [0.25.0](https://github.com/simplyRoba/flowl/compare/v0.24.5...v0.25.0) (2026-03-10)
 
 
