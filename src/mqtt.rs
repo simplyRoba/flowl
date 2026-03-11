@@ -256,6 +256,33 @@ fn removal_topics(prefix: &str, plant_id: i64) -> [String; 3] {
 }
 
 /// Publish HA auto-discovery config for a plant sensor entity.
+const MAX_RETRIES: u32 = 3;
+
+async fn publish_with_retry(client: &AsyncClient, topic: &str, payload: &[u8], label: &str) {
+    for attempt in 1..=MAX_RETRIES {
+        match client
+            .publish(topic, QoS::AtLeastOnce, true, payload.to_vec())
+            .await
+        {
+            Ok(()) => {
+                debug!(topic, label, "MQTT published");
+                return;
+            }
+            Err(e) => {
+                warn!(
+                    topic, label, attempt, max = MAX_RETRIES,
+                    error = %e, "MQTT publish failed, retrying"
+                );
+                tokio::time::sleep(std::time::Duration::from_secs(u64::from(attempt))).await;
+            }
+        }
+    }
+    warn!(
+        topic,
+        label, "MQTT publish failed after {MAX_RETRIES} retries, falling back to checker"
+    );
+}
+
 pub async fn publish_discovery(
     client: Option<&AsyncClient>,
     prefix: &str,
@@ -264,14 +291,7 @@ pub async fn publish_discovery(
 ) {
     let Some(client) = client else { return };
     let (topic, payload) = discovery_topic_and_payload(prefix, plant_id, plant_name);
-
-    match client
-        .publish(&topic, QoS::AtLeastOnce, true, payload)
-        .await
-    {
-        Ok(()) => debug!(plant_id, "MQTT published discovery"),
-        Err(e) => warn!(plant_id, error = %e, "MQTT publish discovery failed"),
-    }
+    publish_with_retry(client, &topic, payload.as_bytes(), "discovery").await;
 }
 
 /// Publish watering state (`ok`, `due`, `overdue`) to the plant's state topic.
@@ -283,11 +303,7 @@ pub async fn publish_state(
 ) {
     let Some(client) = client else { return };
     let topic = state_topic(prefix, plant_id);
-
-    match client.publish(&topic, QoS::AtLeastOnce, true, status).await {
-        Ok(()) => debug!(plant_id, status, "MQTT published state"),
-        Err(e) => warn!(plant_id, error = %e, "MQTT publish state failed"),
-    }
+    publish_with_retry(client, &topic, status.as_bytes(), "state").await;
 }
 
 /// Publish watering attributes (`next_due`, `last_watered`, interval) to the plant's attributes topic.
@@ -302,14 +318,7 @@ pub async fn publish_attributes(
     let Some(client) = client else { return };
     let (topic, payload) =
         attributes_topic_and_payload(prefix, plant_id, last_watered, next_due, interval_days);
-
-    match client
-        .publish(&topic, QoS::AtLeastOnce, true, payload)
-        .await
-    {
-        Ok(()) => debug!(plant_id, "MQTT published attributes"),
-        Err(e) => warn!(plant_id, error = %e, "MQTT publish attributes failed"),
-    }
+    publish_with_retry(client, &topic, payload.as_bytes(), "attributes").await;
 }
 
 /// Remove a plant from HA by publishing empty retained payloads to its topics.
@@ -317,12 +326,7 @@ pub async fn remove_plant(client: Option<&AsyncClient>, prefix: &str, plant_id: 
     let Some(client) = client else { return };
 
     for topic in &removal_topics(prefix, plant_id) {
-        if let Err(e) = client
-            .publish(topic, QoS::AtLeastOnce, true, Vec::<u8>::new())
-            .await
-        {
-            warn!(plant_id, topic, error = %e, "MQTT remove plant failed");
-        }
+        publish_with_retry(client, topic, &[], "remove").await;
     }
     debug!(plant_id, "MQTT removed plant topics");
 }

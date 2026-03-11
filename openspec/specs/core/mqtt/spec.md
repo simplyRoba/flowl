@@ -170,6 +170,24 @@ The application SHALL publish plant watering attributes as a retained JSON objec
 - **WHEN** attributes are published
 - **THEN** the payload contains `next_due` = null, `last_watered` = null, and the `watering_interval_days` value
 
+### Requirement: MQTT Publish Retry
+
+The application SHALL retry failed MQTT publishes up to 3 times with linear backoff (1s, 2s, 3s) before giving up. On final failure, a warning is logged and the hourly background state checker will eventually republish the correct state.
+
+#### Scenario: Transient publish failure
+
+- **GIVEN** an MQTT publish fails on the first attempt
+- **WHEN** the retry logic executes
+- **THEN** up to 2 additional attempts are made with increasing delay
+- **AND** each failed attempt is logged as a warning with the attempt number
+
+#### Scenario: All retries exhausted
+
+- **GIVEN** all 3 publish attempts fail
+- **WHEN** the final retry fails
+- **THEN** a warning is logged indicating fallback to the background checker
+- **AND** no error is returned to the caller
+
 ### Requirement: Background State Checker
 
 The application SHALL run a background task that periodically checks all plants for watering state transitions and publishes updates to MQTT whenever MQTT is enabled. The checker SHALL use a shared `needs_republish` flag (set by the event loop on every ConnAck) to detect initial connection and reconnection, triggering a full republish when the flag is set.
