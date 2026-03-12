@@ -89,7 +89,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | # | Issue | Imp. | Diff. | Done | Details |
 |---|-------|------|-------|------|---------|
 | X1 | **No authentication** | 2 | 4 | ✅ | The service binds to `0.0.0.0` with no authentication. Anyone on the network can access/modify all data, trigger AI calls (spending API credits), export/import. Typical for HA add-ons behind a reverse proxy, but should at minimum be documented as a requirement, or optionally support basic auth. |
-| X2 | **No automated database backup** | 3 | 3 | | No automated backup mechanism. The export feature exists but requires manual action. A corrupted DB means data loss. |
+| X2 | **No automated database backup** | 3 | 3 | ❌ | Won't fix. Backup scheduling is the deployment platform's responsibility (volume snapshots, cron). The export endpoint exists for manual backups. |
 | X3 | ~~**`build.rs` runs UI build on every compile**~~ | 3 | 2 | ❌ | ~~Not an issue. `rerun-if-changed` hints already prevent re-runs when UI files haven't changed. `SKIP_UI_BUILD` exists for fully skipping.~~ |
 | X4 | **No E2E tests** | 3 | 4 | | Unit and integration tests are solid, but no Playwright/Cypress tests verify the full stack. The `tests/ui.rs` file is just 29 lines testing static file serving. |
 | X5 | **Import version check is too strict** | 4 | 1 | ❌ | `check_version` requires matching major.minor. Won't fix — strict check is safe. Export filename now includes the version so users know which image version to deploy for import. |
