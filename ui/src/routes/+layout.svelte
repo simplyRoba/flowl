@@ -289,7 +289,7 @@
     data-testid="pull-to-refresh-indicator"
     class:settling={!gestureActive && pullIndicatorState !== "refreshing"}
     style:transform="translateY({pullIndicatorVisible
-      ? pullOffset - 68
+      ? Math.min(pullOffset, PULL_TO_REFRESH_THRESHOLD) - 68
       : -100}px)"
   >
     <span>{pullIndicatorLabel}</span>

@@ -1,4 +1,4 @@
-export const PULL_TO_REFRESH_THRESHOLD = 72;
+export const PULL_TO_REFRESH_THRESHOLD = 128;
 export const MAX_PULL_TO_REFRESH_OFFSET = 140;
 export const PULL_TO_REFRESH_RELOAD_DELAY_MS = 120;
 
@@ -110,7 +110,7 @@ export function canStartPullToRefresh({
   );
 }
 
-const CONTENT_ELASTIC_RANGE = 150;
+const CONTENT_ELASTIC_RANGE = 100;
 
 export function calculateContentOffset(distance: number): number {
   if (distance <= 0) {
