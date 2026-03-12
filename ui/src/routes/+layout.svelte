@@ -9,12 +9,12 @@
   import { initLocale, isLocale, translations } from "$lib/stores/locale";
   import { fetchSettings } from "$lib/api";
   import {
+    calculateContentOffset,
     calculatePullOffset,
     canStartPullToRefresh,
     getPullIndicatorState,
     hasBlockingPullToRefreshOverlay,
     isPullToRefreshRoute,
-    MAX_PULL_TO_REFRESH_OFFSET,
     PULL_TO_REFRESH_RELOAD_DELAY_MS,
     PULL_TO_REFRESH_THRESHOLD,
     reloadCurrentPage,
@@ -33,13 +33,13 @@
   let isStandalonePwa = $state(false);
   let isTouchCapable = $state(false);
   let pullOffset = $state(0);
+  let contentOffset = $state(0);
   let rawPullDistance = $state(0);
   let pullIndicatorState = $state<PullIndicatorState>("idle");
 
   let touchStartY: number | null = null;
   let gestureActive = $state(false);
   let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
-  const PULL_REVERSE_BUFFER = 8;
 
   const canUsePullToRefresh = $derived(
     isStandalonePwa &&
@@ -129,6 +129,7 @@
     gestureActive = false;
     rawPullDistance = 0;
     pullOffset = 0;
+    contentOffset = 0;
     pullIndicatorState = "idle";
   }
 
@@ -170,6 +171,7 @@
     gestureActive = true;
     rawPullDistance = 0;
     pullOffset = 0;
+    contentOffset = 0;
     pullIndicatorState = "idle";
   }
 
@@ -188,22 +190,15 @@
     if (distance <= 0) {
       rawPullDistance = 0;
       pullOffset = 0;
+      contentOffset = 0;
       pullIndicatorState = "idle";
       return;
     }
 
-    // Rebase origin so finger stays within buffer of visual max.
-    // This prevents the finger from drifting far ahead of the clamped
-    // visual offset, so reversing direction responds after ~8px.
-    const maxWithBuffer = MAX_PULL_TO_REFRESH_OFFSET + PULL_REVERSE_BUFFER;
-    if (distance > maxWithBuffer) {
-      touchStartY = event.touches[0].clientY - maxWithBuffer;
-    }
-
-    const effectiveDistance = event.touches[0].clientY - touchStartY!;
-    rawPullDistance = effectiveDistance;
-    pullOffset = calculatePullOffset(effectiveDistance);
-    pullIndicatorState = getPullIndicatorState(effectiveDistance);
+    rawPullDistance = distance;
+    pullOffset = calculatePullOffset(distance);
+    contentOffset = calculateContentOffset(distance);
+    pullIndicatorState = getPullIndicatorState(distance);
     event.preventDefault();
   }
 
@@ -294,12 +289,13 @@
     data-testid="pull-to-refresh-indicator"
     class:settling={!gestureActive && pullIndicatorState !== "refreshing"}
     style:transform="translateY({pullIndicatorVisible
-      ? pullOffset - 48
-      : -60}px)"
+      ? pullOffset - 68
+      : -100}px)"
   >
+    <span>{pullIndicatorLabel}</span>
     {#if pullIndicatorState === "release"}
       <span class="pull-indicator-check" aria-hidden="true">
-        <Check size={14} strokeWidth={3} />
+        <Check size={22} strokeWidth={3} />
       </span>
     {:else}
       <span
@@ -311,7 +307,6 @@
           : undefined}
       ></span>
     {/if}
-    <span>{pullIndicatorLabel}</span>
   </div>
 
   <div class="app">
@@ -344,8 +339,8 @@
     <main
       class="content"
       class:settling={!gestureActive && pullIndicatorState !== "refreshing"}
-      style:transform={pullOffset > 0
-        ? `translateY(${pullOffset}px)`
+      style:transform={contentOffset > 0
+        ? `translateY(${contentOffset}px)`
         : undefined}
     >
       {@render children()}
@@ -498,20 +493,15 @@
     right: 0;
     z-index: 160;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    width: fit-content;
+    gap: 6px;
     margin: 0 auto;
-    padding: 10px 14px;
-    border: 1px solid var(--color-border-subtle);
-    border-radius: 999px;
-    background: var(--color-background);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    color: var(--color-text);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
+    padding: 12px;
+    color: var(--color-text-muted);
+    font-size: 15px;
+    font-weight: 500;
     pointer-events: none;
   }
 
@@ -520,9 +510,9 @@
   }
 
   .pull-indicator-spinner {
-    width: 14px;
-    height: 14px;
-    border: 2px solid var(--color-border);
+    width: 22px;
+    height: 22px;
+    border: 2.5px solid var(--color-border);
     border-top-color: var(--color-primary);
     border-radius: 999px;
   }

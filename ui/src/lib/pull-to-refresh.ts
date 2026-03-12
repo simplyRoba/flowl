@@ -1,5 +1,5 @@
 export const PULL_TO_REFRESH_THRESHOLD = 72;
-export const MAX_PULL_TO_REFRESH_OFFSET = 96;
+export const MAX_PULL_TO_REFRESH_OFFSET = 140;
 export const PULL_TO_REFRESH_RELOAD_DELAY_MS = 120;
 
 const PLANT_DETAIL_ROUTE = /^\/plants\/[^/]+$/;
@@ -110,12 +110,42 @@ export function canStartPullToRefresh({
   );
 }
 
+const CONTENT_ELASTIC_RANGE = 150;
+
+export function calculateContentOffset(distance: number): number {
+  if (distance <= 0) {
+    return 0;
+  }
+
+  if (distance <= PULL_TO_REFRESH_THRESHOLD) {
+    return distance;
+  }
+
+  const overThreshold = distance - PULL_TO_REFRESH_THRESHOLD;
+
+  return (
+    PULL_TO_REFRESH_THRESHOLD +
+    CONTENT_ELASTIC_RANGE *
+      (1 - Math.exp(-overThreshold / CONTENT_ELASTIC_RANGE))
+  );
+}
+
 export function calculatePullOffset(distance: number): number {
   if (distance <= 0) {
     return 0;
   }
 
-  return Math.min(distance, MAX_PULL_TO_REFRESH_OFFSET);
+  if (distance <= PULL_TO_REFRESH_THRESHOLD) {
+    return distance;
+  }
+
+  const elasticRange = MAX_PULL_TO_REFRESH_OFFSET - PULL_TO_REFRESH_THRESHOLD;
+  const overThreshold = distance - PULL_TO_REFRESH_THRESHOLD;
+
+  return (
+    PULL_TO_REFRESH_THRESHOLD +
+    elasticRange * (1 - Math.exp(-overThreshold / elasticRange))
+  );
 }
 
 export function getPullIndicatorState(

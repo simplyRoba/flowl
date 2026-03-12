@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  calculateContentOffset,
   calculatePullOffset,
   canStartPullToRefresh,
   getPullIndicatorState,
@@ -102,12 +103,37 @@ describe("pull-to-refresh threshold behavior", () => {
     );
   });
 
-  it("arms refresh at the threshold and clamps the visual offset", () => {
+  it("tracks linearly up to the threshold then applies elastic curve", () => {
     expect(getPullIndicatorState(PULL_TO_REFRESH_THRESHOLD)).toBe("release");
     expect(shouldTriggerPullToRefresh(PULL_TO_REFRESH_THRESHOLD)).toBe(true);
-    expect(calculatePullOffset(MAX_PULL_TO_REFRESH_OFFSET + 40)).toBe(
-      MAX_PULL_TO_REFRESH_OFFSET,
+
+    expect(calculatePullOffset(PULL_TO_REFRESH_THRESHOLD / 2)).toBe(
+      PULL_TO_REFRESH_THRESHOLD / 2,
     );
+    expect(calculatePullOffset(PULL_TO_REFRESH_THRESHOLD)).toBe(
+      PULL_TO_REFRESH_THRESHOLD,
+    );
+
+    const elastic = calculatePullOffset(PULL_TO_REFRESH_THRESHOLD + 40);
+    expect(elastic).toBeGreaterThan(PULL_TO_REFRESH_THRESHOLD);
+    expect(elastic).toBeLessThan(PULL_TO_REFRESH_THRESHOLD + 40);
+
+    const farOffset = calculatePullOffset(500);
+    expect(farOffset).toBeGreaterThan(elastic);
+    expect(farOffset).toBeLessThan(MAX_PULL_TO_REFRESH_OFFSET);
+  });
+
+  it("tracks content linearly then continues at damped rate past threshold", () => {
+    expect(calculateContentOffset(PULL_TO_REFRESH_THRESHOLD)).toBe(
+      PULL_TO_REFRESH_THRESHOLD,
+    );
+
+    const past = calculateContentOffset(PULL_TO_REFRESH_THRESHOLD + 100);
+    expect(past).toBeGreaterThan(PULL_TO_REFRESH_THRESHOLD);
+    expect(past).toBeLessThan(PULL_TO_REFRESH_THRESHOLD + 100);
+
+    const farPast = calculateContentOffset(500);
+    expect(farPast).toBeGreaterThan(past);
   });
 
   it("builds a refreshing state after a successful release", () => {
