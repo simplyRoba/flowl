@@ -96,7 +96,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | X6 | ~~**No structured logging output**~~ | 4 | 2 | ❌ | ~~Not applicable. This is a single-binary self-hosted app, not a distributed service. Human-readable logs are the right choice.~~ |
 | X7 | **Health check doesn't verify DB** | 4 | 1 | ✅ | `/health` returns `{"status": "ok"}` unconditionally without checking if the DB pool is healthy. |
 | X8 | **Test upload directories not cleaned up** | 5 | 1 | ✅ | `test_app_with_uploads` creates temp dirs with UUIDs under `std::env::temp_dir()` but there's no cleanup. They accumulate over time on dev machines. |
-| X9 | **`unsafe` env var manipulation in config tests** | 4 | 2 | | `env::set_var`/`env::remove_var` are `unsafe` in Rust 2024 edition and require `unsafe` blocks. The tests work but the pattern is fragile with parallel test execution (mitigated by `ENV_LOCK` mutex). |
+| X9 | **`unsafe` env var manipulation in config tests** | 4 | 2 | ✅ | Refactored to `ConfigSource` trait with `MockConfig` for tests. No more `unsafe` blocks, mutex, or env var manipulation. |
 
 ---
 

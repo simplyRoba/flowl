@@ -20,7 +20,7 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() {
-    let config = config::Config::from_env();
+    let config = config::Config::load();
 
     tracing_subscriber::fmt()
         .with_env_filter(

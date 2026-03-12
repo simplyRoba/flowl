@@ -1,5 +1,17 @@
 use std::env;
 
+pub trait ConfigSource {
+    fn get(&self, key: &str) -> Option<String>;
+}
+
+struct EnvConfigSource;
+
+impl ConfigSource for EnvConfigSource {
+    fn get(&self, key: &str) -> Option<String> {
+        env::var(key).ok()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Config {
     pub port: u16,
@@ -16,28 +28,42 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn from_env() -> Self {
+    pub fn load() -> Self {
+        Self::load_from(&EnvConfigSource)
+    }
+
+    pub fn load_from(source: &impl ConfigSource) -> Self {
         Self {
-            port: parse_env("FLOWL_PORT", 4100),
-            db_path: env::var("FLOWL_DB_PATH").unwrap_or_else(|_| "/data/flowl.db".to_string()),
-            mqtt_host: env::var("FLOWL_MQTT_HOST").unwrap_or_else(|_| "localhost".to_string()),
-            mqtt_port: parse_env("FLOWL_MQTT_PORT", 1883),
-            mqtt_topic_prefix: env::var("FLOWL_MQTT_TOPIC_PREFIX")
-                .unwrap_or_else(|_| "flowl".to_string()),
-            log_level: env::var("FLOWL_LOG_LEVEL").unwrap_or_else(|_| "info".to_string()),
-            mqtt_disabled: parse_env("FLOWL_MQTT_DISABLED", false),
-            ai_api_key: env::var("FLOWL_AI_API_KEY").ok(),
-            ai_base_url: env::var("FLOWL_AI_BASE_URL")
-                .unwrap_or_else(|_| "https://api.openai.com/v1".to_string()),
-            ai_model: env::var("FLOWL_AI_MODEL").unwrap_or_else(|_| "gpt-4.1-mini".to_string()),
-            ai_rate_limit: parse_env("FLOWL_AI_RATE_LIMIT", 10),
+            port: parse_or(source, "FLOWL_PORT", 4100),
+            db_path: source
+                .get("FLOWL_DB_PATH")
+                .unwrap_or_else(|| "/data/flowl.db".to_string()),
+            mqtt_host: source
+                .get("FLOWL_MQTT_HOST")
+                .unwrap_or_else(|| "localhost".to_string()),
+            mqtt_port: parse_or(source, "FLOWL_MQTT_PORT", 1883),
+            mqtt_topic_prefix: source
+                .get("FLOWL_MQTT_TOPIC_PREFIX")
+                .unwrap_or_else(|| "flowl".to_string()),
+            log_level: source
+                .get("FLOWL_LOG_LEVEL")
+                .unwrap_or_else(|| "info".to_string()),
+            mqtt_disabled: parse_or(source, "FLOWL_MQTT_DISABLED", false),
+            ai_api_key: source.get("FLOWL_AI_API_KEY"),
+            ai_base_url: source
+                .get("FLOWL_AI_BASE_URL")
+                .unwrap_or_else(|| "https://api.openai.com/v1".to_string()),
+            ai_model: source
+                .get("FLOWL_AI_MODEL")
+                .unwrap_or_else(|| "gpt-4.1-mini".to_string()),
+            ai_rate_limit: parse_or(source, "FLOWL_AI_RATE_LIMIT", 10),
         }
     }
 }
 
-fn parse_env<T: std::str::FromStr>(key: &str, default: T) -> T {
-    env::var(key)
-        .ok()
+fn parse_or<T: std::str::FromStr>(source: &impl ConfigSource, key: &str, default: T) -> T {
+    source
+        .get(key)
         .and_then(|v| v.parse().ok())
         .unwrap_or(default)
 }
@@ -45,41 +71,37 @@ fn parse_env<T: std::str::FromStr>(key: &str, default: T) -> T {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
-    use std::sync::Mutex;
+    use std::collections::HashMap;
 
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
+    struct MockConfig(HashMap<&'static str, &'static str>);
 
-    unsafe fn clear_flowl_env() {
-        for key in [
-            "FLOWL_PORT",
-            "FLOWL_DB_PATH",
-            "FLOWL_MQTT_HOST",
-            "FLOWL_MQTT_PORT",
-            "FLOWL_MQTT_TOPIC_PREFIX",
-            "FLOWL_LOG_LEVEL",
-            "FLOWL_MQTT_DISABLED",
-            "FLOWL_AI_API_KEY",
-            "FLOWL_AI_BASE_URL",
-            "FLOWL_AI_MODEL",
-            "FLOWL_AI_RATE_LIMIT",
-        ] {
-            unsafe { env::remove_var(key) };
+    impl MockConfig {
+        fn new() -> Self {
+            Self(HashMap::new())
+        }
+
+        fn with(mut self, key: &'static str, value: &'static str) -> Self {
+            self.0.insert(key, value);
+            self
+        }
+    }
+
+    impl ConfigSource for MockConfig {
+        fn get(&self, key: &str) -> Option<String> {
+            self.0.get(key).map(|s| (*s).to_string())
         }
     }
 
     #[test]
     fn defaults() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        unsafe { clear_flowl_env() };
-
-        let config = Config::from_env();
+        let config = Config::load_from(&MockConfig::new());
         assert_eq!(config.port, 4100);
         assert_eq!(config.db_path, "/data/flowl.db");
         assert_eq!(config.mqtt_host, "localhost");
         assert_eq!(config.mqtt_port, 1883);
         assert_eq!(config.mqtt_topic_prefix, "flowl");
         assert_eq!(config.log_level, "info");
+        assert!(!config.mqtt_disabled);
         assert!(config.ai_api_key.is_none());
         assert_eq!(config.ai_base_url, "https://api.openai.com/v1");
         assert_eq!(config.ai_model, "gpt-4.1-mini");
@@ -88,22 +110,20 @@ mod tests {
 
     #[test]
     fn custom_values() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        unsafe {
-            env::set_var("FLOWL_PORT", "3000");
-            env::set_var("FLOWL_DB_PATH", "/tmp/test.db");
-            env::set_var("FLOWL_MQTT_HOST", "broker.local");
-            env::set_var("FLOWL_MQTT_PORT", "1884");
-            env::set_var("FLOWL_MQTT_TOPIC_PREFIX", "myplants");
-            env::set_var("FLOWL_LOG_LEVEL", "debug");
-            env::set_var("FLOWL_MQTT_DISABLED", "true");
-            env::set_var("FLOWL_AI_API_KEY", "sk-test-key");
-            env::set_var("FLOWL_AI_BASE_URL", "http://localhost:11434/v1");
-            env::set_var("FLOWL_AI_MODEL", "llama3");
-            env::set_var("FLOWL_AI_RATE_LIMIT", "20");
-        }
-
-        let config = Config::from_env();
+        let config = Config::load_from(
+            &MockConfig::new()
+                .with("FLOWL_PORT", "3000")
+                .with("FLOWL_DB_PATH", "/tmp/test.db")
+                .with("FLOWL_MQTT_HOST", "broker.local")
+                .with("FLOWL_MQTT_PORT", "1884")
+                .with("FLOWL_MQTT_TOPIC_PREFIX", "myplants")
+                .with("FLOWL_LOG_LEVEL", "debug")
+                .with("FLOWL_MQTT_DISABLED", "true")
+                .with("FLOWL_AI_API_KEY", "sk-test-key")
+                .with("FLOWL_AI_BASE_URL", "http://localhost:11434/v1")
+                .with("FLOWL_AI_MODEL", "llama3")
+                .with("FLOWL_AI_RATE_LIMIT", "20"),
+        );
         assert_eq!(config.port, 3000);
         assert_eq!(config.db_path, "/tmp/test.db");
         assert_eq!(config.mqtt_host, "broker.local");
@@ -115,59 +135,24 @@ mod tests {
         assert_eq!(config.ai_base_url, "http://localhost:11434/v1");
         assert_eq!(config.ai_model, "llama3");
         assert_eq!(config.ai_rate_limit, 20);
-
-        unsafe { clear_flowl_env() };
-    }
-
-    #[test]
-    fn mqtt_disabled_defaults_false() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        unsafe { clear_flowl_env() };
-
-        let config = Config::from_env();
-        assert!(!config.mqtt_disabled);
     }
 
     #[test]
     fn invalid_mqtt_disabled_falls_back_to_default() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        unsafe { clear_flowl_env() };
-        unsafe { env::set_var("FLOWL_MQTT_DISABLED", "not_a_bool") };
-
-        let config = Config::from_env();
+        let config =
+            Config::load_from(&MockConfig::new().with("FLOWL_MQTT_DISABLED", "not_a_bool"));
         assert!(!config.mqtt_disabled);
-
-        unsafe { clear_flowl_env() };
-    }
-
-    #[test]
-    fn ai_api_key_absent_results_in_none() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        unsafe { clear_flowl_env() };
-
-        let config = Config::from_env();
-        assert!(config.ai_api_key.is_none());
     }
 
     #[test]
     fn ai_rate_limit_zero_disables() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        unsafe { clear_flowl_env() };
-        unsafe { env::set_var("FLOWL_AI_RATE_LIMIT", "0") };
-
-        let config = Config::from_env();
+        let config = Config::load_from(&MockConfig::new().with("FLOWL_AI_RATE_LIMIT", "0"));
         assert_eq!(config.ai_rate_limit, 0);
-
-        unsafe { clear_flowl_env() };
     }
 
     #[test]
     fn invalid_port_falls_back_to_default() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        unsafe { clear_flowl_env() };
-        unsafe { env::set_var("FLOWL_PORT", "not_a_number") };
-        let config = Config::from_env();
+        let config = Config::load_from(&MockConfig::new().with("FLOWL_PORT", "not_a_number"));
         assert_eq!(config.port, 4100);
-        unsafe { env::remove_var("FLOWL_PORT") };
     }
 }
