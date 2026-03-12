@@ -42,6 +42,21 @@ The `summarize` provider method SHALL use `response_format: { "type": "json_sche
 - **WHEN** the AI response cannot be parsed as JSON or lacks a `summary` field
 - **THEN** the endpoint SHALL return HTTP 500 with an internal error message
 
+### Requirement: Summarize rate limiting
+
+The summarize endpoint SHALL check the global AI rate limiter before processing the request. If the limit is exceeded, the endpoint SHALL return HTTP 429 with error code `AI_RATE_LIMITED` without forwarding anything to the AI provider.
+
+#### Scenario: Summarize request within rate limit
+
+- **WHEN** a valid summarize request is sent and the rate limit has not been exceeded
+- **THEN** the request SHALL be processed normally
+
+#### Scenario: Summarize request exceeds rate limit
+
+- **WHEN** a summarize request is sent and the rate limit has been exceeded
+- **THEN** the endpoint SHALL return HTTP 429 with `{"code": "AI_RATE_LIMITED", "message": "..."}`
+- **AND** no request SHALL be sent to the AI provider
+
 ### Requirement: Summarize system prompt
 
 The system prompt for summarization SHALL instruct the model to condense the conversation into a 1–3 sentence care journal note. It SHALL include the plant's name and species for context. It SHALL instruct the model to focus on diagnoses, advice given, and actions recommended. The response language SHALL match the user's locale setting.

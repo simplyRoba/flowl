@@ -12,6 +12,7 @@ pub struct Config {
     pub ai_api_key: Option<String>,
     pub ai_base_url: String,
     pub ai_model: String,
+    pub ai_rate_limit: u32,
 }
 
 impl Config {
@@ -29,6 +30,7 @@ impl Config {
             ai_base_url: env::var("FLOWL_AI_BASE_URL")
                 .unwrap_or_else(|_| "https://api.openai.com/v1".to_string()),
             ai_model: env::var("FLOWL_AI_MODEL").unwrap_or_else(|_| "gpt-4.1-mini".to_string()),
+            ai_rate_limit: parse_env("FLOWL_AI_RATE_LIMIT", 10),
         }
     }
 }
@@ -60,6 +62,7 @@ mod tests {
             "FLOWL_AI_API_KEY",
             "FLOWL_AI_BASE_URL",
             "FLOWL_AI_MODEL",
+            "FLOWL_AI_RATE_LIMIT",
         ] {
             unsafe { env::remove_var(key) };
         }
@@ -80,6 +83,7 @@ mod tests {
         assert!(config.ai_api_key.is_none());
         assert_eq!(config.ai_base_url, "https://api.openai.com/v1");
         assert_eq!(config.ai_model, "gpt-4.1-mini");
+        assert_eq!(config.ai_rate_limit, 10);
     }
 
     #[test]
@@ -96,6 +100,7 @@ mod tests {
             env::set_var("FLOWL_AI_API_KEY", "sk-test-key");
             env::set_var("FLOWL_AI_BASE_URL", "http://localhost:11434/v1");
             env::set_var("FLOWL_AI_MODEL", "llama3");
+            env::set_var("FLOWL_AI_RATE_LIMIT", "20");
         }
 
         let config = Config::from_env();
@@ -109,6 +114,7 @@ mod tests {
         assert_eq!(config.ai_api_key.as_deref(), Some("sk-test-key"));
         assert_eq!(config.ai_base_url, "http://localhost:11434/v1");
         assert_eq!(config.ai_model, "llama3");
+        assert_eq!(config.ai_rate_limit, 20);
 
         unsafe { clear_flowl_env() };
     }
@@ -141,6 +147,18 @@ mod tests {
 
         let config = Config::from_env();
         assert!(config.ai_api_key.is_none());
+    }
+
+    #[test]
+    fn ai_rate_limit_zero_disables() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        unsafe { clear_flowl_env() };
+        unsafe { env::set_var("FLOWL_AI_RATE_LIMIT", "0") };
+
+        let config = Config::from_env();
+        assert_eq!(config.ai_rate_limit, 0);
+
+        unsafe { clear_flowl_env() };
     }
 
     #[test]

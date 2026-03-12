@@ -45,6 +45,12 @@ The API SHALL return errors as JSON with a consistent structure containing a `co
 - **AND** the real error details SHALL be logged server-side
 - **AND** internal error details SHALL NOT be exposed to the client
 
+#### Scenario: Rate limit exceeded
+
+- **WHEN** an AI endpoint receives a request that exceeds the configured rate limit
+- **THEN** the API responds with HTTP 429 and `{"code": "AI_RATE_LIMITED", "message": "..."}`
+- **AND** no request SHALL be forwarded to the AI provider
+
 #### Scenario: Conflict
 
 - **WHEN** a request would create a duplicate or violate a uniqueness constraint
@@ -97,7 +103,7 @@ The API SHALL define a fixed catalog of error codes. Each error code SHALL map t
 #### Scenario: AI errors
 
 - **WHEN** an AI operation fails
-- **THEN** the API uses one of: `AI_NOT_CONFIGURED` (503), `AI_PROVIDER_FAILED` (500), `AI_INVALID_IMAGE` (400), `AI_HISTORY_EMPTY` (422)
+- **THEN** the API uses one of: `AI_NOT_CONFIGURED` (503), `AI_PROVIDER_FAILED` (500), `AI_INVALID_IMAGE` (400), `AI_HISTORY_EMPTY` (422), `AI_RATE_LIMITED` (429)
 
 #### Scenario: MQTT errors
 

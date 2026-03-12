@@ -27,6 +27,7 @@ pub enum ApiError {
     BadRequest(&'static str),
     ServiceUnavailable(&'static str),
     InternalError(&'static str),
+    TooManyRequests(&'static str),
 }
 
 #[allow(clippy::needless_pass_by_value)]
@@ -85,6 +86,7 @@ pub fn default_message(code: &str) -> &'static str {
         "AI_NOT_CONFIGURED" => "AI provider is not configured",
         "AI_PROVIDER_FAILED" => "AI provider request failed",
         "AI_STREAM_ERROR" => "AI response interrupted",
+        "AI_RATE_LIMITED" => "Too many AI requests, please wait",
         "AI_INVALID_IMAGE" => "Invalid image data",
         "AI_HISTORY_EMPTY" => "Chat history is empty",
 
@@ -105,6 +107,7 @@ impl IntoResponse for ApiError {
             Self::BadRequest(c) => (StatusCode::BAD_REQUEST, c),
             Self::ServiceUnavailable(c) => (StatusCode::SERVICE_UNAVAILABLE, c),
             Self::InternalError(c) => (StatusCode::INTERNAL_SERVER_ERROR, c),
+            Self::TooManyRequests(c) => (StatusCode::TOO_MANY_REQUESTS, c),
         };
 
         let message = default_message(code);
@@ -155,5 +158,8 @@ mod tests {
 
         let response = ApiError::InternalError("INTERNAL_ERROR").into_response();
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+
+        let response = ApiError::TooManyRequests("AI_RATE_LIMITED").into_response();
+        assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
     }
 }

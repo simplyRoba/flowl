@@ -47,6 +47,7 @@ docker compose up -d
 | `FLOWL_AI_API_KEY` | — | API key for the OpenAI-compatible AI provider. AI features are disabled when unset. |
 | `FLOWL_AI_BASE_URL` | `https://api.openai.com/v1` | Base URL for the AI API. |
 | `FLOWL_AI_MODEL` | `gpt-4.1-mini` | Model name used for all AI tasks. |
+| `FLOWL_AI_RATE_LIMIT` | `10` | Max AI requests per minute (0 to disable). |
 
 ### Compatible AI models
 

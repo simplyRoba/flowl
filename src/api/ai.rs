@@ -13,6 +13,15 @@ use crate::ai::prompts;
 use crate::ai::types::ChatMessage;
 use crate::state::AppState;
 
+fn check_ai_rate_limit(state: &AppState) -> Result<(), ApiError> {
+    if let Some(limiter) = &state.ai_rate_limiter
+        && !limiter.check()
+    {
+        return Err(ApiError::TooManyRequests("AI_RATE_LIMITED"));
+    }
+    Ok(())
+}
+
 #[derive(Serialize)]
 pub struct AiStatus {
     pub enabled: bool,
@@ -45,6 +54,7 @@ pub async fn identify_plant(
     State(state): State<AppState>,
     mut multipart: Multipart,
 ) -> Result<Json<crate::ai::types::IdentifyResponse>, ApiError> {
+    check_ai_rate_limit(&state)?;
     let provider = state
         .ai_provider
         .as_ref()
@@ -152,6 +162,7 @@ pub async fn chat(
     Json(body): Json<ChatRequest>,
 ) -> Result<Sse<impl tokio_stream::Stream<Item = Result<Event, std::convert::Infallible>>>, ApiError>
 {
+    check_ai_rate_limit(&state)?;
     let provider = state
         .ai_provider
         .as_ref()
@@ -228,6 +239,7 @@ pub async fn summarize(
     State(state): State<AppState>,
     Json(body): Json<SummarizeRequest>,
 ) -> Result<Json<SummarizeResponse>, ApiError> {
+    check_ai_rate_limit(&state)?;
     let provider = state
         .ai_provider
         .as_ref()

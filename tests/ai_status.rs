@@ -31,6 +31,7 @@ async fn test_app_ai_enabled() -> (Router, tempfile::TempDir) {
         ai_provider: Some(provider),
         ai_base_url: "https://api.openai.com/v1".to_string(),
         ai_model: "gpt-4.1-mini".to_string(),
+        ai_rate_limiter: None,
     };
     (flowl::server::router(state), tmp)
 }

@@ -97,6 +97,7 @@ async fn test_app_with_provider(
         ai_provider: Some(provider),
         ai_base_url: "https://api.openai.com/v1".to_string(),
         ai_model: "gpt-4.1-mini".to_string(),
+        ai_rate_limiter: None,
     };
     (flowl::server::router(state), pool, tmp)
 }
@@ -251,4 +252,42 @@ async fn chat_returns_500_when_provider_fails() {
 
     let body = common::body_json(response).await;
     assert_eq!(body["code"], "AI_PROVIDER_FAILED");
+}
+
+#[tokio::test]
+async fn chat_returns_429_when_rate_limited() {
+    let pool = common::test_pool().await;
+    let tmp = tempfile::TempDir::new().expect("Failed to create temp dir");
+
+    let state = AppState {
+        pool: pool.clone(),
+        image_store: flowl::images::ImageStore::new(tmp.path().to_path_buf()),
+        mqtt_client: None,
+        mqtt_prefix: "flowl".to_string(),
+        mqtt_connected: None,
+        mqtt_host: "localhost".to_string(),
+        mqtt_port: 1883,
+        mqtt_disabled: true,
+        ai_provider: Some(Arc::new(MockChatProvider)),
+        ai_base_url: "https://api.openai.com/v1".to_string(),
+        ai_model: "gpt-4.1-mini".to_string(),
+        ai_rate_limiter: Some(Arc::new(flowl::state::AiRateLimiter::new(1))),
+    };
+    let app = flowl::server::router(state);
+    let plant_id = insert_test_plant(&pool).await;
+
+    let body_str = format!(r#"{{"plant_id":{plant_id},"message":"hello"}}"#);
+
+    // First request should succeed
+    let request = common::json_request("POST", "/api/ai/chat", Some(&body_str));
+    let response = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Second request should be rate limited
+    let request = common::json_request("POST", "/api/ai/chat", Some(&body_str));
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
+
+    let body = common::body_json(response).await;
+    assert_eq!(body["code"], "AI_RATE_LIMITED");
 }

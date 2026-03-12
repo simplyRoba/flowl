@@ -32,7 +32,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | B6 | **Stats counts photos from plants only** | 4 | 1 | ✅ | `photo_count` query is `SELECT COUNT(*) FROM plants WHERE photo_path IS NOT NULL` — care event photos aren't counted. |
 | B7 | **No WAL mode for SQLite** | 4 | 2 | ✅ | SQLite WAL mode isn't explicitly enabled. Under concurrent writes (API + background state checker), the default journal mode may cause `SQLITE_BUSY`. |
 | B8 | **`Option<Option<T>>` complexity in UpdatePlant** | 4 | 2 | | While functionally correct for distinguishing "not sent" vs "sent as null", having 8 fields with `#[allow(clippy::option_option)]` is complex. A PATCH semantics crate or explicit "unset" sentinel could be cleaner. |
-| B9 | **No rate limiting on AI endpoints** | 3 | 3 | | AI endpoints forward requests to OpenAI without any rate limiting or cost protection. A malicious or buggy client could burn through API credits. |
+| B9 | **No rate limiting on AI endpoints** | 3 | 3 | ✅ | AI endpoints forward requests to OpenAI without any rate limiting or cost protection. A malicious or buggy client could burn through API credits. |
 | B10 | **Duplicate `last_watered` subquery** | 4 | 2 | ✅ | The same `(SELECT MAX(occurred_at) FROM care_events WHERE plant_id = ... AND event_type = 'watered')` subquery is repeated in `PLANT_SELECT`, `republish_all`, `spawn_state_checker`, `export_data`, and `build_plant_context`. Should be a shared SQL fragment or view. |
 | B11 | **Import clears photos before DB transaction** | 3 | 3 | ✅ | `import_data` runs Phase 2 (clear uploads + write new photos) before Phase 3 (replace DB in transaction). If the DB transaction fails and rolls back, the original photos are already deleted from disk. Could lose data on partial failure. |
 
@@ -126,4 +126,4 @@ Difficulty: 1 = trivial, 5 = very hard
 - ~~X1: Authentication system (diff 4) — documented, use reverse proxy~~
 - X4: E2E test suite (diff 4)
 - ~~U1: Full error code system (diff 4)~~
-- B9: AI rate limiting (diff 3)
+- ~~B9: AI rate limiting (diff 3)~~

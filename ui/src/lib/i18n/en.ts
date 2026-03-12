@@ -407,6 +407,7 @@ const en = {
     AI_STREAM_ERROR: "AI response interrupted",
     AI_INVALID_IMAGE: "Invalid image data",
     AI_HISTORY_EMPTY: "Chat history is empty",
+    AI_RATE_LIMITED: "Too many AI requests, please wait",
     MQTT_DISABLED: "MQTT is disabled",
     MQTT_UNAVAILABLE: "MQTT is not connected",
     UNKNOWN_ERROR: "Something went wrong. Please try again.",

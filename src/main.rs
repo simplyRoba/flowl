@@ -97,6 +97,11 @@ async fn main() {
         ai_provider,
         ai_base_url: config.ai_base_url,
         ai_model: config.ai_model,
+        ai_rate_limiter: if config.ai_rate_limit > 0 {
+            Some(Arc::new(state::AiRateLimiter::new(config.ai_rate_limit)))
+        } else {
+            None
+        },
     };
     let router = server::router(state);
 

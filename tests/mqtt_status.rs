@@ -25,6 +25,7 @@ async fn test_app_mqtt_enabled(connected: bool) -> (Router, tempfile::TempDir) {
         ai_provider: None,
         ai_base_url: String::new(),
         ai_model: String::new(),
+        ai_rate_limiter: None,
     };
     (flowl::server::router(state), tmp)
 }

@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn export_photo_filter_excludes_thumbnails() {
-        let all_paths = vec![
+        let all_paths = [
             "abc.jpg",
             "abc_200.jpg",
             "abc_600.jpg",
@@ -190,13 +190,13 @@ mod tests {
             .filter(|p| !is_thumbnail_filename(p))
             .collect();
 
-        assert_eq!(exported, vec![&"abc.jpg", &"def.png", &"ghi.webp"]);
+        assert_eq!(exported, [&"abc.jpg", &"def.png", &"ghi.webp"]);
     }
 
     #[test]
     fn export_photo_filter_keeps_all_when_no_thumbnails() {
-        let paths = vec!["photo1.jpg", "photo2.png"];
+        let paths = ["photo1.jpg", "photo2.png"];
         let exported: Vec<&&str> = paths.iter().filter(|p| !is_thumbnail_filename(p)).collect();
-        assert_eq!(exported, vec![&"photo1.jpg", &"photo2.png"]);
+        assert_eq!(exported, [&"photo1.jpg", &"photo2.png"]);
     }
 }

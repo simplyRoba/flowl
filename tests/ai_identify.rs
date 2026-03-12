@@ -8,7 +8,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use flowl::ai::provider::AiProvider;
 use flowl::ai::types::{ChatMessage, ChatResponseStream, IdentifyResponse, IdentifyResult};
-use flowl::state::AppState;
+use flowl::state::{AiRateLimiter, AppState};
 use tower::ServiceExt;
 
 struct MockAiProvider;
@@ -108,12 +108,34 @@ async fn test_app_with_provider(provider: Arc<dyn AiProvider>) -> (Router, tempf
         ai_provider: Some(provider),
         ai_base_url: "https://api.openai.com/v1".to_string(),
         ai_model: "gpt-4.1-mini".to_string(),
+        ai_rate_limiter: None,
     };
     (flowl::server::router(state), tmp)
 }
 
 async fn test_app_mock() -> (Router, tempfile::TempDir) {
     test_app_with_provider(Arc::new(MockAiProvider)).await
+}
+
+async fn test_app_rate_limited() -> (Router, tempfile::TempDir) {
+    let pool = common::test_pool().await;
+    let tmp = tempfile::TempDir::new().expect("Failed to create temp dir");
+
+    let state = AppState {
+        pool,
+        image_store: flowl::images::ImageStore::new(tmp.path().to_path_buf()),
+        mqtt_client: None,
+        mqtt_prefix: "flowl".to_string(),
+        mqtt_connected: None,
+        mqtt_host: "localhost".to_string(),
+        mqtt_port: 1883,
+        mqtt_disabled: true,
+        ai_provider: Some(Arc::new(MockAiProvider)),
+        ai_base_url: "https://api.openai.com/v1".to_string(),
+        ai_model: "gpt-4.1-mini".to_string(),
+        ai_rate_limiter: Some(Arc::new(AiRateLimiter::new(1))),
+    };
+    (flowl::server::router(state), tmp)
 }
 
 async fn test_app_failing() -> (Router, tempfile::TempDir) {
@@ -299,4 +321,34 @@ async fn identify_rejects_body_exceeding_size_limit() {
 
     let response = app.oneshot(request).await.unwrap();
     assert_ne!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn identify_returns_429_when_rate_limited() {
+    let (app, _dir) = test_app_rate_limited().await;
+
+    let (content_type, body) = multipart_body(&[("photos", "image/jpeg", &[0xFF, 0xD8, 0xFF])]);
+
+    // First request should succeed
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/ai/identify")
+        .header("content-type", &content_type)
+        .body(Body::from(body.clone()))
+        .unwrap();
+    let response = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Second request should be rate limited
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/ai/identify")
+        .header("content-type", &content_type)
+        .body(Body::from(body))
+        .unwrap();
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
+
+    let body = common::body_json(response).await;
+    assert_eq!(body["code"], "AI_RATE_LIMITED");
 }

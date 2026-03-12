@@ -414,6 +414,7 @@ export const de: Translations = {
     AI_STREAM_ERROR: "KI-Antwort abgebrochen",
     AI_INVALID_IMAGE: "Ungültige Bilddaten",
     AI_HISTORY_EMPTY: "Chatverlauf ist leer",
+    AI_RATE_LIMITED: "Zu viele KI-Anfragen, bitte warten",
     MQTT_DISABLED: "MQTT ist deaktiviert",
     MQTT_UNAVAILABLE: "MQTT ist nicht verbunden",
     UNKNOWN_ERROR: "Etwas ist schiefgelaufen. Bitte versuche es erneut.",

@@ -98,6 +98,21 @@ The system SHALL build a plant context for the AI system prompt by loading the p
 - **AND** `light_needs`, `watering_interval_days`, `difficulty`, `pet_safety`, `growth_speed`, `soil_type`, and `soil_moisture` SHALL appear under the `care_preferences` object
 - **AND** care preference fields SHALL NOT appear at the top level
 
+### Requirement: Chat rate limiting
+
+The chat endpoint SHALL check the global AI rate limiter before processing the request. If the limit is exceeded, the endpoint SHALL return HTTP 429 with error code `AI_RATE_LIMITED` without forwarding anything to the AI provider.
+
+#### Scenario: Chat request within rate limit
+
+- **WHEN** a valid chat request is sent and the rate limit has not been exceeded
+- **THEN** the request SHALL be processed normally
+
+#### Scenario: Chat request exceeds rate limit
+
+- **WHEN** a chat request is sent and the rate limit has been exceeded
+- **THEN** the endpoint SHALL return HTTP 429 with `{"code": "AI_RATE_LIMITED", "message": "..."}`
+- **AND** no request SHALL be sent to the AI provider
+
 ### Requirement: Chat system prompt
 
 The system SHALL prepend a system message to every chat request. The system prompt SHALL establish the assistant identity as "flowl, a plant care assistant", instruct it to use the provided plant context for personalized advice, set a concise response style (2-4 short paragraphs, bullet points for actionable steps), instruct it to acknowledge uncertainty, and restrict responses to plant-care topics. The system prompt SHALL include the serialized plant context JSON. The system prompt SHALL explicitly instruct the model that the `care_preferences` section describes desired conditions for the plant, not its current state. The system prompt SHALL instruct the model to respond in the language matching the user's locale setting.
