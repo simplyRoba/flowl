@@ -61,7 +61,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | U1 | **Backend error strings shown directly in UI** | 2 | 4 | ✅ | Already noted in `TODO.md`. Store error handlers do `e instanceof Error ? e.message : t.error.xxx` — the first branch shows raw backend English strings (e.g., "Plant name is required") regardless of active locale. Needs error codes from the API mapped to i18n keys. |
 | U2 | **No loading states for many operations** | 3 | 2 | | Settings page, locations management, import/export — many operations don't show loading indicators. The user gets no feedback during network calls. |
 | U3 | **Plant detail page re-fetches everything on every action** | 3 | 2 | | `refreshPlantDetails` fetches both plant and care events after any action (water, delete event, add event). This works but is wasteful — watering only changes plant state, not care event photos. |
-| U4 | **No offline support** | 3 | 5 | | `TODO.md` lists this. As a self-hosted service often used on mobile, losing connectivity means a blank screen. |
+| U4 | **No offline support** | 3 | 5 | ❌ | Won't fix for now. Already tracked in `TODO.md` as a future milestone. |
 | U5 | **Large component files** | 3 | 3 | | `PlantForm.svelte` is 1400+ lines, `plants/[id]/+page.svelte` is 967 lines. These could be broken into smaller sub-components for maintainability. |
 | U6 | **CSS duplication across components** | 4 | 3 | | CSS is all in `<style>` blocks within components. Shared CSS files exist (`buttons.css`, `chips.css`, etc.) but many page-level styles are duplicated (`.error`, `.loading`, card patterns). |
 | U7 | **Hardcoded color values in component styles** | 4 | 2 | ✅ | Most colors use CSS vars, but some components have hardcoded `rgba(0,0,0,...)` and `#fff` values, especially in card overlays and shadows. |
@@ -93,7 +93,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | X3 | ~~**`build.rs` runs UI build on every compile**~~ | 3 | 2 | ❌ | ~~Not an issue. `rerun-if-changed` hints already prevent re-runs when UI files haven't changed. `SKIP_UI_BUILD` exists for fully skipping.~~ |
 | X4 | **No E2E tests** | 3 | 4 | | Unit and integration tests are solid, but no Playwright/Cypress tests verify the full stack. The `tests/ui.rs` file is just 29 lines testing static file serving. |
 | X5 | **Import version check is too strict** | 4 | 1 | ❌ | `check_version` requires matching major.minor. Won't fix — strict check is safe. Export filename now includes the version so users know which image version to deploy for import. |
-| X6 | **No structured logging output** | 4 | 2 | | Uses `tracing_subscriber::fmt()` which outputs human-readable logs. For a Docker service, JSON structured logging would be better for log aggregation. |
+| X6 | ~~**No structured logging output**~~ | 4 | 2 | ❌ | ~~Not applicable. This is a single-binary self-hosted app, not a distributed service. Human-readable logs are the right choice.~~ |
 | X7 | **Health check doesn't verify DB** | 4 | 1 | ✅ | `/health` returns `{"status": "ok"}` unconditionally without checking if the DB pool is healthy. |
 | X8 | **Test upload directories not cleaned up** | 5 | 1 | ✅ | `test_app_with_uploads` creates temp dirs with UUIDs under `std::env::temp_dir()` but there's no cleanup. They accumulate over time on dev machines. |
 | X9 | **`unsafe` env var manipulation in config tests** | 4 | 2 | | `env::set_var`/`env::remove_var` are `unsafe` in Rust 2024 edition and require `unsafe` blocks. The tests work but the pattern is fragile with parallel test execution (mitigated by `ENV_LOCK` mutex). |
@@ -122,7 +122,7 @@ Difficulty: 1 = trivial, 5 = very hard
 
 ### Longer-term improvements
 
-- U4: Offline support / service worker (diff 5)
+- ~~U4: Offline support / service worker (diff 5) — won't fix for now, tracked in TODO.md~~
 - ~~X1: Authentication system (diff 4) — documented, use reverse proxy~~
 - X4: E2E test suite (diff 4)
 - ~~U1: Full error code system (diff 4)~~
