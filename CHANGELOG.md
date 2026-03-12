@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.1](https://github.com/simplyRoba/flowl/compare/v0.26.0...v0.26.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* **ui:** improve pull-to-refresh indicator travel and capping ([e0c7bca](https://github.com/simplyRoba/flowl/commit/e0c7bca6b7e5077166b7138c498e29f434b15424))
+
 ## [0.26.0](https://github.com/simplyRoba/flowl/compare/v0.25.2...v0.26.0) (2026-03-12)
 
 
