@@ -339,9 +339,7 @@
     <main
       class="content"
       class:settling={!gestureActive && pullIndicatorState !== "refreshing"}
-      style:margin-top={contentOffset > 0
-        ? `${contentOffset}px`
-        : undefined}
+      style:margin-top={contentOffset > 0 ? `${contentOffset}px` : undefined}
     >
       {@render children()}
     </main>

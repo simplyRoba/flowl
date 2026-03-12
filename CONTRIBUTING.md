@@ -17,14 +17,14 @@ npm ci --prefix ui
 Run two terminals:
 
 ```bash
-# Terminal 1: UI with hot module reload
-npm run dev --prefix ui
+# Terminal 1: UI with hot module reload (--host exposes on network for phone testing)
+npm run dev --prefix ui -- --host
 
 # Terminal 2: Rust backend with auto-restart on code changes
 FLOWL_DB_PATH=/tmp/flowl.db FLOWL_AI_API_KEY=ENABLE-AI-UI FLOWL_MQTT_DISABLED=true SKIP_UI_BUILD=1 cargo watch -x run
 ```
 
-Open `http://localhost:5173`. Vite proxies `/api`, `/uploads`, and `/health` to the Rust backend on port 4100.
+Open `http://localhost:5173` (or the network URL printed by Vite for phone testing). Vite proxies `/api`, `/uploads`, and `/health` to the Rust backend on port 4100.
 
 `SKIP_UI_BUILD=1` tells `build.rs` to skip the SvelteKit build so Rust recompiles fast. `cargo-watch` is installed in the devcontainer automatically.
 
