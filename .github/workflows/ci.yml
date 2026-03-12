@@ -102,3 +102,43 @@ jobs:
 
       - name: Run tests
         run: npm run test --prefix ui
+
+  test-e2e:
+    name: Test (E2E)
+    runs-on: ubuntu-latest
+    needs: [lint, lint-ui]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry and target artifacts
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-ci-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Build binary
+        run: cargo build
+
+      - name: Install E2E dependencies
+        run: npm ci --prefix e2e
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+        working-directory: e2e
+
+      - name: Run E2E tests
+        run: npm test --prefix e2e
