@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.26.0](https://github.com/simplyRoba/flowl/compare/v0.25.2...v0.26.0) (2026-03-12)
+
+
+### Features
+
+* **api:** add per-minute rate limiting for AI endpoints ([9f0e2ba](https://github.com/simplyRoba/flowl/commit/9f0e2babc108ba27803221319f8109fe41b50e50))
+* **dev:** add dev-start and dev-stop commands for opencode ([67724a5](https://github.com/simplyRoba/flowl/commit/67724a5ff12d74bce2d59e2038bf67f289fa538a))
+
+
+### Bug Fixes
+
+* **api:** use structured error codes for SSE stream errors ([29273b8](https://github.com/simplyRoba/flowl/commit/29273b8479a5c97138977061604e073163390eaf))
+
 ## [0.25.2](https://github.com/simplyRoba/flowl/compare/v0.25.1...v0.25.2) (2026-03-12)
 
 
