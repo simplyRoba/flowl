@@ -339,8 +339,8 @@
     <main
       class="content"
       class:settling={!gestureActive && pullIndicatorState !== "refreshing"}
-      style:transform={contentOffset > 0
-        ? `translateY(${contentOffset}px)`
+      style:margin-top={contentOffset > 0
+        ? `${contentOffset}px`
         : undefined}
     >
       {@render children()}
@@ -592,7 +592,7 @@
   }
 
   .content.settling {
-    transition: transform 0.18s ease;
+    transition: margin-top 0.18s ease;
   }
 
   @keyframes pull-refresh-spin {
