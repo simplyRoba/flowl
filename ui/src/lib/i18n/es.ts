@@ -408,6 +408,7 @@ export const es: Translations = {
     IMPORT_VALIDATION_FAILED: "Validación de datos de importación fallida",
     AI_NOT_CONFIGURED: "El proveedor de IA no está configurado",
     AI_PROVIDER_FAILED: "La solicitud al proveedor de IA falló",
+    AI_STREAM_ERROR: "Respuesta de IA interrumpida",
     AI_INVALID_IMAGE: "Datos de imagen no válidos",
     AI_HISTORY_EMPTY: "El historial de chat está vacío",
     MQTT_DISABLED: "MQTT está desactivado",

@@ -463,7 +463,14 @@ export async function* chatPlant(
         continue;
       }
       if (data.done) return;
-      if (data.error) throw new Error(data.error as string);
+      if (data.error) {
+        const err = data.error as { code?: string; message?: string };
+        throw new ApiError(
+          500,
+          err.code || "AI_STREAM_ERROR",
+          err.message || "AI response interrupted",
+        );
+      }
       if (data.delta) yield data.delta as string;
     }
   }

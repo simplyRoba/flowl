@@ -8,7 +8,7 @@ use sqlx::SqlitePool;
 use tokio_stream::StreamExt;
 use tracing::{debug, warn};
 
-use super::error::ApiError;
+use super::error::{ApiError, default_message};
 use crate::ai::prompts;
 use crate::ai::types::ChatMessage;
 use crate::state::AppState;
@@ -196,7 +196,16 @@ pub async fn chat(
     let sse_stream = stream.map(|result| {
         let event = match result {
             Ok(delta) => Event::default().data(serde_json::json!({"delta": delta}).to_string()),
-            Err(err) => Event::default().data(serde_json::json!({"error": err}).to_string()),
+            Err(err) => {
+                warn!("AI stream error: {err}");
+                let code = "AI_STREAM_ERROR";
+                Event::default().data(
+                    serde_json::json!({
+                        "error": { "code": code, "message": default_message(code) }
+                    })
+                    .to_string(),
+                )
+            }
         };
         Ok(event)
     });

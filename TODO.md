@@ -17,10 +17,6 @@
 - Ollama provider implementation (behind the same trait)
 - Provider selection via env var or Settings UI
 
-## Error Handling — SSE Streams
-
-- SSE mid-stream errors in `src/api/ai.rs` send raw provider error strings (`{"error": err}`), bypassing the structured `{"code", "message"}` format. Consider redacting internal details or using a code-based format.
-
 ## PWA Level 2 — Enhanced Install Experience
 - Add `beforeinstallprompt` handler for a custom in-app install banner (Android/Chrome only)
 - Add Apple-specific meta tags (`apple-mobile-web-app-capable`, `apple-touch-icon`) for better iOS integration

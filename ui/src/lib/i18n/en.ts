@@ -404,6 +404,7 @@ const en = {
     IMPORT_VALIDATION_FAILED: "Import data validation failed",
     AI_NOT_CONFIGURED: "AI provider is not configured",
     AI_PROVIDER_FAILED: "AI provider request failed",
+    AI_STREAM_ERROR: "AI response interrupted",
     AI_INVALID_IMAGE: "Invalid image data",
     AI_HISTORY_EMPTY: "Chat history is empty",
     MQTT_DISABLED: "MQTT is disabled",

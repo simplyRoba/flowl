@@ -84,6 +84,7 @@ pub fn default_message(code: &str) -> &'static str {
         // AI
         "AI_NOT_CONFIGURED" => "AI provider is not configured",
         "AI_PROVIDER_FAILED" => "AI provider request failed",
+        "AI_STREAM_ERROR" => "AI response interrupted",
         "AI_INVALID_IMAGE" => "Invalid image data",
         "AI_HISTORY_EMPTY" => "Chat history is empty",
 
