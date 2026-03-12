@@ -91,7 +91,7 @@ Difficulty: 1 = trivial, 5 = very hard
 | X1 | **No authentication** | 2 | 4 | ✅ | The service binds to `0.0.0.0` with no authentication. Anyone on the network can access/modify all data, trigger AI calls (spending API credits), export/import. Typical for HA add-ons behind a reverse proxy, but should at minimum be documented as a requirement, or optionally support basic auth. |
 | X2 | **No automated database backup** | 3 | 3 | ❌ | Won't fix. Backup scheduling is the deployment platform's responsibility (volume snapshots, cron). The export endpoint exists for manual backups. |
 | X3 | ~~**`build.rs` runs UI build on every compile**~~ | 3 | 2 | ❌ | ~~Not an issue. `rerun-if-changed` hints already prevent re-runs when UI files haven't changed. `SKIP_UI_BUILD` exists for fully skipping.~~ |
-| X4 | **No E2E tests** | 3 | 4 | | Unit and integration tests are solid, but no Playwright/Cypress tests verify the full stack. The `tests/ui.rs` file is just 29 lines testing static file serving. |
+| X4 | **No E2E tests** | 3 | 4 | ❌ | Deferred. Tracked in TODO.md. Unit and integration tests are solid, but no Playwright/Cypress tests verify the full stack. `tests/ui.rs` is a Rust harness that shells out to `npm run test` to run the UI unit tests — not E2E. |
 | X5 | **Import version check is too strict** | 4 | 1 | ❌ | `check_version` requires matching major.minor. Won't fix — strict check is safe. Export filename now includes the version so users know which image version to deploy for import. |
 | X6 | ~~**No structured logging output**~~ | 4 | 2 | ❌ | ~~Not applicable. This is a single-binary self-hosted app, not a distributed service. Human-readable logs are the right choice.~~ |
 | X7 | **Health check doesn't verify DB** | 4 | 1 | ✅ | `/health` returns `{"status": "ok"}` unconditionally without checking if the DB pool is healthy. |
@@ -124,6 +124,6 @@ Difficulty: 1 = trivial, 5 = very hard
 
 - ~~U4: Offline support / service worker (diff 5) — won't fix for now, tracked in TODO.md~~
 - ~~X1: Authentication system (diff 4) — documented, use reverse proxy~~
-- X4: E2E test suite (diff 4)
+- ~~X4: E2E test suite (diff 4) — deferred, tracked in TODO.md~~
 - ~~U1: Full error code system (diff 4)~~
 - ~~B9: AI rate limiting (diff 3)~~

@@ -12,6 +12,11 @@
 - Queue care events (watering, log entries) created offline and sync when back online
 - Show offline indicator in the UI
 
+## E2E Tests
+
+- Add Playwright or Cypress for full-stack E2E testing
+- Cover critical user flows: plant CRUD, care events, watering status, AI chat, import/export
+
 ## AI — Additional Providers
 
 - Ollama provider implementation (behind the same trait)
