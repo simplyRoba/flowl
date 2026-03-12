@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.25.2](https://github.com/simplyRoba/flowl/compare/v0.25.1...v0.25.2) (2026-03-12)
+
+
+### Bug Fixes
+
+* **deps:** bump @sveltejs/kit in /ui in the svelte group ([2320d12](https://github.com/simplyRoba/flowl/commit/2320d12328c6e9ed79c26489c42821cc29909a32))
+* **dev:** move --host flag from package.json to explicit CLI usage ([88eaa06](https://github.com/simplyRoba/flowl/commit/88eaa060c594bde4112a77419a82f71b657e0a68))
+* **ui:** replace linear clamp with iOS-style rubber-band pull-to-refresh ([a69cec5](https://github.com/simplyRoba/flowl/commit/a69cec50520166ae2b4c6acf5997bc0a9cbe6c13))
+* **ui:** use margin-top instead of transform for pull-to-refresh content offset ([f531ee9](https://github.com/simplyRoba/flowl/commit/f531ee99d2f032fb490854a68a22ed99caea8f09))
+
 ## [0.25.1](https://github.com/simplyRoba/flowl/compare/v0.25.0...v0.25.1) (2026-03-11)
 
 
