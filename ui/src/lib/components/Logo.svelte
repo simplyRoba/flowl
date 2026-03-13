@@ -14,17 +14,9 @@
   stroke-linejoin="round"
 >
   <!-- Left leaf (bigger) -->
-  <path
-    d="M11 9a6 6 0 0 1-6-7 6 6 0 0 1 6 7"
-    fill="currentColor"
-    fill-opacity="0.15"
-  />
+  <path d="M11 9a6 6 0 0 1-6-7 6 6 0 0 1 6 7" fill="none" />
   <!-- Right leaf (smaller) -->
-  <path
-    d="M13 9a5 5 0 0 0 5-5 5 5 0 0 0-5 5"
-    fill="currentColor"
-    fill-opacity="0.15"
-  />
+  <path d="M13 9a5 5 0 0 0 5-5 5 5 0 0 0-5 5" fill="none" />
   <!-- Owl head -->
   <ellipse cx="12" cy="14.5" rx="6.5" ry="5.5" />
   <!-- Ring eyes -->

@@ -3,8 +3,8 @@
     :root { --fg: #6B8F71; }
     @media (prefers-color-scheme: dark) { :root { --fg: #8FB896; } }
   </style>
-  <path d="M11 9a6 6 0 0 1-6-7 6 6 0 0 1 6 7" fill="var(--fg)" fill-opacity="0.15" stroke="var(--fg)"/>
-  <path d="M13 9a5 5 0 0 0 5-5 5 5 0 0 0-5 5" fill="var(--fg)" fill-opacity="0.15" stroke="var(--fg)"/>
+  <path d="M11 9a6 6 0 0 1-6-7 6 6 0 0 1 6 7" stroke="var(--fg)"/>
+  <path d="M13 9a5 5 0 0 0 5-5 5 5 0 0 0-5 5" stroke="var(--fg)"/>
   <ellipse cx="12" cy="14.5" rx="6.5" ry="5.5" stroke="var(--fg)"/>
   <circle cx="9.5" cy="13.5" r="2.3" stroke="var(--fg)"/>
   <circle cx="14.5" cy="13.5" r="2.3" stroke="var(--fg)"/>
