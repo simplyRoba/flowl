@@ -10,7 +10,11 @@ fn main() {
         let build_dir = std::path::Path::new("ui/build");
         if !build_dir.exists() {
             std::fs::create_dir_all(build_dir).unwrap();
-            std::fs::write(build_dir.join("index.html"), "<h1>Binary was compiled with SKIP_UI_BUILD</h1>").unwrap();
+            std::fs::write(
+                build_dir.join("index.html"),
+                "<h1>Binary was compiled with SKIP_UI_BUILD</h1>",
+            )
+            .unwrap();
         }
         return;
     }
