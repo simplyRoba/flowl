@@ -6,7 +6,6 @@ on:
   push:
     branches: [main]
 
-
 jobs:
   lint:
     name: Lint (Rust)
@@ -30,10 +29,10 @@ jobs:
           key: ${{ runner.os }}-cargo-ci-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Check formatting
-        run: cargo fmt -- --check
+        run: SKIP_UI_BUILD=1 cargo fmt -- --check
 
       - name: Run clippy
-        run: cargo clippy -- -D warnings
+        run: SKIP_UI_BUILD=1 cargo clippy -- -D warnings
 
   lint-ui:
     name: Lint (UI)
@@ -81,7 +80,7 @@ jobs:
           key: ${{ runner.os }}-cargo-ci-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
-        run: cargo test -- --skip ui_tests
+        run: SKIP_UI_BUILD=1 cargo test -- --skip ui_tests
 
   test-ui:
     name: Test (UI)
