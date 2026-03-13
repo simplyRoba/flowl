@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.1](https://github.com/simplyRoba/flowl/compare/v0.27.0...v0.27.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* **pwa:** remove semi-transparent ear fill for iOS Liquid Glass compatibility ([128d188](https://github.com/simplyRoba/flowl/commit/128d18838e0b393b58a20b315cb7533012b55d74))
+
 ## [0.27.0](https://github.com/simplyRoba/flowl/compare/v0.26.1...v0.27.0) (2026-03-13)
 
 
