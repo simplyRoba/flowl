@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.27.0](https://github.com/simplyRoba/flowl/compare/v0.26.1...v0.27.0) (2026-03-13)
+
+
+### Features
+
+* **pwa:** add iOS Liquid Glass icons, dark mode support, and mobile logo ([1a9dcb8](https://github.com/simplyRoba/flowl/commit/1a9dcb838468a459a8e559d5a23dbd4a49adf2a0))
+
+
+### Bug Fixes
+
+* **build:** create stub ui/build when SKIP_UI_BUILD is set ([03f5cd2](https://github.com/simplyRoba/flowl/commit/03f5cd2bcf3ed66c1264cd9dfe2a223f98c88e99))
+* **ci:** add SKIP_UI_BUILD flag to Rust linting and testing steps ([de27a42](https://github.com/simplyRoba/flowl/commit/de27a427bc75653ae99ff35d759ff5579a577071))
+* **deps:** bump the svelte group in /ui with 3 updates ([4569785](https://github.com/simplyRoba/flowl/commit/4569785f86e282db0c2921b1e6fa7ebf3a23aad2))
+* **deps:** bump vite from 7.3.1 to 8.0.0 in /ui ([7d1afbe](https://github.com/simplyRoba/flowl/commit/7d1afbe214fb98cd587dc5b0379216e2c70c4064))
+* **deps:** bump vitest from 4.0.18 to 4.1.0 in /ui ([e93e164](https://github.com/simplyRoba/flowl/commit/e93e164e688e0144865a3f701eac89c393f27be8))
+* **dev:** improve dev-stop skill to check both tracked tasks and OS processes ([7ed3316](https://github.com/simplyRoba/flowl/commit/7ed33164f3100b343fa5296dc6346fb57b0b16c6))
+
 ## [0.26.1](https://github.com/simplyRoba/flowl/compare/v0.26.0...v0.26.1) (2026-03-12)
 
 
