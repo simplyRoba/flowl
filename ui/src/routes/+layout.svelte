@@ -312,7 +312,7 @@
   <div class="app">
     <nav class="sidebar">
       <div class="logo">
-        <Logo size={28} /><span class="nav-label brand">flowl</span>
+        <Logo size={32} /><span class="nav-label brand">flowl</span>
       </div>
       <a href={resolve("/")} class="nav-item" class:active={isActive("/")}
         ><Leaf size={20} /><span class="nav-label"

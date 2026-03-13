@@ -13,6 +13,7 @@
   import { emojiToSvgPath } from "$lib/emoji";
   import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
   import StatusBadge from "$lib/components/StatusBadge.svelte";
+  import Logo from "$lib/components/Logo.svelte";
 
   function getTimeOfDay(): string {
     const hour = new Date().getHours();
@@ -121,7 +122,10 @@
 
 <div class="dashboard">
   <div class="greeting">
-    <h2>{greeting}</h2>
+    <div class="greeting-row">
+      <h2>{greeting}</h2>
+      <span class="mobile-logo"><Logo size={32} /></span>
+    </div>
     <p>{subtitle}</p>
   </div>
 
@@ -282,6 +286,17 @@
 
   .greeting {
     margin-bottom: 20px;
+  }
+
+  .greeting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mobile-logo {
+    display: none;
+    color: var(--color-primary);
   }
 
   .greeting h2 {
@@ -572,6 +587,10 @@
   }
 
   @media (max-width: 768px) {
+    .mobile-logo {
+      display: flex;
+    }
+
     .greeting h2 {
       font-size: 18px;
     }
