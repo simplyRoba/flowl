@@ -170,6 +170,7 @@ const en = {
     failedToLoad: "Failed to load events",
     selectTypeError: "Choose a care entry type",
     wateredNTimes: "Watered {count} times, {from} \u2013 {to}",
+    wateredCount: "Watered {count} times",
   },
   status: {
     overdue: "Overdue",
