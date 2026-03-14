@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="ui/static/icon-512.png" alt="flowl logo" width="128" />
-</p>
-
-# flowl
+# <img src="ui/static/icon-512.png" alt="flowl logo" width="32" /> flowl
 
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 ![GitHub License](https://img.shields.io/github/license/simplyRoba/flowl?link=https%3A%2F%2Fgithub.com%2FsimplyRoba%2Fflowl%2Fblob%2Fmain%2FLICENSE)
