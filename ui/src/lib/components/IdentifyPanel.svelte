@@ -588,22 +588,6 @@
     object-fit: cover;
   }
 
-  .shimmer-lines {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .shimmer-lines :global(.shimmer:nth-child(1)) {
-    width: 75%;
-  }
-  .shimmer-lines :global(.shimmer:nth-child(2)) {
-    width: 60%;
-  }
-  .shimmer-lines :global(.shimmer:nth-child(3)) {
-    width: 45%;
-  }
-
   /* ---- Suggestion card ---- */
   .suggestion-header {
     display: flex;

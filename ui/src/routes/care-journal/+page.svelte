@@ -243,7 +243,7 @@
       {#each { length: 6 } as _, i (i)}
         <div class="skeleton-entry">
           <div class="shimmer skeleton-icon"></div>
-          <div class="skeleton-lines">
+          <div class="shimmer-lines">
             <div class="shimmer" style="width: 40%"></div>
             <div class="shimmer" style="width: 65%"></div>
           </div>
@@ -589,34 +589,6 @@
     width: 24px;
     height: 24px;
     border-radius: 6px;
-  }
-
-  /* ---- Skeleton loading ---- */
-  .skeleton-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .skeleton-entry {
-    display: flex;
-    gap: 12px;
-    padding: 10px 0;
-    align-items: center;
-  }
-
-  .skeleton-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    flex-shrink: 0;
-  }
-
-  .skeleton-lines {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
   }
 
   .empty-state {
