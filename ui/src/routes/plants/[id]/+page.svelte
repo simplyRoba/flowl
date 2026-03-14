@@ -267,6 +267,13 @@
       .replace("{to}", formatShortDate(group.lastAt));
   }
 
+  function careGroupLabel(group: WateringGroup): string {
+    return $translations.care.wateredCount.replace(
+      "{count}",
+      String(group.count),
+    );
+  }
+
   function toggleCareGroup(key: string) {
     if (expandedGroups.has(key)) {
       expandedGroups.delete(key);
@@ -559,7 +566,12 @@
                       <span class="timeline-text">
                         <span class="timeline-top">
                           <span class="timeline-label"
-                            >{careGroupSummary(item)}</span
+                            >{careGroupLabel(item)}</span
+                          >
+                          <span class="timeline-date"
+                            >{formatShortDate(item.firstAt)} – {formatShortDate(
+                              item.lastAt,
+                            )}</span
                           >
                         </span>
                       </span>
