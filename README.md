@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="ui/static/icon-512.png" alt="flowl logo" width="128" />
+</p>
+
 # flowl
 
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
