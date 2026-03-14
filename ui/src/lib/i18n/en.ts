@@ -169,8 +169,8 @@ const en = {
     yesterday: "Yesterday",
     failedToLoad: "Failed to load events",
     selectTypeError: "Choose a care entry type",
-    wateredNTimes: "Watered {count} times, {from} \u2013 {to}",
     wateredCount: "Watered {count} times",
+    wateredSince: "Watered {count} times since {from}",
   },
   status: {
     overdue: "Overdue",

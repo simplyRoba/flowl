@@ -260,13 +260,6 @@
     return `${group.plantId}-${group.firstAt}`;
   }
 
-  function careGroupSummary(group: WateringGroup): string {
-    return $translations.care.wateredNTimes
-      .replace("{count}", String(group.count))
-      .replace("{from}", formatShortDate(group.firstAt))
-      .replace("{to}", formatShortDate(group.lastAt));
-  }
-
   function careGroupLabel(group: WateringGroup): string {
     return $translations.care.wateredCount.replace(
       "{count}",

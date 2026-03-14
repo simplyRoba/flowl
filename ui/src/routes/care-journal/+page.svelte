@@ -148,10 +148,9 @@
   }
 
   function groupSummaryText(group: WateringGroup): string {
-    return $translations.care.wateredNTimes
+    return $translations.care.wateredSince
       .replace("{count}", String(group.count))
-      .replace("{from}", formatShortDate(group.firstAt))
-      .replace("{to}", formatShortDate(group.lastAt));
+      .replace("{from}", formatShortDate(group.firstAt));
   }
 
   function toggleGroup(key: string) {
