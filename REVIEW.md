@@ -63,11 +63,11 @@ Difficulty: 1 = trivial, 5 = very hard
 | U3 | **Plant detail page re-fetches everything on every action** | 3 | 2 | ❌ | Won't fix. All actions that trigger refresh (add care event, delete care event, chat save) affect both plant state and care events list. Fetching both is correct, not wasteful. |
 | U4 | **No offline support** | 3 | 5 | ❌ | Won't fix for now. Already tracked in `TODO.md` as a future milestone. |
 | U5 | **Large component files** | 3 | 3 | ✅ | Extracted `IdentifyPanel.svelte` from `PlantForm.svelte` (1847 → 1024 lines). `plants/[id]/+page.svelte` (969 lines) left as-is — no natural split point. |
-| U6 | **CSS duplication across components** | 4 | 3 | | CSS is all in `<style>` blocks within components. Shared CSS files exist (`buttons.css`, `chips.css`, etc.) but many page-level styles are duplicated (`.error`, `.loading`, card patterns). |
+| U6 | **CSS duplication across components** | 4 | 3 | ❌ | Won't fix. Shared CSS already exists for sections, buttons, chips, inputs. Only remaining duplication is `.error` and `.loading` (3 lines each, color + padding) across route pages — too trivial to extract. |
 | U7 | **Hardcoded color values in component styles** | 4 | 2 | ✅ | Most colors use CSS vars, but some components have hardcoded `rgba(0,0,0,...)` and `#fff` values, especially in card overlays and shadows. |
 | U8 | **Stringly-typed status fields** | 4 | 2 | ✅ | `Plant.watering_status` is `string` but only has 3 values. Should be a union type `"ok" \| "due" \| "overdue"`. Same for `event_type`, `light_needs`, `difficulty`, etc. |
 | U9 | **Notification auto-dismiss missing** | 4 | 2 | ✅ | `ToastHost` shows notifications but they stack without automatic dismissal (only `MAX_VISIBLE=3` limit). No timeout-based auto-dismiss. |
-| U10 | **Accessibility gaps** | 3 | 3 | | Some good patterns (aria-labels on icon buttons, `aria-live` on pull indicator), but no comprehensive a11y testing. Interactive cards use `<a>` with nested `<button>` children which can cause nested interactive element issues. |
+| U10 | **Accessibility gaps** | 3 | 3 | ✅ | Claimed nested interactive elements not found — cards use `<a>` without nested buttons. Lighthouse audit added to TODO.md for future sweep. |
 
 ---
 
