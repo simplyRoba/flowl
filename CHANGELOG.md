@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/simplyRoba/flowl/compare/v0.27.2...v1.0.0) (2026-03-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* release 1.0.0
+
+### Features
+
+* release 1.0.0 ([9eafe5f](https://github.com/simplyRoba/flowl/commit/9eafe5f223ee4de79090c5721a49e4161d1695b1))
+
 ## [0.27.2](https://github.com/simplyRoba/flowl/compare/v0.27.1...v0.27.2) (2026-03-14)
 
 
