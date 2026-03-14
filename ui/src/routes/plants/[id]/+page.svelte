@@ -27,6 +27,7 @@
     CalendarCheck,
     CalendarClock,
     Sparkles,
+    ChevronRight,
   } from "lucide-svelte";
   import { plantsError, deletePlant, waterPlant } from "$lib/stores/plants";
   import { careError } from "$lib/stores/care";
@@ -49,6 +50,12 @@
   import ChatDrawer from "$lib/components/ChatDrawer.svelte";
   import CareEntryForm from "$lib/components/CareEntryForm.svelte";
   import { aiStatus, loadAiStatus } from "$lib/stores/ai";
+  import {
+    groupCareEvents,
+    isGroup,
+    type WateringGroup,
+  } from "$lib/careGrouping";
+  import { SvelteSet } from "svelte/reactivity";
 
   interface Props {
     data: {
@@ -106,6 +113,7 @@
     lightboxOpen = false;
     lightboxSrc = "";
     chatOpen = false;
+    expandedGroups.clear();
   });
 
   $effect(() => {
@@ -238,11 +246,34 @@
     deletingEventId = null;
   }
 
+  let expandedGroups: Set<string> = new SvelteSet();
+
   let displayEvents = $derived(
     showAllEvents ? careEvents : careEvents.slice(0, EVENT_LIMIT),
   );
 
+  let groupedTimeline = $derived(groupCareEvents(displayEvents));
+
   let hasMoreEvents = $derived(careEvents.length > EVENT_LIMIT);
+
+  function careGroupKey(group: WateringGroup): string {
+    return `${group.plantId}-${group.firstAt}`;
+  }
+
+  function careGroupSummary(group: WateringGroup): string {
+    return $translations.care.wateredNTimes
+      .replace("{count}", String(group.count))
+      .replace("{from}", formatShortDate(group.firstAt))
+      .replace("{to}", formatShortDate(group.lastAt));
+  }
+
+  function toggleCareGroup(key: string) {
+    if (expandedGroups.has(key)) {
+      expandedGroups.delete(key);
+    } else {
+      expandedGroups.add(key);
+    }
+  }
 
   let LightNeedsIcon = $derived(plant ? lightIcon(plant.light_needs) : Sun);
 
@@ -513,65 +544,119 @@
             <p class="journal-empty">{$translations.plant.noCareEvents}</p>
           {:else}
             <ul class="timeline">
-              {#each displayEvents as event (event.id)}
-                <li class="timeline-item">
-                  <span class="timeline-icon">
-                    {#if event.event_type === "watered"}
-                      <Droplet size={12} />
-                    {:else if event.event_type === "fertilized"}
-                      <Leaf size={12} />
-                    {:else if event.event_type === "repotted"}
-                      <Shovel size={12} />
-                    {:else if event.event_type === "pruned"}
-                      <Scissors size={12} />
-                    {:else if event.event_type === "ai-consultation"}
-                      <Sparkles size={12} />
-                    {:else}
-                      <PencilIcon size={12} />
-                    {/if}
-                  </span>
-                  <span class="timeline-text">
-                    <span class="timeline-top">
-                      <span class="timeline-label"
-                        >{eventTypeLabel(event.event_type)}</span
-                      >
-                      <span class="timeline-date"
-                        >{formatShortDate(event.occurred_at)}</span
-                      >
-                    </span>
-                    {#if event.photo_url}
-                      <button
-                        class="timeline-photo"
-                        onclick={() => openLightbox(event.photo_url!)}
-                      >
-                        <img
-                          src={thumbUrl(event.photo_url, 200)}
-                          srcset={thumbSrcset(event.photo_url)}
-                          sizes="72px"
-                          alt=""
-                          onerror={(e) => {
-                            const img = e.currentTarget as HTMLImageElement;
-                            img.onerror = null;
-                            img.src = event.photo_url!;
-                          }}
-                        />
-                      </button>
-                    {/if}
-                    {#if event.notes}
-                      <span class="timeline-sub">{event.notes}</span>
-                    {/if}
-                  </span>
-                  <span class="timeline-actions">
+              {#each groupedTimeline as item (isGroup(item) ? careGroupKey(item) : item.id)}
+                {#if isGroup(item)}
+                  {@const key = careGroupKey(item)}
+                  {@const expanded = expandedGroups.has(key)}
+                  <li class="timeline-item timeline-group-summary">
                     <button
-                      class="btn btn-ghost event-delete"
-                      onclick={() => handleEventDelete(event)}
-                      disabled={deletingEventId === event.id}
-                      aria-label={$translations.plant.deleteLogEntry}
+                      class="timeline-group-btn"
+                      onclick={() => toggleCareGroup(key)}
                     >
-                      <Trash2 size={16} />
+                      <span class="timeline-icon">
+                        <Droplet size={12} />
+                      </span>
+                      <span class="timeline-text">
+                        <span class="timeline-top">
+                          <span class="timeline-label"
+                            >{careGroupSummary(item)}</span
+                          >
+                        </span>
+                      </span>
+                      <span class="timeline-group-chevron" class:expanded>
+                        <ChevronRight size={14} />
+                      </span>
                     </button>
-                  </span>
-                </li>
+                  </li>
+                  {#if expanded}
+                    {#each item.events as event (event.id)}
+                      <li class="timeline-item timeline-nested">
+                        <span class="timeline-icon timeline-icon-sm">
+                          <Droplet size={10} />
+                        </span>
+                        <span class="timeline-text">
+                          <span class="timeline-top">
+                            <span class="timeline-label"
+                              >{$translations.care.watered}</span
+                            >
+                            <span class="timeline-date"
+                              >{formatShortDate(event.occurred_at)}</span
+                            >
+                          </span>
+                        </span>
+                        <span class="timeline-actions">
+                          <button
+                            class="btn btn-ghost event-delete"
+                            onclick={() => handleEventDelete(event)}
+                            disabled={deletingEventId === event.id}
+                            aria-label={$translations.plant.deleteLogEntry}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </span>
+                      </li>
+                    {/each}
+                  {/if}
+                {:else}
+                  <li class="timeline-item">
+                    <span class="timeline-icon">
+                      {#if item.event_type === "watered"}
+                        <Droplet size={12} />
+                      {:else if item.event_type === "fertilized"}
+                        <Leaf size={12} />
+                      {:else if item.event_type === "repotted"}
+                        <Shovel size={12} />
+                      {:else if item.event_type === "pruned"}
+                        <Scissors size={12} />
+                      {:else if item.event_type === "ai-consultation"}
+                        <Sparkles size={12} />
+                      {:else}
+                        <PencilIcon size={12} />
+                      {/if}
+                    </span>
+                    <span class="timeline-text">
+                      <span class="timeline-top">
+                        <span class="timeline-label"
+                          >{eventTypeLabel(item.event_type)}</span
+                        >
+                        <span class="timeline-date"
+                          >{formatShortDate(item.occurred_at)}</span
+                        >
+                      </span>
+                      {#if item.photo_url}
+                        <button
+                          class="timeline-photo"
+                          onclick={() => openLightbox(item.photo_url!)}
+                        >
+                          <img
+                            src={thumbUrl(item.photo_url, 200)}
+                            srcset={thumbSrcset(item.photo_url)}
+                            sizes="72px"
+                            alt=""
+                            onerror={(e) => {
+                              const img = e.currentTarget as HTMLImageElement;
+                              img.onerror = null;
+                              img.src = item.photo_url!;
+                            }}
+                          />
+                        </button>
+                      {/if}
+                      {#if item.notes}
+                        <span class="timeline-sub">{item.notes}</span>
+                      {/if}
+                    </span>
+                    <span class="timeline-actions">
+                      <button
+                        class="btn btn-ghost event-delete"
+                        onclick={() => handleEventDelete(item)}
+                        disabled={deletingEventId === item.id}
+                        aria-label={$translations.plant.deleteLogEntry}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </span>
+                  </li>
+                {/if}
               {/each}
             </ul>
             {#if hasMoreEvents && !showAllEvents}
@@ -921,6 +1006,53 @@
     color: var(--color-text-muted);
     font-size: 13px;
     margin-top: 2px;
+  }
+
+  /* ---- Group summary ---- */
+  .timeline-group-summary {
+    padding: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .timeline-group-btn {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    padding: 8px 0;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+  }
+
+  .timeline-group-btn:hover {
+    background: var(--color-surface-muted);
+  }
+
+  .timeline-group-chevron {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    color: var(--color-text-muted);
+    transition: transform var(--transition-speed);
+  }
+
+  .timeline-group-chevron.expanded {
+    transform: rotate(90deg);
+  }
+
+  .timeline-nested {
+    padding-left: 34px;
+  }
+
+  .timeline-icon-sm {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
   }
 
   .btn-ghost:not(.event-delete) {

@@ -1114,3 +1114,65 @@ describe("log form photo upload", () => {
     });
   });
 });
+
+describe("care journal event grouping", () => {
+  it("groups consecutive waterings into a collapsible summary", async () => {
+    await renderWithPlant({}, [
+      makeCareEvent({ id: 3, occurred_at: "2025-02-03T10:00:00Z" }),
+      makeCareEvent({ id: 2, occurred_at: "2025-02-02T10:00:00Z" }),
+      makeCareEvent({ id: 1, occurred_at: "2025-02-01T10:00:00Z" }),
+    ]);
+
+    await waitFor(() => {
+      expect(document.querySelector(".timeline-group-summary")).toBeTruthy();
+    });
+
+    // Should show one group, not three individual items
+    const items = document.querySelectorAll(".timeline-item");
+    expect(items.length).toBe(1);
+  });
+
+  it("expands group on click to show individual entries", async () => {
+    await renderWithPlant({}, [
+      makeCareEvent({ id: 2, occurred_at: "2025-02-02T10:00:00Z" }),
+      makeCareEvent({ id: 1, occurred_at: "2025-02-01T10:00:00Z" }),
+    ]);
+
+    await waitFor(() => {
+      expect(document.querySelector(".timeline-group-summary")).toBeTruthy();
+    });
+
+    // No nested entries yet
+    expect(document.querySelector(".timeline-nested")).toBeNull();
+
+    // Click the group button
+    const groupBtn = document.querySelector(
+      ".timeline-group-btn",
+    ) as HTMLButtonElement;
+    await fireEvent.click(groupBtn);
+
+    await waitFor(() => {
+      const nested = document.querySelectorAll(".timeline-nested");
+      expect(nested.length).toBe(2);
+    });
+  });
+
+  it("does not group waterings with notes", async () => {
+    await renderWithPlant({}, [
+      makeCareEvent({ id: 2, occurred_at: "2025-02-02T10:00:00Z" }),
+      makeCareEvent({
+        id: 1,
+        occurred_at: "2025-02-01T10:00:00Z",
+        notes: "Very dry soil",
+      }),
+    ]);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Watered").length).toBe(2);
+    });
+    // Both should be individual items, no group summary
+    expect(document.querySelector(".timeline-group-summary")).toBeNull();
+    const items = document.querySelectorAll(".timeline-item");
+    expect(items.length).toBe(2);
+  });
+});

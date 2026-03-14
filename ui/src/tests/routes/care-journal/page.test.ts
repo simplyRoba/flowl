@@ -140,14 +140,14 @@ describe("care journal thumbnails", () => {
 });
 
 describe("care journal filters", () => {
-  it("loads with no type filter when URL has no type param", async () => {
+  it("loads all events with high limit when URL has no type param", async () => {
     render(Page);
 
     await vi.waitFor(() => {
       expect(mockFetchAllCareEvents).toHaveBeenCalled();
     });
     expect(mockFetchAllCareEvents).toHaveBeenCalledWith(
-      20,
+      10000,
       undefined,
       undefined,
     );
@@ -163,7 +163,7 @@ describe("care journal filters", () => {
       expect(mockFetchAllCareEvents).toHaveBeenCalled();
     });
     expect(mockFetchAllCareEvents).toHaveBeenCalledWith(
-      20,
+      10000,
       undefined,
       expect.arrayContaining(["watered", "fertilized"]),
     );
@@ -250,6 +250,100 @@ describe("care journal filters", () => {
     expect(mockGoto).toHaveBeenCalled();
     const gotoUrl = mockGoto.mock.calls[0][0] as string;
     expect(gotoUrl).not.toContain("type=");
+  });
+});
+
+describe("care journal skeleton loading", () => {
+  it("shows skeleton shimmer while loading", async () => {
+    let resolveEvents: (value: unknown) => void;
+    mockFetchAllCareEvents.mockReturnValue(
+      new Promise((resolve) => {
+        resolveEvents = resolve;
+      }),
+    );
+    render(Page);
+
+    await vi.waitFor(() => {
+      expect(document.querySelector(".skeleton-list")).toBeTruthy();
+    });
+    expect(document.querySelectorAll(".skeleton-entry").length).toBe(6);
+
+    resolveEvents!({ events: [], has_more: false });
+
+    await vi.waitFor(() => {
+      expect(document.querySelector(".skeleton-list")).toBeNull();
+    });
+  });
+});
+
+describe("care journal event grouping", () => {
+  it("groups consecutive waterings into a collapsible summary", async () => {
+    mockFetchAllCareEvents.mockResolvedValue({
+      events: [
+        makeEvent({ id: 3, occurred_at: "2025-02-01T12:00:00Z" }),
+        makeEvent({ id: 2, occurred_at: "2025-02-01T11:00:00Z" }),
+        makeEvent({ id: 1, occurred_at: "2025-02-01T10:00:00Z" }),
+      ],
+      has_more: false,
+    });
+    render(Page);
+
+    await vi.waitFor(() => {
+      expect(document.querySelector(".log-group-summary")).toBeTruthy();
+    });
+
+    // Should show one group, not three individual entries
+    expect(document.querySelectorAll(".log-entry").length).toBe(1);
+    expect(document.querySelector(".log-group-chevron")).toBeTruthy();
+  });
+
+  it("expands group on click to show individual entries", async () => {
+    mockFetchAllCareEvents.mockResolvedValue({
+      events: [
+        makeEvent({ id: 3, occurred_at: "2025-02-01T12:00:00Z" }),
+        makeEvent({ id: 2, occurred_at: "2025-02-01T11:00:00Z" }),
+      ],
+      has_more: false,
+    });
+    render(Page);
+
+    await vi.waitFor(() => {
+      expect(document.querySelector(".log-group-summary")).toBeTruthy();
+    });
+
+    // No expanded entries yet
+    expect(document.querySelector(".log-group-expanded")).toBeNull();
+
+    // Click to expand
+    const summary = document.querySelector(".log-group-summary") as HTMLElement;
+    await fireEvent.click(summary);
+
+    expect(document.querySelector(".log-group-expanded")).toBeTruthy();
+    const nested = document.querySelectorAll(
+      ".log-group-expanded .log-entry-nested",
+    );
+    expect(nested.length).toBe(2);
+  });
+
+  it("does not group waterings with notes", async () => {
+    mockFetchAllCareEvents.mockResolvedValue({
+      events: [
+        makeEvent({ id: 2, occurred_at: "2025-02-01T11:00:00Z" }),
+        makeEvent({
+          id: 1,
+          occurred_at: "2025-02-01T10:00:00Z",
+          notes: "Very dry",
+        }),
+      ],
+      has_more: false,
+    });
+    render(Page);
+
+    await vi.waitFor(() => {
+      expect(document.querySelectorAll(".log-entry").length).toBe(2);
+    });
+    // No group summary — both are individual
+    expect(document.querySelector(".log-group-summary")).toBeNull();
   });
 });
 

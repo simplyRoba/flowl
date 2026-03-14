@@ -28,6 +28,7 @@
   import "$lib/styles/chips.css";
   import "$lib/styles/inputs.css";
   import "$lib/styles/sections.css";
+  import "$lib/styles/skeletons.css";
 
   let { children } = $props();
   let isStandalonePwa = $state(false);
