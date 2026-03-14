@@ -23,3 +23,11 @@
 ## Accessibility
 
 - Run Lighthouse accessibility audit on each page and fix flagged issues
+
+## AI — Identify Improvements
+
+- Allow AI to report "not a plant" — the strict JSON schema forces the AI to always return plant suggestions, even for non-plant photos. Add an optional error/message field so the AI can decline identification.
+
+## Care Journal — Event Grouping
+
+- Group repeated watering events by plant into summaries (e.g. "Watered 3 times in the last 3 weeks") instead of showing each one individually
