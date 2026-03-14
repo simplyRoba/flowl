@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.2](https://github.com/simplyRoba/flowl/compare/v0.27.1...v0.27.2) (2026-03-14)
+
+
+### Bug Fixes
+
+* **deps:** bump undici from 7.22.0 to 7.24.1 in /ui ([b4bd344](https://github.com/simplyRoba/flowl/commit/b4bd3443118bad120dee4740515a6dede14acb37))
+
 ## [0.27.1](https://github.com/simplyRoba/flowl/compare/v0.27.0...v0.27.1) (2026-03-13)
 
 
