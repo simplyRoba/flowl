@@ -172,8 +172,8 @@ export const es: Translations = {
     yesterday: "Ayer",
     failedToLoad: "No se pudieron cargar los eventos",
     selectTypeError: "Elige un tipo de cuidado",
-    wateredNTimes: "Regada {count} veces, {from} \u2013 {to}",
     wateredCount: "Regada {count} veces",
+    wateredSince: "Regada {count} veces desde {from}",
   },
   status: {
     overdue: "Atrasado",
