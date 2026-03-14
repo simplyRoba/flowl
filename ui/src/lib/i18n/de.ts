@@ -173,6 +173,7 @@ export const de: Translations = {
     yesterday: "Gestern",
     failedToLoad: "Ereignisse konnten nicht geladen werden",
     selectTypeError: "Wähle einen Pflegetyp aus",
+    wateredNTimes: "{count}\u00d7 gegossen, {from} \u2013 {to}",
   },
   status: {
     overdue: "Überfällig",

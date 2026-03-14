@@ -594,36 +594,14 @@
     gap: 10px;
   }
 
-  .shimmer {
-    height: 14px;
-    border-radius: 7px;
-    background: linear-gradient(
-      90deg,
-      var(--color-surface-muted) 25%,
-      color-mix(in srgb, var(--color-ai) 12%, var(--color-surface-muted)) 50%,
-      var(--color-surface-muted) 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.8s ease-in-out infinite;
-  }
-
-  .shimmer:nth-child(1) {
+  .shimmer-lines :global(.shimmer:nth-child(1)) {
     width: 75%;
   }
-  .shimmer:nth-child(2) {
+  .shimmer-lines :global(.shimmer:nth-child(2)) {
     width: 60%;
   }
-  .shimmer:nth-child(3) {
+  .shimmer-lines :global(.shimmer:nth-child(3)) {
     width: 45%;
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
   }
 
   /* ---- Suggestion card ---- */

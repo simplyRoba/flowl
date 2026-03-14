@@ -15,24 +15,28 @@
     Scissors,
     Pencil,
     Sparkles,
+    ChevronRight,
   } from "lucide-svelte";
   import type { CareEvent, EventType } from "$lib/api";
   import { fetchAllCareEvents } from "$lib/api";
   import { resolveError } from "$lib/stores/errors";
   import { translations } from "$lib/stores/locale";
   import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
+  import {
+    groupCareEvents,
+    isGroup,
+    type TimelineItem,
+    type WateringGroup,
+  } from "$lib/careGrouping";
   import PhotoLightbox from "$lib/components/PhotoLightbox.svelte";
 
   let lightboxOpen = $state(false);
   let lightboxSrc = $state("");
 
-  const PAGE_SIZE = 20;
-
   let events = $state<CareEvent[]>([]);
-  let hasMore = $state(false);
   let loading = $state(false);
   let error = $state<string | null>(null);
-  let sentinel: HTMLElement;
+  let expandedGroups: Set<string> = new SvelteSet();
 
   const TYPE_VALUES = [
     "watered",
@@ -83,22 +87,16 @@
     }
   }
 
-  async function loadPage(reset = false) {
+  async function loadAllEvents() {
     if (loading) return;
     loading = true;
     error = null;
-    const before =
-      reset || events.length === 0 ? undefined : events[events.length - 1].id;
+    expandedGroups.clear();
     const types =
       activeTypes.size > 0 ? ([...activeTypes] as EventType[]) : undefined;
     try {
-      const page = await fetchAllCareEvents(PAGE_SIZE, before, types);
-      if (reset) {
-        events = page.events;
-      } else {
-        events = [...events, ...page.events];
-      }
-      hasMore = page.has_more;
+      const result = await fetchAllCareEvents(10000, undefined, types);
+      events = result.events;
     } catch (e) {
       error = resolveError(e, "loadCareEvents");
     }
@@ -135,46 +133,67 @@
     return $translations.care.custom;
   }
 
-  interface DayGroup {
-    label: string;
-    events: CareEvent[];
+  function formatShortDate(dateStr: string): string {
+    const date = new SvelteDate(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "2-digit",
+    });
   }
 
-  let groupedEvents: DayGroup[] = $derived.by(() => {
+  function groupKey(group: WateringGroup): string {
+    return `${group.plantId}-${group.firstAt}`;
+  }
+
+  function groupSummaryText(group: WateringGroup): string {
+    return $translations.care.wateredNTimes
+      .replace("{count}", String(group.count))
+      .replace("{from}", formatShortDate(group.firstAt))
+      .replace("{to}", formatShortDate(group.lastAt));
+  }
+
+  function toggleGroup(key: string) {
+    if (expandedGroups.has(key)) {
+      expandedGroups.delete(key);
+    } else {
+      expandedGroups.add(key);
+    }
+  }
+
+  function itemDayLabel(item: TimelineItem): string {
+    if (isGroup(item)) {
+      return dayLabel(item.lastAt);
+    }
+    return dayLabel(item.occurred_at);
+  }
+
+  interface DayGroup {
+    label: string;
+    items: TimelineItem[];
+  }
+
+  let timelineItems: TimelineItem[] = $derived(groupCareEvents(events));
+
+  let groupedByDay: DayGroup[] = $derived.by(() => {
     const groups: DayGroup[] = [];
     let currentLabel = "";
-    for (const event of events) {
-      const label = dayLabel(event.occurred_at);
+    for (const item of timelineItems) {
+      const label = itemDayLabel(item);
       if (label !== currentLabel) {
-        groups.push({ label, events: [event] });
+        groups.push({ label, items: [item] });
         currentLabel = label;
       } else {
-        groups[groups.length - 1].events.push(event);
+        groups[groups.length - 1].items.push(item);
       }
     }
     return groups;
   });
 
   $effect(() => {
-    // Fetch on mount and re-fetch when filter selection changes via URL
     void activeTypes.size;
-    untrack(() => loadPage(true));
-  });
-
-  $effect(() => {
-    if (events.length === 0 || !hasMore || !sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          loadPage();
-        }
-      },
-      { rootMargin: "200px" },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
+    untrack(() => loadAllEvents());
   });
 </script>
 
@@ -219,88 +238,145 @@
 
   {#if error}
     <p class="error">{error}</p>
-  {:else if events.length === 0 && !loading}
+  {:else if loading}
+    <div class="skeleton-list">
+      {#each { length: 6 } as _, i (i)}
+        <div class="skeleton-entry">
+          <div class="shimmer skeleton-icon"></div>
+          <div class="skeleton-lines">
+            <div class="shimmer" style="width: 40%"></div>
+            <div class="shimmer" style="width: 65%"></div>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {:else if events.length === 0}
     <div class="empty-state">
       <p>{$translations.care.noCareEvents}</p>
     </div>
   {:else}
     <div class="log-timeline">
-      {#each groupedEvents as group (group.label)}
+      {#each groupedByDay as dayGroup (dayGroup.label)}
         <div class="log-day-group">
-          <div class="log-day-header">{group.label}</div>
-          {#each group.events as event (event.id)}
-            <div class="log-entry">
-              <div class="log-entry-left">
-                <div
-                  class="log-entry-icon
-										{event.event_type === 'watered' ? 'water-icon' : ''}
-										{event.event_type === 'fertilized' ? 'fertilize-icon' : ''}
-										{event.event_type === 'repotted' ? 'repot-icon' : ''}
-										{event.event_type === 'pruned' ? 'prune-icon' : ''}
-										{event.event_type === 'custom' ? 'custom-icon' : ''}
-									{event.event_type === 'ai-consultation' ? 'ai-icon' : ''}"
-                >
-                  {#if event.event_type === "watered"}
+          <div class="log-day-header">{dayGroup.label}</div>
+          {#each dayGroup.items as item (isGroup(item) ? groupKey(item) : item.id)}
+            {#if isGroup(item)}
+              {@const key = groupKey(item)}
+              {@const expanded = expandedGroups.has(key)}
+              <button
+                class="log-entry log-group-summary"
+                onclick={() => toggleGroup(key)}
+              >
+                <div class="log-entry-left">
+                  <div class="log-entry-icon water-icon">
                     <Droplet size={14} />
-                  {:else if event.event_type === "fertilized"}
-                    <Leaf size={14} />
-                  {:else if event.event_type === "repotted"}
-                    <Shovel size={14} />
-                  {:else if event.event_type === "pruned"}
-                    <Scissors size={14} />
-                  {:else if event.event_type === "ai-consultation"}
-                    <Sparkles size={14} />
-                  {:else}
-                    <Pencil size={14} />
+                  </div>
+                </div>
+                <div class="log-entry-content">
+                  <a
+                    href={resolve(`/plants/${item.plantId}?from=/care-journal`)}
+                    class="log-entry-plant"
+                    onclick={(e) => e.stopPropagation()}>{item.plantName}</a
+                  >
+                  <div class="log-entry-action">
+                    {groupSummaryText(item)}
+                  </div>
+                </div>
+                <div class="log-group-chevron" class:expanded>
+                  <ChevronRight size={16} />
+                </div>
+              </button>
+              {#if expanded}
+                <div class="log-group-expanded">
+                  {#each item.events as event (event.id)}
+                    <div class="log-entry log-entry-nested">
+                      <div class="log-entry-left">
+                        <div class="log-entry-icon water-icon nested-icon">
+                          <Droplet size={12} />
+                        </div>
+                      </div>
+                      <div class="log-entry-content">
+                        <div class="log-entry-action">
+                          {$translations.care.watered}
+                        </div>
+                        <div class="log-entry-date">
+                          {formatShortDate(event.occurred_at)}
+                        </div>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            {:else}
+              <div class="log-entry">
+                <div class="log-entry-left">
+                  <div
+                    class="log-entry-icon
+										{item.event_type === 'watered' ? 'water-icon' : ''}
+										{item.event_type === 'fertilized' ? 'fertilize-icon' : ''}
+										{item.event_type === 'repotted' ? 'repot-icon' : ''}
+										{item.event_type === 'pruned' ? 'prune-icon' : ''}
+										{item.event_type === 'custom' ? 'custom-icon' : ''}
+									{item.event_type === 'ai-consultation' ? 'ai-icon' : ''}"
+                  >
+                    {#if item.event_type === "watered"}
+                      <Droplet size={14} />
+                    {:else if item.event_type === "fertilized"}
+                      <Leaf size={14} />
+                    {:else if item.event_type === "repotted"}
+                      <Shovel size={14} />
+                    {:else if item.event_type === "pruned"}
+                      <Scissors size={14} />
+                    {:else if item.event_type === "ai-consultation"}
+                      <Sparkles size={14} />
+                    {:else}
+                      <Pencil size={14} />
+                    {/if}
+                  </div>
+                </div>
+                <div class="log-entry-content">
+                  <a
+                    href={resolve(
+                      `/plants/${item.plant_id}?from=/care-journal`,
+                    )}
+                    class="log-entry-plant">{item.plant_name}</a
+                  >
+                  {#if item.photo_url}
+                    <button
+                      class="log-entry-photo"
+                      onclick={(e) => {
+                        e.stopPropagation();
+                        lightboxSrc = item.photo_url!;
+                        lightboxOpen = true;
+                      }}
+                    >
+                      <img
+                        src={thumbUrl(item.photo_url, 200)}
+                        srcset={thumbSrcset(item.photo_url)}
+                        sizes="80px"
+                        alt=""
+                        onerror={(e) => {
+                          const img = e.currentTarget as HTMLImageElement;
+                          img.onerror = null;
+                          img.src = item.photo_url!;
+                        }}
+                      />
+                    </button>
+                  {/if}
+                  <div class="log-entry-action">
+                    {eventTypeLabel(item.event_type)}
+                  </div>
+                  {#if item.notes}
+                    <div class="log-entry-note">{item.notes}</div>
                   {/if}
                 </div>
               </div>
-              <div class="log-entry-content">
-                <a
-                  href={resolve(`/plants/${event.plant_id}?from=/care-journal`)}
-                  class="log-entry-plant">{event.plant_name}</a
-                >
-                {#if event.photo_url}
-                  <button
-                    class="log-entry-photo"
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      lightboxSrc = event.photo_url!;
-                      lightboxOpen = true;
-                    }}
-                  >
-                    <img
-                      src={thumbUrl(event.photo_url, 200)}
-                      srcset={thumbSrcset(event.photo_url)}
-                      sizes="80px"
-                      alt=""
-                      onerror={(e) => {
-                        const img = e.currentTarget as HTMLImageElement;
-                        img.onerror = null;
-                        img.src = event.photo_url!;
-                      }}
-                    />
-                  </button>
-                {/if}
-                <div class="log-entry-action">
-                  {eventTypeLabel(event.event_type)}
-                </div>
-                {#if event.notes}
-                  <div class="log-entry-note">{event.notes}</div>
-                {/if}
-              </div>
-            </div>
+            {/if}
           {/each}
         </div>
       {/each}
     </div>
   {/if}
-
-  {#if loading}
-    <p class="loading-text">{$translations.common.loading}</p>
-  {/if}
-
-  <div bind:this={sentinel} class="sentinel"></div>
 </div>
 
 <PhotoLightbox
@@ -462,6 +538,87 @@
     line-height: 1.4;
   }
 
+  .log-entry-date {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  /* ---- Group summary ---- */
+  .log-group-summary {
+    width: 100%;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .log-group-summary:hover {
+    background: var(--color-surface-muted);
+  }
+
+  .log-group-chevron {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    color: var(--color-text-muted);
+    transition: transform var(--transition-speed);
+  }
+
+  .log-group-chevron.expanded {
+    transform: rotate(90deg);
+  }
+
+  .log-group-expanded {
+    padding-left: 48px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .log-entry-nested {
+    padding: 6px 0;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--color-border) 50%, transparent);
+  }
+
+  .log-entry-nested:last-child {
+    border-bottom: none;
+  }
+
+  .nested-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+  }
+
+  /* ---- Skeleton loading ---- */
+  .skeleton-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .skeleton-entry {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    align-items: center;
+  }
+
+  .skeleton-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .skeleton-lines {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .empty-state {
     text-align: center;
     padding: 64px 24px;
@@ -471,17 +628,6 @@
   .error {
     color: var(--color-danger);
     padding: 16px;
-  }
-
-  .loading-text {
-    text-align: center;
-    color: var(--color-text-muted);
-    padding: 16px;
-    font-size: 14px;
-  }
-
-  .sentinel {
-    height: 1px;
   }
 
   @media (max-width: 768px) {
