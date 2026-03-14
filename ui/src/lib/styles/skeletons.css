@@ -1,12 +1,23 @@
 /* ============================================================
    Skeleton / Shimmer Loading
    ============================================================
-   Usage:
-     <div class="shimmer" style="width: 75%"></div>
-     <div class="shimmer" style="width: 60%"></div>
+   Primitives:
+     .shimmer           – animated gradient bar (14px tall)
+     .shimmer-lines     – vertical stack of 3 bars (75%/60%/45%)
+     .skeleton-list     – vertical list of skeleton entries
+     .skeleton-entry    – icon placeholder + shimmer lines row
+     .skeleton-icon     – rounded square placeholder (36×36)
 
-   Wrap in a flex-column container with gap for stacked lines.
-   Default height is 14px; override with inline style if needed.
+   Usage:
+     <div class="skeleton-list">
+       <div class="skeleton-entry">
+         <div class="shimmer skeleton-icon"></div>
+         <div class="shimmer-lines">
+           <div class="shimmer"></div>
+           <div class="shimmer"></div>
+         </div>
+       </div>
+     </div>
    ============================================================ */
 
 .shimmer {
@@ -30,4 +41,43 @@
   100% {
     background-position: -200% 0;
   }
+}
+
+.shimmer-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shimmer-lines .shimmer:nth-child(1) {
+  width: 75%;
+}
+.shimmer-lines .shimmer:nth-child(2) {
+  width: 60%;
+}
+.shimmer-lines .shimmer:nth-child(3) {
+  width: 45%;
+}
+
+/* ---- Skeleton list entry (icon + lines) ---- */
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skeleton-entry {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  align-items: center;
+}
+
+.skeleton-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
 }
