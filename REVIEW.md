@@ -59,10 +59,10 @@ Difficulty: 1 = trivial, 5 = very hard
 | # | Issue | Imp. | Diff. | Done | Details |
 |---|-------|------|-------|------|---------|
 | U1 | **Backend error strings shown directly in UI** | 2 | 4 | ✅ | Already noted in `TODO.md`. Store error handlers do `e instanceof Error ? e.message : t.error.xxx` — the first branch shows raw backend English strings (e.g., "Plant name is required") regardless of active locale. Needs error codes from the API mapped to i18n keys. |
-| U2 | **No loading states for many operations** | 3 | 2 | | Settings page, locations management, import/export — many operations don't show loading indicators. The user gets no feedback during network calls. |
-| U3 | **Plant detail page re-fetches everything on every action** | 3 | 2 | | `refreshPlantDetails` fetches both plant and care events after any action (water, delete event, add event). This works but is wasteful — watering only changes plant state, not care event photos. |
+| U2 | **No loading states for many operations** | 3 | 2 | ❌ | Won't fix. Settings page already has loading states for import/export/repair. Remaining cases (e.g. location create) are too fast to notice. |
+| U3 | **Plant detail page re-fetches everything on every action** | 3 | 2 | ❌ | Won't fix. All actions that trigger refresh (add care event, delete care event, chat save) affect both plant state and care events list. Fetching both is correct, not wasteful. |
 | U4 | **No offline support** | 3 | 5 | ❌ | Won't fix for now. Already tracked in `TODO.md` as a future milestone. |
-| U5 | **Large component files** | 3 | 3 | | `PlantForm.svelte` is 1400+ lines, `plants/[id]/+page.svelte` is 967 lines. These could be broken into smaller sub-components for maintainability. |
+| U5 | **Large component files** | 3 | 3 | ✅ | Extracted `IdentifyPanel.svelte` from `PlantForm.svelte` (1847 → 1024 lines). `plants/[id]/+page.svelte` (969 lines) left as-is — no natural split point. |
 | U6 | **CSS duplication across components** | 4 | 3 | | CSS is all in `<style>` blocks within components. Shared CSS files exist (`buttons.css`, `chips.css`, etc.) but many page-level styles are duplicated (`.error`, `.loading`, card patterns). |
 | U7 | **Hardcoded color values in component styles** | 4 | 2 | ✅ | Most colors use CSS vars, but some components have hardcoded `rgba(0,0,0,...)` and `#fff` values, especially in card overlays and shadows. |
 | U8 | **Stringly-typed status fields** | 4 | 2 | ✅ | `Plant.watering_status` is `string` but only has 3 values. Should be a union type `"ok" \| "due" \| "overdue"`. Same for `event_type`, `light_needs`, `difficulty`, etc. |
