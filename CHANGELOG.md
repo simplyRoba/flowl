@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/simplyRoba/flowl/compare/v1.1.0...v1.1.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* align expanded group separators between global care log and plant detail ([d5a1913](https://github.com/simplyRoba/flowl/commit/d5a191374629d91f37e287b336ff859b9cb45d4c))
+
 ## [1.1.0](https://github.com/simplyRoba/flowl/compare/v1.0.0...v1.1.0) (2026-03-15)
 
 
