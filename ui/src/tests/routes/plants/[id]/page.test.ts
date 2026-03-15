@@ -1156,6 +1156,48 @@ describe("care journal event grouping", () => {
     });
   });
 
+  it("omits year on first date when both dates share the same year", async () => {
+    await renderWithPlant({}, [
+      makeCareEvent({ id: 3, occurred_at: "2025-03-10T10:00:00Z" }),
+      makeCareEvent({ id: 2, occurred_at: "2025-02-15T10:00:00Z" }),
+      makeCareEvent({ id: 1, occurred_at: "2025-01-05T10:00:00Z" }),
+    ]);
+
+    await waitFor(() => {
+      expect(document.querySelector(".timeline-group-summary")).toBeTruthy();
+    });
+
+    const dateEl = document.querySelector(
+      ".timeline-group-summary .timeline-date",
+    ) as HTMLElement;
+    const text = dateEl.textContent!;
+    // first date (Jan 5) should not contain a year
+    const [first, second] = text.split("–").map((s) => s.trim());
+    expect(first).not.toMatch(/\d{2}$/);
+    // second date (Mar 10) should contain the year
+    expect(second).toMatch(/\d{2}$/);
+  });
+
+  it("shows year on both dates when they span different years", async () => {
+    await renderWithPlant({}, [
+      makeCareEvent({ id: 2, occurred_at: "2026-01-10T10:00:00Z" }),
+      makeCareEvent({ id: 1, occurred_at: "2025-12-20T10:00:00Z" }),
+    ]);
+
+    await waitFor(() => {
+      expect(document.querySelector(".timeline-group-summary")).toBeTruthy();
+    });
+
+    const dateEl = document.querySelector(
+      ".timeline-group-summary .timeline-date",
+    ) as HTMLElement;
+    const text = dateEl.textContent!;
+    const [first, second] = text.split("–").map((s) => s.trim());
+    // both dates should contain a year
+    expect(first).toMatch(/\d{2}$/);
+    expect(second).toMatch(/\d{2}$/);
+  });
+
   it("does not group waterings with notes", async () => {
     await renderWithPlant({}, [
       makeCareEvent({ id: 2, occurred_at: "2025-02-02T10:00:00Z" }),
