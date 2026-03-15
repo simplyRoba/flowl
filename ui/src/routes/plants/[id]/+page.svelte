@@ -607,33 +607,35 @@
                     </button>
                   </li>
                   {#if expanded}
-                    {#each item.events as event (event.id)}
-                      <li class="timeline-item timeline-nested">
-                        <span class="timeline-icon timeline-icon-sm">
-                          <Droplet size={10} />
-                        </span>
-                        <span class="timeline-text">
-                          <span class="timeline-top">
-                            <span class="timeline-label"
-                              >{$translations.care.watered}</span
-                            >
-                            <span class="timeline-date"
-                              >{formatShortDate(event.occurred_at)}</span
-                            >
+                    <li class="timeline-nested-group">
+                      {#each item.events as event (event.id)}
+                        <div class="timeline-nested">
+                          <span class="timeline-icon timeline-icon-sm">
+                            <Droplet size={10} />
                           </span>
-                        </span>
-                        <span class="timeline-actions">
-                          <button
-                            class="btn btn-ghost event-delete"
-                            onclick={() => handleEventDelete(event)}
-                            disabled={deletingEventId === event.id}
-                            aria-label={$translations.plant.deleteLogEntry}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </span>
-                      </li>
-                    {/each}
+                          <span class="timeline-text">
+                            <span class="timeline-top">
+                              <span class="timeline-label"
+                                >{$translations.care.watered}</span
+                              >
+                              <span class="timeline-date"
+                                >{formatShortDate(event.occurred_at)}</span
+                              >
+                            </span>
+                          </span>
+                          <span class="timeline-actions">
+                            <button
+                              class="btn btn-ghost event-delete"
+                              onclick={() => handleEventDelete(event)}
+                              disabled={deletingEventId === event.id}
+                              aria-label={$translations.plant.deleteLogEntry}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </span>
+                        </div>
+                      {/each}
+                    </li>
                   {/if}
                 {:else}
                   <li class="timeline-item">
@@ -1049,6 +1051,14 @@
   /* ---- Group summary ---- */
   .timeline-group-summary {
     padding: 0;
+  }
+
+  .timeline-group-summary:has(+ .timeline-nested-group) {
+    border-bottom: none;
+  }
+
+  .timeline-nested-group {
+    padding-left: 34px;
     border-bottom: 1px solid var(--color-border);
   }
 
@@ -1084,8 +1094,17 @@
   }
 
   .timeline-nested {
-    padding-left: 34px;
+    display: flex;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 14px;
     align-items: center;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--color-border) 50%, transparent);
+  }
+
+  .timeline-nested:last-child {
+    border-bottom: none;
   }
 
   .timeline-icon-sm {

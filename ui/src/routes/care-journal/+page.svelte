@@ -262,7 +262,7 @@
             {#if isGroup(item)}
               {@const key = groupKey(item)}
               {@const expanded = expandedGroups.has(key)}
-              <div class="log-entry log-group-summary">
+              <div class="log-entry log-group-summary" class:expanded>
                 <div class="log-entry-left">
                   <div class="log-entry-icon water-icon">
                     <Droplet size={14} />
@@ -548,6 +548,10 @@
   /* ---- Group summary ---- */
   .log-group-summary {
     border-bottom: 1px solid var(--color-border);
+  }
+
+  .log-group-summary.expanded {
+    border-bottom: none;
   }
 
   .log-group-toggle {
