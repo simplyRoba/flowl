@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/simplyRoba/flowl/compare/v1.1.1...v1.1.2) (2026-03-15)
+
+
+### Bug Fixes
+
+* remove trailing separator on expanded groups when last in section ([6d3de74](https://github.com/simplyRoba/flowl/commit/6d3de7422634dfb9d9ef28d5c5092b55125b447e))
+
 ## [1.1.1](https://github.com/simplyRoba/flowl/compare/v1.1.0...v1.1.1) (2026-03-15)
 
 
