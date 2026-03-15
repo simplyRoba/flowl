@@ -1062,6 +1062,10 @@
     border-bottom: 1px solid var(--color-border);
   }
 
+  .timeline-nested-group:last-child {
+    border-bottom: none;
+  }
+
   .timeline-group-btn {
     display: flex;
     gap: 10px;
