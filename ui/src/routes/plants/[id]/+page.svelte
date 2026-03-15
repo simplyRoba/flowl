@@ -60,7 +60,6 @@
   interface Props {
     data: {
       plant: Plant | null;
-      careEvents: CareEvent[];
       notFound: boolean;
       loadErrorCode: string | null;
     };
@@ -74,6 +73,7 @@
   let plant = $state<Plant | null>(null);
   let plantLoadErrorCode = $state<string | null>(null);
   let careEvents = $state<CareEvent[]>([]);
+  let careLoading = $state(false);
   let notFound = $state(false);
   let deleting = $state(false);
   let watering = $state(false);
@@ -100,10 +100,21 @@
     loadAiStatus();
   });
 
+  async function loadCareEvents(plantId: number) {
+    careLoading = true;
+    careEvents = [];
+    expandedGroups.clear();
+    try {
+      careEvents = await fetchCareEvents(plantId);
+    } catch {
+      careEvents = [];
+    }
+    careLoading = false;
+  }
+
   $effect(() => {
     plant = data.plant;
     plantLoadErrorCode = data.loadErrorCode;
-    careEvents = data.careEvents;
     notFound = data.notFound;
     showLogForm = false;
     showAllEvents = false;
@@ -113,7 +124,12 @@
     lightboxOpen = false;
     lightboxSrc = "";
     chatOpen = false;
-    expandedGroups.clear();
+    if (data.plant) {
+      loadCareEvents(data.plant.id);
+    } else {
+      careEvents = [];
+      careLoading = false;
+    }
   });
 
   $effect(() => {
@@ -122,13 +138,12 @@
   });
 
   async function refreshPlantDetails(plantId: number) {
-    const [nextPlant, nextCareEvents] = await Promise.all([
+    const [nextPlant] = await Promise.all([
       fetchPlant(plantId),
-      fetchCareEvents(plantId),
+      loadCareEvents(plantId),
     ]);
 
     plant = nextPlant;
-    careEvents = nextCareEvents;
     plantLoadErrorCode = null;
   }
 
@@ -186,7 +201,7 @@
         return;
       }
       plant = wateredPlant;
-      careEvents = await fetchCareEvents(wateredPlant.id);
+      loadCareEvents(wateredPlant.id);
     } finally {
       watering = false;
     }
@@ -540,7 +555,22 @@
             {$translations.plant.careJournalSection}
           </div>
 
-          {#if careEvents.length === 0}
+          {#if careLoading}
+            <div class="skeleton-list">
+              {#each { length: 4 } as _, i (i)}
+                <div class="skeleton-entry">
+                  <div
+                    class="shimmer skeleton-icon"
+                    style="width: 24px; height: 24px; border-radius: 6px"
+                  ></div>
+                  <div class="shimmer-lines">
+                    <div class="shimmer" style="width: 50%"></div>
+                    <div class="shimmer" style="width: 30%"></div>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {:else if careEvents.length === 0}
             <p class="journal-empty">{$translations.plant.noCareEvents}</p>
           {:else}
             <ul class="timeline">

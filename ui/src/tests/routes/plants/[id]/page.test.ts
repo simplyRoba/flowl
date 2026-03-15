@@ -150,11 +150,11 @@ async function renderWithPlant(
   initialCareEvents: CareEvent[] = [],
 ) {
   const plant = makePlant(plantOverrides);
+  mockFetchCareEventsApi.mockResolvedValue(initialCareEvents);
   return render(Page, {
     props: {
       data: {
         plant,
-        careEvents: initialCareEvents,
         notFound: false,
         loadErrorCode: null,
       },
@@ -188,7 +188,6 @@ describe("route data updates", () => {
     view.rerender({
       data: {
         plant: makePlant({ id: 2, name: "Monstera" }),
-        careEvents: [],
         notFound: false,
         loadErrorCode: null,
       },
