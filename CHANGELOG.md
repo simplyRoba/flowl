@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.0](https://github.com/simplyRoba/flowl/compare/v1.0.0...v1.1.0) (2026-03-15)
+
+
+### Features
+
+* group repeated watering events in care journal ([a475736](https://github.com/simplyRoba/flowl/commit/a4757366942a007524d77ba7b9286b57abb8718f))
+
+
+### Bug Fixes
+
+* chevron hover uses color change only, omit year on same-year date ranges ([bf1ae6e](https://github.com/simplyRoba/flowl/commit/bf1ae6e821957218f1dac2ad751ea9376a28b8f0))
+* keep expanded groups open after deleting a care event on plant detail ([b6a1653](https://github.com/simplyRoba/flowl/commit/b6a16535360d049b0466282e147eb57eb1eda98c))
+* prevent full page reload when navigating from care journal to plant detail ([b83b321](https://github.com/simplyRoba/flowl/commit/b83b32110103f9d4af588086197b3bbaa42aee5b))
+* separate date range from label in plant detail group summary ([809af63](https://github.com/simplyRoba/flowl/commit/809af634d8309136c026021dc6d5643b527e1838))
+* show only "since" date in global care journal group summary ([506dd0b](https://github.com/simplyRoba/flowl/commit/506dd0bff284780d08b93848ee802463a6bcf12e))
+
 ## [1.0.0](https://github.com/simplyRoba/flowl/compare/v0.27.2...v1.0.0) (2026-03-14)
 
 
