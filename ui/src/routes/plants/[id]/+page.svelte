@@ -103,7 +103,6 @@
   async function loadCareEvents(plantId: number) {
     careLoading = true;
     careEvents = [];
-    expandedGroups.clear();
     try {
       careEvents = await fetchCareEvents(plantId);
     } catch {
@@ -124,6 +123,7 @@
     lightboxOpen = false;
     lightboxSrc = "";
     chatOpen = false;
+    expandedGroups.clear();
     if (data.plant) {
       loadCareEvents(data.plant.id);
     } else {
@@ -1082,6 +1082,7 @@
 
   .timeline-nested {
     padding-left: 34px;
+    align-items: center;
   }
 
   .timeline-icon-sm {
