@@ -2,30 +2,22 @@ import { describe, expect, it, vi } from "vitest";
 import { load } from "../../../../routes/plants/[id]/+page";
 
 describe("plant detail page load", () => {
-  it("loads plant details and care events from the route", async () => {
+  it("loads plant details from the route", async () => {
     const plant = { id: 1, name: "Fern" };
-    const careEvents = [{ id: 10, event_type: "watered" }];
-    const fetch = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => plant,
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => careEvents,
-      });
+    const fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => plant,
+    });
 
     const result = await load({
       fetch,
       params: { id: "1" },
     } as never);
 
-    expect(fetch).toHaveBeenNthCalledWith(1, "/api/plants/1");
-    expect(fetch).toHaveBeenNthCalledWith(2, "/api/plants/1/care");
+    expect(fetch).toHaveBeenCalledWith("/api/plants/1");
+    expect(fetch).toHaveBeenCalledTimes(1);
     expect(result).toEqual({
       plant,
-      careEvents,
       notFound: false,
       loadErrorCode: null,
     });
@@ -46,28 +38,21 @@ describe("plant detail page load", () => {
 
     expect(result).toEqual({
       plant: null,
-      careEvents: [],
       notFound: true,
       loadErrorCode: null,
     });
   });
 
   it("returns the API error code for non-404 failures", async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: "Internal Server Error",
-        json: async () => ({
-          code: "INTERNAL_ERROR",
-          message: "An internal error occurred",
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => [],
-      });
+    const fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      json: async () => ({
+        code: "INTERNAL_ERROR",
+        message: "An internal error occurred",
+      }),
+    });
 
     const result = await load({
       fetch,
@@ -76,7 +61,6 @@ describe("plant detail page load", () => {
 
     expect(result).toEqual({
       plant: null,
-      careEvents: [],
       notFound: false,
       loadErrorCode: "INTERNAL_ERROR",
     });

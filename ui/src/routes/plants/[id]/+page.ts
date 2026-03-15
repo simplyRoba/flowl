@@ -1,4 +1,4 @@
-import type { CareEvent, Plant } from "$lib/api";
+import type { Plant } from "$lib/api";
 import type { PageLoad } from "./$types";
 
 interface RouteLoadError {
@@ -9,7 +9,6 @@ interface RouteLoadError {
 
 interface PlantDetailPageData {
   plant: Plant | null;
-  careEvents: CareEvent[];
   notFound: boolean;
   loadErrorCode: string | null;
 }
@@ -36,7 +35,6 @@ function emptyResult(
 ): PlantDetailPageData {
   return {
     plant: null,
-    careEvents: [],
     notFound: false,
     loadErrorCode: null,
     ...overrides,
@@ -50,12 +48,9 @@ export const load: PageLoad = async ({ fetch, params }) => {
   }
 
   try {
-    const [plant, careEvents] = await Promise.all([
-      fetchJson<Plant>(fetch, `/api/plants/${id}`),
-      fetchJson<CareEvent[]>(fetch, `/api/plants/${id}/care`),
-    ]);
+    const plant = await fetchJson<Plant>(fetch, `/api/plants/${id}`);
 
-    return emptyResult({ plant, careEvents });
+    return emptyResult({ plant });
   } catch (error) {
     if (
       typeof error === "object" &&
