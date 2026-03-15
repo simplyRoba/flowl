@@ -569,8 +569,8 @@
     inset: -8px -12px;
   }
 
-  .log-group-toggle:hover {
-    background: var(--color-surface-muted);
+  .log-group-toggle:hover .log-group-chevron {
+    color: var(--color-text);
   }
 
   .log-group-chevron {

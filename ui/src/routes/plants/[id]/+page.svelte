@@ -227,14 +227,15 @@
     return $translations.care.custom;
   }
 
-  function formatShortDate(dateStr: string): string {
+  function formatShortDate(dateStr: string, includeYear = true): string {
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return dateStr;
-    return date.toLocaleDateString(undefined, {
+    const opts: Intl.DateTimeFormatOptions = {
       month: "short",
       day: "numeric",
-      year: "2-digit",
-    });
+    };
+    if (includeYear) opts.year = "2-digit";
+    return date.toLocaleDateString(undefined, opts);
   }
 
   function handleEventDelete(event: CareEvent) {
@@ -592,9 +593,11 @@
                             >{careGroupLabel(item)}</span
                           >
                           <span class="timeline-date"
-                            >{formatShortDate(item.firstAt)} – {formatShortDate(
-                              item.lastAt,
-                            )}</span
+                            >{formatShortDate(
+                              item.firstAt,
+                              new Date(item.firstAt).getFullYear() !==
+                                new Date(item.lastAt).getFullYear(),
+                            )} – {formatShortDate(item.lastAt)}</span
                           >
                         </span>
                       </span>
