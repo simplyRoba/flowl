@@ -262,10 +262,7 @@
             {#if isGroup(item)}
               {@const key = groupKey(item)}
               {@const expanded = expandedGroups.has(key)}
-              <button
-                class="log-entry log-group-summary"
-                onclick={() => toggleGroup(key)}
-              >
+              <div class="log-entry log-group-summary">
                 <div class="log-entry-left">
                   <div class="log-entry-icon water-icon">
                     <Droplet size={14} />
@@ -274,17 +271,23 @@
                 <div class="log-entry-content">
                   <a
                     href={resolve(`/plants/${item.plantId}?from=/care-journal`)}
-                    class="log-entry-plant"
-                    onclick={(e) => e.stopPropagation()}>{item.plantName}</a
+                    class="log-entry-plant">{item.plantName}</a
                   >
                   <div class="log-entry-action">
                     {groupSummaryText(item)}
                   </div>
                 </div>
-                <div class="log-group-chevron" class:expanded>
-                  <ChevronRight size={16} />
-                </div>
-              </button>
+                <button
+                  class="log-group-toggle"
+                  onclick={() => toggleGroup(key)}
+                  aria-expanded={expanded}
+                  aria-label={expanded ? "Collapse" : "Expand"}
+                >
+                  <div class="log-group-chevron" class:expanded>
+                    <ChevronRight size={16} />
+                  </div>
+                </button>
+              </div>
               {#if expanded}
                 <div class="log-group-expanded">
                   {#each item.events as event (event.id)}
@@ -544,21 +547,33 @@
 
   /* ---- Group summary ---- */
   .log-group-summary {
-    width: 100%;
-    background: none;
-    border: none;
     border-bottom: 1px solid var(--color-border);
-    font-family: inherit;
-    cursor: pointer;
-    text-align: left;
   }
 
-  .log-group-summary:hover {
+  .log-group-toggle {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  .log-group-toggle::after {
+    content: "";
+    position: absolute;
+    inset: -8px -12px;
+  }
+
+  .log-group-toggle:hover {
     background: var(--color-surface-muted);
   }
 
   .log-group-chevron {
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     color: var(--color-text-muted);

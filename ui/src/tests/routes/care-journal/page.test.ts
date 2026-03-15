@@ -314,9 +314,9 @@ describe("care journal event grouping", () => {
     // No expanded entries yet
     expect(document.querySelector(".log-group-expanded")).toBeNull();
 
-    // Click to expand
-    const summary = document.querySelector(".log-group-summary") as HTMLElement;
-    await fireEvent.click(summary);
+    // Click the toggle button to expand
+    const toggle = document.querySelector(".log-group-toggle") as HTMLElement;
+    await fireEvent.click(toggle);
 
     expect(document.querySelector(".log-group-expanded")).toBeTruthy();
     const nested = document.querySelectorAll(
