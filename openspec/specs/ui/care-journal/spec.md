@@ -33,6 +33,121 @@ The plant detail view SHALL display a care journal section showing a chronologic
 - **THEN** only the 20 most recent events are shown initially
 - **AND** a "Show more" link is displayed to load the rest
 
+### Requirement: Watering event grouping utility
+
+A shared utility function SHALL group consecutive watering events per plant into collapsible summaries. The function takes a `CareEvent[]` (sorted newest-first) and returns `Array<CareEvent | WateringGroup>`.
+
+#### Scenario: Consecutive waterings without notes or photos are grouped
+
+- **WHEN** a plant has 3+ consecutive watering events with no notes and no photos
+- **THEN** they SHALL be collapsed into a single `WateringGroup` item containing the count, the earliest date, the latest date, and the original events array
+
+#### Scenario: Watering with notes breaks the streak
+
+- **WHEN** a watering event for a plant has notes
+- **THEN** it SHALL render as an individual event and break the grouping streak for that plant
+
+#### Scenario: Watering with photo breaks the streak
+
+- **WHEN** a watering event for a plant has a photo_url
+- **THEN** it SHALL render as an individual event and break the grouping streak for that plant
+
+#### Scenario: Streak of one is not grouped
+
+- **WHEN** a plant has only one consecutive watering event (surrounded by other event types or at the boundary)
+- **THEN** it SHALL render as an individual event, not as a group
+
+#### Scenario: Streak of two is grouped
+
+- **WHEN** a plant has exactly two consecutive watering events without notes or photos
+- **THEN** they SHALL be collapsed into a `WateringGroup`
+
+#### Scenario: Non-watering events do not break other plants
+
+- **WHEN** the timeline contains events from multiple plants interleaved
+- **THEN** each plant's watering streak SHALL be tracked independently
+- **AND** events from other plants between two waterings of plant A SHALL NOT break plant A's streak
+
+#### Scenario: Non-watering event for same plant breaks streak
+
+- **WHEN** a non-watering event for plant A appears between two watering events for plant A
+- **THEN** plant A's watering streak SHALL be broken at that point
+
+### Requirement: Watering group summary display
+
+Grouped watering events SHALL display as a collapsible summary row in both the global care journal and plant detail timeline.
+
+#### Scenario: Summary row content
+
+- **WHEN** a `WateringGroup` is rendered
+- **THEN** it SHALL display the plant name (on global page), a watering icon, the count, and the date range (e.g. "Watered 5 times, Feb 1 - Mar 14")
+- **AND** a chevron icon SHALL indicate the group can be expanded
+
+#### Scenario: Expand group
+
+- **WHEN** the user clicks/taps a group summary row
+- **THEN** the individual watering events within the group SHALL be revealed inline below the summary
+- **AND** each expanded event SHALL show its individual date
+
+#### Scenario: Collapse group
+
+- **WHEN** the user clicks/taps an expanded group summary row
+- **THEN** the individual events SHALL be hidden and only the summary row remains
+
+#### Scenario: Expand state is transient
+
+- **WHEN** the user expands a group
+- **THEN** the expand/collapse state SHALL be local component state only
+- **AND** it SHALL NOT persist in the URL or any store
+
+### Requirement: Skeleton loading for global care journal
+
+The global care journal SHALL display skeleton shimmer lines while care events are being fetched, using shared skeleton styles.
+
+#### Scenario: Loading state shown
+
+- **WHEN** the global care journal page is loading events
+- **THEN** skeleton shimmer lines SHALL be displayed in place of the event list
+
+#### Scenario: Loading state replaced by content
+
+- **WHEN** the events have finished loading
+- **THEN** the skeleton shimmer lines SHALL be replaced by the actual event list (or empty state)
+
+#### Scenario: Shared skeleton styles
+
+- **WHEN** skeleton loading is used
+- **THEN** it SHALL use the shared `.shimmer` class from `skeletons.css` rather than component-scoped styles
+
+### Requirement: Global care journal grouping integration
+
+The global care journal page SHALL apply watering event grouping to its event list.
+
+#### Scenario: Group summary in global timeline
+
+- **WHEN** the global care journal is rendered
+- **THEN** the event list SHALL be processed through the grouping utility before display
+- **AND** group summaries SHALL appear inline within the day-grouped timeline
+
+#### Scenario: Plant name shown in global group summary
+
+- **WHEN** a group summary is rendered on the global care journal
+- **THEN** the plant name SHALL be displayed as a link to the plant detail page
+
+### Requirement: Plant detail timeline grouping integration
+
+The plant detail care journal section SHALL apply the same watering event grouping.
+
+#### Scenario: Group summary in plant timeline
+
+- **WHEN** the plant detail timeline is rendered
+- **THEN** the event list SHALL be processed through the grouping utility before display
+
+#### Scenario: Plant name omitted in plant detail group summary
+
+- **WHEN** a group summary is rendered on the plant detail page
+- **THEN** the plant name SHALL be omitted (since the context is already a single plant)
+
 ### Requirement: Log Care Action
 
 The plant detail view SHALL provide an "+ Add log entry" action for manually recording non-watering care events.
@@ -77,7 +192,7 @@ The plant detail view SHALL allow deleting individual care events.
 
 ### Requirement: Global Care Log Page
 
-The route `/care-journal` SHALL display a paginated feed of care events across all plants.
+The route `/care-journal` SHALL display a feed of care events across all plants and apply watering event grouping to the timeline.
 
 #### Scenario: Events displayed
 
@@ -85,6 +200,7 @@ The route `/care-journal` SHALL display a paginated feed of care events across a
 - **THEN** the page fetches care events from `GET /api/care`
 - **AND** displays events grouped by day (e.g., "Today", "Yesterday", "Feb 11, 2026")
 - **AND** each event shows the plant name, event type icon, type label, and notes (if present)
+- **AND** consecutive watering events per plant are collapsed into group summaries
 
 #### Scenario: Filter by event type (multi-select)
 
@@ -137,12 +253,11 @@ The route `/care-journal` SHALL display a paginated feed of care events across a
 - **WHEN** the user toggles a filter chip
 - **THEN** the URL SHALL be updated using `replaceState` (no new browser history entry)
 
-#### Scenario: Infinite scroll
+#### Scenario: All events loaded
 
-- **WHEN** the user scrolls near the bottom of the event list
-- **AND** more events are available
-- **THEN** the next page is fetched automatically using the cursor (`before` parameter)
-- **AND** new events are appended to the list
+- **WHEN** the global care journal page loads
+- **THEN** all care events SHALL be fetched in a single request
+- **AND** no infinite scroll or cursor-based pagination SHALL be used
 
 #### Scenario: No events
 
