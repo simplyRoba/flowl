@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.2.0](https://github.com/simplyRoba/flowl/compare/v1.1.2...v1.2.0) (2026-03-19)
+
+
+### Features
+
+* add 5d watering preset and archive change ([6806ee7](https://github.com/simplyRoba/flowl/commit/6806ee7ded5ea6b2e5c508547cf32eb797ea6728))
+
+
+### Bug Fixes
+
+* **deps:** bump jsdom from 28.1.0 to 29.0.0 in /ui ([844757d](https://github.com/simplyRoba/flowl/commit/844757dad9c96435e00b2e0d1b2ee915c06d4c4d))
+* **deps:** bump svelte from 5.53.12 to 5.54.0 in /ui in the svelte group ([bf35b06](https://github.com/simplyRoba/flowl/commit/bf35b069b71dbc5ab9fe68a141275c875d0165d3))
+* **deps:** bump svelte in /ui in the svelte group ([cd06fd3](https://github.com/simplyRoba/flowl/commit/cd06fd312d6842a1e2f3f1fbb2d2445dcb741569))
+* **deps:** bump tracing-subscriber in the tracing group ([1e3e3ec](https://github.com/simplyRoba/flowl/commit/1e3e3ecad5169edc4df630f4825d532c2a6cc64f))
+* **deps:** bump typescript-eslint in /ui in the eslint group ([605cc1c](https://github.com/simplyRoba/flowl/commit/605cc1cc35a599a9fe2dc9f0b9426161e12f63e1))
+* **deps:** bump vite from 8.0.0 to 8.0.1 in /ui ([a782a5d](https://github.com/simplyRoba/flowl/commit/a782a5d008b8a749743f2f24ebb326d786e419e6))
+
 ## [1.1.2](https://github.com/simplyRoba/flowl/compare/v1.1.1...v1.1.2) (2026-03-15)
 
 
