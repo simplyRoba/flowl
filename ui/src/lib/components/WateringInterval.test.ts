@@ -14,7 +14,7 @@ describe("WateringInterval", () => {
     expect(screen.getByText("Thirsty")).toBeTruthy();
     expect(screen.getByText("Weekly")).toBeTruthy();
     expect(screen.getByText("Biweekly")).toBeTruthy();
-    expect(screen.getByText("Monthly")).toBeTruthy();
+    expect(screen.getByText("Frequent")).toBeTruthy();
   });
 
   it("calls onchange when preset is clicked", async () => {
@@ -32,6 +32,14 @@ describe("WateringInterval", () => {
     render(WateringInterval, { props: { value: 7, onchange } });
     const weekly = screen.getByText("Weekly").closest("button")!;
     expect(weekly.classList.contains("active")).toBe(true);
+  });
+
+  it("activates the 5-day preset when the value is 5", () => {
+    const onchange = vi.fn();
+    render(WateringInterval, { props: { value: 5, onchange } });
+    const frequent = screen.getByText("Frequent").closest("button")!;
+    expect(frequent).toBeTruthy();
+    expect(frequent.classList.contains("active")).toBe(true);
   });
 
   it("decrements value on minus button click", async () => {

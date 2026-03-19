@@ -10,6 +10,12 @@
       descKey: "thirsty" as const,
     },
     {
+      days: 5,
+      labelKey: "fiveDays" as const,
+      shortKey: "fiveDaysShort" as const,
+      descKey: "frequent" as const,
+    },
+    {
       days: 7,
       labelKey: "sevenDays" as const,
       shortKey: "sevenDaysShort" as const,
@@ -20,12 +26,6 @@
       labelKey: "fourteenDays" as const,
       shortKey: "fourteenDaysShort" as const,
       descKey: "biweekly" as const,
-    },
-    {
-      days: 30,
-      labelKey: "thirtyDays" as const,
-      shortKey: "thirtyDaysShort" as const,
-      descKey: "monthly" as const,
     },
   ];
 

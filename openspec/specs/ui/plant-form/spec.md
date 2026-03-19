@@ -52,7 +52,7 @@ The route `/plants/new` SHALL display a form to create a new plant.
 
 #### Scenario: Watering interval
 
-- **WHEN** the user selects a preset (3d, 7d, 14d, 30d) or uses the custom stepper
+- **WHEN** the user selects a preset (3d, 5d, 7d, 14d) or uses the custom stepper
 - **THEN** the watering interval is set accordingly
 
 ### Requirement: Edit Plant Form
