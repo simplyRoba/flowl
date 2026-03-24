@@ -16,7 +16,10 @@ pub struct PlantContext {
     notes: Option<String>,
     current_state: CurrentState,
     care_preferences: CarePreferences,
-    recent_care_events: Vec<CareEventContext>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    watering_dates: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    care_events: Vec<CareEventContext>,
 }
 
 #[derive(Serialize)]
@@ -75,6 +78,11 @@ struct CareEventRow {
     notes: Option<String>,
 }
 
+#[derive(sqlx::FromRow)]
+struct WateringDateRow {
+    occurred_at: String,
+}
+
 // --- Builders ---
 
 /// # Errors
@@ -106,9 +114,11 @@ pub async fn build_plant_context(
         row.watering_interval_days,
     );
 
-    let events = sqlx::query_as::<_, CareEventRow>(
-        "SELECT event_type, occurred_at, notes FROM care_events \
-         WHERE plant_id = ? ORDER BY occurred_at DESC LIMIT 20",
+    let watering_rows = sqlx::query_as::<_, WateringDateRow>(
+        "SELECT occurred_at FROM care_events \
+         WHERE plant_id = ? AND event_type = 'watered' \
+         AND occurred_at >= datetime('now', '-1 year') \
+         ORDER BY occurred_at DESC",
     )
     .bind(plant_id)
     .fetch_all(pool)
@@ -118,7 +128,32 @@ pub async fn build_plant_context(
         ApiError::InternalError("INTERNAL_ERROR")
     })?;
 
-    let recent_care_events = events
+    let watering_dates: Vec<String> = watering_rows
+        .into_iter()
+        .map(|r| {
+            r.occurred_at
+                .get(..10)
+                .unwrap_or(&r.occurred_at)
+                .to_string()
+        })
+        .collect();
+
+    let event_rows = sqlx::query_as::<_, CareEventRow>(
+        "SELECT event_type, occurred_at, notes FROM care_events \
+         WHERE plant_id = ? \
+         AND (event_type != 'watered' OR notes IS NOT NULL) \
+         AND occurred_at >= datetime('now', '-5 years') \
+         ORDER BY occurred_at DESC",
+    )
+    .bind(plant_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {e}");
+        ApiError::InternalError("INTERNAL_ERROR")
+    })?;
+
+    let care_events: Vec<CareEventContext> = event_rows
         .into_iter()
         .map(|e| CareEventContext {
             event_type: e.event_type,
@@ -152,7 +187,8 @@ pub async fn build_plant_context(
             soil_type: row.soil_type,
             soil_moisture: row.soil_moisture,
         },
-        recent_care_events,
+        watering_dates,
+        care_events,
     })
 }
 
@@ -246,7 +282,12 @@ mod tests {
                 soil_type: Some("standard".to_string()),
                 soil_moisture: Some("moderate".to_string()),
             },
-            recent_care_events: vec![],
+            watering_dates: vec!["2026-02-20".to_string(), "2026-02-10".to_string()],
+            care_events: vec![CareEventContext {
+                event_type: "fertilized".to_string(),
+                date: "2026-02-15".to_string(),
+                notes: Some("Liquid fertilizer".to_string()),
+            }],
         };
 
         let json = serde_json::to_string_pretty(&context).unwrap();
@@ -270,6 +311,18 @@ mod tests {
         assert!(value.get("light_needs").is_none());
         assert!(value.get("watering_interval_days").is_none());
         assert!(value.get("watering_status").is_none());
+
+        // Verify watering_dates is a flat array of date strings
+        let dates = value["watering_dates"].as_array().unwrap();
+        assert_eq!(dates.len(), 2);
+        assert_eq!(dates[0], "2026-02-20");
+        assert_eq!(dates[1], "2026-02-10");
+
+        // Verify care_events contains full objects
+        let events = value["care_events"].as_array().unwrap();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0]["event_type"], "fertilized");
+        assert_eq!(events[0]["notes"], "Liquid fertilizer");
     }
 
     #[test]
@@ -292,7 +345,8 @@ mod tests {
                 soil_type: None,
                 soil_moisture: None,
             },
-            recent_care_events: vec![],
+            watering_dates: vec![],
+            care_events: vec![],
         };
         let prompt = build_chat_system_prompt(&context, "en");
         assert!(prompt.contains(
@@ -320,10 +374,11 @@ mod tests {
                 soil_type: Some("standard".to_string()),
                 soil_moisture: Some("moderate".to_string()),
             },
-            recent_care_events: vec![CareEventContext {
-                event_type: "watered".to_string(),
-                date: "2026-02-20".to_string(),
-                notes: None,
+            watering_dates: vec!["2026-02-20".to_string()],
+            care_events: vec![CareEventContext {
+                event_type: "fertilized".to_string(),
+                date: "2026-02-15".to_string(),
+                notes: Some("Liquid feed".to_string()),
             }],
         };
         let prompt = build_chat_system_prompt(&context, "en");
@@ -331,7 +386,9 @@ mod tests {
         assert!(prompt.contains("Monstera"));
         assert!(prompt.contains("Monstera deliciosa"));
         assert!(prompt.contains("Living Room"));
-        assert!(prompt.contains("watered"));
+        assert!(prompt.contains("watering_dates"));
+        assert!(prompt.contains("2026-02-20"));
+        assert!(prompt.contains("fertilized"));
         assert!(prompt.contains("Respond in English"));
     }
 
@@ -355,7 +412,8 @@ mod tests {
                 soil_type: None,
                 soil_moisture: None,
             },
-            recent_care_events: vec![],
+            watering_dates: vec![],
+            care_events: vec![],
         };
         let prompt = build_chat_system_prompt(&context, "de");
         assert!(prompt.contains("Respond in German"));
@@ -381,11 +439,65 @@ mod tests {
                 soil_type: None,
                 soil_moisture: None,
             },
-            recent_care_events: vec![],
+            watering_dates: vec![],
+            care_events: vec![],
         };
         let prompt = build_chat_system_prompt(&context, "en");
         assert!(prompt.contains("Unknown"));
-        assert!(prompt.contains("recent_care_events"));
+        // Empty collections should be omitted from JSON
+        assert!(!prompt.contains("watering_dates"));
+        assert!(!prompt.contains("care_events"));
+        // Optional None fields should be omitted from JSON
+        assert!(!prompt.contains("\"species\""));
+        assert!(!prompt.contains("\"location_name\""));
+        assert!(!prompt.contains("\"notes\""));
+    }
+
+    #[test]
+    fn watering_with_notes_appears_in_both_lists() {
+        let context = PlantContext {
+            name: "Ficus".to_string(),
+            species: None,
+            location_name: None,
+            notes: None,
+            current_state: CurrentState {
+                watering_status: "ok".to_string(),
+                last_watered: Some("2026-03-20".to_string()),
+            },
+            care_preferences: CarePreferences {
+                light_needs: "indirect".to_string(),
+                watering_interval_days: 7,
+                difficulty: None,
+                pet_safety: None,
+                growth_speed: None,
+                soil_type: None,
+                soil_moisture: None,
+            },
+            watering_dates: vec![
+                "2026-03-20".to_string(),
+                "2026-03-15".to_string(),
+                "2026-03-10".to_string(),
+            ],
+            care_events: vec![CareEventContext {
+                event_type: "watered".to_string(),
+                date: "2026-03-15".to_string(),
+                notes: Some("Leaves were drooping".to_string()),
+            }],
+        };
+
+        let json = serde_json::to_string_pretty(&context).unwrap();
+        let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        // Date appears in watering_dates
+        let dates = value["watering_dates"].as_array().unwrap();
+        assert!(dates.iter().any(|d| d == "2026-03-15"));
+
+        // Same event appears in care_events with notes
+        let events = value["care_events"].as_array().unwrap();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0]["event_type"], "watered");
+        assert_eq!(events[0]["date"], "2026-03-15");
+        assert_eq!(events[0]["notes"], "Leaves were drooping");
     }
 
     #[test]
