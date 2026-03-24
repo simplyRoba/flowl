@@ -152,43 +152,7 @@ impl AiProvider for OpenAiProvider {
         image: Option<&[u8]>,
         _locale: &str,
     ) -> Result<ChatResponseStream, Box<dyn std::error::Error + Send + Sync>> {
-        let mut api_messages: Vec<Value> = vec![json!({
-            "role": "system",
-            "content": system_prompt
-        })];
-
-        // Add history messages
-        for msg in messages {
-            if let Some(ref img_b64) = msg.image {
-                // Message with image: use content array
-                api_messages.push(json!({
-                    "role": msg.role,
-                    "content": [
-                        { "type": "text", "text": msg.content },
-                        { "type": "image_url", "image_url": { "url": format!("data:image/jpeg;base64,{img_b64}") } }
-                    ]
-                }));
-            } else {
-                api_messages.push(json!({
-                    "role": msg.role,
-                    "content": msg.content
-                }));
-            }
-        }
-
-        // Add current image to the last user message if provided
-        if let Some(img_bytes) = image {
-            let b64 = STANDARD.encode(img_bytes);
-            if let Some(last) = api_messages.last_mut()
-                && last["role"] == "user"
-            {
-                let text = last["content"].as_str().unwrap_or("").to_string();
-                last["content"] = json!([
-                    { "type": "text", "text": text },
-                    { "type": "image_url", "image_url": { "url": format!("data:image/jpeg;base64,{b64}") } }
-                ]);
-            }
-        }
+        let api_messages = build_chat_messages(system_prompt, messages, image);
 
         let body = json!({
             "model": self.model,
@@ -274,6 +238,58 @@ impl AiProvider for OpenAiProvider {
 
         Ok(summary.to_string())
     }
+}
+
+/// Build the message array for a chat completion request.
+///
+/// The resulting array is structured as: system prompt, then history/user messages in order.
+/// This layout is important for `OpenAI` automatic prompt caching: on follow-up turns the
+/// prefix (system prompt + earlier messages) is byte-identical to the previous request, so
+/// the cached prefix can be reused.
+fn build_chat_messages(
+    system_prompt: &str,
+    messages: &[ChatMessage],
+    image: Option<&[u8]>,
+) -> Vec<Value> {
+    let mut api_messages: Vec<Value> = vec![json!({
+        "role": "system",
+        "content": system_prompt
+    })];
+
+    // Add history messages
+    for msg in messages {
+        if let Some(ref img_b64) = msg.image {
+            // Message with image: use content array
+            api_messages.push(json!({
+                "role": msg.role,
+                "content": [
+                    { "type": "text", "text": msg.content },
+                    { "type": "image_url", "image_url": { "url": format!("data:image/jpeg;base64,{img_b64}") } }
+                ]
+            }));
+        } else {
+            api_messages.push(json!({
+                "role": msg.role,
+                "content": msg.content
+            }));
+        }
+    }
+
+    // Add current image to the last user message if provided
+    if let Some(img_bytes) = image {
+        let b64 = STANDARD.encode(img_bytes);
+        if let Some(last) = api_messages.last_mut()
+            && last["role"] == "user"
+        {
+            let text = last["content"].as_str().unwrap_or("").to_string();
+            last["content"] = json!([
+                { "type": "text", "text": text },
+                { "type": "image_url", "image_url": { "url": format!("data:image/jpeg;base64,{b64}") } }
+            ]);
+        }
+    }
+
+    api_messages
 }
 
 /// Read an SSE byte stream from the `OpenAI` API, extract content deltas, and forward them
@@ -513,5 +529,111 @@ mod tests {
     fn parse_summarize_response_invalid_json() {
         let result = serde_json::from_str::<Value>("{not valid}");
         assert!(result.is_err());
+    }
+
+    // --- Prompt caching tests ---
+
+    /// OpenAI automatic prompt caching reuses cached prefixes when the beginning
+    /// of the messages array is byte-identical across requests.  This test
+    /// simulates two consecutive chat turns and asserts that the message prefix
+    /// from the first request is preserved exactly in the second request, so
+    /// caching can kick in.
+    #[test]
+    fn chat_messages_prefix_stable_across_turns_for_prompt_caching() {
+        let system = "You are a plant care assistant.";
+
+        // --- Turn 1: single user message ---
+        let turn1_messages = vec![ChatMessage {
+            role: "user".to_string(),
+            content: "Why are the leaves yellow?".to_string(),
+            image: None,
+        }];
+        let turn1 = build_chat_messages(system, &turn1_messages, None);
+
+        // --- Turn 2: previous exchange + new user message ---
+        let turn2_messages = vec![
+            ChatMessage {
+                role: "user".to_string(),
+                content: "Why are the leaves yellow?".to_string(),
+                image: None,
+            },
+            ChatMessage {
+                role: "assistant".to_string(),
+                content: "It could be overwatering.".to_string(),
+                image: None,
+            },
+            ChatMessage {
+                role: "user".to_string(),
+                content: "How do I fix it?".to_string(),
+                image: None,
+            },
+        ];
+        let turn2 = build_chat_messages(system, &turn2_messages, None);
+
+        // The first N messages from turn 1 must appear identically as the
+        // prefix of turn 2 so OpenAI can cache the shared prefix.
+        assert!(
+            turn2.len() > turn1.len(),
+            "Turn 2 should have more messages than turn 1"
+        );
+        for (i, msg) in turn1.iter().enumerate() {
+            assert_eq!(
+                msg, &turn2[i],
+                "Message at index {i} differs between turns — breaks prompt caching"
+            );
+        }
+
+        // Also verify serialized JSON is byte-identical for the shared prefix,
+        // which is what OpenAI actually compares.
+        let turn1_json = serde_json::to_string(&turn1).unwrap();
+        let turn2_prefix_json = serde_json::to_string(&turn2[..turn1.len()]).unwrap();
+        assert_eq!(
+            turn1_json, turn2_prefix_json,
+            "Serialized message prefix must be byte-identical for prompt caching"
+        );
+    }
+
+    /// Verify that an image attached to a history message does not corrupt the
+    /// prefix of subsequent messages (image messages use a content-array format
+    /// that must remain stable).
+    #[test]
+    fn chat_messages_prefix_stable_with_image_in_history() {
+        let system = "You are a plant care assistant.";
+        let img_b64 = STANDARD.encode(b"fake-image");
+
+        // Turn 1: user sends a message with an image
+        let turn1_messages = vec![ChatMessage {
+            role: "user".to_string(),
+            content: "What is this spot?".to_string(),
+            image: Some(img_b64.clone()),
+        }];
+        let turn1 = build_chat_messages(system, &turn1_messages, None);
+
+        // Turn 2: same history + assistant reply + new question
+        let turn2_messages = vec![
+            ChatMessage {
+                role: "user".to_string(),
+                content: "What is this spot?".to_string(),
+                image: Some(img_b64),
+            },
+            ChatMessage {
+                role: "assistant".to_string(),
+                content: "Looks like sunburn.".to_string(),
+                image: None,
+            },
+            ChatMessage {
+                role: "user".to_string(),
+                content: "Should I move it?".to_string(),
+                image: None,
+            },
+        ];
+        let turn2 = build_chat_messages(system, &turn2_messages, None);
+
+        let turn1_json = serde_json::to_string(&turn1).unwrap();
+        let turn2_prefix_json = serde_json::to_string(&turn2[..turn1.len()]).unwrap();
+        assert_eq!(
+            turn1_json, turn2_prefix_json,
+            "Serialized prefix with image history must be byte-identical"
+        );
     }
 }
