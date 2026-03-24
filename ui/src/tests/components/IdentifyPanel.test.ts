@@ -321,7 +321,7 @@ describe("IdentifyPanel", () => {
   });
 
   describe("not-a-plant error", () => {
-    it("shows localized not-a-plant message when AI rejects photo", async () => {
+    it("shows localized not-a-plant message with dismiss instead of retry", async () => {
       mockIdentifyPlant.mockRejectedValue(
         new ApiError(
           422,
@@ -338,7 +338,44 @@ describe("IdentifyPanel", () => {
         expect(
           screen.getByText("The photo does not appear to contain a plant"),
         ).toBeTruthy();
+        expect(screen.queryByText("Retry")).toBeNull();
+        expect(screen.getByText("Dismiss")).toBeTruthy();
+      });
+    });
+
+    it("dismiss on non-retryable error returns to idle", async () => {
+      mockIdentifyPlant.mockRejectedValue(
+        new ApiError(
+          422,
+          "AI_IDENTIFY_NOT_A_PLANT",
+          "The photo does not appear to contain a plant",
+        ),
+      );
+      renderPanel();
+      const user = userEvent.setup();
+
+      await user.click(screen.getByText("Identify Plant"));
+      await waitFor(() => {
+        expect(screen.getByText("Dismiss")).toBeTruthy();
+      });
+
+      await user.click(screen.getByText("Dismiss"));
+
+      expect(screen.getByText("Identify Plant")).toBeTruthy();
+    });
+
+    it("shows retry for retryable server errors", async () => {
+      mockIdentifyPlant.mockRejectedValue(
+        new ApiError(500, "AI_PROVIDER_FAILED", "AI provider request failed"),
+      );
+      renderPanel();
+      const user = userEvent.setup();
+
+      await user.click(screen.getByText("Identify Plant"));
+
+      await waitFor(() => {
         expect(screen.getByText("Retry")).toBeTruthy();
+        expect(screen.queryByText("Dismiss")).toBeNull();
       });
     });
   });

@@ -9,7 +9,7 @@
     ChevronRight,
   } from "lucide-svelte";
   import type { IdentifyResult } from "$lib/api";
-  import { identifyPlant } from "$lib/api";
+  import { ApiError, identifyPlant } from "$lib/api";
   import { resolveError } from "$lib/stores/errors";
   import { translations } from "$lib/stores/locale";
 
@@ -33,6 +33,7 @@
   let identifyResults = $state<IdentifyResult[]>([]);
   let currentSuggestion = $state(0);
   let identifyError = $state("");
+  let identifyErrorRetryable = $state(true);
   let appliedCount = $state(0);
 
   let activeSuggestion = $derived(identifyResults[currentSuggestion] ?? null);
@@ -150,6 +151,11 @@
       identifyState = "result";
     } catch (e: unknown) {
       identifyError = resolveError(e, "identifyPlant");
+      identifyErrorRetryable =
+        !(e instanceof ApiError) ||
+        e.status === 500 ||
+        e.status === 503 ||
+        e.status === 429;
       identifyState = "error";
     }
   }
@@ -405,11 +411,20 @@
     <div class="identify-error">
       <TriangleAlert size={18} />
       <span>{identifyError || $translations.identify.errorMessage}</span>
-      <button
-        type="button"
-        class="btn btn-outline btn-ai btn-sm"
-        onclick={handleIdentify}>{$translations.identify.retry}</button
-      >
+      {#if identifyErrorRetryable}
+        <button
+          type="button"
+          class="btn btn-outline btn-ai btn-sm"
+          onclick={handleIdentify}>{$translations.identify.retry}</button
+        >
+      {:else}
+        <button
+          type="button"
+          class="btn btn-outline btn-sm"
+          onclick={() => (identifyState = "idle")}
+          >{$translations.identify.dismiss}</button
+        >
+      {/if}
     </div>
   {/if}
 </div>
