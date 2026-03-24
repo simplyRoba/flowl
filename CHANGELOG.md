@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/simplyRoba/flowl/compare/v1.3.0...v1.3.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* show dismiss instead of retry for non-retryable identify errors ([bc6865e](https://github.com/simplyRoba/flowl/commit/bc6865e419b44fa5ec2f2d4a85c1bff6b8f025f4))
+
 ## [1.3.0](https://github.com/simplyRoba/flowl/compare/v1.2.0...v1.3.0) (2026-03-24)
 
 
