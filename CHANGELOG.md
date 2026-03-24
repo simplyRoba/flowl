@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.0](https://github.com/simplyRoba/flowl/compare/v1.2.0...v1.3.0) (2026-03-24)
+
+
+### Features
+
+* reject non-plant photos in AI identify endpoint ([17b6a64](https://github.com/simplyRoba/flowl/commit/17b6a641897417d57ff9e4976f9dc3a759f50918))
+* split care event context into watering_dates and care_events ([006c6f7](https://github.com/simplyRoba/flowl/commit/006c6f766c1f04c1cc89c64d3a1540e5d3b7c88e))
+
+
+### Bug Fixes
+
+* **deps:** bump flatted from 3.3.4 to 3.4.2 in /ui ([8f37e06](https://github.com/simplyRoba/flowl/commit/8f37e06d8c4bb0b9e16c027543c805857a8a60db))
+* **deps:** bump jsdom from 29.0.0 to 29.0.1 in /ui ([63e1ee5](https://github.com/simplyRoba/flowl/commit/63e1ee5f859f5ff3baf14d642e463145e374e5c0))
+* **deps:** bump lucide-svelte from 0.577.0 to 1.0.1 in /ui ([6f01e69](https://github.com/simplyRoba/flowl/commit/6f01e6948cd7c10b62882e3acd4a8228aa03e84d))
+* **deps:** bump svelte from 5.54.0 to 5.54.1 in /ui in the svelte group ([6b58a4b](https://github.com/simplyRoba/flowl/commit/6b58a4bfcd2966f3bdfc1a8a8b32f9949df5b54c))
+* **deps:** bump svelte from 5.54.1 to 5.55.0 in /ui in the svelte group ([29fb8a8](https://github.com/simplyRoba/flowl/commit/29fb8a8af6fb6110035f7f9961593e25a349d3f2))
+* **deps:** bump the eslint group in /ui with 2 updates ([1adf450](https://github.com/simplyRoba/flowl/commit/1adf450cff4282bb18a3928a3b6dcd6635c2965b))
+* **deps:** bump typescript-eslint in /ui in the eslint group ([c82ce4c](https://github.com/simplyRoba/flowl/commit/c82ce4ce45a9561b8990d254171b3d61086faa70))
+* **deps:** bump vite from 8.0.1 to 8.0.2 in /ui ([785df13](https://github.com/simplyRoba/flowl/commit/785df13c9c8681bc3b3a4002838e45d42ee3ecb6))
+* **deps:** bump vitest from 4.1.0 to 4.1.1 in /ui ([3df5c0b](https://github.com/simplyRoba/flowl/commit/3df5c0b34524e8762971acf4ccfe95a4a86c531e))
+* **deps:** bump zip from 8.2.0 to 8.3.0 ([06825e0](https://github.com/simplyRoba/flowl/commit/06825e0b30044dcc5a985e8670d4be55eded02d2))
+* **deps:** bump zip from 8.3.0 to 8.3.1 ([3583007](https://github.com/simplyRoba/flowl/commit/3583007d7e02f85f879aba43886b4e2a5281cd7d))
+* **deps:** bump zip from 8.3.1 to 8.4.0 ([0f7979a](https://github.com/simplyRoba/flowl/commit/0f7979a741de81c36f0abf120b39942efc9e2a86))
+
 ## [1.2.0](https://github.com/simplyRoba/flowl/compare/v1.1.2...v1.2.0) (2026-03-19)
 
 
