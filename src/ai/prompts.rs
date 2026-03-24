@@ -245,7 +245,10 @@ pub fn build_identify_prompt(locale: &str) -> String {
         "Identify this plant from the photo(s). Provide your top 3 most likely identifications, \
          ranked by confidence (highest first). For each, include the common name, scientific name, \
          your confidence level, a short summary of the species, and a care profile with typical \
-         care requirements. {lang_instruction}"
+         care requirements. \
+         If the photo does not show a plant, set \"rejected\" to true, provide a brief reason \
+         in \"rejected_reason\", and leave \"suggestions\" as an empty array. \
+         {lang_instruction}"
     )
 }
 
@@ -528,5 +531,13 @@ mod tests {
     fn locale_instruction_unknown_locale() {
         let result = locale_instruction("fr");
         assert!(result.contains("fr"));
+    }
+
+    #[test]
+    fn identify_prompt_includes_rejection_instruction() {
+        let prompt = build_identify_prompt("en");
+        assert!(prompt.contains("rejected"));
+        assert!(prompt.contains("rejected_reason"));
+        assert!(prompt.contains("does not show a plant"));
     }
 }

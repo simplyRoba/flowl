@@ -115,9 +115,11 @@ impl AiProvider for OpenAiProvider {
                             "suggestions": {
                                 "type": "array",
                                 "items": identify_item_schema
-                            }
+                            },
+                            "rejected": { "type": "boolean" },
+                            "rejected_reason": { "type": ["string", "null"] }
                         },
-                        "required": ["suggestions"],
+                        "required": ["suggestions", "rejected", "rejected_reason"],
                         "additionalProperties": false
                     }
                 }
@@ -420,9 +422,11 @@ mod tests {
                             "suggestions": {
                                 "type": "array",
                                 "items": identify_item_schema
-                            }
+                            },
+                            "rejected": { "type": "boolean" },
+                            "rejected_reason": { "type": ["string", "null"] }
                         },
-                        "required": ["suggestions"],
+                        "required": ["suggestions", "rejected", "rejected_reason"],
                         "additionalProperties": false
                     }
                 }
@@ -445,6 +449,12 @@ mod tests {
         let schema = &body["response_format"]["json_schema"]["schema"];
         assert_eq!(schema["properties"]["suggestions"]["type"], "array");
         assert!(schema["properties"]["suggestions"]["items"].is_object());
+
+        // Schema includes rejected fields
+        assert_eq!(schema["properties"]["rejected"]["type"], "boolean");
+        let required = schema["required"].as_array().unwrap();
+        assert!(required.contains(&json!("rejected")));
+        assert!(required.contains(&json!("rejected_reason")));
 
         assert_eq!(body["messages"][0]["role"], "user");
 

@@ -413,6 +413,7 @@ export const es: Translations = {
     AI_STREAM_ERROR: "Respuesta de IA interrumpida",
     AI_INVALID_IMAGE: "Datos de imagen no válidos",
     AI_HISTORY_EMPTY: "El historial de chat está vacío",
+    AI_IDENTIFY_NOT_A_PLANT: "La foto no parece contener una planta",
     AI_RATE_LIMITED: "Demasiadas solicitudes de IA, por favor espera",
     MQTT_DISABLED: "MQTT está desactivado",
     MQTT_UNAVAILABLE: "MQTT no está conectado",

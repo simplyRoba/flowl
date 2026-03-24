@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import IdentifyPanel from "../../lib/components/IdentifyPanel.svelte";
+import { ApiError } from "$lib/api";
 import type { IdentifyResult } from "$lib/api";
 
 const mockIdentifyPlant = vi.fn();
@@ -315,6 +316,29 @@ describe("IdentifyPanel", () => {
 
       await waitFor(() => {
         expect(screen.getByText("Monstera deliciosa")).toBeTruthy();
+      });
+    });
+  });
+
+  describe("not-a-plant error", () => {
+    it("shows localized not-a-plant message when AI rejects photo", async () => {
+      mockIdentifyPlant.mockRejectedValue(
+        new ApiError(
+          422,
+          "AI_IDENTIFY_NOT_A_PLANT",
+          "The photo does not appear to contain a plant",
+        ),
+      );
+      renderPanel();
+      const user = userEvent.setup();
+
+      await user.click(screen.getByText("Identify Plant"));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("The photo does not appear to contain a plant"),
+        ).toBeTruthy();
+        expect(screen.getByText("Retry")).toBeTruthy();
       });
     });
   });

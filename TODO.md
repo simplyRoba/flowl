@@ -3,6 +3,7 @@
 ## PWA Level 2 — Offline & Install
 
 ### Service Worker & Offline Data
+
 - Add a service worker for asset caching (SvelteKit has built-in `src/service-worker.ts` support)
 - Cache strategy: cache-first for static assets (JS, CSS, images), network-first for API calls
 - Offline fallback page when network is unavailable
@@ -23,8 +24,3 @@
 ## Accessibility
 
 - Run Lighthouse accessibility audit on each page and fix flagged issues
-
-## AI — Identify Improvements
-
-- Allow AI to report "not a plant" — the strict JSON schema forces the AI to always return plant suggestions, even for non-plant photos. Add an optional error/message field so the AI can decline identification.
-

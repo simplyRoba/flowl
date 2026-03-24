@@ -23,6 +23,10 @@ pub struct CareProfile {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct IdentifyResponse {
     pub suggestions: Vec<IdentifyResult>,
+    #[serde(default)]
+    pub rejected: Option<bool>,
+    #[serde(default)]
+    pub rejected_reason: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -139,6 +143,8 @@ mod tests {
                     care_profile: None,
                 },
             ],
+            rejected: None,
+            rejected_reason: None,
         };
 
         let json = serde_json::to_value(&resp).unwrap();
@@ -146,6 +152,54 @@ mod tests {
         assert_eq!(suggestions.len(), 2);
         assert_eq!(suggestions[0]["common_name"], "Monstera");
         assert_eq!(suggestions[1]["scientific_name"], "Epipremnum aureum");
+    }
+
+    #[test]
+    fn deserialize_identify_response_rejected() {
+        let json = r#"{
+            "suggestions": [],
+            "rejected": true,
+            "rejected_reason": "This is a coffee mug"
+        }"#;
+
+        let resp: IdentifyResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(resp.rejected, Some(true));
+        assert_eq!(
+            resp.rejected_reason.as_deref(),
+            Some("This is a coffee mug")
+        );
+        assert!(resp.suggestions.is_empty());
+    }
+
+    #[test]
+    fn deserialize_identify_response_not_rejected() {
+        let json = r#"{
+            "suggestions": [
+                { "common_name": "Monstera", "scientific_name": "Monstera deliciosa" }
+            ],
+            "rejected": false,
+            "rejected_reason": null
+        }"#;
+
+        let resp: IdentifyResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(resp.rejected, Some(false));
+        assert!(resp.rejected_reason.is_none());
+        assert_eq!(resp.suggestions.len(), 1);
+    }
+
+    #[test]
+    fn deserialize_identify_response_without_rejected_fields() {
+        // Backward compat: older AI responses without rejected fields
+        let json = r#"{
+            "suggestions": [
+                { "common_name": "Fern", "scientific_name": "Nephrolepis" }
+            ]
+        }"#;
+
+        let resp: IdentifyResponse = serde_json::from_str(json).unwrap();
+        assert!(resp.rejected.is_none());
+        assert!(resp.rejected_reason.is_none());
+        assert_eq!(resp.suggestions.len(), 1);
     }
 
     #[test]

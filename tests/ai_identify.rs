@@ -37,6 +37,8 @@ impl AiProvider for MockAiProvider {
                     care_profile: None,
                 },
             ],
+            rejected: Some(false),
+            rejected_reason: None,
         })
     }
 
@@ -351,4 +353,83 @@ async fn identify_returns_429_when_rate_limited() {
 
     let body = common::body_json(response).await;
     assert_eq!(body["code"], "AI_RATE_LIMITED");
+}
+
+struct RejectingAiProvider;
+
+#[async_trait]
+impl AiProvider for RejectingAiProvider {
+    async fn identify(
+        &self,
+        _images: &[&[u8]],
+        _locale: &str,
+    ) -> Result<IdentifyResponse, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(IdentifyResponse {
+            suggestions: vec![],
+            rejected: Some(true),
+            rejected_reason: Some("This is a coffee mug".to_string()),
+        })
+    }
+
+    async fn chat(
+        &self,
+        _system_prompt: &str,
+        _messages: &[ChatMessage],
+        _image: Option<&[u8]>,
+        _locale: &str,
+    ) -> Result<ChatResponseStream, Box<dyn std::error::Error + Send + Sync>> {
+        unimplemented!()
+    }
+
+    async fn summarize(
+        &self,
+        _system_prompt: &str,
+        _messages: &[ChatMessage],
+        _locale: &str,
+    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        unimplemented!()
+    }
+}
+
+#[tokio::test]
+async fn identify_returns_422_when_ai_rejects_non_plant() {
+    let (app, _dir) = test_app_with_provider(Arc::new(RejectingAiProvider)).await;
+
+    let (content_type, body) = multipart_body(&[("photos", "image/jpeg", &[0xFF, 0xD8, 0xFF])]);
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/ai/identify")
+        .header("content-type", content_type)
+        .body(Body::from(body))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+
+    let body = common::body_json(response).await;
+    assert_eq!(body["code"], "AI_IDENTIFY_NOT_A_PLANT");
+    assert!(body["message"].as_str().is_some());
+}
+
+#[tokio::test]
+async fn identify_returns_200_when_ai_accepts_plant() {
+    let (app, _dir) = test_app_mock().await;
+
+    let (content_type, body) = multipart_body(&[("photos", "image/jpeg", &[0xFF, 0xD8, 0xFF])]);
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/ai/identify")
+        .header("content-type", content_type)
+        .body(Body::from(body))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = common::body_json(response).await;
+    let suggestions = body["suggestions"].as_array().unwrap();
+    assert_eq!(suggestions.len(), 2);
+    assert_eq!(suggestions[0]["common_name"], "Monstera");
 }

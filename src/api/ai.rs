@@ -107,6 +107,14 @@ pub async fn identify_plant(
         ApiError::InternalError("AI_PROVIDER_FAILED")
     })?;
 
+    if result.rejected == Some(true) {
+        warn!(
+            rejected_reason = result.rejected_reason.as_deref().unwrap_or("unknown"),
+            "AI rejected identification: not a plant"
+        );
+        return Err(ApiError::Validation("AI_IDENTIFY_NOT_A_PLANT"));
+    }
+
     debug!(
         suggestion_count = result.suggestions.len(),
         first_name = result.suggestions.first().map_or("—", |s| s.common_name.as_str()),
