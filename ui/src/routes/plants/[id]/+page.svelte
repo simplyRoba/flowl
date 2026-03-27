@@ -351,7 +351,11 @@
         backHref={backHref as BackPath}
         backLabel={$translations.common.back}
       >
-        <a href={resolve(`/plants/${plant.id}/edit`)} class="btn btn-icon" aria-label={$translations.plant.editPlant}>
+        <a
+          href={resolve(`/plants/${plant.id}/edit`)}
+          class="btn btn-icon"
+          aria-label={$translations.plant.editPlant}
+        >
           <Pencil size={16} />
         </a>
         <button
