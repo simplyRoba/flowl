@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/simplyRoba/flowl/compare/v1.3.2...v1.4.0) (2026-03-27)
+
+
+### Features
+
+* **pwa:** add service worker with static asset precaching and offline fallback ([f52a523](https://github.com/simplyRoba/flowl/commit/f52a523d242b6b8f64db2718d2dd311986aea0c9))
+
 ## [1.3.2](https://github.com/simplyRoba/flowl/compare/v1.3.1...v1.3.2) (2026-03-27)
 
 
