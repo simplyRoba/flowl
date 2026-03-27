@@ -68,7 +68,7 @@
       var(--color-success) 15%,
       var(--color-surface)
     );
-    color: var(--color-success);
+    color: var(--color-success-text);
   }
 
   .status-ok .status-dot {
@@ -81,7 +81,7 @@
       var(--color-warning) 15%,
       var(--color-surface)
     );
-    color: var(--color-warning);
+    color: var(--color-warning-text);
   }
 
   .status-due .status-dot {
@@ -94,7 +94,7 @@
       var(--color-danger) 15%,
       var(--color-surface)
     );
-    color: var(--color-danger);
+    color: var(--color-danger-text);
   }
 
   .status-overdue .status-dot {

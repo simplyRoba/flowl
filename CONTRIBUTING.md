@@ -113,8 +113,11 @@ Warm, organic, calm. The UI should feel like a plant journal — not a corporate
 | Text Muted  | Driftwood    | `#736556` | Secondary text, captions            |
 | Border      | Sand         | `#E5DDD3` | Dividers, card borders              |
 | Success     | Sprout       | `#7AB87A` | Healthy, watered, ok states         |
+| Success Text| Clover       | `#3D7A3D` | Status badge text (ok)              |
 | Warning     | Amber        | `#D4A843` | Due soon                            |
+| Warning Text| Tawny        | `#8A6D1B` | Status badge text (due)             |
 | Danger      | Dry          | `#C45B5B` | Overdue, errors                     |
+| Danger Text | Rust         | `#9E3A3A` | Status badge text (overdue)         |
 
 #### Dark Mode
 
@@ -131,8 +134,11 @@ Warm, organic, calm. The UI should feel like a plant journal — not a corporate
 | Text Muted  | Sandstone    | `#B5A899` | Secondary text                      |
 | Border      | Root         | `#3A3228` | Dividers, card borders              |
 | Success     | Leaf         | `#8BC48B` | Healthy states                      |
+| Success Text| Fern         | `#A8DCA8` | Status badge text (ok)              |
 | Warning     | Honey        | `#D4B054` | Due soon                            |
+| Warning Text| Wheat        | `#E0C46E` | Status badge text (due)             |
 | Danger      | Wilt         | `#D47878` | Overdue, errors                     |
+| Danger Text | Coral        | `#E89A9A` | Status badge text (overdue)         |
 
 ### Typography
 
