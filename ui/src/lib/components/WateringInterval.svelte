@@ -72,6 +72,7 @@
       <button
         type="button"
         class="btn btn-icon stepper-btn"
+        aria-label={$translations.form.decreaseDays}
         onclick={decrement}
         disabled={value <= 1}
       >
@@ -81,6 +82,7 @@
         class="stepper-value"
         type="number"
         min="1"
+        aria-label={$translations.form.wateringDays}
         {value}
         oninput={(e) => {
           const next = Number((e.currentTarget as HTMLInputElement).value);
@@ -90,6 +92,7 @@
       <button
         type="button"
         class="btn btn-icon stepper-btn"
+        aria-label={$translations.form.increaseDays}
         onclick={increment}
       >
         <Plus size={16} />
