@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.2](https://github.com/simplyRoba/flowl/compare/v1.3.1...v1.3.2) (2026-03-27)
+
+
+### Bug Fixes
+
+* add aria-labels to icon buttons, edit link, and stepper input ([03d36cc](https://github.com/simplyRoba/flowl/commit/03d36cc2ae6b6a069b2c1588bb077efee80a47da))
+* add dedicated status badge text colors for WCAG AA contrast ([0fca72b](https://github.com/simplyRoba/flowl/commit/0fca72b3e81c44485c40c7030fab26833e17549c))
+* darken --color-text-muted for WCAG AA contrast compliance ([421d59d](https://github.com/simplyRoba/flowl/commit/421d59d20d2331970463cba84671b1d086110beb))
+* **deps:** bump uuid from 1.22.0 to 1.23.0 ([dc90c29](https://github.com/simplyRoba/flowl/commit/dc90c29299ca1113e503cf6715afefd47262e7e6))
+* **deps:** bump vite from 8.0.2 to 8.0.3 in /ui ([36ac45a](https://github.com/simplyRoba/flowl/commit/36ac45aedaa93b6167e29c09b0b23b4355368503))
+* **deps:** bump vitest from 4.1.1 to 4.1.2 in /ui ([6ed9f59](https://github.com/simplyRoba/flowl/commit/6ed9f597577cc258fa8b235ef45625d61a7ab683))
+
 ## [1.3.1](https://github.com/simplyRoba/flowl/compare/v1.3.0...v1.3.1) (2026-03-24)
 
 
