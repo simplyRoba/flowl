@@ -110,7 +110,7 @@ Warm, organic, calm. The UI should feel like a plant journal — not a corporate
 | Water       | Stream       | `#5B9BC4` | Watering indicators, water actions  |
 | AI          | Iris         | `#9B7ED8` | AI actions, assistant states        |
 | Text        | Bark         | `#2C2418` | Primary text                        |
-| Text Muted  | Driftwood    | `#8C7E6E` | Secondary text, captions            |
+| Text Muted  | Driftwood    | `#736556` | Secondary text, captions            |
 | Border      | Sand         | `#E5DDD3` | Dividers, card borders              |
 | Success     | Sprout       | `#7AB87A` | Healthy, watered, ok states         |
 | Warning     | Amber        | `#D4A843` | Due soon                            |
@@ -128,7 +128,7 @@ Warm, organic, calm. The UI should feel like a plant journal — not a corporate
 | Water       | Sky          | `#78B4D8` | Watering indicators                 |
 | AI          | Lilac        | `#B89EE8` | AI actions, assistant states        |
 | Text        | Parchment    | `#EDE6DB` | Primary text                        |
-| Text Muted  | Sandstone    | `#9C8E7E` | Secondary text                      |
+| Text Muted  | Sandstone    | `#B5A899` | Secondary text                      |
 | Border      | Root         | `#3A3228` | Dividers, card borders              |
 | Success     | Leaf         | `#8BC48B` | Healthy states                      |
 | Warning     | Honey        | `#D4B054` | Due soon                            |

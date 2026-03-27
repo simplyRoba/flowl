@@ -365,7 +365,7 @@
       var(--color-background)
     );
     --color-text: #2c2418;
-    --color-text-muted: #8c7e6e;
+    --color-text-muted: #736556;
     --color-primary: #6b8f71;
     --color-primary-tint: color-mix(
       in srgb,
@@ -447,7 +447,7 @@
       var(--color-background)
     );
     --color-text: #ede6db;
-    --color-text-muted: #9c8e7e;
+    --color-text-muted: #b5a899;
     --color-primary: #8bb592;
     --color-primary-tint: color-mix(
       in srgb,
