@@ -8,6 +8,7 @@
   import { initTheme, isThemePreference } from "$lib/stores/theme";
   import { initLocale, isLocale, translations } from "$lib/stores/locale";
   import { fetchSettings } from "$lib/api";
+  import { pushNotification } from "$lib/stores/notifications";
   import {
     calculateContentOffset,
     calculatePullOffset,
@@ -31,6 +32,7 @@
   import "$lib/styles/skeletons.css";
 
   let { children } = $props();
+  let isOffline = $state(false);
   let isStandalonePwa = $state(false);
   let isTouchCapable = $state(false);
   let pullOffset = $state(0);
@@ -257,6 +259,50 @@
     };
   });
 
+  onMount(() => {
+    isOffline = !navigator.onLine;
+
+    const handleOnline = () => {
+      isOffline = false;
+    };
+    const handleOffline = () => {
+      isOffline = true;
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    if ("serviceWorker" in navigator) {
+      const hadController = !!navigator.serviceWorker.controller;
+
+      navigator.serviceWorker.register("/service-worker.js").catch(() => {
+        // Registration failed — no action needed, SW is progressive enhancement.
+      });
+
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!hadController) {
+          return;
+        }
+
+        pushNotification({
+          variant: "info",
+          message: $translations.notifications.updateAvailable,
+          action: {
+            label: $translations.notifications.reload,
+            onClick: () => {
+              window.location.reload();
+            },
+          },
+        });
+      });
+    }
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  });
+
   $effect(() => {
     const _pathname = page.url.pathname;
 
@@ -332,7 +378,10 @@
         href={resolve("/settings")}
         class="nav-item bottom"
         class:active={isActive("/settings")}
-        ><Settings size={20} /><span class="nav-label"
+        ><Settings size={20} />{#if isOffline}<span
+            class="offline-dot"
+            aria-label="offline"
+          ></span>{/if}<span class="nav-label"
           >{$translations.nav.settings}</span
         ></a
       >
@@ -560,6 +609,7 @@
   }
 
   .nav-item {
+    position: relative;
     width: 44px;
     height: 44px;
     display: flex;
@@ -585,6 +635,16 @@
 
   .nav-item.bottom {
     margin-top: auto;
+  }
+
+  .offline-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-warning);
   }
 
   .nav-label {

@@ -377,6 +377,9 @@ export const es: Translations = {
     },
     locationDeleted: 'Ubicación "{name}" eliminada',
     plantDeleted: 'Planta "{name}" eliminada',
+    updateAvailable:
+      "Hay una nueva versión disponible. Recarga para actualizar.",
+    reload: "Recargar",
   },
   errorCode: {
     INTERNAL_ERROR: "Algo salió mal. Por favor, inténtalo de nuevo.",

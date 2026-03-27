@@ -380,6 +380,9 @@ export const de: Translations = {
     },
     locationDeleted: 'Standort "{name}" gelöscht',
     plantDeleted: 'Pflanze "{name}" gelöscht',
+    updateAvailable:
+      "Eine neue Version ist verfügbar. Neu laden, um zu aktualisieren.",
+    reload: "Neu laden",
   },
   errorCode: {
     INTERNAL_ERROR: "Etwas ist schiefgelaufen. Bitte versuche es erneut.",

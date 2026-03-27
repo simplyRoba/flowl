@@ -1,7 +1,14 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as pullToRefresh from "$lib/pull-to-refresh";
+import * as notifications from "$lib/stores/notifications";
 
 import LayoutHarness from "./LayoutHarness.svelte";
 
@@ -126,4 +133,150 @@ describe("app layout pull-to-refresh", () => {
       expect(reloadSpy).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("app layout offline indicator", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUrl = new URL("http://localhost/");
+    mockFetchSettings.mockResolvedValue({ theme: "system", locale: "en" });
+    mockMatchMedia({ standalone: false, coarsePointer: false });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("shows offline dot when navigator.onLine is false", async () => {
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+
+    render(LayoutHarness);
+
+    await waitFor(() => {
+      expect(document.querySelector(".offline-dot")).not.toBeNull();
+    });
+  });
+
+  it("does not show offline dot when navigator.onLine is true", async () => {
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      value: true,
+    });
+
+    render(LayoutHarness);
+
+    await waitFor(() => {
+      expect(document.querySelector(".offline-dot")).toBeNull();
+    });
+  });
+
+  it("shows offline dot when offline event fires", async () => {
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      value: true,
+    });
+
+    render(LayoutHarness);
+
+    expect(document.querySelector(".offline-dot")).toBeNull();
+
+    window.dispatchEvent(new Event("offline"));
+
+    await waitFor(() => {
+      expect(document.querySelector(".offline-dot")).not.toBeNull();
+    });
+  });
+
+  it("hides offline dot when online event fires", async () => {
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+
+    render(LayoutHarness);
+
+    await waitFor(() => {
+      expect(document.querySelector(".offline-dot")).not.toBeNull();
+    });
+
+    window.dispatchEvent(new Event("online"));
+
+    await waitFor(() => {
+      expect(document.querySelector(".offline-dot")).toBeNull();
+    });
+  });
+});
+
+describe("app layout service worker update notification", () => {
+  let controllerChangeHandler: (() => void) | null = null;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    controllerChangeHandler = null;
+    mockUrl = new URL("http://localhost/");
+    mockFetchSettings.mockResolvedValue({ theme: "system", locale: "en" });
+    mockMatchMedia({ standalone: false, coarsePointer: false });
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      value: true,
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  function mockServiceWorker(hasController: boolean) {
+    const sw = {
+      register: vi.fn().mockResolvedValue(undefined),
+      controller: hasController ? {} : null,
+      addEventListener: vi.fn((event: string, handler: () => void) => {
+        if (event === "controllerchange") {
+          controllerChangeHandler = handler;
+        }
+      }),
+    };
+
+    Object.defineProperty(window.navigator, "serviceWorker", {
+      configurable: true,
+      value: sw,
+    });
+
+    return sw;
+  }
+
+  it("shows update toast on controllerchange when previous controller existed", async () => {
+    mockServiceWorker(true);
+    const pushSpy = vi.spyOn(notifications, "pushNotification");
+
+    render(LayoutHarness);
+
+    expect(controllerChangeHandler).not.toBeNull();
+    controllerChangeHandler!();
+
+    await waitFor(() => {
+      expect(pushSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "info",
+        }),
+      );
+    });
+  });
+
+  it("does not show update toast on controllerchange for first registration", async () => {
+    mockServiceWorker(false);
+    const pushSpy = vi.spyOn(notifications, "pushNotification");
+
+    render(LayoutHarness);
+
+    expect(controllerChangeHandler).not.toBeNull();
+    controllerChangeHandler!();
+
+    expect(pushSpy).not.toHaveBeenCalled();
+  });
 });

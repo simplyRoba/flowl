@@ -373,6 +373,8 @@ const en = {
     },
     locationDeleted: 'Location "{name}" deleted',
     plantDeleted: 'Plant "{name}" deleted',
+    updateAvailable: "A new version is available. Reload to update.",
+    reload: "Reload",
   },
   errorCode: {
     INTERNAL_ERROR: "Something went wrong. Please try again.",
