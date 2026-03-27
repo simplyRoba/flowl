@@ -20,7 +20,3 @@
 
 - Add Playwright or Cypress for full-stack E2E testing
 - Cover critical user flows: plant CRUD, care events, watering status, AI chat, import/export
-
-## Accessibility
-
-- Run Lighthouse accessibility audit on each page and fix flagged issues
