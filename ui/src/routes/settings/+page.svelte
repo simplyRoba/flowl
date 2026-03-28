@@ -391,7 +391,9 @@
     </div>
   </section>
 
-  {#if !$isOffline || $locations.length > 0}
+  {#if $isOffline}
+    <OfflineMessage />
+  {:else}
     <section class="section settings-section">
       <h2 class="section-title">
         <MapPin size={14} />
@@ -490,11 +492,7 @@
     </section>
   {/if}
 
-  {#if $isOffline && !mqttStatus && !aiStatus && !stats && !appInfo}
-    <OfflineMessage />
-  {/if}
-
-  {#if mqttStatus}
+  {#if !$isOffline && mqttStatus}
     <section class="section settings-section">
       <h2 class="section-title">
         <Radio size={14} />
@@ -552,7 +550,7 @@
     </section>
   {/if}
 
-  {#if aiStatus}
+  {#if !$isOffline && aiStatus}
     <section class="section settings-section">
       <h2 class="section-title">
         <Sparkles size={14} />
@@ -590,7 +588,7 @@
     </section>
   {/if}
 
-  {#if stats}
+  {#if !$isOffline && stats}
     <section class="section settings-section">
       <h2 class="section-title">
         <Database size={14} />
@@ -650,7 +648,7 @@
     </section>
   {/if}
 
-  {#if appInfo}
+  {#if !$isOffline && appInfo}
     <section class="section settings-section">
       <h2 class="section-title">
         <Info size={14} />

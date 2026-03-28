@@ -797,18 +797,8 @@ describe("settings MQTT repair confirmation", () => {
 });
 
 describe("settings offline message", () => {
-  it("shows offline message when offline and data sections fail to load", async () => {
+  it("shows offline message and hides all API sections when offline", async () => {
     isOffline.set(true);
-
-    const fetchStatsSpy = vi
-      .spyOn(api, "fetchStats")
-      .mockRejectedValue(new Error("offline"));
-    const fetchInfoSpy = vi
-      .spyOn(api, "fetchAppInfo")
-      .mockRejectedValue(new Error("offline"));
-    const fetchMqttSpy = vi
-      .spyOn(api, "fetchMqttStatus")
-      .mockRejectedValue(new Error("offline"));
 
     render(Page);
 
@@ -824,8 +814,53 @@ describe("settings offline message", () => {
     expect(screen.getByText("Appearance")).toBeTruthy();
     expect(screen.getByText("Language")).toBeTruthy();
 
-    // Locations section should be hidden when offline with no cached data
+    // All API-dependent sections should be hidden
     expect(screen.queryByText("Locations")).toBeNull();
+    expect(screen.queryByText("MQTT")).toBeNull();
+    expect(screen.queryByText("Data")).toBeNull();
+    expect(screen.queryByText("About")).toBeNull();
+  });
+
+  it("hides stale API sections when transitioning to offline", async () => {
+    isOffline.set(false);
+
+    // Load with data available
+    const fetchStatsSpy = vi.spyOn(api, "fetchStats").mockResolvedValue({
+      plant_count: 3,
+      photo_count: 1,
+      care_event_count: 5,
+      location_count: 2,
+    });
+    const fetchInfoSpy = vi.spyOn(api, "fetchAppInfo").mockResolvedValue({
+      version: "1.0.0",
+      repository: "https://github.com/test",
+      license: "MIT",
+    });
+    const fetchMqttSpy = vi.spyOn(api, "fetchMqttStatus").mockResolvedValue({
+      status: "connected",
+      broker: "localhost",
+      topic_prefix: "flowl",
+    });
+
+    render(Page);
+
+    await waitFor(() => {
+      expect(screen.getByText("Data")).toBeTruthy();
+      expect(screen.getByText("About")).toBeTruthy();
+    });
+
+    // Go offline - stale sections should disappear
+    isOffline.set(true);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "You're offline. Connect to the internet to view this page.",
+        ),
+      ).toBeTruthy();
+      expect(screen.queryByText("Data")).toBeNull();
+      expect(screen.queryByText("About")).toBeNull();
+    });
 
     fetchStatsSpy.mockRestore();
     fetchInfoSpy.mockRestore();
