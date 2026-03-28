@@ -378,10 +378,10 @@
         href={resolve("/settings")}
         class="nav-item bottom"
         class:active={isActive("/settings")}
-        ><Settings size={20} />{#if isOffline}<span
-            class="offline-dot"
-            aria-label="offline"
-          ></span>{/if}<span class="nav-label"
+        ><span class="icon-badge"><Settings size={20} />{#if isOffline}<span
+              class="offline-dot"
+              aria-label="offline"
+            ></span>{/if}</span><span class="nav-label"
           >{$translations.nav.settings}</span
         ></a
       >
@@ -637,10 +637,15 @@
     margin-top: auto;
   }
 
+  .icon-badge {
+    position: relative;
+    display: inline-flex;
+  }
+
   .offline-dot {
     position: absolute;
-    top: 6px;
-    right: 6px;
+    top: -2px;
+    right: -4px;
     width: 8px;
     height: 8px;
     border-radius: 50%;
