@@ -390,100 +390,104 @@
     </div>
   </section>
 
-  <section class="section settings-section">
-    <h2 class="section-title">
-      <MapPin size={14} />
-      {$translations.settings.locations}
-    </h2>
+  {#if !$isOffline || $locations.length > 0}
+    <section class="section settings-section">
+      <h2 class="section-title">
+        <MapPin size={14} />
+        {$translations.settings.locations}
+      </h2>
 
-    {#if $locationsError}
-      <p class="error">{$locationsError}</p>
-    {:else if $locations.length === 0}
-      <p class="empty">{$translations.settings.noLocations}</p>
-    {:else}
-      <ul class="location-list">
-        {#each $locations as location (location.id)}
-          <li class="location-item">
-            {#if editingId === location.id}
-              <div class="edit-group">
-                <div class="edit-row">
-                  <input
-                    class="input edit-input"
-                    class:input-error={editError}
-                    type="text"
-                    bind:value={editValue}
-                    onblur={() => commitEdit(location.id, location.name)}
-                    onkeydown={handleEditKeydown}
-                    oninput={() => {
-                      editError = "";
-                    }}
-                  />
+      {#if $locationsError}
+        <p class="error">{$locationsError}</p>
+      {:else if $locations.length === 0}
+        <p class="empty">{$translations.settings.noLocations}</p>
+      {:else}
+        <ul class="location-list">
+          {#each $locations as location (location.id)}
+            <li class="location-item">
+              {#if editingId === location.id}
+                <div class="edit-group">
+                  <div class="edit-row">
+                    <input
+                      class="input edit-input"
+                      class:input-error={editError}
+                      type="text"
+                      bind:value={editValue}
+                      onblur={() => commitEdit(location.id, location.name)}
+                      onkeydown={handleEditKeydown}
+                      oninput={() => {
+                        editError = "";
+                      }}
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-icon"
+                      aria-label={$translations.common.save}
+                      onmousedown={(e) => {
+                        e.preventDefault();
+                        commitEdit(location.id, location.name);
+                      }}
+                    >
+                      <Check size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-icon"
+                      aria-label={$translations.common.cancel}
+                      onmousedown={(e) => {
+                        e.preventDefault();
+                        cancelEdit(
+                          document.querySelector<HTMLInputElement>(
+                            ".edit-input",
+                          ),
+                        );
+                      }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  {#if editError}
+                    <span class="field-error">{editError}</span>
+                  {/if}
+                </div>
+              {:else}
+                <div class="location-info">
+                  <span class="location-name">{location.name}</span>
+                  {#if location.plant_count > 0}
+                    <span class="plant-count"
+                      >{plural(
+                        $translations.settings.plantCount,
+                        location.plant_count,
+                      )}</span
+                    >
+                  {/if}
+                </div>
+                <div class="location-actions">
                   <button
-                    type="button"
                     class="btn btn-icon"
-                    aria-label={$translations.common.save}
-                    onmousedown={(e) => {
-                      e.preventDefault();
-                      commitEdit(location.id, location.name);
-                    }}
+                    onclick={() => startEditing(location.id, location.name)}
                   >
-                    <Check size={16} />
+                    <Pencil size={16} />
                   </button>
                   <button
-                    type="button"
-                    class="btn btn-icon"
-                    aria-label={$translations.common.cancel}
-                    onmousedown={(e) => {
-                      e.preventDefault();
-                      cancelEdit(
-                        document.querySelector<HTMLInputElement>(".edit-input"),
-                      );
-                    }}
+                    class="btn btn-icon btn-danger"
+                    onclick={() =>
+                      handleDelete(
+                        location.id,
+                        location.name,
+                        location.plant_count,
+                      )}
                   >
-                    <X size={16} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
-                {#if editError}
-                  <span class="field-error">{editError}</span>
-                {/if}
-              </div>
-            {:else}
-              <div class="location-info">
-                <span class="location-name">{location.name}</span>
-                {#if location.plant_count > 0}
-                  <span class="plant-count"
-                    >{plural(
-                      $translations.settings.plantCount,
-                      location.plant_count,
-                    )}</span
-                  >
-                {/if}
-              </div>
-              <div class="location-actions">
-                <button
-                  class="btn btn-icon"
-                  onclick={() => startEditing(location.id, location.name)}
-                >
-                  <Pencil size={16} />
-                </button>
-                <button
-                  class="btn btn-icon btn-danger"
-                  onclick={() =>
-                    handleDelete(
-                      location.id,
-                      location.name,
-                      location.plant_count,
-                    )}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            {/if}
-          </li>
-        {/each}
-      </ul>
-    {/if}
-  </section>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </section>
+  {/if}
 
   {#if $isOffline && !mqttStatus && !aiStatus && !stats && !appInfo}
     <p class="offline-message">{$translations.common.offlineMessage}</p>

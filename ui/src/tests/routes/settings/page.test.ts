@@ -824,6 +824,9 @@ describe("settings offline message", () => {
     expect(screen.getByText("Appearance")).toBeTruthy();
     expect(screen.getByText("Language")).toBeTruthy();
 
+    // Locations section should be hidden when offline with no cached data
+    expect(screen.queryByText("Locations")).toBeNull();
+
     fetchStatsSpy.mockRestore();
     fetchInfoSpy.mockRestore();
     fetchMqttSpy.mockRestore();
