@@ -33,6 +33,7 @@
   import { careError } from "$lib/stores/care";
   import { resolveError } from "$lib/stores/errors";
   import { translations } from "$lib/stores/locale";
+  import { isOffline } from "$lib/stores/network";
   import { pushNotification } from "$lib/stores/notifications";
   import {
     deleteCareEvent,
@@ -354,7 +355,12 @@
         <a
           href={resolve(`/plants/${plant.id}/edit`)}
           class="btn btn-icon"
+          class:disabled={$isOffline}
           aria-label={$translations.plant.editPlant}
+          aria-disabled={$isOffline}
+          onclick={(e) => {
+            if ($isOffline) e.preventDefault();
+          }}
         >
           <Pencil size={16} />
         </a>
@@ -362,7 +368,7 @@
           class="btn btn-icon btn-danger"
           aria-label={$translations.plant.deletePlant}
           onclick={handleDelete}
-          disabled={deleting}
+          disabled={$isOffline || deleting}
         >
           <Trash2 size={16} />
         </button>
@@ -421,7 +427,7 @@
             <button
               class="btn btn-water btn-lg"
               onclick={handleWater}
-              disabled={watering}
+              disabled={$isOffline || watering}
             >
               <Droplet size={16} />
               {watering
@@ -432,6 +438,7 @@
               <button
                 class="btn btn-ai btn-lg"
                 onclick={() => (chatOpen = true)}
+                disabled={$isOffline}
               >
                 <Sparkles size={16} />
                 {$translations.chat.askAi}
@@ -632,7 +639,8 @@
                             <button
                               class="btn btn-ghost event-delete"
                               onclick={() => handleEventDelete(event)}
-                              disabled={deletingEventId === event.id}
+                              disabled={$isOffline ||
+                                deletingEventId === event.id}
                               aria-label={$translations.plant.deleteLogEntry}
                             >
                               <Trash2 size={16} />
@@ -694,7 +702,7 @@
                       <button
                         class="btn btn-ghost event-delete"
                         onclick={() => handleEventDelete(item)}
-                        disabled={deletingEventId === item.id}
+                        disabled={$isOffline || deletingEventId === item.id}
                         aria-label={$translations.plant.deleteLogEntry}
                       >
                         <Trash2 size={16} />
@@ -726,7 +734,11 @@
               }}
             />
           {:else}
-            <button class="btn btn-ghost" onclick={() => (showLogForm = true)}>
+            <button
+              class="btn btn-ghost"
+              onclick={() => (showLogForm = true)}
+              disabled={$isOffline}
+            >
               {$translations.plant.addLogEntry}
             </button>
           {/if}

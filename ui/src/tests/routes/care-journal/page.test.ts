@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../../routes/care-journal/+page.svelte";
 import { ApiError, type CareEvent } from "$lib/api";
+import { isOffline } from "$lib/stores/network";
 
 // jsdom doesn't implement HTMLDialogElement.showModal/close
 HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -57,6 +58,7 @@ function makeEvent(overrides: Partial<CareEvent> = {}): CareEvent {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  isOffline.set(false);
   mockUrl = new URL("http://localhost/care-journal");
   mockFetchAllCareEvents.mockResolvedValue({ events: [], has_more: false });
 });
@@ -359,6 +361,34 @@ describe("care journal errors", () => {
       expect(
         view.getByText("Something went wrong. Please try again."),
       ).toBeTruthy();
+    });
+  });
+});
+
+describe("care journal offline message", () => {
+  it("shows offline message when fetch fails and offline", async () => {
+    isOffline.set(true);
+    mockFetchAllCareEvents.mockRejectedValue(new Error("fetch failed"));
+
+    const view = render(Page);
+
+    await vi.waitFor(() => {
+      expect(
+        view.getByText(
+          "You're offline. Connect to the internet to view this page.",
+        ),
+      ).toBeTruthy();
+    });
+  });
+
+  it("shows generic error when fetch fails and online", async () => {
+    isOffline.set(false);
+    mockFetchAllCareEvents.mockRejectedValue(new Error("server error"));
+
+    const view = render(Page);
+
+    await vi.waitFor(() => {
+      expect(view.getByText("Failed to load care events")).toBeTruthy();
     });
   });
 });

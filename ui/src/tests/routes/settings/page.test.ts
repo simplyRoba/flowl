@@ -11,6 +11,7 @@ import {
   LOCALE_STORAGE_KEY,
 } from "$lib/stores/locale";
 import { locations, locationsError } from "$lib/stores/locations";
+import { isOffline } from "$lib/stores/network";
 import * as api from "$lib/api";
 
 // jsdom doesn't implement HTMLDialogElement.showModal/close
@@ -50,6 +51,7 @@ beforeEach(() => {
   setLocale("en");
   locations.set([]);
   locationsError.set(null);
+  isOffline.set(false);
   vi.clearAllMocks();
   mockLoadLocations.mockResolvedValue(undefined);
   Object.defineProperty(window, "matchMedia", {
@@ -791,5 +793,68 @@ describe("settings MQTT repair confirmation", () => {
 
     await new Promise((r) => setTimeout(r, 50));
     expect(repairSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("settings offline message", () => {
+  it("shows offline message when offline and data sections fail to load", async () => {
+    isOffline.set(true);
+
+    const fetchStatsSpy = vi
+      .spyOn(api, "fetchStats")
+      .mockRejectedValue(new Error("offline"));
+    const fetchInfoSpy = vi
+      .spyOn(api, "fetchAppInfo")
+      .mockRejectedValue(new Error("offline"));
+    const fetchMqttSpy = vi
+      .spyOn(api, "fetchMqttStatus")
+      .mockRejectedValue(new Error("offline"));
+
+    render(Page);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "You're offline. Connect to the internet to view this page.",
+        ),
+      ).toBeTruthy();
+    });
+
+    // Appearance and Language sections should still be present
+    expect(screen.getByText("Appearance")).toBeTruthy();
+    expect(screen.getByText("Language")).toBeTruthy();
+
+    fetchStatsSpy.mockRestore();
+    fetchInfoSpy.mockRestore();
+    fetchMqttSpy.mockRestore();
+  });
+
+  it("does not show offline message when online", async () => {
+    isOffline.set(false);
+
+    const fetchStatsSpy = vi
+      .spyOn(api, "fetchStats")
+      .mockRejectedValue(new Error("server error"));
+    const fetchInfoSpy = vi
+      .spyOn(api, "fetchAppInfo")
+      .mockRejectedValue(new Error("server error"));
+    const fetchMqttSpy = vi
+      .spyOn(api, "fetchMqttStatus")
+      .mockRejectedValue(new Error("server error"));
+
+    render(Page);
+
+    // Wait for all promises to settle
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(
+      screen.queryByText(
+        "You're offline. Connect to the internet to view this page.",
+      ),
+    ).toBeNull();
+
+    fetchStatsSpy.mockRestore();
+    fetchInfoSpy.mockRestore();
+    fetchMqttSpy.mockRestore();
   });
 });

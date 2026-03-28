@@ -21,6 +21,8 @@ export const de: Translations = {
     pullToRefresh: "Zum Aktualisieren ziehen",
     releaseToRefresh: "Loslassen zum Aktualisieren",
     refreshing: "Aktualisiere",
+    offlineMessage:
+      "Du bist offline. Verbinde dich mit dem Internet, um diese Seite anzuzeigen.",
   },
   dashboard: {
     myPlants: "Meine Pflanzen",

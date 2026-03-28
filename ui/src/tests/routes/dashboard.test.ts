@@ -28,6 +28,7 @@ vi.mock("$lib/stores/notifications", () => ({
 }));
 
 import { plants, plantsError } from "$lib/stores/plants";
+import { isOffline } from "$lib/stores/network";
 
 function makePlant(overrides: Partial<Plant> = {}): Plant {
   return {
@@ -58,6 +59,7 @@ function makePlant(overrides: Partial<Plant> = {}): Plant {
 beforeEach(() => {
   plants.set([]);
   plantsError.set(null);
+  isOffline.set(false);
   vi.clearAllMocks();
   mockWaterPlant.mockResolvedValue(null);
 });
@@ -491,6 +493,43 @@ describe("attention card water action", () => {
 
     await vi.waitFor(() => {
       expect(document.querySelectorAll(".attention-card-name").length).toBe(1);
+    });
+  });
+});
+
+describe("dashboard offline behavior", () => {
+  it("disables water button when offline", async () => {
+    plants.set([makePlant({ id: 1, name: "Fern", watering_status: "due" })]);
+    isOffline.set(true);
+    render(Page);
+
+    await vi.waitFor(() => {
+      const waterBtn = screen.getByRole("button", {
+        name: /Water/,
+      }) as HTMLButtonElement;
+      expect(waterBtn.disabled).toBe(true);
+    });
+  });
+
+  it("re-enables water button when back online", async () => {
+    plants.set([makePlant({ id: 1, name: "Fern", watering_status: "due" })]);
+    isOffline.set(true);
+    render(Page);
+
+    await vi.waitFor(() => {
+      const waterBtn = screen.getByRole("button", {
+        name: /Water/,
+      }) as HTMLButtonElement;
+      expect(waterBtn.disabled).toBe(true);
+    });
+
+    isOffline.set(false);
+
+    await vi.waitFor(() => {
+      const waterBtn = screen.getByRole("button", {
+        name: /Water/,
+      }) as HTMLButtonElement;
+      expect(waterBtn.disabled).toBe(false);
     });
   });
 });

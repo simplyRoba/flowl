@@ -10,6 +10,7 @@
   } from "$lib/stores/plants";
   import { pushNotification } from "$lib/stores/notifications";
   import { translations } from "$lib/stores/locale";
+  import { isOffline } from "$lib/stores/network";
   import { emojiToSvgPath } from "$lib/emoji";
   import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
   import StatusBadge from "$lib/components/StatusBadge.svelte";
@@ -186,7 +187,7 @@
               <div class="attention-card-actions">
                 <button
                   class="btn btn-water btn-sm"
-                  disabled={wateringIds.has(plant.id)}
+                  disabled={$isOffline || wateringIds.has(plant.id)}
                   onclick={() => handleWater(plant.id)}
                 >
                   <Droplet size={16} />

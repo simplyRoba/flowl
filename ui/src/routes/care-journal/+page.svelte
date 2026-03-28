@@ -21,6 +21,7 @@
   import { fetchAllCareEvents } from "$lib/api";
   import { resolveError } from "$lib/stores/errors";
   import { translations } from "$lib/stores/locale";
+  import { isOffline } from "$lib/stores/network";
   import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
   import {
     groupCareEvents,
@@ -98,7 +99,9 @@
       const result = await fetchAllCareEvents(10000, undefined, types);
       events = result.events;
     } catch (e) {
-      error = resolveError(e, "loadCareEvents");
+      error = $isOffline
+        ? $translations.common.offlineMessage
+        : resolveError(e, "loadCareEvents");
     }
     loading = false;
   }

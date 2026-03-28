@@ -47,6 +47,7 @@
     type MqttStatus,
   } from "$lib/api";
   import { aiStatus as aiStatusStore, loadAiStatus } from "$lib/stores/ai";
+  import { isOffline } from "$lib/stores/network";
   import { resolveError } from "$lib/stores/errors";
   import { pushNotification } from "$lib/stores/notifications";
   import ModalDialog from "$lib/components/ModalDialog.svelte";
@@ -483,6 +484,10 @@
       </ul>
     {/if}
   </section>
+
+  {#if $isOffline && !mqttStatus && !aiStatus && !stats && !appInfo}
+    <p class="offline-message">{$translations.common.offlineMessage}</p>
+  {/if}
 
   {#if mqttStatus}
     <section class="section settings-section">
@@ -1007,5 +1012,12 @@
     .theme-option {
       padding: 6px 10px;
     }
+  }
+
+  .offline-message {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    text-align: center;
+    padding: 24px 16px;
   }
 </style>

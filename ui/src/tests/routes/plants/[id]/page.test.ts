@@ -104,6 +104,7 @@ vi.mock("$lib/stores/ai", async () => {
 import { aiStatus } from "$lib/stores/ai";
 import { plantsError } from "$lib/stores/plants";
 import { careError } from "$lib/stores/care";
+import { isOffline } from "$lib/stores/network";
 
 function makePlant(overrides: Partial<Plant> = {}): Plant {
   return {
@@ -165,6 +166,7 @@ async function renderWithPlant(
 beforeEach(() => {
   aiStatus.set(null);
   careError.set(null);
+  isOffline.set(false);
   vi.clearAllMocks();
   mockDeleteCareEventApi.mockResolvedValue(undefined);
   mockFetchCareEventsApi.mockResolvedValue([]);
@@ -1215,5 +1217,128 @@ describe("care journal event grouping", () => {
     expect(document.querySelector(".timeline-group-summary")).toBeNull();
     const items = document.querySelectorAll(".timeline-item");
     expect(items.length).toBe(2);
+  });
+});
+
+describe("plant detail offline behavior", () => {
+  it("disables water now button when offline", async () => {
+    isOffline.set(true);
+    await renderWithPlant();
+
+    await waitFor(() => {
+      const waterBtn = screen.getByRole("button", {
+        name: /Water now/,
+      }) as HTMLButtonElement;
+      expect(waterBtn.disabled).toBe(true);
+    });
+  });
+
+  it("disables add log entry button when offline", async () => {
+    isOffline.set(true);
+    await renderWithPlant();
+
+    await waitFor(() => {
+      const addBtn = screen.getByRole("button", {
+        name: /Add log entry/,
+      }) as HTMLButtonElement;
+      expect(addBtn.disabled).toBe(true);
+    });
+  });
+
+  it("disables delete button when offline", async () => {
+    isOffline.set(true);
+    await renderWithPlant();
+
+    await waitFor(() => {
+      const deleteBtn = document.querySelector(
+        'button[aria-label="Delete plant"]',
+      ) as HTMLButtonElement;
+      expect(deleteBtn).not.toBeNull();
+      expect(deleteBtn.disabled).toBe(true);
+    });
+  });
+
+  it("disables edit link when offline", async () => {
+    isOffline.set(true);
+    await renderWithPlant();
+
+    await waitFor(() => {
+      const editLink = document.querySelector(
+        'a[aria-label="Edit Plant"]',
+      ) as HTMLAnchorElement;
+      expect(editLink).not.toBeNull();
+      expect(editLink.getAttribute("aria-disabled")).toBe("true");
+      expect(editLink.classList.contains("disabled")).toBe(true);
+    });
+  });
+
+  it("disables care event delete buttons when offline", async () => {
+    isOffline.set(true);
+    await renderWithPlant({}, [makeCareEvent()]);
+
+    await waitFor(() => {
+      const deleteBtn = screen.getByRole("button", {
+        name: "Delete log entry",
+      }) as HTMLButtonElement;
+      expect(deleteBtn.disabled).toBe(true);
+    });
+  });
+
+  it("disables Ask AI button when offline", async () => {
+    aiStatus.set({ enabled: true, base_url: null, model: null });
+    isOffline.set(true);
+    await renderWithPlant();
+
+    await waitFor(() => {
+      const aiBtn = screen.getByRole("button", {
+        name: /Ask AI/,
+      }) as HTMLButtonElement;
+      expect(aiBtn.disabled).toBe(true);
+    });
+  });
+
+  it("re-enables mutation controls when back online", async () => {
+    isOffline.set(true);
+    await renderWithPlant();
+
+    await waitFor(() => {
+      const waterBtn = screen.getByRole("button", {
+        name: /Water now/,
+      }) as HTMLButtonElement;
+      expect(waterBtn.disabled).toBe(true);
+      const addBtn = screen.getByRole("button", {
+        name: /Add log entry/,
+      }) as HTMLButtonElement;
+      expect(addBtn.disabled).toBe(true);
+      const deleteBtn = document.querySelector(
+        'button[aria-label="Delete plant"]',
+      ) as HTMLButtonElement;
+      expect(deleteBtn.disabled).toBe(true);
+      const editLink = document.querySelector(
+        'a[aria-label="Edit Plant"]',
+      ) as HTMLAnchorElement;
+      expect(editLink.getAttribute("aria-disabled")).toBe("true");
+    });
+
+    isOffline.set(false);
+
+    await waitFor(() => {
+      const waterBtn = screen.getByRole("button", {
+        name: /Water now/,
+      }) as HTMLButtonElement;
+      expect(waterBtn.disabled).toBe(false);
+      const addBtn = screen.getByRole("button", {
+        name: /Add log entry/,
+      }) as HTMLButtonElement;
+      expect(addBtn.disabled).toBe(false);
+      const deleteBtn = document.querySelector(
+        'button[aria-label="Delete plant"]',
+      ) as HTMLButtonElement;
+      expect(deleteBtn.disabled).toBe(false);
+      const editLink = document.querySelector(
+        'a[aria-label="Edit Plant"]',
+      ) as HTMLAnchorElement;
+      expect(editLink.getAttribute("aria-disabled")).toBe("false");
+    });
   });
 });

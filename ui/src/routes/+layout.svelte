@@ -9,6 +9,7 @@
   import { initLocale, isLocale, translations } from "$lib/stores/locale";
   import { fetchSettings } from "$lib/api";
   import { pushNotification } from "$lib/stores/notifications";
+  import { isOffline as isOfflineStore } from "$lib/stores/network";
   import {
     calculateContentOffset,
     calculatePullOffset,
@@ -33,6 +34,9 @@
 
   let { children } = $props();
   let isOffline = $state(false);
+  $effect(() => {
+    isOfflineStore.set(isOffline);
+  });
   let isStandalonePwa = $state(false);
   let isTouchCapable = $state(false);
   let pullOffset = $state(0);
@@ -378,12 +382,12 @@
         href={resolve("/settings")}
         class="nav-item bottom"
         class:active={isActive("/settings")}
-        ><span class="icon-badge"><Settings size={20} />{#if isOffline}<span
+        ><span class="icon-badge"
+          ><Settings size={20} />{#if isOffline}<span
               class="offline-dot"
               aria-label="offline"
-            ></span>{/if}</span><span class="nav-label"
-          >{$translations.nav.settings}</span
-        ></a
+            ></span>{/if}</span
+        ><span class="nav-label">{$translations.nav.settings}</span></a
       >
     </nav>
     <main

@@ -4,10 +4,12 @@
 /// <reference lib="webworker" />
 
 import { build, files, version } from "$service-worker";
+import { isCacheableApi, isThumbnail } from "$lib/sw-patterns";
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
 const CACHE_NAME = `flowl-cache-${version}`;
+const API_CACHE_NAME = `flowl-api-${version}`;
 const OFFLINE_PAGE = "/offline.html";
 
 const ASSETS = [...build, ...files];
@@ -19,13 +21,14 @@ sw.addEventListener("install", (event) => {
 });
 
 sw.addEventListener("activate", (event) => {
+  const keepCaches = new Set([CACHE_NAME, API_CACHE_NAME]);
   event.waitUntil(
     caches
       .keys()
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_NAME)
+            .filter((key) => !keepCaches.has(key))
             .map((key) => caches.delete(key)),
         ),
       ),
@@ -72,5 +75,43 @@ sw.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Everything else (API, uploads, etc.): pass through to network
+  // Cacheable API endpoints: network-first with stale fallback
+  if (isCacheableApi(url.pathname)) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches
+            .open(API_CACHE_NAME)
+            .then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch((err) =>
+          caches.match(request).then((cached) => {
+            if (cached) return cached;
+            throw err;
+          }),
+        ),
+    );
+    return;
+  }
+
+  // Thumbnails: cache-first
+  if (isThumbnail(url.pathname)) {
+    event.respondWith(
+      caches.open(API_CACHE_NAME).then((cache) =>
+        cache.match(request).then(
+          (cached) =>
+            cached ||
+            fetch(request).then((response) => {
+              cache.put(request, response.clone());
+              return response;
+            }),
+        ),
+      ),
+    );
+    return;
+  }
+
+  // Everything else: pass through to network
 });

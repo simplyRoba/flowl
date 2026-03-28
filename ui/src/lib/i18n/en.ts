@@ -19,6 +19,8 @@ const en = {
     pullToRefresh: "Pull to refresh",
     releaseToRefresh: "Release to refresh",
     refreshing: "Refreshing",
+    offlineMessage:
+      "You're offline. Connect to the internet to view this page.",
   },
   dashboard: {
     myPlants: "My Plants",
