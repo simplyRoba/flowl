@@ -1341,4 +1341,54 @@ describe("plant detail offline behavior", () => {
       expect(editLink.getAttribute("aria-disabled")).toBe("false");
     });
   });
+
+  it("shows offline message instead of error when offline with no cached plant", async () => {
+    isOffline.set(true);
+    render(Page, {
+      props: {
+        data: {
+          plant: null,
+          notFound: false,
+          loadErrorCode: "UNKNOWN_ERROR",
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "You're offline. Connect to the internet to view this page.",
+        ),
+      ).toBeTruthy();
+    });
+
+    expect(
+      screen.queryByText("Something went wrong. Please try again."),
+    ).toBeNull();
+  });
+
+  it("shows generic error when online with load failure", async () => {
+    isOffline.set(false);
+    render(Page, {
+      props: {
+        data: {
+          plant: null,
+          notFound: false,
+          loadErrorCode: "UNKNOWN_ERROR",
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Something went wrong. Please try again."),
+      ).toBeTruthy();
+    });
+
+    expect(
+      screen.queryByText(
+        "You're offline. Connect to the internet to view this page.",
+      ),
+    ).toBeNull();
+  });
 });

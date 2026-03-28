@@ -215,7 +215,9 @@
     {/if}
   </header>
 
-  {#if $plantsError}
+  {#if $plantsError && $isOffline}
+    <p class="offline-message">{$translations.common.offlineMessage}</p>
+  {:else if $plantsError}
     <p class="error">{$plantsError}</p>
   {:else if loading}
     <!-- prevent empty-state flash while plants are loading -->
@@ -436,6 +438,13 @@
   .error {
     color: var(--color-danger);
     padding: 16px;
+  }
+
+  .offline-message {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    text-align: center;
+    padding: 24px 16px;
   }
 
   /* Needs Attention section */

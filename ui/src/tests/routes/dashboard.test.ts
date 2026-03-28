@@ -511,6 +511,38 @@ describe("dashboard offline behavior", () => {
     });
   });
 
+  it("shows offline message instead of error when offline", async () => {
+    plantsError.set("Failed to load plants");
+    isOffline.set(true);
+    render(Page);
+
+    await vi.waitFor(() => {
+      expect(
+        screen.getByText(
+          "You're offline. Connect to the internet to view this page.",
+        ),
+      ).toBeTruthy();
+    });
+
+    expect(screen.queryByText("Failed to load plants")).toBeNull();
+  });
+
+  it("shows generic error when online", async () => {
+    plantsError.set("Failed to load plants");
+    isOffline.set(false);
+    render(Page);
+
+    await vi.waitFor(() => {
+      expect(screen.getByText("Failed to load plants")).toBeTruthy();
+    });
+
+    expect(
+      screen.queryByText(
+        "You're offline. Connect to the internet to view this page.",
+      ),
+    ).toBeNull();
+  });
+
   it("re-enables water button when back online", async () => {
     plants.set([makePlant({ id: 1, name: "Fern", watering_status: "due" })]);
     isOffline.set(true);

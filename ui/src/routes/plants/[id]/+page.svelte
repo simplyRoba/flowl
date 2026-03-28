@@ -762,6 +762,8 @@
       onsave={() => refreshPlantDetails(plant!.id)}
     />
   </div>
+{:else if (plantLoadErrorCode || $plantsError) && $isOffline}
+  <p class="offline-message">{$translations.common.offlineMessage}</p>
 {:else if plantLoadErrorCode || $plantsError}
   <p class="error">
     {plantLoadErrorCode
@@ -949,6 +951,13 @@
   .error {
     color: var(--color-danger);
     padding: 16px;
+  }
+
+  .offline-message {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    text-align: center;
+    padding: 24px 16px;
   }
 
   .loading {
