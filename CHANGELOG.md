@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/simplyRoba/flowl/compare/v1.4.0...v1.5.0) (2026-03-28)
+
+
+### Features
+
+* **pwa:** add offline data caching with network-first API strategy and cache-first thumbnails ([2c95dcc](https://github.com/simplyRoba/flowl/commit/2c95dcc29ac05ac4abb4d731d8ae1601f70da9c8))
+
+
+### Bug Fixes
+
+* **ui:** consistent offline dot positioning across all breakpoints ([9fd0e5e](https://github.com/simplyRoba/flowl/commit/9fd0e5e51ecf85a252482eee006dd09c8d6baf9f))
+
 ## [1.4.0](https://github.com/simplyRoba/flowl/compare/v1.3.2...v1.4.0) (2026-03-27)
 
 
