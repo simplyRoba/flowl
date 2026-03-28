@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.1](https://github.com/simplyRoba/flowl/compare/v1.5.0...v1.5.1) (2026-03-28)
+
+
+### Bug Fixes
+
+* **ui:** detect offline state via /health endpoint instead of navigator.onLine ([541f2a3](https://github.com/simplyRoba/flowl/commit/541f2a3b9f188741544c8d085ee09d6ef151b991))
+* **ui:** hide locations section when offline on settings page ([dff0d1c](https://github.com/simplyRoba/flowl/commit/dff0d1c2db38d338e0e0f8f2542119bacd199dde))
+* **ui:** show offline message instead of generic error on dashboard and plant detail ([a3943a2](https://github.com/simplyRoba/flowl/commit/a3943a2792474b63bafd8c0ceabcbe7a295cbd2c))
+
 ## [1.5.0](https://github.com/simplyRoba/flowl/compare/v1.4.0...v1.5.0) (2026-03-28)
 
 
