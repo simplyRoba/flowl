@@ -50,6 +50,7 @@
   import ModalDialog from "$lib/components/ModalDialog.svelte";
   import ChatDrawer from "$lib/components/ChatDrawer.svelte";
   import CareEntryForm from "$lib/components/CareEntryForm.svelte";
+  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
   import { aiStatus, loadAiStatus } from "$lib/stores/ai";
   import {
     groupCareEvents,
@@ -763,7 +764,7 @@
     />
   </div>
 {:else if (plantLoadErrorCode || $plantsError) && $isOffline}
-  <p class="offline-message">{$translations.common.offlineMessage}</p>
+  <OfflineMessage />
 {:else if plantLoadErrorCode || $plantsError}
   <p class="error">
     {plantLoadErrorCode
@@ -951,13 +952,6 @@
   .error {
     color: var(--color-danger);
     padding: 16px;
-  }
-
-  .offline-message {
-    color: var(--color-text-muted);
-    font-size: 14px;
-    text-align: center;
-    padding: 24px 16px;
   }
 
   .loading {

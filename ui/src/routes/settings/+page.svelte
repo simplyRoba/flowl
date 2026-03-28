@@ -51,6 +51,7 @@
   import { resolveError } from "$lib/stores/errors";
   import { pushNotification } from "$lib/stores/notifications";
   import ModalDialog from "$lib/components/ModalDialog.svelte";
+  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
 
   const themeOptions: {
     value: ThemePreference;
@@ -490,7 +491,7 @@
   {/if}
 
   {#if $isOffline && !mqttStatus && !aiStatus && !stats && !appInfo}
-    <p class="offline-message">{$translations.common.offlineMessage}</p>
+    <OfflineMessage />
   {/if}
 
   {#if mqttStatus}
@@ -1016,12 +1017,5 @@
     .theme-option {
       padding: 6px 10px;
     }
-  }
-
-  .offline-message {
-    color: var(--color-text-muted);
-    font-size: 14px;
-    text-align: center;
-    padding: 24px 16px;
   }
 </style>

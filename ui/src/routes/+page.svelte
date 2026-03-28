@@ -14,6 +14,7 @@
   import { emojiToSvgPath } from "$lib/emoji";
   import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
   import StatusBadge from "$lib/components/StatusBadge.svelte";
+  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
   import Logo from "$lib/components/Logo.svelte";
 
   function getTimeOfDay(): string {
@@ -216,7 +217,7 @@
   </header>
 
   {#if $plantsError && $isOffline}
-    <p class="offline-message">{$translations.common.offlineMessage}</p>
+    <OfflineMessage />
   {:else if $plantsError}
     <p class="error">{$plantsError}</p>
   {:else if loading}
@@ -438,13 +439,6 @@
   .error {
     color: var(--color-danger);
     padding: 16px;
-  }
-
-  .offline-message {
-    color: var(--color-text-muted);
-    font-size: 14px;
-    text-align: center;
-    padding: 24px 16px;
   }
 
   /* Needs Attention section */

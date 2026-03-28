@@ -30,6 +30,7 @@
     type WateringGroup,
   } from "$lib/careGrouping";
   import PhotoLightbox from "$lib/components/PhotoLightbox.svelte";
+  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
 
   let lightboxOpen = $state(false);
   let lightboxSrc = $state("");
@@ -99,9 +100,7 @@
       const result = await fetchAllCareEvents(10000, undefined, types);
       events = result.events;
     } catch (e) {
-      error = $isOffline
-        ? $translations.common.offlineMessage
-        : resolveError(e, "loadCareEvents");
+      error = $isOffline ? null : resolveError(e, "loadCareEvents");
     }
     loading = false;
   }
@@ -238,7 +237,9 @@
     {/each}
   </div>
 
-  {#if error}
+  {#if !error && !loading && events.length === 0 && $isOffline}
+    <OfflineMessage />
+  {:else if error}
     <p class="error">{error}</p>
   {:else if loading}
     <div class="skeleton-list">
