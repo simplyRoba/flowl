@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as pullToRefresh from "$lib/pull-to-refresh";
 import * as notifications from "$lib/stores/notifications";
+import { isOffline } from "$lib/stores/network";
 
 import LayoutHarness from "./LayoutHarness.svelte";
 
@@ -138,6 +139,7 @@ describe("app layout pull-to-refresh", () => {
 describe("app layout offline indicator", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isOffline.set(false);
     mockUrl = new URL("http://localhost/");
     mockFetchSettings.mockResolvedValue({ theme: "system", locale: "en" });
     mockMatchMedia({ standalone: false, coarsePointer: false });
@@ -145,14 +147,12 @@ describe("app layout offline indicator", () => {
 
   afterEach(() => {
     cleanup();
+    isOffline.set(false);
     vi.restoreAllMocks();
   });
 
-  it("shows offline dot when navigator.onLine is false", async () => {
-    Object.defineProperty(window.navigator, "onLine", {
-      configurable: true,
-      value: false,
-    });
+  it("shows offline dot when isOffline store is true", async () => {
+    isOffline.set(true);
 
     render(LayoutHarness);
 
@@ -161,11 +161,8 @@ describe("app layout offline indicator", () => {
     });
   });
 
-  it("does not show offline dot when navigator.onLine is true", async () => {
-    Object.defineProperty(window.navigator, "onLine", {
-      configurable: true,
-      value: true,
-    });
+  it("does not show offline dot when isOffline store is false", async () => {
+    isOffline.set(false);
 
     render(LayoutHarness);
 
@@ -174,28 +171,22 @@ describe("app layout offline indicator", () => {
     });
   });
 
-  it("shows offline dot when offline event fires", async () => {
-    Object.defineProperty(window.navigator, "onLine", {
-      configurable: true,
-      value: true,
-    });
+  it("shows offline dot when store transitions to offline", async () => {
+    isOffline.set(false);
 
     render(LayoutHarness);
 
     expect(document.querySelector(".offline-dot")).toBeNull();
 
-    window.dispatchEvent(new Event("offline"));
+    isOffline.set(true);
 
     await waitFor(() => {
       expect(document.querySelector(".offline-dot")).not.toBeNull();
     });
   });
 
-  it("hides offline dot when online event fires", async () => {
-    Object.defineProperty(window.navigator, "onLine", {
-      configurable: true,
-      value: false,
-    });
+  it("hides offline dot when store transitions to online", async () => {
+    isOffline.set(true);
 
     render(LayoutHarness);
 
@@ -203,7 +194,7 @@ describe("app layout offline indicator", () => {
       expect(document.querySelector(".offline-dot")).not.toBeNull();
     });
 
-    window.dispatchEvent(new Event("online"));
+    isOffline.set(false);
 
     await waitFor(() => {
       expect(document.querySelector(".offline-dot")).toBeNull();
@@ -217,17 +208,15 @@ describe("app layout service worker update notification", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     controllerChangeHandler = null;
+    isOffline.set(false);
     mockUrl = new URL("http://localhost/");
     mockFetchSettings.mockResolvedValue({ theme: "system", locale: "en" });
     mockMatchMedia({ standalone: false, coarsePointer: false });
-    Object.defineProperty(window.navigator, "onLine", {
-      configurable: true,
-      value: true,
-    });
   });
 
   afterEach(() => {
     cleanup();
+    isOffline.set(false);
     vi.restoreAllMocks();
   });
 

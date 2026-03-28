@@ -9,7 +9,10 @@
   import { initLocale, isLocale, translations } from "$lib/stores/locale";
   import { fetchSettings } from "$lib/api";
   import { pushNotification } from "$lib/stores/notifications";
-  import { isOffline as isOfflineStore } from "$lib/stores/network";
+  import {
+    isOffline as isOfflineStore,
+    startHealthPolling,
+  } from "$lib/stores/network";
   import {
     calculateContentOffset,
     calculatePullOffset,
@@ -33,10 +36,7 @@
   import "$lib/styles/skeletons.css";
 
   let { children } = $props();
-  let isOffline = $state(false);
-  $effect(() => {
-    isOfflineStore.set(isOffline);
-  });
+  let isOffline = $derived($isOfflineStore);
   let isStandalonePwa = $state(false);
   let isTouchCapable = $state(false);
   let pullOffset = $state(0);
@@ -264,17 +264,7 @@
   });
 
   onMount(() => {
-    isOffline = !navigator.onLine;
-
-    const handleOnline = () => {
-      isOffline = false;
-    };
-    const handleOffline = () => {
-      isOffline = true;
-    };
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
+    const stopHealthPolling = startHealthPolling();
 
     if ("serviceWorker" in navigator) {
       const hadController = !!navigator.serviceWorker.controller;
@@ -302,8 +292,7 @@
     }
 
     return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+      stopHealthPolling();
     };
   });
 
