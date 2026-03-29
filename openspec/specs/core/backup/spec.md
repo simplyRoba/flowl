@@ -6,14 +6,14 @@ Export all user data and photos as a downloadable ZIP archive for backup purpose
 
 ### Requirement: Export all data as ZIP
 
-The system SHALL provide a `GET /api/data/export` endpoint that returns all user data and photos as a ZIP archive download. Thumbnail files (`_200` and `_600` variants) SHALL be excluded from the archive as they are derived data that can be regenerated.
+The system SHALL provide a `GET /api/data/export` endpoint that returns all user data and photos as a ZIP archive download. Thumbnail files (`_200`, `_600`, and `_1000` variants) SHALL be excluded from the archive as they are derived data that can be regenerated.
 
 #### Scenario: Successful export
 
 - **WHEN** a GET request is made to `/api/data/export`
 - **THEN** the response has status 200
 - **AND** the `Content-Type` header is `application/zip`
-- **AND** the `Content-Disposition` header is `attachment; filename="flowl-export.zip"`
+- **AND** the `Content-Disposition` header is `attachment; filename="flowl-export-v{version}.zip"` where `{version}` is the server's crate version
 - **AND** the body contains a ZIP archive with a `data.json` file at the root
 
 #### Scenario: Export JSON structure
