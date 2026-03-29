@@ -168,11 +168,10 @@ The plant detail view SHALL provide an "+ Add log entry" action for manually rec
 - **WHEN** the user clicks Cancel on the log care form
 - **THEN** the form is hidden without sending a request
 
-#### Scenario: Watered type excluded
+#### Scenario: Watered type available
 
 - **WHEN** the log care form is displayed
-- **THEN** the `watered` event type is NOT available as an option
-- **AND** users are expected to use the "Water now" button for watering
+- **THEN** the `watered` event type SHALL be available as a chip alongside fertilized, repotted, pruned, and custom
 
 ### Requirement: Delete Care Event
 

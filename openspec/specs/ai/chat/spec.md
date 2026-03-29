@@ -41,11 +41,11 @@ The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `p
 #### Scenario: Mid-stream error
 
 - **WHEN** the AI provider encounters an error while streaming
-- **THEN** the endpoint SHALL send an SSE event `{"error":"<message>"}` and close the stream
+- **THEN** the endpoint SHALL send an SSE event `{"error":{"code":"<CODE>","message":"<message>"}}` and close the stream
 
 ### Requirement: SSE event format
 
-The chat endpoint SHALL emit SSE events as JSON objects. Each event MUST be one of: `{"delta":"<text chunk>"}` for content tokens, `{"done":true}` for stream completion, or `{"error":"<message>"}` for errors. No other event shapes SHALL be emitted.
+The chat endpoint SHALL emit SSE events as JSON objects. Each event MUST be one of: `{"delta":"<text chunk>"}` for content tokens, `{"done":true}` for stream completion, or `{"error":{"code":"<CODE>","message":"<message>"}}` for errors. The error object follows the same structured `code` + `message` pattern used by REST API error responses. No other event shapes SHALL be emitted.
 
 #### Scenario: Delta event
 
@@ -61,7 +61,7 @@ The chat endpoint SHALL emit SSE events as JSON objects. Each event MUST be one 
 #### Scenario: Error event
 
 - **WHEN** an error occurs during streaming
-- **THEN** an SSE event `data: {"error":"<message>"}` SHALL be sent
+- **THEN** an SSE event `data: {"error":{"code":"<CODE>","message":"<message>"}}` SHALL be sent
 - **AND** the stream SHALL close
 
 ### Requirement: Plant context builder

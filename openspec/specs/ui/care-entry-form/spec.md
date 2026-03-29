@@ -11,7 +11,7 @@ The `CareEntryForm` component (`$lib/components/CareEntryForm.svelte`) SHALL be 
 #### Scenario: Component renders with event type chips
 
 - **WHEN** the component is rendered
-- **THEN** it SHALL display a row of event type chips: fertilized, repotted, pruned, custom
+- **THEN** it SHALL display a row of event type chips: watered, fertilized, repotted, pruned, custom
 - **AND** each chip SHALL use the corresponding lucide icon and translation label
 - **AND** no chip SHALL be selected by default
 
