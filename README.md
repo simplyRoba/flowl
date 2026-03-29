@@ -81,6 +81,25 @@ To use Mistral, set `FLOWL_AI_BASE_URL=https://api.mistral.ai/v1` and `FLOWL_AI_
 
 Any other provider exposing an OpenAI-compatible `/v1/chat/completions` endpoint (LM Studio, vLLM, Ollama with OpenAI shim, etc.) should also work as long as the model supports the capabilities above.
 
+## Offline support
+
+flowl works as an installable PWA and remains usable when your device can't reach the server.
+
+**What works offline:**
+
+- Browse the dashboard, plant details, and care journal using cached data from your last visit.
+- View cached plant photos and thumbnails.
+- Switch theme and language (stored locally).
+
+**What's disabled offline:**
+
+- Watering, adding log entries, editing or deleting plants.
+- Creating new plants or editing existing ones.
+- AI chat and plant identification.
+- Data export and import.
+
+An orange dot on the Settings icon indicates the app is offline. Pages that can't load any cached data show an offline message. When the server becomes reachable again, all controls re-enable automatically.
+
 ## Security
 
 flowl has no built-in authentication. It is designed to run on a trusted home network or behind a reverse proxy that handles auth (e.g., Authelia, Authentik, Caddy with basic auth). Do not expose it directly to the internet.
