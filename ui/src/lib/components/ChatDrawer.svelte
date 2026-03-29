@@ -406,7 +406,7 @@
         <button
           class="btn btn-sm chat-save-note-btn"
           onclick={handleSaveNote}
-          disabled={summarizing}
+          disabled={summarizing || $isOffline}
         >
           <BookOpen size={14} />
           {summarizing
@@ -523,7 +523,7 @@
         <button
           class="btn btn-ai"
           onclick={handleConfirmSave}
-          disabled={savingNote || !summaryText.trim()}
+          disabled={savingNote || !summaryText.trim() || $isOffline}
         >
           {savingNote
             ? $translations.common.saving
