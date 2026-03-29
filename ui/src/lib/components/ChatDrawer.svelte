@@ -12,6 +12,7 @@
   } from "$lib/api";
   import { resolveError } from "$lib/stores/errors";
   import { pushNotification } from "$lib/stores/notifications";
+  import { isOffline } from "$lib/stores/network";
 
   let {
     plant,
@@ -431,6 +432,7 @@
           class="chip"
           class:chip-danger={chip.danger}
           onclick={() => handleChipClick(chip.text)}
+          disabled={$isOffline}
         >
           {chip.text}
         </button>
@@ -547,7 +549,7 @@
     <div class="chat-input-area">
       <label
         class="attach-btn"
-        class:disabled={streaming}
+        class:disabled={streaming || $isOffline}
         title={$translations.chat.attachPhoto}
       >
         <Camera size={16} />
@@ -555,7 +557,7 @@
           type="file"
           accept="image/jpeg,image/png,image/webp"
           onchange={handlePhotoSelect}
-          disabled={streaming}
+          disabled={streaming || $isOffline}
           class="file-input"
         />
       </label>
@@ -565,13 +567,13 @@
         placeholder={$translations.chat.placeholder}
         bind:value={inputText}
         onkeydown={handleKeydown}
-        disabled={streaming}
+        disabled={streaming || $isOffline}
       />
       <button
         class="send-btn"
-        class:disabled={!inputText.trim() || streaming}
+        class:disabled={!inputText.trim() || streaming || $isOffline}
         onclick={handleSubmit}
-        disabled={!inputText.trim() || streaming}
+        disabled={!inputText.trim() || streaming || $isOffline}
         aria-label={$translations.chat.send}
       >
         <Send size={16} />

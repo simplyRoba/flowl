@@ -1,6 +1,8 @@
 import { writable } from "svelte/store";
 
-export const isOffline = writable(false);
+const initialOffline =
+  typeof navigator !== "undefined" ? !navigator.onLine : false;
+export const isOffline = writable(initialOffline);
 
 const HEALTH_URL = "/health";
 const POLL_INTERVAL = 60_000;
