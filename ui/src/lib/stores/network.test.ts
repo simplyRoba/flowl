@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
-import { isOffline, recheckHealth, startHealthPolling } from "./network";
+import { isOffline, recheckHealth, startNetworkMonitor } from "./network";
 
-describe("network store health polling", () => {
+describe("network store", () => {
   let cleanup: () => void;
 
   beforeEach(() => {
@@ -17,22 +17,22 @@ describe("network store health polling", () => {
     isOffline.set(false);
   });
 
-  it("sets isOffline to false when /health returns ok", async () => {
+  it("sets isOffline to false when /health returns ok on startup", async () => {
     isOffline.set(true);
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ status: "ok" }), { status: 200 }),
     );
 
-    cleanup = startHealthPolling();
+    cleanup = startNetworkMonitor();
     await vi.advanceTimersByTimeAsync(0);
 
     expect(get(isOffline)).toBe(false);
   });
 
-  it("sets isOffline to true when /health fetch throws", async () => {
+  it("sets isOffline to true when /health fetch throws on startup", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network error"));
 
-    cleanup = startHealthPolling();
+    cleanup = startNetworkMonitor();
     await vi.advanceTimersByTimeAsync(0);
 
     expect(get(isOffline)).toBe(true);
@@ -43,32 +43,63 @@ describe("network store health polling", () => {
       new Response(JSON.stringify({ status: "unhealthy" }), { status: 503 }),
     );
 
-    cleanup = startHealthPolling();
+    cleanup = startNetworkMonitor();
     await vi.advanceTimersByTimeAsync(0);
 
     expect(get(isOffline)).toBe(true);
   });
 
-  it("polls every 60 seconds", async () => {
+  it("starts recovery polling when offline is detected on startup", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValue(new Error("unreachable"));
+
+    cleanup = startNetworkMonitor();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(get(isOffline)).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    // Recovery poll fires after 10s
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not poll when online", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(
         new Response(JSON.stringify({ status: "ok" }), { status: 200 }),
       );
 
-    cleanup = startHealthPolling();
+    cleanup = startNetworkMonitor();
     await vi.advanceTimersByTimeAsync(0);
-
-    // Initial call
     expect(fetchSpy).toHaveBeenCalledTimes(1);
 
-    // After 60s
+    // No polling after 60s since we're online
     await vi.advanceTimersByTimeAsync(60_000);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops recovery polling once health succeeds", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValue(new Error("unreachable"));
+
+    cleanup = startNetworkMonitor();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(get(isOffline)).toBe(true);
+
+    // Recovery: health succeeds
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify({ status: "ok" }), { status: 200 }),
+    );
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(get(isOffline)).toBe(false);
     expect(fetchSpy).toHaveBeenCalledTimes(2);
 
-    // After another 60s
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    // No more polling after recovery
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
   it("rechecks health on browser online event", async () => {
@@ -78,7 +109,7 @@ describe("network store health polling", () => {
         new Response(JSON.stringify({ status: "ok" }), { status: 200 }),
       );
 
-    cleanup = startHealthPolling();
+    cleanup = startNetworkMonitor();
     await vi.advanceTimersByTimeAsync(0);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
 
@@ -87,24 +118,29 @@ describe("network store health polling", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
-  it("sets offline immediately on browser offline event", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ status: "ok" }), { status: 200 }),
-    );
+  it("sets offline immediately on browser offline event and starts recovery poll", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ status: "ok" }), { status: 200 }),
+      );
 
-    cleanup = startHealthPolling();
+    cleanup = startNetworkMonitor();
     await vi.advanceTimersByTimeAsync(0);
     expect(get(isOffline)).toBe(false);
 
     window.dispatchEvent(new Event("offline"));
     expect(get(isOffline)).toBe(true);
+
+    // Recovery poll should be running
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
   it("recheckHealth triggers an immediate health check", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("unreachable"));
 
-    cleanup = startHealthPolling();
-    // Let initial (failing) check complete
+    cleanup = startNetworkMonitor();
     await vi.advanceTimersByTimeAsync(0);
     expect(get(isOffline)).toBe(true);
 
@@ -117,35 +153,41 @@ describe("network store health polling", () => {
     expect(get(isOffline)).toBe(false);
   });
 
-  it("recheckHealth sets offline when health endpoint is unreachable", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ status: "ok" }), { status: 200 }),
-    );
-    cleanup = startHealthPolling();
-    await vi.advanceTimersByTimeAsync(0);
-    expect(get(isOffline)).toBe(false);
-
-    // Health endpoint becomes unreachable
-    vi.mocked(globalThis.fetch).mockRejectedValue(new Error("unreachable"));
-    recheckHealth();
-    await vi.advanceTimersByTimeAsync(0);
-    expect(get(isOffline)).toBe(true);
-  });
-
-  it("stops polling on cleanup", async () => {
+  it("recheckHealth starts recovery poll when offline detected", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(
         new Response(JSON.stringify({ status: "ok" }), { status: 200 }),
       );
 
-    cleanup = startHealthPolling();
+    cleanup = startNetworkMonitor();
     await vi.advanceTimersByTimeAsync(0);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(get(isOffline)).toBe(false);
+
+    // Goes offline
+    fetchSpy.mockRejectedValue(new Error("unreachable"));
+    recheckHealth();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(get(isOffline)).toBe(true);
+
+    // Recovery poll fires
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(fetchSpy.mock.calls.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("cleanup stops recovery polling and removes event listeners", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValue(new Error("unreachable"));
+
+    cleanup = startNetworkMonitor();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(get(isOffline)).toBe(true);
+    const callsAfterInit = fetchSpy.mock.calls.length;
 
     cleanup();
 
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(fetchSpy).toHaveBeenCalledTimes(callsAfterInit);
   });
 });

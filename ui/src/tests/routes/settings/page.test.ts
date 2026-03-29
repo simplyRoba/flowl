@@ -34,7 +34,7 @@ vi.mock("$lib/stores/network", async () => {
   return {
     isOffline: writable(false),
     recheckHealth: vi.fn(),
-    startHealthPolling: vi.fn(() => () => {}),
+    startNetworkMonitor: vi.fn(() => () => {}),
   };
 });
 

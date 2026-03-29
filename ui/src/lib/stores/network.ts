@@ -1,15 +1,14 @@
-import { writable } from "svelte/store";
+import { writable, get } from "svelte/store";
 
 const initialOffline =
   typeof navigator !== "undefined" ? !navigator.onLine : false;
 export const isOffline = writable(initialOffline);
 
 const HEALTH_URL = "/health";
-const POLL_INTERVAL = 60_000;
+const RECOVERY_INTERVAL = 10_000;
 const FETCH_TIMEOUT = 5_000;
 
-let polling = false;
-let timer: ReturnType<typeof setInterval> | null = null;
+let recoveryTimer: ReturnType<typeof setInterval> | null = null;
 
 async function checkHealth(): Promise<boolean> {
   try {
@@ -23,43 +22,60 @@ async function checkHealth(): Promise<boolean> {
   }
 }
 
-async function update(): Promise<void> {
-  const healthy = await checkHealth();
-  isOffline.set(!healthy);
+function stopRecoveryPoll(): void {
+  if (recoveryTimer) {
+    clearInterval(recoveryTimer);
+    recoveryTimer = null;
+  }
+}
+
+function startRecoveryPoll(): void {
+  if (recoveryTimer) return;
+  recoveryTimer = setInterval(async () => {
+    const healthy = await checkHealth();
+    if (healthy) {
+      isOffline.set(false);
+      stopRecoveryPoll();
+    }
+  }, RECOVERY_INTERVAL);
 }
 
 /** Trigger an immediate health check (e.g. after an API call fails). */
 export function recheckHealth(): void {
-  update();
+  checkHealth().then((healthy) => {
+    isOffline.set(!healthy);
+    if (!healthy) {
+      startRecoveryPoll();
+    } else {
+      stopRecoveryPoll();
+    }
+  });
 }
 
-export function startHealthPolling(): () => void {
-  if (polling) return () => {};
-  polling = true;
-
+export function startNetworkMonitor(): () => void {
   // Initial check
-  update();
+  if (get(isOffline)) {
+    startRecoveryPoll();
+  }
+  checkHealth().then((healthy) => {
+    isOffline.set(!healthy);
+    if (!healthy) startRecoveryPoll();
+  });
 
   // React immediately to browser online/offline events
   const handleOnline = () => {
-    update();
+    recheckHealth();
   };
   const handleOffline = () => {
     isOffline.set(true);
-    // Still verify via health once the browser thinks we're back
+    startRecoveryPoll();
   };
 
   window.addEventListener("online", handleOnline);
   window.addEventListener("offline", handleOffline);
 
-  timer = setInterval(update, POLL_INTERVAL);
-
   return () => {
-    polling = false;
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
-    }
+    stopRecoveryPoll();
     window.removeEventListener("online", handleOnline);
     window.removeEventListener("offline", handleOffline);
   };

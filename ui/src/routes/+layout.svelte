@@ -11,7 +11,7 @@
   import { pushNotification } from "$lib/stores/notifications";
   import {
     isOffline as isOfflineStore,
-    startHealthPolling,
+    startNetworkMonitor,
   } from "$lib/stores/network";
   import {
     calculateContentOffset,
@@ -264,7 +264,7 @@
   });
 
   onMount(() => {
-    const stopHealthPolling = startHealthPolling();
+    const stopNetworkMonitor = startNetworkMonitor();
 
     if ("serviceWorker" in navigator) {
       const hadController = !!navigator.serviceWorker.controller;
@@ -292,7 +292,7 @@
     }
 
     return () => {
-      stopHealthPolling();
+      stopNetworkMonitor();
     };
   });
 
