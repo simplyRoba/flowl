@@ -105,7 +105,7 @@ The toolbar-right group SHALL contain cancel and save action buttons.
 - **WHEN** the form is rendered
 - **THEN** a primary save button SHALL be displayed
 - **AND** it SHALL be disabled until an event type is selected
-- **AND** clicking it SHALL submit the care event via `POST /api/plants/{id}/care-logs`
+- **AND** clicking it SHALL submit the care event via `POST /api/plants/{id}/care`
 - **AND** if a photo is attached, it SHALL be uploaded after event creation
 - **AND** on success, the `onsubmit` callback SHALL be called
 

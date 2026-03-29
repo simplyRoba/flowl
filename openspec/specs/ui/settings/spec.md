@@ -67,11 +67,16 @@ The settings page SHALL include a "Locations" section listing all locations with
 - **AND** the input remains in edit mode with the attempted name
 - **AND** an inline error message is displayed below the input
 
-#### Scenario: Delete location confirmation
+#### Scenario: Delete location with no plants
 
-- **WHEN** the user clicks delete on a location
+- **WHEN** the user clicks delete on a location with `plant_count` = 0
+- **THEN** the location is deleted immediately without a confirmation dialog
+
+#### Scenario: Delete location with plants
+
+- **WHEN** the user clicks delete on a location with `plant_count` > 0
 - **THEN** a `ModalDialog` is shown in confirm mode with danger variant
-- **AND** the dialog message includes the location name and plant count warning if applicable
+- **AND** the dialog message includes the location name and plant count warning
 - **AND** the location is deleted only when the user confirms
 
 #### Scenario: Delete location success
