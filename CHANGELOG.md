@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.5.3](https://github.com/simplyRoba/flowl/compare/v1.5.2...v1.5.3) (2026-03-29)
+
+
+### Bug Fixes
+
+* **ui:** add offline awareness to plant form pages and direct-fetch API functions ([6217594](https://github.com/simplyRoba/flowl/commit/6217594bb03166f812de36bbe6e31f96bb749ddf))
+* **ui:** disable chat drawer controls when offline and use navigator.onLine as initial state ([0c96999](https://github.com/simplyRoba/flowl/commit/0c96999cdf2ece3445b34ba51847e71991467bc9))
+* **ui:** disable chat drawer save-note buttons when offline ([4b70732](https://github.com/simplyRoba/flowl/commit/4b70732540a7bd9b13cb78a7c84ca68efedbd9b4))
+* **ui:** suppress hover effects on disabled buttons, links, and chips ([1391350](https://github.com/simplyRoba/flowl/commit/13913506f4c1c9eaad946c1429346fdbc9fd020b))
+* **ui:** trigger immediate health recheck on API network errors and increase poll interval to 60s ([30452b9](https://github.com/simplyRoba/flowl/commit/30452b94a6c76341d1dfc72c536463991de96f08))
+
 ## [1.5.2](https://github.com/simplyRoba/flowl/compare/v1.5.1...v1.5.2) (2026-03-28)
 
 
