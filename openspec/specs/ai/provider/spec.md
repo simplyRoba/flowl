@@ -33,7 +33,7 @@ The system SHALL implement `OpenAiProvider` that communicates with any OpenAI-co
 
 The `chat` implementation SHALL send requests with `stream: true`, read the SSE response via `reqwest`'s streaming support, parse `data:` lines to extract delta content tokens, and forward them through an `mpsc` channel. It SHALL skip empty lines and `data: [DONE]` markers. It SHALL handle the optional image by encoding it as a base64 data URL in the latest user message's content array.
 
-The `summarize` implementation SHALL send a non-streaming request with `response_format: { "type": "json_object" }`, deserialize the response, and extract the `summary` field.
+The `summarize` implementation SHALL send a non-streaming request with `response_format: { "type": "json_schema" }` using `strict: true` and a schema requiring a single `summary` string field, deserialize the response, and extract the `summary` field.
 
 #### Scenario: Provider targets configured base URL
 

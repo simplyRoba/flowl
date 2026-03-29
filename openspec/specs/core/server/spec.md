@@ -20,13 +20,21 @@ The application SHALL start an Axum HTTP server listening on the port specified 
 
 ### Requirement: Health Endpoint
 
-The server SHALL expose a `GET /health` endpoint that returns HTTP 200 with a JSON body indicating the service is healthy.
+The server SHALL expose a `GET /health` endpoint that checks database connectivity and returns a JSON body indicating service health.
 
 #### Scenario: Health check succeeds
 
 - **WHEN** a GET request is made to `/health`
+- **AND** the database is reachable
 - **THEN** the server responds with HTTP 200
 - **AND** the response body is `{"status": "ok"}`
+
+#### Scenario: Health check fails
+
+- **WHEN** a GET request is made to `/health`
+- **AND** the database is not reachable
+- **THEN** the server responds with HTTP 503
+- **AND** the response body is `{"status": "unhealthy"}`
 
 ### Requirement: SPA Static File Serving
 

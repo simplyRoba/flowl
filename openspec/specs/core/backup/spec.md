@@ -30,7 +30,7 @@ The system SHALL provide a `GET /api/data/export` endpoint that returns all user
 - **WHEN** plants or care events have associated photo files
 - **THEN** the ZIP archive contains those original photo files under a `photos/` directory
 - **AND** each file's name in `photos/` matches the corresponding `photo_path` value
-- **AND** thumbnail variants (`_200.jpg`, `_600.jpg`) SHALL NOT be included in the archive
+- **AND** thumbnail variants (`_200.jpg`, `_600.jpg`, `_1000.jpg`) SHALL NOT be included in the archive
 
 #### Scenario: Round-trip integrity
 

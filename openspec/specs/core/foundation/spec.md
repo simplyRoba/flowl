@@ -108,7 +108,7 @@ A publish-release workflow SHALL trigger when a GitHub release is published and 
 
 ### Requirement: Dockerfile
 
-A Dockerfile SHALL provide a minimal multi-arch container image based on `debian:bookworm-slim` that runs the `flowl` binary as a non-root user with a health check.
+A Dockerfile SHALL provide a minimal multi-arch container image based on a Debian slim variant that runs the `flowl` binary as a non-root user with a health check.
 
 #### Scenario: Container starts
 
