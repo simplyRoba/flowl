@@ -31,7 +31,13 @@
     color var(--transition-speed);
 }
 
-.chip:hover {
+.chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.chip:hover:not(:disabled) {
   border-color: var(--color-primary);
 }
 
@@ -55,7 +61,7 @@
   color: var(--color-text-muted);
 }
 
-.chip-dashed:hover {
+.chip-dashed:hover:not(:disabled) {
   color: var(--color-primary);
 }
 
