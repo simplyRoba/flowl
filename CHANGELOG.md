@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.4](https://github.com/simplyRoba/flowl/compare/v1.5.3...v1.5.4) (2026-03-29)
+
+
+### Bug Fixes
+
+* **ui:** move skipWaiting() from activate to install handler ([07515fc](https://github.com/simplyRoba/flowl/commit/07515fc099761b36998a7c6d30bd9b126b551d7c))
+
 ## [1.5.3](https://github.com/simplyRoba/flowl/compare/v1.5.2...v1.5.3) (2026-03-29)
 
 
