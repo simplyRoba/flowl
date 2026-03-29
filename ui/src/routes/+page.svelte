@@ -209,7 +209,15 @@
   <header class="page-header">
     <h1>{$translations.dashboard.myPlants}</h1>
     {#if $plants.length > 0}
-      <a href={resolve("/plants/new")} class="btn btn-primary btn-sm">
+      <a
+        href={resolve("/plants/new")}
+        class="btn btn-primary btn-sm"
+        class:disabled={$isOffline}
+        aria-disabled={$isOffline}
+        onclick={(e) => {
+          if ($isOffline) e.preventDefault();
+        }}
+      >
         <Plus size={18} />
         {$translations.dashboard.addPlant}
       </a>
@@ -231,7 +239,15 @@
       />
       <h2>{$translations.dashboard.noPlants}</h2>
       <p>{$translations.dashboard.noPlantsHint}</p>
-      <a href={resolve("/plants/new")} class="btn btn-primary btn-sm">
+      <a
+        href={resolve("/plants/new")}
+        class="btn btn-primary btn-sm"
+        class:disabled={$isOffline}
+        aria-disabled={$isOffline}
+        onclick={(e) => {
+          if ($isOffline) e.preventDefault();
+        }}
+      >
         <Plus size={18} />
         {$translations.dashboard.addPlant}
       </a>

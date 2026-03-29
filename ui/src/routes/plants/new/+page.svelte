@@ -5,8 +5,10 @@
   import { createPlant, updatePlant, uploadPhoto } from "$lib/stores/plants";
   import { translations } from "$lib/stores/locale";
   import { pushNotification } from "$lib/stores/notifications";
+  import { isOffline } from "$lib/stores/network";
   import PlantForm from "$lib/components/PlantForm.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
 
   let saving = $state(false);
   let draftPlantId: number | null = $state(null);
@@ -57,7 +59,7 @@
       type="submit"
       form="plant-form"
       class="btn btn-primary"
-      disabled={saving}
+      disabled={saving || $isOffline}
     >
       {saving ? $translations.common.saving : $translations.common.save}
     </button>
@@ -65,12 +67,16 @@
 
   <h1>{$translations.plant.addPlant}</h1>
 
-  <PlantForm
-    onsave={handleSave}
-    {saving}
-    showLocationNone={false}
-    showFooterActions={false}
-  />
+  {#if $isOffline}
+    <OfflineMessage />
+  {:else}
+    <PlantForm
+      onsave={handleSave}
+      {saving}
+      showLocationNone={false}
+      showFooterActions={false}
+    />
+  {/if}
 </div>
 
 <style>

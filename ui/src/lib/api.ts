@@ -209,10 +209,16 @@ export async function identifyPlant(photos: File[]): Promise<IdentifyResponse> {
     formData.append("photos", photo);
   }
 
-  const resp = await fetch("/api/ai/identify", {
-    method: "POST",
-    body: formData,
-  });
+  let resp: Response;
+  try {
+    resp = await fetch("/api/ai/identify", {
+      method: "POST",
+      body: formData,
+    });
+  } catch (err) {
+    recheckHealth();
+    throw err;
+  }
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({ message: resp.statusText }));
@@ -285,7 +291,13 @@ export function importData(file: File): Promise<ImportResult> {
 }
 
 export async function exportData(): Promise<void> {
-  const resp = await fetch("/api/data/export", { method: "GET" });
+  let resp: Response;
+  try {
+    resp = await fetch("/api/data/export", { method: "GET" });
+  } catch (err) {
+    recheckHealth();
+    throw err;
+  }
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({ message: resp.statusText }));
@@ -436,12 +448,18 @@ export async function* chatPlant(
     history: historyClean,
   };
   if (image) body.image = image;
-  const resp = await fetch("/api/ai/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal,
-  });
+  let resp: Response;
+  try {
+    resp = await fetch("/api/ai/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (err) {
+    recheckHealth();
+    throw err;
+  }
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({ message: resp.statusText }));

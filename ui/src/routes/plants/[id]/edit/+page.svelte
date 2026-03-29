@@ -10,8 +10,10 @@
   } from "$lib/stores/plants";
   import { translations } from "$lib/stores/locale";
   import { pushNotification } from "$lib/stores/notifications";
+  import { isOffline } from "$lib/stores/network";
   import PlantForm from "$lib/components/PlantForm.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
 
   interface Props {
     data: {
@@ -91,7 +93,7 @@
       type="submit"
       form="plant-form"
       class="btn btn-primary"
-      disabled={saving}
+      disabled={saving || $isOffline}
     >
       {saving ? $translations.common.saving : $translations.common.save}
     </button>
@@ -99,7 +101,9 @@
 
   <h1>{$translations.plant.editPlant}</h1>
 
-  {#if notFound}
+  {#if $isOffline}
+    <OfflineMessage />
+  {:else if notFound}
     <p class="error">{$translations.plant.notFound}</p>
   {:else if loadErrorCode}
     <p class="error">
