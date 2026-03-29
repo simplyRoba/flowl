@@ -158,6 +158,27 @@ The plant add/edit form SHALL include a "Care Info (optional)" section between "
 - **THEN** the form data SHALL include `difficulty: "easy"` and `pet_safety: "toxic"`
 - **AND** `growth_speed` and `soil_type` SHALL be omitted or sent as null
 
+### Requirement: Plant form offline awareness
+
+The plant add and edit forms SHALL display an offline message and disable submission when the device is offline.
+
+#### Scenario: Offline message shown on add form
+
+- **WHEN** the user navigates to `/plants/new` while offline
+- **THEN** the form SHALL be replaced with an offline message
+- **AND** the Save button in the page header SHALL be visually disabled
+
+#### Scenario: Offline message shown on edit form
+
+- **WHEN** the user navigates to `/plants/{id}/edit` while offline
+- **THEN** the form SHALL be replaced with an offline message
+- **AND** the Save button in the page header SHALL be visually disabled
+
+#### Scenario: Form restored when back online
+
+- **WHEN** the device transitions from offline to online
+- **THEN** the form SHALL reappear and the Save button SHALL become enabled again
+
 ### Requirement: Media section upload hint
 
 The photo upload placeholder in the Media section SHALL mention that a photo is needed for AI plant identification.

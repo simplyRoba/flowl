@@ -435,3 +435,40 @@ The chat drawer's save-note flow SHALL auto-attach the last user-sent photo to t
 
 - **WHEN** the user removes the auto-attached photo and confirms save
 - **THEN** the care event SHALL be created without a photo upload
+
+### Requirement: Chat drawer offline awareness
+
+The chat drawer SHALL disable all interactive controls when the device is offline.
+
+#### Scenario: Input and send disabled when offline
+
+- **WHEN** the device is offline
+- **THEN** the text input and send button SHALL be disabled
+
+#### Scenario: Attach button disabled when offline
+
+- **WHEN** the device is offline
+- **THEN** the photo attach button SHALL be disabled
+
+#### Scenario: Quick chips disabled when offline
+
+- **WHEN** the device is offline
+- **AND** the chat has no messages
+- **THEN** the quick-question chips SHALL be visually disabled and SHALL NOT send messages when clicked
+
+#### Scenario: Save note button disabled when offline
+
+- **WHEN** the device is offline
+- **AND** the chat contains assistant messages
+- **THEN** the "Save note" button SHALL be disabled
+
+#### Scenario: Confirm save disabled when offline
+
+- **WHEN** the device is offline
+- **AND** the summary editor is open
+- **THEN** the "Save" button in the summary editor SHALL be disabled
+
+#### Scenario: Controls re-enabled when back online
+
+- **WHEN** the device transitions from offline to online
+- **THEN** all chat drawer controls SHALL become enabled again

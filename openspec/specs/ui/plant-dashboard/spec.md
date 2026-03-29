@@ -183,7 +183,14 @@ Mutation actions on the dashboard SHALL be disabled when the device is offline.
 - **THEN** the "Water" button on the attention card SHALL be visually disabled
 - **AND** clicking it SHALL NOT send a request
 
-#### Scenario: Water button re-enabled when back online
+#### Scenario: Add Plant links disabled when offline
+
+- **WHEN** the dashboard is rendered while offline
+- **THEN** the "Add Plant" link in the page header and the "Add Plant" prompt in the empty state SHALL be visually disabled
+- **AND** clicking them SHALL NOT navigate to `/plants/new`
+
+#### Scenario: Mutation controls re-enabled when back online
 
 - **WHEN** the device transitions from offline to online
 - **THEN** the "Water" buttons on attention cards SHALL become enabled again
+- **AND** the "Add Plant" links SHALL become enabled again
