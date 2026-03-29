@@ -12,8 +12,14 @@ import {
   importData,
 } from "./api";
 
+vi.mock("./stores/network", () => ({
+  recheckHealth: vi.fn(),
+}));
+import { recheckHealth } from "./stores/network";
+
 beforeEach(() => {
   vi.restoreAllMocks();
+  vi.mocked(recheckHealth).mockClear();
 });
 
 function mockFetch(response: Partial<Response>) {
@@ -86,6 +92,25 @@ describe("request helper (via public API functions)", () => {
     mockFetch({ ok: true, status: 204 });
     const result = await deletePlant(1);
     expect(result).toBeUndefined();
+  });
+
+  it("triggers recheckHealth on network error", async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockRejectedValue(new TypeError("Failed to fetch"));
+    await expect(fetchPlants()).rejects.toThrow("Failed to fetch");
+    expect(recheckHealth).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not trigger recheckHealth on HTTP error", async () => {
+    mockFetch({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      json: vi.fn().mockResolvedValue({ message: "Server error" }),
+    });
+    await expect(fetchPlant(1)).rejects.toThrow("Server error");
+    expect(recheckHealth).not.toHaveBeenCalled();
   });
 
   it("includes status on thrown error", async () => {

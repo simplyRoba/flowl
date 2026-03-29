@@ -3,7 +3,7 @@ import { writable } from "svelte/store";
 export const isOffline = writable(false);
 
 const HEALTH_URL = "/health";
-const POLL_INTERVAL = 30_000;
+const POLL_INTERVAL = 60_000;
 const FETCH_TIMEOUT = 5_000;
 
 let polling = false;
@@ -24,6 +24,11 @@ async function checkHealth(): Promise<boolean> {
 async function update(): Promise<void> {
   const healthy = await checkHealth();
   isOffline.set(!healthy);
+}
+
+/** Trigger an immediate health check (e.g. after an API call fails). */
+export function recheckHealth(): void {
+  update();
 }
 
 export function startHealthPolling(): () => void {

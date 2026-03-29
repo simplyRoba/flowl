@@ -29,6 +29,15 @@ const mockLoadLocations = vi.fn();
 const mockUpdateLocation = vi.fn();
 const mockPushNotification = vi.fn();
 
+vi.mock("$lib/stores/network", async () => {
+  const { writable } = await import("svelte/store");
+  return {
+    isOffline: writable(false),
+    recheckHealth: vi.fn(),
+    startHealthPolling: vi.fn(() => () => {}),
+  };
+});
+
 vi.mock("$lib/stores/locations", async () => {
   const { writable } = await import("svelte/store");
   return {

@@ -125,6 +125,8 @@ export interface ChatMessage {
   image?: string;
 }
 
+import { recheckHealth } from "./stores/network";
+
 export class ApiError extends Error {
   status: number;
   code: string;
@@ -149,7 +151,13 @@ async function request<T>(
     init.body = JSON.stringify(body);
   }
 
-  const resp = await fetch(url, init);
+  let resp: Response;
+  try {
+    resp = await fetch(url, init);
+  } catch (err) {
+    recheckHealth();
+    throw err;
+  }
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({ message: resp.statusText }));
