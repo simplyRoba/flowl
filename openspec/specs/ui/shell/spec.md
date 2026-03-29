@@ -203,7 +203,7 @@ Sidebar nav labels SHALL use translated strings from the locale store instead of
 
 - **GIVEN** the locale is `'en'`
 - **WHEN** the sidebar renders
-- **THEN** the navigation labels are "Plants", "Log", and "Settings"
+- **THEN** the navigation labels are "Plants", "Care Journal", and "Settings"
 
 #### Scenario: German labels
 

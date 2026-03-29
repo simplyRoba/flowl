@@ -220,7 +220,7 @@ The settings page SHALL include an "AI Assistant" section displaying the AI conf
 
 - **WHEN** the settings page loads
 - **AND** the AI status API returns `enabled: true`
-- **THEN** the AI Assistant section shows a "Status" row with a green dot and "Enabled" text
+- **THEN** the AI Assistant section shows a "Status" row with a themed AI dot and "Enabled" text
 - **AND** a "Provider" row displays the hostname extracted from `base_url`
 - **AND** a "Model" row displays the `model` value
 

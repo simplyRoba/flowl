@@ -53,7 +53,7 @@ The dashboard plant cards SHALL display the plant's photo when available, fallin
 #### Scenario: Plant has photo on grid card
 
 - **WHEN** a plant has a `photo_url`
-- **THEN** the dashboard card shows the 600px thumbnail (derived via `thumbUrl(photo_url, 600)`) instead of the emoji icon
+- **THEN** the dashboard card shows the 200px thumbnail as `src` fallback (derived via `thumbUrl(photo_url, 200)`) with a `srcset` providing all thumbnail sizes for responsive loading
 
 #### Scenario: Plant has photo on attention card
 

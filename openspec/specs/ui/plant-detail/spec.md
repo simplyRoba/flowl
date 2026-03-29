@@ -114,7 +114,7 @@ The plant detail hero section SHALL display the plant's photo when available, us
 #### Scenario: Plant has photo
 
 - **WHEN** a plant has a `photo_url`
-- **THEN** the detail hero shows the 600px thumbnail (derived via `thumbUrl(photo_url, 600)`) instead of the original
+- **THEN** the detail hero shows the 200px thumbnail as `src` fallback (derived via `thumbUrl(photo_url, 200)`) with a `srcset` providing all thumbnail sizes for responsive loading
 
 #### Scenario: Plant has no photo
 
