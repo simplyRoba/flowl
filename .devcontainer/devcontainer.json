@@ -37,8 +37,11 @@
     "OPENSPEC_TELEMETRY": "0",
     "DO_NOT_TRACK": "1"
   },
-  // Initialize starship, install Playwright browsers and cargo-watch after container creation
-  "postCreateCommand": "echo 'eval \"$(starship init bash)\"' >> ~/.bashrc && npx playwright install --with-deps chromium && cargo install cargo-watch",
-  // Update global npm tools every time the container starts
-  "postStartCommand": "npm install -g npm opencode-ai @fission-ai/openspec @playwright/mcp"
+  // Install global npm tools, Playwright chromium browser, starship, and cargo-watch after creation.
+  // System deps for Chromium are already in the Docker image so only the browser binary is needed.
+  // The browser install must use the Playwright CLI bundled inside @playwright/mcp so that the
+  // browser revision matches the version the MCP server expects at runtime.
+  "postCreateCommand": "npm install -g npm opencode-ai @fission-ai/openspec @playwright/mcp && $(npm root -g)/@playwright/mcp/node_modules/.bin/playwright install chromium && echo 'eval \"$(starship init bash)\"' >> ~/.bashrc && cargo install cargo-watch",
+  // Refresh global npm tools and re-sync the Playwright browser on every container start
+  "postStartCommand": "npm install -g npm opencode-ai @fission-ai/openspec @playwright/mcp && $(npm root -g)/@playwright/mcp/node_modules/.bin/playwright install chromium"
 }
