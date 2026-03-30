@@ -267,28 +267,32 @@
     const stopNetworkMonitor = startNetworkMonitor();
 
     if ("serviceWorker" in navigator) {
-      const hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker
+        .register("/service-worker.js")
+        .then((registration) => {
+          registration.addEventListener("updatefound", () => {
+            const newWorker = registration.installing;
+            if (!newWorker || !registration.active) return;
 
-      navigator.serviceWorker.register("/service-worker.js").catch(() => {
-        // Registration failed — no action needed, SW is progressive enhancement.
-      });
-
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (!hadController) {
-          return;
-        }
-
-        pushNotification({
-          variant: "info",
-          message: $translations.notifications.updateAvailable,
-          action: {
-            label: $translations.notifications.reload,
-            onClick: () => {
-              window.location.reload();
-            },
-          },
+            newWorker.addEventListener("statechange", () => {
+              if (newWorker.state === "activated") {
+                pushNotification({
+                  variant: "info",
+                  message: $translations.notifications.updateAvailable,
+                  action: {
+                    label: $translations.notifications.reload,
+                    onClick: () => {
+                      window.location.reload();
+                    },
+                  },
+                });
+              }
+            });
+          });
+        })
+        .catch(() => {
+          // Registration failed — no action needed, SW is progressive enhancement.
         });
-      });
     }
 
     return () => {

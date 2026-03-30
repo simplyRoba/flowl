@@ -203,11 +203,8 @@ describe("app layout offline indicator", () => {
 });
 
 describe("app layout service worker update notification", () => {
-  let controllerChangeHandler: (() => void) | null = null;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    controllerChangeHandler = null;
     isOffline.set(false);
     mockUrl = new URL("http://localhost/");
     mockFetchSettings.mockResolvedValue({ theme: "system", locale: "en" });
@@ -220,15 +217,37 @@ describe("app layout service worker update notification", () => {
     vi.restoreAllMocks();
   });
 
-  function mockServiceWorker(hasController: boolean) {
-    const sw = {
-      register: vi.fn().mockResolvedValue(undefined),
-      controller: hasController ? {} : null,
+  function mockServiceWorker({
+    hasActive,
+  }: {
+    hasActive: boolean;
+  }) {
+    let updateFoundHandler: (() => void) | null = null;
+    let stateChangeHandler: (() => void) | null = null;
+
+    const installingWorker = {
+      state: "installing" as string,
       addEventListener: vi.fn((event: string, handler: () => void) => {
-        if (event === "controllerchange") {
-          controllerChangeHandler = handler;
+        if (event === "statechange") {
+          stateChangeHandler = handler;
         }
       }),
+    };
+
+    const registration = {
+      active: hasActive ? {} : null,
+      installing: installingWorker,
+      addEventListener: vi.fn((event: string, handler: () => void) => {
+        if (event === "updatefound") {
+          updateFoundHandler = handler;
+        }
+      }),
+    };
+
+    const sw = {
+      register: vi.fn().mockResolvedValue(registration),
+      controller: null,
+      addEventListener: vi.fn(),
     };
 
     Object.defineProperty(window.navigator, "serviceWorker", {
@@ -236,17 +255,28 @@ describe("app layout service worker update notification", () => {
       value: sw,
     });
 
-    return sw;
+    return {
+      triggerUpdate: () => {
+        updateFoundHandler!();
+      },
+      activateNewWorker: () => {
+        installingWorker.state = "activated";
+        stateChangeHandler!();
+      },
+    };
   }
 
-  it("shows update toast on controllerchange when previous controller existed", async () => {
-    mockServiceWorker(true);
+  it("shows update toast when a new service worker version is found and activated", async () => {
+    const { triggerUpdate, activateNewWorker } = mockServiceWorker({
+      hasActive: true,
+    });
     const pushSpy = vi.spyOn(notifications, "pushNotification");
 
     render(LayoutHarness);
+    await waitFor(() => {});
 
-    expect(controllerChangeHandler).not.toBeNull();
-    controllerChangeHandler!();
+    triggerUpdate();
+    activateNewWorker();
 
     await waitFor(() => {
       expect(pushSpy).toHaveBeenCalledWith(
@@ -257,14 +287,16 @@ describe("app layout service worker update notification", () => {
     });
   });
 
-  it("does not show update toast on controllerchange for first registration", async () => {
-    mockServiceWorker(false);
+  it("does not show update toast on first installation", async () => {
+    const { triggerUpdate } = mockServiceWorker({
+      hasActive: false,
+    });
     const pushSpy = vi.spyOn(notifications, "pushNotification");
 
     render(LayoutHarness);
+    await waitFor(() => {});
 
-    expect(controllerChangeHandler).not.toBeNull();
-    controllerChangeHandler!();
+    triggerUpdate();
 
     expect(pushSpy).not.toHaveBeenCalled();
   });
