@@ -29,6 +29,18 @@ A small Rust service that exposes plant care data (watering schedules, care need
   <img src="docs/assets/screenshot-plant-detail-mobile.png" alt="Mobile plant detail" width="120" />
 </p>
 
+## Features
+
+- **Watering at a glance** — see which plants need water and act with one tap
+- **Care journal** — log watering, fertilizing, repotting, pruning, and custom events with optional photos
+- **AI plant identification** — snap a photo, get the species and a full care profile
+- **AI care assistant** — ask plant-specific questions in a chat, save the advice to your journal
+- **Home Assistant integration** — each plant appears as an MQTT sensor with watering status
+- **Backup & restore** — export and import all data and photos as a ZIP
+- **Works everywhere** — responsive on phone, tablet, and desktop; installable as a PWA with offline support
+- **Light & dark theme** — with English, German, and Spanish translations
+- **Single binary** — self-contained Rust binary with embedded UI, just run it or use Docker
+
 ## Quick start
 
 ### Docker run
