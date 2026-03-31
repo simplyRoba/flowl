@@ -217,11 +217,7 @@ describe("app layout service worker update notification", () => {
     vi.restoreAllMocks();
   });
 
-  function mockServiceWorker({
-    hasActive,
-  }: {
-    hasActive: boolean;
-  }) {
+  function mockServiceWorker({ hasActive }: { hasActive: boolean }) {
     let updateFoundHandler: (() => void) | null = null;
     let stateChangeHandler: (() => void) | null = null;
 
