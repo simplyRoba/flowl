@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="ui/static/icon-512.png" alt="flowl logo" width="128" />
+  <img src="docs/assets/icon-512.png" alt="flowl logo" width="128" />
 </p>
 
 <h1 align="center">flowl</h1>
@@ -18,6 +18,16 @@
 </p>
 
 A small Rust service that exposes plant care data (watering schedules, care needs, etc.) for integration with Home Assistant and other automation platforms.
+
+<p align="center">
+  <img src="docs/assets/screenshot-dashboard.png" alt="Dashboard" width="400" />
+  <img src="docs/assets/screenshot-plant-detail.png" alt="Plant detail" width="400" />
+</p>
+<p align="center">
+  <img src="docs/assets/screenshot-care-journal.png" alt="Care journal" width="400" />
+  <img src="docs/assets/screenshot-dashboard-mobile.png" alt="Mobile dashboard" width="120" />
+  <img src="docs/assets/screenshot-plant-detail-mobile.png" alt="Mobile plant detail" width="120" />
+</p>
 
 ## Quick start
 
