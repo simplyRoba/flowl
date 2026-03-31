@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.5.5](https://github.com/simplyRoba/flowl/compare/v1.5.4...v1.5.5) (2026-03-31)
+
+
+### Bug Fixes
+
+* **deps:** bump svelte from 5.55.0 to 5.55.1 in /ui in the svelte group ([a669b49](https://github.com/simplyRoba/flowl/commit/a669b49038a16c9409ed68430dd229f42e10e4d3))
+* **deps:** bump svelte-check in /ui in the svelte group ([f2df194](https://github.com/simplyRoba/flowl/commit/f2df1940f5ddb38469cd2907246381e6c31698f1))
+* **deps:** bump typescript-eslint in /ui in the eslint group ([9f2eff4](https://github.com/simplyRoba/flowl/commit/9f2eff452e98ca2a9b8177a6ace5bca37ca5a731))
+* **devcontainer:** pre-install Chromium deps for Playwright MCP on ARM64 ([749614a](https://github.com/simplyRoba/flowl/commit/749614a1428805353bf8131491409f6926e19a40))
+* **ui:** use updatefound instead of controllerchange for SW update detection ([e2e74a1](https://github.com/simplyRoba/flowl/commit/e2e74a1159ea8b54c1b3a9be4878d24e7b9925ea))
+
 ## [1.5.4](https://github.com/simplyRoba/flowl/compare/v1.5.3...v1.5.4) (2026-03-29)
 
 
