@@ -24,7 +24,7 @@
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@testing-library/svelte": "^5.2.7",
     "@testing-library/user-event": "^14.6.1",
-    "eslint": "^10.1.0",
+    "eslint": "^10.2.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.17.0",
     "globals": "^17.4.0",
