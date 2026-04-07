@@ -274,9 +274,7 @@
         return new Promise((resolve) => {
           const channel = new MessageChannel();
           channel.port1.onmessage = (event) => {
-            resolve(
-              event.data?.type === "VERSION" ? event.data.version : null,
-            );
+            resolve(event.data?.type === "VERSION" ? event.data.version : null);
           };
           worker.postMessage({ type: "GET_VERSION" }, [channel.port2]);
           setTimeout(() => resolve(null), 2000);

@@ -238,13 +238,11 @@ describe("app layout service worker update notification", () => {
 
   function createVersionWorker(version: string) {
     return {
-      postMessage: vi.fn(
-        (data: { type: string }, ports: MessagePort[]) => {
-          if (data.type === "GET_VERSION") {
-            ports[0]?.postMessage({ type: "VERSION", version });
-          }
-        },
-      ),
+      postMessage: vi.fn((data: { type: string }, ports: MessagePort[]) => {
+        if (data.type === "GET_VERSION") {
+          ports[0]?.postMessage({ type: "VERSION", version });
+        }
+      }),
     };
   }
 
