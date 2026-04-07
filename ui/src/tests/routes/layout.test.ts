@@ -203,12 +203,31 @@ describe("app layout offline indicator", () => {
 });
 
 describe("app layout service worker update notification", () => {
+  let cacheStore: Map<string, Response>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    cacheStore = new Map();
     isOffline.set(false);
     mockUrl = new URL("http://localhost/");
     mockFetchSettings.mockResolvedValue({ theme: "system", locale: "en" });
     mockMatchMedia({ standalone: false, coarsePointer: false });
+
+    // Mock Cache API (not available in jsdom)
+    Object.defineProperty(window, "caches", {
+      configurable: true,
+      value: {
+        open: vi.fn().mockResolvedValue({
+          match: vi.fn((url: string) =>
+            Promise.resolve(cacheStore.get(url) ?? undefined),
+          ),
+          put: vi.fn((url: string, response: Response) => {
+            cacheStore.set(url, response);
+            return Promise.resolve();
+          }),
+        }),
+      },
+    });
   });
 
   afterEach(() => {
@@ -217,11 +236,34 @@ describe("app layout service worker update notification", () => {
     vi.restoreAllMocks();
   });
 
-  function mockServiceWorker({ hasActive }: { hasActive: boolean }) {
+  function createVersionWorker(version: string) {
+    return {
+      postMessage: vi.fn(
+        (data: { type: string }, ports: MessagePort[]) => {
+          if (data.type === "GET_VERSION") {
+            ports[0]?.postMessage({ type: "VERSION", version });
+          }
+        },
+      ),
+    };
+  }
+
+  function mockServiceWorker({
+    activeVersion,
+    newVersion,
+  }: {
+    activeVersion: string | null;
+    newVersion: string;
+  }) {
     let updateFoundHandler: (() => void) | null = null;
     let stateChangeHandler: (() => void) | null = null;
 
+    const activeWorker = activeVersion
+      ? createVersionWorker(activeVersion)
+      : null;
+
     const installingWorker = {
+      ...createVersionWorker(newVersion),
       state: "installing" as string,
       addEventListener: vi.fn((event: string, handler: () => void) => {
         if (event === "statechange") {
@@ -231,7 +273,7 @@ describe("app layout service worker update notification", () => {
     };
 
     const registration = {
-      active: hasActive ? {} : null,
+      active: activeWorker,
       installing: installingWorker,
       addEventListener: vi.fn((event: string, handler: () => void) => {
         if (event === "updatefound") {
@@ -262,14 +304,18 @@ describe("app layout service worker update notification", () => {
     };
   }
 
-  it("shows update toast when a new service worker version is found and activated", async () => {
+  it("shows update toast when the service worker version actually changed", async () => {
     const { triggerUpdate, activateNewWorker } = mockServiceWorker({
-      hasActive: true,
+      activeVersion: "v1",
+      newVersion: "v2",
     });
     const pushSpy = vi.spyOn(notifications, "pushNotification");
 
     render(LayoutHarness);
-    await waitFor(() => {});
+
+    await waitFor(() => {
+      expect(cacheStore.size).toBeGreaterThan(0);
+    });
 
     triggerUpdate();
     activateNewWorker();
@@ -283,14 +329,37 @@ describe("app layout service worker update notification", () => {
     });
   });
 
-  it("does not show update toast on first installation", async () => {
-    const { triggerUpdate } = mockServiceWorker({
-      hasActive: false,
+  it("does not show update toast when the version is unchanged", async () => {
+    const { triggerUpdate, activateNewWorker } = mockServiceWorker({
+      activeVersion: "v1",
+      newVersion: "v1",
     });
     const pushSpy = vi.spyOn(notifications, "pushNotification");
 
     render(LayoutHarness);
-    await waitFor(() => {});
+
+    await waitFor(() => {
+      expect(cacheStore.size).toBeGreaterThan(0);
+    });
+
+    triggerUpdate();
+    activateNewWorker();
+
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(pushSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not show update toast on first installation", async () => {
+    const { triggerUpdate } = mockServiceWorker({
+      activeVersion: null,
+      newVersion: "v1",
+    });
+    const pushSpy = vi.spyOn(notifications, "pushNotification");
+
+    render(LayoutHarness);
+
+    await new Promise((r) => setTimeout(r, 50));
 
     triggerUpdate();
 

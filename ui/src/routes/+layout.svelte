@@ -267,26 +267,64 @@
     const stopNetworkMonitor = startNetworkMonitor();
 
     if ("serviceWorker" in navigator) {
+      const VERSION_CACHE = "flowl-sw-version";
+      const VERSION_URL = "/sw-version";
+
+      function querySwVersion(worker: ServiceWorker): Promise<string | null> {
+        return new Promise((resolve) => {
+          const channel = new MessageChannel();
+          channel.port1.onmessage = (event) => {
+            resolve(
+              event.data?.type === "VERSION" ? event.data.version : null,
+            );
+          };
+          worker.postMessage({ type: "GET_VERSION" }, [channel.port2]);
+          setTimeout(() => resolve(null), 2000);
+        });
+      }
+
+      async function getStoredVersion(): Promise<string | null> {
+        const cache = await caches.open(VERSION_CACHE);
+        const response = await cache.match(VERSION_URL);
+        return response ? response.text() : null;
+      }
+
+      async function setStoredVersion(version: string): Promise<void> {
+        const cache = await caches.open(VERSION_CACHE);
+        await cache.put(VERSION_URL, new Response(version));
+      }
+
       navigator.serviceWorker
         .register("/service-worker.js")
-        .then((registration) => {
+        .then(async (registration) => {
+          if (registration.active) {
+            const current = await querySwVersion(registration.active);
+            if (current) await setStoredVersion(current);
+          }
+
           registration.addEventListener("updatefound", () => {
             const newWorker = registration.installing;
             if (!newWorker || !registration.active) return;
 
-            newWorker.addEventListener("statechange", () => {
-              if (newWorker.state === "activated") {
-                pushNotification({
-                  variant: "info",
-                  message: $translations.notifications.updateAvailable,
-                  action: {
-                    label: $translations.notifications.reload,
-                    onClick: () => {
-                      window.location.reload();
-                    },
+            newWorker.addEventListener("statechange", async () => {
+              if (newWorker.state !== "activated") return;
+
+              const newVersion = await querySwVersion(newWorker);
+              const storedVersion = await getStoredVersion();
+
+              if (!newVersion || newVersion === storedVersion) return;
+
+              await setStoredVersion(newVersion);
+              pushNotification({
+                variant: "info",
+                message: $translations.notifications.updateAvailable,
+                action: {
+                  label: $translations.notifications.reload,
+                  onClick: () => {
+                    window.location.reload();
                   },
-                });
-              }
+                },
+              });
             });
           });
         })

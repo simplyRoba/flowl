@@ -22,7 +22,7 @@ sw.addEventListener("install", (event) => {
 });
 
 sw.addEventListener("activate", (event) => {
-  const keepCaches = new Set([CACHE_NAME, API_CACHE_NAME]);
+  const keepCaches = new Set([CACHE_NAME, API_CACHE_NAME, "flowl-sw-version"]);
   event.waitUntil(
     caches
       .keys()
@@ -113,4 +113,10 @@ sw.addEventListener("fetch", (event) => {
   }
 
   // Everything else: pass through to network
+});
+
+sw.addEventListener("message", (event) => {
+  if (event.data?.type === "GET_VERSION") {
+    event.ports[0]?.postMessage({ type: "VERSION", version });
+  }
 });
