@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.5.6](https://github.com/simplyRoba/flowl/compare/v1.5.5...v1.5.6) (2026-04-07)
+
+
+### Bug Fixes
+
+* **deps:** bump @sveltejs/kit in /ui in the svelte group ([c143bc5](https://github.com/simplyRoba/flowl/commit/c143bc53d526f6086a2a8e3cbbc7b17ef0a67127))
+* **deps:** bump eslint from 10.1.0 to 10.2.0 in /ui in the eslint group ([a35f71f](https://github.com/simplyRoba/flowl/commit/a35f71f6fd7bad813abe2026f7f14d9d5776a05e))
+* **deps:** bump eslint-plugin-svelte in /ui in the eslint group ([b4711d3](https://github.com/simplyRoba/flowl/commit/b4711d30bdeb6feae895215b2dc1397b3f828a14))
+* **deps:** bump jsdom from 29.0.1 to 29.0.2 in /ui ([e36689d](https://github.com/simplyRoba/flowl/commit/e36689d48a638caa5a87d46096267d2628ff462f))
+* **deps:** bump tokio from 1.50.0 to 1.51.0 in the tokio group ([12a38ad](https://github.com/simplyRoba/flowl/commit/12a38ad8434c73c6577771a08d7693c061e1dd87))
+* **deps:** bump typescript from 5.9.3 to 6.0.2 in /ui ([0e03de8](https://github.com/simplyRoba/flowl/commit/0e03de866726dcc2c4255c8854da6f687d27bc43))
+* **deps:** bump vite from 8.0.3 to 8.0.4 in /ui ([094f9da](https://github.com/simplyRoba/flowl/commit/094f9da8c5ddab4292d1c2e003b762c432dd4593))
+* **deps:** bump vite from 8.0.4 to 8.0.5 in /ui ([964f1a2](https://github.com/simplyRoba/flowl/commit/964f1a2d86754a9dac2290ae38935e8cb7ca3a43))
+* **deps:** bump zip from 8.4.0 to 8.5.0 ([87d53c6](https://github.com/simplyRoba/flowl/commit/87d53c6ec6454d368d0b46e3080db1514695e8c7))
+* **ui:** suppress false SW update toasts on iOS PWA resume ([e54e3bc](https://github.com/simplyRoba/flowl/commit/e54e3bcce33e0a5fd65e8f351ee3425a6c2c6e0b))
+
 ## [1.5.5](https://github.com/simplyRoba/flowl/compare/v1.5.4...v1.5.5) (2026-03-31)
 
 
