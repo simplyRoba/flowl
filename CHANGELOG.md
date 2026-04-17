@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.5.7](https://github.com/simplyRoba/flowl/compare/v1.5.6...v1.5.7) (2026-04-17)
+
+
+### Bug Fixes
+
+* **ci:** bump softprops/action-gh-release from 2 to 3 ([98c3a32](https://github.com/simplyRoba/flowl/commit/98c3a326d3347db75c5514890f4fcc80326e00f6))
+* **deps:** bump @sveltejs/kit in /ui in the svelte group ([d693e9e](https://github.com/simplyRoba/flowl/commit/d693e9e8e91fc5920528f716fdcb37698aff2756))
+* **deps:** bump axum-extra from 0.12.5 to 0.12.6 ([7d60601](https://github.com/simplyRoba/flowl/commit/7d60601e02868a2c3c48342653a4869496941707))
+* **deps:** bump globals from 17.4.0 to 17.5.0 in /ui ([af5c960](https://github.com/simplyRoba/flowl/commit/af5c9604bb71e53f10142d6593a7d8a0c09d4f77))
+* **deps:** bump prettier in /ui in the prettier group ([09b11cb](https://github.com/simplyRoba/flowl/commit/09b11cbaf8d7a865178c8ca19c635d61e61a37bd))
+* **deps:** bump prettier in /ui in the prettier group ([9b49f7c](https://github.com/simplyRoba/flowl/commit/9b49f7cb1cd199927400da8276d3c47260e01a0f))
+* **deps:** bump svelte from 5.55.2 to 5.55.3 in /ui in the svelte group ([a44ff5e](https://github.com/simplyRoba/flowl/commit/a44ff5e161a0c81f6a4064b86dec02ef71207451))
+* **deps:** bump svelte from 5.55.3 to 5.55.4 in /ui in the svelte group ([eac31d9](https://github.com/simplyRoba/flowl/commit/eac31d9a7103a0692b2ef711bc8f877300c60a71))
+* **deps:** bump the svelte group in /ui with 2 updates ([3eb84bf](https://github.com/simplyRoba/flowl/commit/3eb84bf5fbc7ab34a8ab16baf6876397a174ae3f))
+* **deps:** bump tokio from 1.51.0 to 1.51.1 in the tokio group ([1bb5b47](https://github.com/simplyRoba/flowl/commit/1bb5b47d1a54ae61f25a5f2faf751b1e52b42644))
+* **deps:** bump tokio from 1.51.1 to 1.52.0 in the tokio group ([6541d63](https://github.com/simplyRoba/flowl/commit/6541d63561e5f0c209c730e5cdae5561d411e20d))
+* **deps:** bump typescript from 6.0.2 to 6.0.3 in /ui ([dbe6ce2](https://github.com/simplyRoba/flowl/commit/dbe6ce24381af8e4739b9e6c534ae37365910347))
+* **deps:** bump typescript-eslint in /ui in the eslint group ([a2f2244](https://github.com/simplyRoba/flowl/commit/a2f22442cf8058a0ad946bde23d8ee498c165134))
+* **deps:** bump typescript-eslint in /ui in the eslint group ([8b2024d](https://github.com/simplyRoba/flowl/commit/8b2024d4b9890f173c311a86616b42ba506230d0))
+* **deps:** bump vite from 8.0.5 to 8.0.7 in /ui ([188e643](https://github.com/simplyRoba/flowl/commit/188e643242c15fe11ebfa68dbb7081bda999d415))
+* **deps:** bump vite from 8.0.7 to 8.0.8 in /ui ([39d386e](https://github.com/simplyRoba/flowl/commit/39d386e4d38d97b50b1cef5ba6665efca7566ffd))
+* **deps:** bump vitest from 4.1.2 to 4.1.3 in /ui ([7d20d00](https://github.com/simplyRoba/flowl/commit/7d20d00895c3a8bea89798d4bb3d3d05d4c8eb74))
+* **deps:** bump vitest from 4.1.3 to 4.1.4 in /ui ([832bba6](https://github.com/simplyRoba/flowl/commit/832bba66f00adb6eddf8e9d1bc6583c4886c8f59))
+* **deps:** bump zip from 8.5.0 to 8.5.1 ([5a5d061](https://github.com/simplyRoba/flowl/commit/5a5d06134099d4b695e390c547dab1c4b43dc4bb))
+* use idiomatic Duration constructors to satisfy new clippy pedantic lint ([ee67d61](https://github.com/simplyRoba/flowl/commit/ee67d614ece4177b161da0b205e3a3dc7dc8cc54))
+
 ## [1.5.6](https://github.com/simplyRoba/flowl/compare/v1.5.5...v1.5.6) (2026-04-07)
 
 
