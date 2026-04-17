@@ -186,7 +186,7 @@ pub fn connect(
 
     let task = tokio::spawn(async move {
         let mut delay = std::time::Duration::from_secs(5);
-        let max_delay = std::time::Duration::from_secs(120);
+        let max_delay = std::time::Duration::from_mins(2);
 
         loop {
             match event_loop.poll().await {
@@ -539,7 +539,7 @@ pub fn spawn_state_checker(
                 info!("MQTT (re)connected, triggering full republish");
                 republish_all(&pool, &client, &prefix).await;
                 cache.clear();
-                tokio::time::sleep(std::time::Duration::from_secs(3600)).await;
+                tokio::time::sleep(std::time::Duration::from_hours(1)).await;
                 continue;
             }
 
@@ -581,7 +581,7 @@ pub fn spawn_state_checker(
                 }
             }
 
-            tokio::time::sleep(std::time::Duration::from_secs(3600)).await;
+            tokio::time::sleep(std::time::Duration::from_hours(1)).await;
         }
     }))
 }

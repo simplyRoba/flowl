@@ -9,7 +9,7 @@ use tokio_stream::StreamExt as _;
 use tracing::{debug, warn};
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
-const REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
+const REQUEST_TIMEOUT: Duration = Duration::from_mins(2);
 const MAX_SSE_LINE_LEN: usize = 64 * 1024;
 
 use super::prompts;
