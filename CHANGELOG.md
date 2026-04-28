@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.5.8](https://github.com/simplyRoba/flowl/compare/v1.5.7...v1.5.8) (2026-04-28)
+
+
+### Bug Fixes
+
+* **ci:** bump googleapis/release-please-action from 4 to 5 ([eb8f884](https://github.com/simplyRoba/flowl/commit/eb8f884185b0d9cdf9ac18fce67b811491388114))
+* **deps:** bump eslint from 10.2.0 to 10.2.1 in /ui in the eslint group ([4e89b9b](https://github.com/simplyRoba/flowl/commit/4e89b9b6e22c9941be5c35e372c8b6b04981b5ca))
+* **deps:** bump jsdom from 29.0.2 to 29.1.0 in /ui ([da135be](https://github.com/simplyRoba/flowl/commit/da135be429de6712a6a8a5bb376d3c4fd725c6e5))
+* **deps:** bump rand from 0.8.5 to 0.8.6 ([77c6739](https://github.com/simplyRoba/flowl/commit/77c67393ddd0deb772871c50bfaf31a314649f3d))
+* **deps:** bump the eslint group across 1 directory with 2 updates ([578a94b](https://github.com/simplyRoba/flowl/commit/578a94b6b402cf26b878b657b400ca5c63affb2b))
+* **deps:** bump the svelte group in /ui with 2 updates ([63f685e](https://github.com/simplyRoba/flowl/commit/63f685e1702dfb3868cd9cc1357b19b40734e44c))
+* **deps:** bump tokio from 1.52.0 to 1.52.1 in the tokio group ([75990c5](https://github.com/simplyRoba/flowl/commit/75990c56713f5c1f782e6e96811fc3699c6f8983))
+* **deps:** bump typescript-eslint in /ui in the eslint group ([f0643a0](https://github.com/simplyRoba/flowl/commit/f0643a0021c12d695b5ed15cbeb51889e5e96d08))
+* **deps:** bump uuid from 1.23.0 to 1.23.1 ([c42b0d6](https://github.com/simplyRoba/flowl/commit/c42b0d6e7e0dfe79b7388c2ad2415a41c1f693fa))
+* **deps:** bump vite from 8.0.8 to 8.0.9 in /ui ([cea0ca8](https://github.com/simplyRoba/flowl/commit/cea0ca881094bf8d5fa92c0c4792250ea807de02))
+* **deps:** bump vite from 8.0.9 to 8.0.10 in /ui ([68994a0](https://github.com/simplyRoba/flowl/commit/68994a0918dd0c4086a898f35bce52874f2d9bd9))
+* **deps:** bump vitest from 4.1.4 to 4.1.5 in /ui ([b55dda8](https://github.com/simplyRoba/flowl/commit/b55dda8f548bed41bc08e0e62c6817f37a6e203e))
+* **deps:** bump zip from 8.5.1 to 8.6.0 ([147811e](https://github.com/simplyRoba/flowl/commit/147811eaead2c1c7d8126ce7ba4170d73fb7d1c3))
+
 ## [1.5.7](https://github.com/simplyRoba/flowl/compare/v1.5.6...v1.5.7) (2026-04-17)
 
 
