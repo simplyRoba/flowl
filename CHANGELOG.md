@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.5.8](https://github.com/simplyRoba/flowl/compare/v1.5.7...v1.5.8) (2026-05-19)
+
+
+### Bug Fixes
+
+* **ci:** bump googleapis/release-please-action from 4 to 5 ([eb8f884](https://github.com/simplyRoba/flowl/commit/eb8f884185b0d9cdf9ac18fce67b811491388114))
+* **deps:** bump eslint from 10.2.0 to 10.2.1 in /ui in the eslint group ([4e89b9b](https://github.com/simplyRoba/flowl/commit/4e89b9b6e22c9941be5c35e372c8b6b04981b5ca))
+* **deps:** bump globals from 17.5.0 to 17.6.0 in /ui ([2446553](https://github.com/simplyRoba/flowl/commit/24465538ad9fba4891707af40782fdacb4a71792))
+* **deps:** bump jsdom from 29.0.2 to 29.1.0 in /ui ([da135be](https://github.com/simplyRoba/flowl/commit/da135be429de6712a6a8a5bb376d3c4fd725c6e5))
+* **deps:** bump jsdom from 29.1.0 to 29.1.1 in /ui ([eac9e2b](https://github.com/simplyRoba/flowl/commit/eac9e2b22a33515e1cca0961c326fa550c10d507))
+* **deps:** bump prettier-plugin-svelte ([1d198a5](https://github.com/simplyRoba/flowl/commit/1d198a5594346c6f9e8c0fa5e662f8abe273dc3e))
+* **deps:** bump rand from 0.8.5 to 0.8.6 ([77c6739](https://github.com/simplyRoba/flowl/commit/77c67393ddd0deb772871c50bfaf31a314649f3d))
+* **deps:** bump the eslint group across 1 directory with 2 updates ([a9a2b44](https://github.com/simplyRoba/flowl/commit/a9a2b448079b755b22549f46ff82119bff16424e))
+* **deps:** bump the eslint group across 1 directory with 2 updates ([cf4bda7](https://github.com/simplyRoba/flowl/commit/cf4bda78fd98810c1751038dd25997557667a342))
+* **deps:** bump the eslint group across 1 directory with 2 updates ([578a94b](https://github.com/simplyRoba/flowl/commit/578a94b6b402cf26b878b657b400ca5c63affb2b))
+* **deps:** bump the svelte group across 1 directory with 2 updates ([bd440be](https://github.com/simplyRoba/flowl/commit/bd440bee865087e54ac7ba059ca014ef8b6c280f))
+* **deps:** bump the svelte group across 1 directory with 3 updates ([1c9e8ea](https://github.com/simplyRoba/flowl/commit/1c9e8eae65b69062a2c7594888fb349bff1a6e95))
+* **deps:** bump the svelte group in /ui with 2 updates ([63f685e](https://github.com/simplyRoba/flowl/commit/63f685e1702dfb3868cd9cc1357b19b40734e44c))
+* **deps:** bump the svelte group in /ui with 3 updates ([72e2776](https://github.com/simplyRoba/flowl/commit/72e27761617555ff1ca49a379b5a756b79a53d88))
+* **deps:** bump tokio from 1.52.0 to 1.52.1 in the tokio group ([75990c5](https://github.com/simplyRoba/flowl/commit/75990c56713f5c1f782e6e96811fc3699c6f8983))
+* **deps:** bump tokio from 1.52.1 to 1.52.2 in the tokio group ([a62bf51](https://github.com/simplyRoba/flowl/commit/a62bf512f942baf3d1d7714151ebda2f611b8017))
+* **deps:** bump tokio from 1.52.2 to 1.52.3 in the tokio group ([d884de6](https://github.com/simplyRoba/flowl/commit/d884de622ccca75c21dec9fe3f1c56469ab9d38e))
+* **deps:** bump tower-http from 0.6.10 to 0.6.11 ([ef2b9fa](https://github.com/simplyRoba/flowl/commit/ef2b9fa945bd3151b66bcc5d7b584a856c8b2b08))
+* **deps:** bump tower-http from 0.6.8 to 0.6.9 ([cb3f0f1](https://github.com/simplyRoba/flowl/commit/cb3f0f1af90db4c141243fe8b81c3da4a9c784e8))
+* **deps:** bump tower-http from 0.6.9 to 0.6.10 ([5f35888](https://github.com/simplyRoba/flowl/commit/5f358889cdd4ae47fcb4075c4f5b670f47896e83))
+* **deps:** bump typescript-eslint in /ui in the eslint group ([f0643a0](https://github.com/simplyRoba/flowl/commit/f0643a0021c12d695b5ed15cbeb51889e5e96d08))
+* **deps:** bump uuid from 1.23.0 to 1.23.1 ([c42b0d6](https://github.com/simplyRoba/flowl/commit/c42b0d6e7e0dfe79b7388c2ad2415a41c1f693fa))
+* **deps:** bump vite from 8.0.10 to 8.0.11 in /ui ([c03e915](https://github.com/simplyRoba/flowl/commit/c03e915105f390eb822dc38f446d4c691df23f2e))
+* **deps:** bump vite from 8.0.11 to 8.0.13 in /ui ([2795635](https://github.com/simplyRoba/flowl/commit/27956350e675be5ff745d069f163a247d554b2f0))
+* **deps:** bump vite from 8.0.8 to 8.0.9 in /ui ([cea0ca8](https://github.com/simplyRoba/flowl/commit/cea0ca881094bf8d5fa92c0c4792250ea807de02))
+* **deps:** bump vite from 8.0.9 to 8.0.10 in /ui ([68994a0](https://github.com/simplyRoba/flowl/commit/68994a0918dd0c4086a898f35bce52874f2d9bd9))
+* **deps:** bump vitest from 4.1.4 to 4.1.5 in /ui ([b55dda8](https://github.com/simplyRoba/flowl/commit/b55dda8f548bed41bc08e0e62c6817f37a6e203e))
+* **deps:** bump vitest from 4.1.5 to 4.1.6 in /ui ([c8a678d](https://github.com/simplyRoba/flowl/commit/c8a678dfbed98097b492597c68ff4c08b3dad037))
+* **deps:** bump zip from 8.5.1 to 8.6.0 ([147811e](https://github.com/simplyRoba/flowl/commit/147811eaead2c1c7d8126ce7ba4170d73fb7d1c3))
+
 ## [1.5.7](https://github.com/simplyRoba/flowl/compare/v1.5.6...v1.5.7) (2026-04-17)
 
 
