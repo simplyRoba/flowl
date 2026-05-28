@@ -67,7 +67,7 @@ pub async fn upload_photo(
     info!(plant_id = id, filename = %filename, "Photo uploaded");
 
     let query = format!("{PLANT_SELECT} WHERE p.id = ?");
-    let row = sqlx::query_as::<_, PlantRow>(&query)
+    let row = sqlx::query_as::<_, PlantRow>(sqlx::AssertSqlSafe(query.as_str()))
         .bind(id)
         .fetch_one(&state.pool)
         .await

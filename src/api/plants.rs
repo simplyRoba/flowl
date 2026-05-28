@@ -261,7 +261,7 @@ pub struct UpdatePlant {
 /// Returns `ApiError::InternalError` on database failures.
 pub async fn list_plants(State(pool): State<SqlitePool>) -> Result<Json<Vec<Plant>>, ApiError> {
     let query = format!("{PLANT_SELECT} ORDER BY p.name");
-    let rows = sqlx::query_as::<_, PlantRow>(&query)
+    let rows = sqlx::query_as::<_, PlantRow>(sqlx::AssertSqlSafe(query.as_str()))
         .fetch_all(&pool)
         .await
         .map_err(db_error)?;
@@ -277,7 +277,7 @@ pub async fn get_plant(
     Path(id): Path<i64>,
 ) -> Result<Json<Plant>, ApiError> {
     let query = format!("{PLANT_SELECT} WHERE p.id = ?");
-    let row = sqlx::query_as::<_, PlantRow>(&query)
+    let row = sqlx::query_as::<_, PlantRow>(sqlx::AssertSqlSafe(query.as_str()))
         .bind(id)
         .fetch_optional(&pool)
         .await
@@ -346,7 +346,7 @@ pub async fn create_plant(
     .map_err(db_error)?;
 
     let query = format!("{PLANT_SELECT} WHERE p.id = ?");
-    let row = sqlx::query_as::<_, PlantRow>(&query)
+    let row = sqlx::query_as::<_, PlantRow>(sqlx::AssertSqlSafe(query.as_str()))
         .bind(id)
         .fetch_one(&state.pool)
         .await
@@ -392,12 +392,14 @@ pub async fn update_plant(
     JsonBody(body): JsonBody<UpdatePlant>,
 ) -> Result<Json<Plant>, ApiError> {
     // Fetch current plant
-    let current = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
-        .bind(id)
-        .fetch_optional(&state.pool)
-        .await
-        .map_err(db_error)?
-        .ok_or(ApiError::NotFound("PLANT_NOT_FOUND"))?;
+    let current = sqlx::query_as::<_, PlantRow>(sqlx::AssertSqlSafe(format!(
+        "{PLANT_SELECT} WHERE p.id = ?"
+    )))
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(db_error)?
+    .ok_or(ApiError::NotFound("PLANT_NOT_FOUND"))?;
 
     let name = body.name.unwrap_or(current.name);
     let species = body.species.unwrap_or(current.species);
@@ -449,11 +451,13 @@ pub async fn update_plant(
     .await
     .map_err(db_error)?;
 
-    let row = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
-        .bind(id)
-        .fetch_one(&state.pool)
-        .await
-        .map_err(db_error)?;
+    let row = sqlx::query_as::<_, PlantRow>(sqlx::AssertSqlSafe(format!(
+        "{PLANT_SELECT} WHERE p.id = ?"
+    )))
+    .bind(id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(db_error)?;
 
     let plant = Plant::from(row);
     debug!(plant_id = id, "Plant updated");
@@ -516,11 +520,13 @@ pub async fn water_plant(
     .await
     .map_err(db_error)?;
 
-    let row = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
-        .bind(id)
-        .fetch_one(&state.pool)
-        .await
-        .map_err(db_error)?;
+    let row = sqlx::query_as::<_, PlantRow>(sqlx::AssertSqlSafe(format!(
+        "{PLANT_SELECT} WHERE p.id = ?"
+    )))
+    .bind(id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(db_error)?;
 
     let plant = Plant::from(row);
     debug!(plant_id = id, "Plant watered");
