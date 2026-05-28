@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.5.9](https://github.com/simplyRoba/flowl/compare/v1.5.8...v1.5.9) (2026-05-28)
+
+
+### Bug Fixes
+
+* **deps:** bump prettier-plugin-svelte from 3.5.2 to 4.0.1 in /ui in the prettier group ([d4bfaf9](https://github.com/simplyRoba/flowl/commit/d4bfaf9bd839300293476d65ecfe2ac545928162))
+* **deps:** bump serde_json from 1.0.149 to 1.0.150 in the serde group ([67ff611](https://github.com/simplyRoba/flowl/commit/67ff6114a9a18a4f7cf4704d07bbc44216bd5c36))
+* **deps:** bump sqlx from 0.8.6 to 0.9.0 ([e090d9e](https://github.com/simplyRoba/flowl/commit/e090d9ef0e5debd5b98bfafb8098041eef0f249b))
+* **deps:** bump the eslint group across 1 directory with 2 updates ([f6fd6fb](https://github.com/simplyRoba/flowl/commit/f6fd6fbcf943e015a666d0bf027925001943c761))
+* **deps:** bump the svelte group across 1 directory with 2 updates ([dd81356](https://github.com/simplyRoba/flowl/commit/dd8135602797e657664c9495b4e91e54b2ae5519))
+* **deps:** bump vite from 8.0.13 to 8.0.14 in /ui ([7972a35](https://github.com/simplyRoba/flowl/commit/7972a3569d3be3881f28d8acbf9100fdc5f4320b))
+* **deps:** bump vitest from 4.1.6 to 4.1.7 in /ui ([dcff432](https://github.com/simplyRoba/flowl/commit/dcff432215156c330d39b20edc5c4fc83e8aab30))
+
 ## [1.5.8](https://github.com/simplyRoba/flowl/compare/v1.5.7...v1.5.8) (2026-05-19)
 
 
