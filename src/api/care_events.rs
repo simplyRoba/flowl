@@ -85,10 +85,12 @@ async fn plant_exists(pool: &SqlitePool, id: i64) -> Result<(), ApiError> {
 }
 
 async fn publish_plant_watering_mqtt(state: &AppState, plant_id: i64) {
-    let Ok(row) = sqlx::query_as::<_, PlantRow>(&format!("{PLANT_SELECT} WHERE p.id = ?"))
-        .bind(plant_id)
-        .fetch_one(&state.pool)
-        .await
+    let Ok(row) = sqlx::query_as::<_, PlantRow>(sqlx::AssertSqlSafe(format!(
+        "{PLANT_SELECT} WHERE p.id = ?"
+    )))
+    .bind(plant_id)
+    .fetch_one(&state.pool)
+    .await
     else {
         return;
     };
@@ -121,7 +123,7 @@ pub async fn list_care_events(
     plant_exists(&pool, plant_id).await?;
 
     let query = format!("{CARE_EVENT_SELECT} WHERE ce.plant_id = ? ORDER BY ce.occurred_at DESC");
-    let events = sqlx::query_as::<_, CareEvent>(&query)
+    let events = sqlx::query_as::<_, CareEvent>(sqlx::AssertSqlSafe(query.as_str()))
         .bind(plant_id)
         .fetch_all(&pool)
         .await
@@ -165,7 +167,7 @@ pub async fn create_care_event(
     .map_err(db_error)?;
 
     let query = format!("{CARE_EVENT_SELECT} WHERE ce.id = ?");
-    let event = sqlx::query_as::<_, CareEvent>(&query)
+    let event = sqlx::query_as::<_, CareEvent>(sqlx::AssertSqlSafe(query.as_str()))
         .bind(id)
         .fetch_one(&state.pool)
         .await
@@ -250,7 +252,7 @@ pub async fn list_all_care_events(
 
     query.push_str(" ORDER BY ce.occurred_at DESC, ce.id DESC LIMIT ?");
 
-    let mut q = sqlx::query_as::<_, CareEvent>(&query);
+    let mut q = sqlx::query_as::<_, CareEvent>(sqlx::AssertSqlSafe(query.as_str()));
     if let Some(before) = params.before {
         q = q.bind(before);
     }
@@ -330,7 +332,7 @@ pub async fn upload_care_event_photo(
     info!(plant_id, event_id, filename = %filename, "Care event photo uploaded");
 
     let query = format!("{CARE_EVENT_SELECT} WHERE ce.id = ?");
-    let event = sqlx::query_as::<_, CareEvent>(&query)
+    let event = sqlx::query_as::<_, CareEvent>(sqlx::AssertSqlSafe(query.as_str()))
         .bind(event_id)
         .fetch_one(&state.pool)
         .await
