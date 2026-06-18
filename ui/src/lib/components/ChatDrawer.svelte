@@ -491,8 +491,7 @@
         class="summary-textarea"
         bind:value={summaryText}
         placeholder={$translations.chat.summaryPlaceholder}
-        disabled={savingNote}
-      ></textarea>
+        disabled={savingNote}></textarea>
       {#if lastUserPhotoPreview && saveNotePhoto}
         <div class="summary-photo-preview">
           <div class="photo-preview-thumb">

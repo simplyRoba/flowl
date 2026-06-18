@@ -667,8 +667,7 @@
       bind:value={notes}
       placeholder={$translations.form.notesPlaceholder}
       class="input textarea"
-      rows="4"
-    ></textarea>
+      rows="4"></textarea>
   </section>
 
   {#if showFooterActions}
