@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.5.11](https://github.com/simplyRoba/flowl/compare/v1.5.10...v1.5.11) (2026-06-18)
+
+
+### Bug Fixes
+
+* **deps:** bump the eslint group across 1 directory with 2 updates ([2f42894](https://github.com/simplyRoba/flowl/commit/2f4289417c05bf56a38b36fbcbb30f28961e2e93))
+* **deps:** bump the prettier group across 1 directory with 2 updates ([766da62](https://github.com/simplyRoba/flowl/commit/766da6248dbc600d2de4f3eb557f63dc30dd0686))
+* **deps:** bump the svelte group in /ui with 3 updates ([fa29a1b](https://github.com/simplyRoba/flowl/commit/fa29a1bf2c2cd7d817a5259cbea8659ff2698f37))
+* **deps:** bump tower-http from 0.6.11 to 0.7.0 ([7d2a216](https://github.com/simplyRoba/flowl/commit/7d2a216db6029d3f318333f3f286324ee3c8480a))
+* **deps:** bump undici from 7.25.0 to 7.28.0 in /ui ([ade87a1](https://github.com/simplyRoba/flowl/commit/ade87a184e4658300ea715113f9a69d9b8c5d001))
+* **deps:** bump uuid from 1.23.2 to 1.23.3 ([4ded7ca](https://github.com/simplyRoba/flowl/commit/4ded7ca6bd14b0df05f0cea9aa4d62f9f0ab811f))
+* **deps:** bump vitest from 4.1.8 to 4.1.9 in /ui ([5598e6e](https://github.com/simplyRoba/flowl/commit/5598e6e0f6bd5fa3f3ff01bb49dd244f9349147e))
+
 ## [1.5.10](https://github.com/simplyRoba/flowl/compare/v1.5.9...v1.5.10) (2026-06-07)
 
 
