@@ -156,8 +156,7 @@
     class="input log-notes"
     placeholder={$translations.plant.notesOptional}
     bind:value={notes}
-    rows="2"
-  ></textarea>
+    rows="2"></textarea>
 
   <div class="toolbar">
     <div class="toolbar-left">
