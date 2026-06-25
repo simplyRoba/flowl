@@ -20,4 +20,4 @@ The plant form’s watering presets currently jump from 14 days straight to a 30
 
 - UI components (`ui/src/lib/components/PlantForm.svelte`, `WateringInterval.svelte`) will replace the 30-day preset chip with the 5-day option while keeping the default value unchanged and continuing to expose the custom stepper; update `WateringInterval.test.ts` accordingly.
 - Localization bundles (`ui/src/lib/i18n/en.ts`, `ui/src/lib/i18n/es.ts`, etc.) must get the new strings for the 5d chip description and remove or repurpose any text tied to the removed 30d option.
-- Specs (`openspec/specs/ui/plant-form/spec.md`) will receive a delta file describing the new preset list so downstream docs/tests know about the 5-day chip.
+- Specs (`openspec/specs/ui-plant-form/spec.md`) will receive a delta file describing the new preset list so downstream docs/tests know about the 5-day chip.

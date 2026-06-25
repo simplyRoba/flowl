@@ -24,4 +24,4 @@ The AI chat context currently loads the last 20 care events as a flat list regar
 
 - `src/ai/prompts.rs`: `PlantContext` struct and `build_plant_context()` query/logic change
 - `src/ai/prompts.rs`: Existing tests for context serialization need updating
-- `openspec/specs/ai/chat/spec.md`: Plant context builder requirement and scenarios need updating
+- `openspec/specs/ai-chat/spec.md`: Plant context builder requirement and scenarios need updating

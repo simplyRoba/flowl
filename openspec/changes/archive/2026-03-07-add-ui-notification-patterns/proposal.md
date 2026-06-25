@@ -24,7 +24,7 @@ Before implementing a toast/snackbar system, we should define the global concept
 
 ## Impact
 
-- New spec: `openspec/specs/ui/notifications/spec.md`
+- New spec: `openspec/specs/ui-notifications/spec.md`
 - New/updated spec deltas also touch plant form and settings notification behavior
 - New design artifact: `openspec/changes/add-ui-notification-patterns/mockups/notifications.html`
 - Likely UI touchpoints during implementation: `ui/src/routes/+layout.svelte`, `ui/src/routes/+page.svelte`, `ui/src/routes/settings/+page.svelte`, `ui/src/routes/plants/new/+page.svelte`, `ui/src/routes/plants/[id]/edit/+page.svelte`, `ui/src/routes/plants/[id]/+page.svelte`, `ui/src/lib/components/ChatDrawer.svelte`, `ui/src/lib/components/CareEntryForm.svelte`

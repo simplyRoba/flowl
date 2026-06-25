@@ -109,6 +109,7 @@ Guidance for coding agents working in `flowl` (Rust backend + SvelteKit frontend
 
 ## Spec and review expectations
 - Check relevant OpenSpec docs before implementing behavior changes: canonical specs in `openspec/specs/**` and proposals/tasks in `openspec/changes/**`.
+- Specs use a flat, single-level layout with the domain encoded as a name prefix: `openspec/specs/{domain}-{capability}/spec.md` (e.g. `core-database`, `ui-settings`, `ai-chat`). Domains in use: `core`, `ui`, `ai`, `data`. Do not nest capabilities in domain subfolders — the OpenSpec CLI only discovers specs one level deep.
 - Before requesting review, ensure lint/tests pass and changes are spec-consistent.
 
 ## Practical implementation checklist
