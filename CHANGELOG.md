@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.12](https://github.com/simplyRoba/flowl/compare/v1.5.11...v1.5.12) (2026-06-25)
+
+
+### Bug Fixes
+
+* **openspec:** add missing Purpose sections to core-foundation and ui-pwa specs ([ade1702](https://github.com/simplyRoba/flowl/commit/ade1702b05812ba4256ce06bd2ac8795f32d5a87))
+
+
+### Code Refactoring
+
+* **openspec:** flatten specs to domain-prefixed flat layout ([84d8b36](https://github.com/simplyRoba/flowl/commit/84d8b3657ee7a2ebb629d3642b7016674b92e1c2))
+
 ## [1.5.11](https://github.com/simplyRoba/flowl/compare/v1.5.10...v1.5.11) (2026-06-18)
 
 
