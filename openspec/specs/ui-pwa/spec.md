@@ -1,3 +1,7 @@
+## Purpose
+
+Progressive Web App capability: web app manifest, PWA icons, service worker registration, asset/API/thumbnail caching, offline fallback, cache lifecycle and update notifications, and pull-to-refresh in standalone mode.
+
 ## Requirements
 
 ### Requirement: Web app manifest

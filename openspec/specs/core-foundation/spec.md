@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+CI/CD foundation: GitHub Actions workflows for linting, testing, and cross-compilation; release-please automation; Dockerfile build; code ownership and dependency update policies.
+
+## Requirements
 
 ### Requirement: CI Trigger
 
