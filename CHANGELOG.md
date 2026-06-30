@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.5.12](https://github.com/simplyRoba/flowl/compare/v1.5.11...v1.5.12) (2026-06-30)
+
+
+### Bug Fixes
+
+* **openspec:** add missing Purpose sections to core-foundation and ui-pwa specs ([ade1702](https://github.com/simplyRoba/flowl/commit/ade1702b05812ba4256ce06bd2ac8795f32d5a87))
+
+
+### Code Refactoring
+
+* **openspec:** flatten specs to domain-prefixed flat layout ([84d8b36](https://github.com/simplyRoba/flowl/commit/84d8b3657ee7a2ebb629d3642b7016674b92e1c2))
+
+
+### Dependencies
+
+* bump @testing-library/svelte from 5.3.1 to 5.4.2 in /ui ([a13504c](https://github.com/simplyRoba/flowl/commit/a13504c6a2e6629718af1225bd948b7b7ed25da1))
+* bump actions/cache from 5 to 6 ([307b672](https://github.com/simplyRoba/flowl/commit/307b6729fa7a7f6555decf2b271879673c802744))
+* bump actions/checkout from 6 to 7 ([920e4c6](https://github.com/simplyRoba/flowl/commit/920e4c6cc959fd94c17ec90eab3325472fb4f69a))
+* bump globals from 17.6.0 to 17.7.0 in /ui ([a09c21f](https://github.com/simplyRoba/flowl/commit/a09c21f617e3ab5ac9f18207b69a1743d20decd8))
+* bump the eslint group across 1 directory with 3 updates ([9e77553](https://github.com/simplyRoba/flowl/commit/9e77553d4a9d18447a170fadd86a61d5d2210df2))
+* bump the svelte group across 1 directory with 3 updates ([a1a4dae](https://github.com/simplyRoba/flowl/commit/a1a4daec15fcb2e11a46057c9dca19c281453e13))
+* bump uuid from 1.23.3 to 1.23.4 ([f288e8f](https://github.com/simplyRoba/flowl/commit/f288e8f9e51fdfaed7973c8d22e48145bc907437))
+* bump vite from 8.0.16 to 8.1.2 in /ui ([41c4a30](https://github.com/simplyRoba/flowl/commit/41c4a3000343d60f07be308352b0b287ad8fef53))
+
 ## [1.5.11](https://github.com/simplyRoba/flowl/compare/v1.5.10...v1.5.11) (2026-06-18)
 
 
