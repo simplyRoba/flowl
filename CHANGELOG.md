@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.13](https://github.com/simplyRoba/flowl/compare/v1.5.12...v1.5.13) (2026-07-07)
+
+
+### Dependencies
+
+* bump cmov from 0.5.3 to 0.5.4 ([b8fabbd](https://github.com/simplyRoba/flowl/commit/b8fabbd5646dba5389e27792ba6dde05fd7be688))
+* bump prettier from 3.8.4 to 3.9.4 in /ui in the prettier group across 1 directory ([#283](https://github.com/simplyRoba/flowl/issues/283)) ([3cf9c3b](https://github.com/simplyRoba/flowl/commit/3cf9c3bcf9f9a89e32290fbeee5db3a6fdcc956a))
+* bump the svelte group in /ui with 2 updates ([ebe258b](https://github.com/simplyRoba/flowl/commit/ebe258b671f54fd9c3565e4477b7a120d477ca10))
+* bump typescript-eslint in /ui in the eslint group ([a788dbc](https://github.com/simplyRoba/flowl/commit/a788dbc3f18654b90be37df852f1cc2b982e277a))
+* bump vite from 8.1.2 to 8.1.3 in /ui ([fff3570](https://github.com/simplyRoba/flowl/commit/fff35702d389b257fb59d4e6dc7d713c31d37376))
+* bump vitest from 4.1.9 to 4.1.10 in /ui ([493538d](https://github.com/simplyRoba/flowl/commit/493538da2ba9a83743b4f06d8d2c3d8c567cf287))
+
 ## [1.5.12](https://github.com/simplyRoba/flowl/compare/v1.5.11...v1.5.12) (2026-06-30)
 
 
