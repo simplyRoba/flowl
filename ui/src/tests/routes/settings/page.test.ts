@@ -720,8 +720,7 @@ describe("settings MQTT repair confirmation", () => {
 
   it("restores the repair button after the request finishes", async () => {
     let resolveRepair:
-      | ((value: { cleared: number; published: number }) => void)
-      | undefined;
+      ((value: { cleared: number; published: number }) => void) | undefined;
     vi.spyOn(api, "repairMqtt").mockImplementation(
       () =>
         new Promise((resolve) => {
