@@ -77,8 +77,7 @@ describe("new plant page", () => {
 
   it("waits for photo upload before navigating", async () => {
     let resolveUpload:
-      | ((value: { id: number; name: string }) => void)
-      | undefined;
+      ((value: { id: number; name: string }) => void) | undefined;
     mockCreatePlant.mockResolvedValue({ id: 7, name: "Fern" });
     mockUploadPhoto.mockImplementation(
       () =>
