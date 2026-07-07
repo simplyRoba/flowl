@@ -1,6 +1,6 @@
 [package]
 name = "flowl"
-version = "1.5.12"
+version = "1.5.13"
 edition = "2024"
 description = "Plant care data service for Home Assistant"
 readme = "README.md"
