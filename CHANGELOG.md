@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.5.14](https://github.com/simplyRoba/flowl/compare/v1.5.13...v1.5.14) (2026-07-24)
+
+
+### Dependencies
+
+* bump actions/setup-node from 6 to 7 ([98d2482](https://github.com/simplyRoba/flowl/commit/98d2482330a65f5d72fc885945c1923a3f61d530))
+* bump async-trait from 0.1.89 to 0.1.91 ([b311030](https://github.com/simplyRoba/flowl/commit/b311030095cd71c9bdaa456ced9e1f4535b03551))
+* bump brace-expansion from 5.0.4 to 5.0.8 in /ui ([69e98a5](https://github.com/simplyRoba/flowl/commit/69e98a5be31f3ff1d6fb2e50affb966811e169f7))
+* bump prettier in /ui in the prettier group across 1 directory ([f08b7f2](https://github.com/simplyRoba/flowl/commit/f08b7f2c161dce9333959372255b5c1b147341dd))
+* bump quinn-proto from 0.11.14 to 0.11.16 ([b53a668](https://github.com/simplyRoba/flowl/commit/b53a6684c1dc8bd8e019fba2f69935129d664064))
+* bump rust-embed from 8.11.0 to 8.12.0 ([ee2b3ee](https://github.com/simplyRoba/flowl/commit/ee2b3ee2b5af4385960f1fefbe09107eecc5d165))
+* bump the eslint group across 1 directory with 3 updates ([6c040d2](https://github.com/simplyRoba/flowl/commit/6c040d2680f129e0a08105ffc8e71db4fd6794bd))
+* bump the serde group across 1 directory with 2 updates ([ae8935e](https://github.com/simplyRoba/flowl/commit/ae8935ecf708fd39a1173055b789ae21d44c0057))
+* bump the svelte group across 1 directory with 4 updates ([f4f7b1e](https://github.com/simplyRoba/flowl/commit/f4f7b1e3f7317c533635d902bf1f256195f02602))
+* bump tokio from 1.52.3 to 1.53.1 in the tokio group ([794b74e](https://github.com/simplyRoba/flowl/commit/794b74ee3f0192b80161647606009ec1ab1a87fa))
+* bump uuid from 1.23.4 to 1.24.0 ([9e72beb](https://github.com/simplyRoba/flowl/commit/9e72beb2b10c537537a0966a435462329f15f94a))
+* bump vite from 8.1.3 to 8.1.5 in /ui ([31098f9](https://github.com/simplyRoba/flowl/commit/31098f9fb9fa46a9997f7e8a5281f072184731f0))
+
 ## [1.5.13](https://github.com/simplyRoba/flowl/compare/v1.5.12...v1.5.13) (2026-07-07)
 
 
