@@ -130,7 +130,6 @@ export const es: Translations = {
     growth: "Crecimiento",
     soil: "Suelo",
     noCareEvents: "Aún no hay eventos de cuidado registrados.",
-    showMore: "Mostrar más eventos",
     addLogEntry: "+ Añadir entrada",
     backdate: "Antedatar",
     when: "Cuándo",

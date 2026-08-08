@@ -128,7 +128,6 @@ const en = {
     growth: "Growth",
     soil: "Soil",
     noCareEvents: "No care events recorded yet.",
-    showMore: "Show more events",
     addLogEntry: "+ Add log entry",
     backdate: "Backdate",
     when: "When",
