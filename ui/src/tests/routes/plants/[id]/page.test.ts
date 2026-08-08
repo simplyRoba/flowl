@@ -1218,6 +1218,60 @@ describe("care journal event grouping", () => {
     const items = document.querySelectorAll(".timeline-item");
     expect(items.length).toBe(2);
   });
+
+  it("shows the empty state when there are no care entries", async () => {
+    await renderWithPlant();
+
+    expect(
+      await screen.findByText("No care events recorded yet."),
+    ).toBeTruthy();
+  });
+
+  it("shows the corresponding icon for every care event type", async () => {
+    await renderWithPlant({}, [
+      makeCareEvent({ id: 1, event_type: "watered" }),
+      makeCareEvent({ id: 2, event_type: "fertilized" }),
+      makeCareEvent({ id: 3, event_type: "repotted" }),
+      makeCareEvent({ id: 4, event_type: "pruned" }),
+      makeCareEvent({ id: 5, event_type: "custom" }),
+      makeCareEvent({ id: 6, event_type: "ai-consultation" }),
+    ]);
+
+    await waitFor(() => {
+      expect(document.querySelectorAll(".timeline-item")).toHaveLength(6);
+    });
+
+    for (const icon of [
+      "droplet",
+      "leaf",
+      "shovel",
+      "scissors",
+      "pencil",
+      "sparkles",
+    ]) {
+      expect(
+        document.querySelector(`.care-journal .lucide-${icon}`),
+      ).toBeTruthy();
+    }
+  });
+
+  it("renders all care entries immediately when there are more than 20", async () => {
+    const events = Array.from({ length: 21 }, (_, index) =>
+      makeCareEvent({
+        id: index + 1,
+        event_type: index % 2 === 0 ? "watered" : "fertilized",
+        occurred_at: `2025-02-${String(index + 1).padStart(2, "0")}T10:00:00Z`,
+      }),
+    );
+
+    await renderWithPlant({}, events);
+
+    await waitFor(() => {
+      expect(document.querySelectorAll(".timeline-item")).toHaveLength(21);
+    });
+
+    expect(screen.queryByRole("button", { name: /show more/i })).toBeNull();
+  });
 });
 
 describe("plant detail offline behavior", () => {

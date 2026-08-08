@@ -131,7 +131,6 @@ export const de: Translations = {
     growth: "Wachstum",
     soil: "Erde",
     noCareEvents: "Noch keine Pflegeereignisse verzeichnet.",
-    showMore: "Weitere Einträge anzeigen",
     addLogEntry: "+ Eintrag hinzufügen",
     backdate: "Rückdatieren",
     when: "Wann",

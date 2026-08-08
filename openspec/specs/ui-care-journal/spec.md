@@ -6,14 +6,15 @@ Care journal UI — timeline on plant detail view, inline log form, delete actio
 
 ### Requirement: Care Journal Timeline
 
-The plant detail view SHALL display a care journal section showing a chronological timeline of care events.
+The plant detail view SHALL display a care journal section showing a chronological timeline of all fetched care events.
 
 #### Scenario: Care events displayed
 
 - **WHEN** the plant detail view is rendered
 - **AND** the plant has care events
 - **THEN** a "Care Journal" section is shown below the watering card
-- **AND** care events are grouped by day (e.g., "Today", "Yesterday", "Feb 10") and listed newest first within each group
+- **AND** all fetched care events are displayed immediately
+- **AND** care events are listed newest first
 - **AND** each event shows an icon for the event type, the type label, the date, and notes (if present)
 
 #### Scenario: No care events
@@ -30,8 +31,8 @@ The plant detail view SHALL display a care journal section showing a chronologic
 #### Scenario: Event limit
 
 - **WHEN** the plant has more than 20 care events
-- **THEN** only the 20 most recent events are shown initially
-- **AND** a "Show more" link is displayed to load the rest
+- **THEN** all fetched care events are shown immediately
+- **AND** no "Show more" control is displayed
 
 ### Requirement: Watering event grouping utility
 

@@ -80,7 +80,6 @@
   let deleting = $state(false);
   let watering = $state(false);
   let showLogForm = $state(false);
-  let showAllEvents = $state(false);
   let deletingEventId = $state<number | null>(null);
   let deleteEventDialogTarget = $state<CareEvent | null>(null);
   let backHref = $state<BackPath>("/");
@@ -95,8 +94,6 @@
     "/plants",
     "/settings",
   ]);
-
-  const EVENT_LIMIT = 20;
 
   onMount(() => {
     loadAiStatus();
@@ -118,7 +115,6 @@
     plantLoadErrorCode = data.loadErrorCode;
     notFound = data.notFound;
     showLogForm = false;
-    showAllEvents = false;
     deletingEventId = null;
     deleteEventDialogTarget = null;
     deleteDialogOpen = false;
@@ -266,13 +262,7 @@
 
   let expandedGroups: Set<string> = new SvelteSet();
 
-  let displayEvents = $derived(
-    showAllEvents ? careEvents : careEvents.slice(0, EVENT_LIMIT),
-  );
-
-  let groupedTimeline = $derived(groupCareEvents(displayEvents));
-
-  let hasMoreEvents = $derived(careEvents.length > EVENT_LIMIT);
+  let groupedTimeline = $derived(groupCareEvents(careEvents));
 
   function careGroupKey(group: WateringGroup): string {
     return `${group.plantId}-${group.firstAt}`;
@@ -713,13 +703,6 @@
                 {/if}
               {/each}
             </ul>
-            {#if hasMoreEvents && !showAllEvents}
-              <button
-                class="btn btn-ghost"
-                onclick={() => (showAllEvents = true)}
-                >{$translations.plant.showMore}</button
-              >
-            {/if}
           {/if}
 
           {#if showLogForm}
