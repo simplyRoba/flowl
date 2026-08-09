@@ -15,6 +15,7 @@ HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
 });
 
 const mockFetchAllCareEvents = vi.fn();
+const mockUpdateCareEvent = vi.fn();
 const mockGoto = vi.fn();
 
 vi.mock("$lib/api", async () => {
@@ -22,6 +23,7 @@ vi.mock("$lib/api", async () => {
   return {
     ...actual,
     fetchAllCareEvents: (...args: unknown[]) => mockFetchAllCareEvents(...args),
+    updateCareEvent: (...args: unknown[]) => mockUpdateCareEvent(...args),
   };
 });
 
@@ -346,6 +348,30 @@ describe("care journal event grouping", () => {
     });
     // No group summary — both are individual
     expect(document.querySelector(".log-group-summary")).toBeNull();
+  });
+});
+
+describe("care journal remains read-only", () => {
+  it("does not expose editing for individual or expanded grouped entries", async () => {
+    mockFetchAllCareEvents.mockResolvedValue({
+      events: [
+        makeEvent({ id: 2, occurred_at: "2025-02-01T12:00:00Z" }),
+        makeEvent({ id: 1, occurred_at: "2025-02-01T10:00:00Z" }),
+      ],
+      has_more: false,
+    });
+    render(Page);
+
+    await vi.waitFor(() => {
+      expect(document.querySelector(".log-group-summary")).toBeTruthy();
+    });
+    await fireEvent.click(
+      document.querySelector(".log-group-toggle") as HTMLButtonElement,
+    );
+
+    expect(document.querySelector(".care-entry-form")).toBeNull();
+    expect(document.querySelector('[aria-label="Edit log entry"]')).toBeNull();
+    expect(mockUpdateCareEvent).not.toHaveBeenCalled();
   });
 });
 

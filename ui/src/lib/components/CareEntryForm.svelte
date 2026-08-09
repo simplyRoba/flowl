@@ -8,49 +8,98 @@
     Camera,
     CalendarClock,
     X as XIcon,
+    Sparkles,
   } from "lucide-svelte";
   import { addCareEvent } from "$lib/stores/care";
-  import { uploadCareEventPhoto, type EventType } from "$lib/api";
+  import {
+    deleteCareEventPhoto,
+    updateCareEvent,
+    uploadCareEventPhoto,
+    type CareEvent,
+    type EventType,
+  } from "$lib/api";
   import { translations } from "$lib/stores/locale";
+  import { isOffline } from "$lib/stores/network";
   import { pushNotification } from "$lib/stores/notifications";
 
   let {
     plantId,
+    existingEvent,
     onsubmit,
     oncancel,
   }: {
     plantId: number;
-    onsubmit: () => void | Promise<void>;
+    existingEvent?: CareEvent;
+    onsubmit: (event: CareEvent) => void | Promise<void>;
     oncancel: () => void;
   } = $props();
 
+  let isEditing = $derived(Boolean(existingEvent));
   let eventType = $state("");
   let notes = $state("");
   let photo = $state<File | null>(null);
   let photoPreview = $state<string | null>(null);
+  let photoInput = $state<HTMLInputElement | null>(null);
+  let existingPhotoRemoved = $state(false);
   let occurredAt = $state("");
   let showOccurredAt = $state(false);
   let submitting = $state(false);
   let eventTypeError = $state("");
+  let occurredAtError = $state("");
+  let initializedEventId = $state<number | null>(null);
+
+  function localInputValue(value: string): string {
+    const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+    const date = new Date(hasTimezone ? value : `${value}Z`);
+    if (Number.isNaN(date.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  }
 
   function nowLocalInputValue(): string {
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    return localInputValue(new Date().toISOString());
+  }
+
+  $effect(() => {
+    const event = existingEvent;
+    const eventId = event?.id ?? null;
+    if (eventId === initializedEventId) return;
+    clearStagedPhoto();
+    eventType = event?.event_type ?? "";
+    notes = event?.notes ?? "";
+    existingPhotoRemoved = false;
+    occurredAt = event ? localInputValue(event.occurred_at) : "";
+    showOccurredAt = Boolean(event);
+    eventTypeError = "";
+    occurredAtError = "";
+    initializedEventId = eventId;
+  });
+
+  function clearStagedPhoto() {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    photo = null;
+    photoPreview = null;
   }
 
   function stagePhoto(file: File) {
     const valid = ["image/jpeg", "image/png", "image/webp"];
     if (!valid.includes(file.type)) return;
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    clearStagedPhoto();
     photo = file;
     photoPreview = URL.createObjectURL(file);
+    existingPhotoRemoved = false;
   }
 
-  function clearPhoto() {
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
-    photo = null;
-    photoPreview = null;
+  function removePhoto() {
+    if (photo) {
+      clearStagedPhoto();
+      return;
+    }
+    if (existingEvent?.photo_url) existingPhotoRemoved = true;
+  }
+
+  function openPhotoPicker() {
+    photoInput?.click();
   }
 
   function handlePhotoSelect(e: Event) {
@@ -61,12 +110,16 @@
   }
 
   function resetForm() {
-    clearPhoto();
-    eventType = "";
+    clearStagedPhoto();
+    eventType = existingEvent?.event_type ?? "";
     eventTypeError = "";
-    notes = "";
-    occurredAt = "";
-    showOccurredAt = false;
+    notes = existingEvent?.notes ?? "";
+    occurredAt = existingEvent
+      ? localInputValue(existingEvent.occurred_at)
+      : "";
+    occurredAtError = "";
+    showOccurredAt = isEditing;
+    existingPhotoRemoved = false;
   }
 
   function handleCancel() {
@@ -74,50 +127,89 @@
     oncancel();
   }
 
+  function validateOccurredAt(): string | undefined {
+    if (!showOccurredAt) return undefined;
+    const value = occurredAt.trim();
+    const date = new Date(value);
+    if (!value || Number.isNaN(date.getTime())) {
+      occurredAtError = $translations.care.invalidOccurredAt;
+      return undefined;
+    }
+    if (date.getTime() > Date.now()) {
+      occurredAtError = $translations.care.futureOccurredAt;
+      return undefined;
+    }
+    occurredAtError = "";
+    return date.toISOString();
+  }
+
   async function handleSubmit() {
-    if (submitting) return;
+    if (submitting || $isOffline) return;
     if (!eventType) {
       eventTypeError = $translations.care.selectTypeError;
       return;
     }
 
+    const occurredAtIso = validateOccurredAt();
+    if (showOccurredAt && !occurredAtIso) return;
+
     submitting = true;
     try {
-      const occ = showOccurredAt ? occurredAt.trim() : "";
-      const occDate = occ ? new Date(occ) : null;
-      const occIso =
-        occDate && !isNaN(occDate.getTime())
-          ? occDate.toISOString()
-          : undefined;
       const photoFile = photo;
-      const event = await addCareEvent(plantId, {
-        event_type: eventType as EventType,
-        notes: notes.trim() || undefined,
-        occurred_at: occIso,
-      });
-
-      if (!event) {
-        pushNotification({
-          title: $translations.plant.careJournalSection,
-          variant: "error",
-          message: $translations.error.addCareEvent,
+      let event: CareEvent;
+      if (existingEvent) {
+        event = await updateCareEvent(plantId, existingEvent.id, {
+          event_type: eventType as EventType,
+          notes: notes.trim() || null,
+          occurred_at: occurredAtIso!,
         });
-        return;
-      }
 
-      if (photoFile) {
-        await uploadCareEventPhoto(plantId, event.id, photoFile);
+        try {
+          if (existingPhotoRemoved) {
+            await deleteCareEventPhoto(plantId, event.id);
+            event = { ...event, photo_url: null };
+          } else if (photoFile) {
+            event = await uploadCareEventPhoto(plantId, event.id, photoFile);
+          }
+        } catch {
+          pushNotification({
+            title: $translations.plant.careJournalSection,
+            variant: "error",
+            message: $translations.error.updateCareEventPhoto,
+          });
+          return;
+        }
+      } else {
+        const createdEvent = await addCareEvent(plantId, {
+          event_type: eventType as EventType,
+          notes: notes.trim() || undefined,
+          occurred_at: occurredAtIso,
+        });
+        if (!createdEvent) {
+          pushNotification({
+            title: $translations.plant.careJournalSection,
+            variant: "error",
+            message: $translations.error.addCareEvent,
+          });
+          return;
+        }
+
+        event = createdEvent;
+        if (photoFile) {
+          event = await uploadCareEventPhoto(plantId, event.id, photoFile);
+        }
       }
 
       resetForm();
-      await onsubmit();
+      await onsubmit(event);
     } catch {
       pushNotification({
         title: $translations.plant.careJournalSection,
         variant: "error",
-        message: $translations.error.addCareEvent,
+        message: isEditing
+          ? $translations.error.updateCareEvent
+          : $translations.error.addCareEvent,
       });
-      return;
     } finally {
       submitting = false;
     }
@@ -129,14 +221,17 @@
     class="type-chips"
     class:type-chips-error={Boolean(eventTypeError)}
     role="group"
-    aria-label={$translations.plant.addLogEntry}
+    aria-label={isEditing
+      ? $translations.plant.editLogEntry
+      : $translations.plant.addLogEntry}
     aria-describedby={eventTypeError ? "care-entry-type-error" : undefined}
   >
-    {#each [{ value: "watered", label: $translations.care.watered, icon: Droplets }, { value: "fertilized", label: $translations.care.fertilized, icon: Leaf }, { value: "repotted", label: $translations.care.repotted, icon: Shovel }, { value: "pruned", label: $translations.care.pruned, icon: Scissors }, { value: "custom", label: $translations.care.custom, icon: PencilIcon }] as chip (chip.value)}
+    {#each [{ value: "watered", label: $translations.care.watered, icon: Droplets }, { value: "fertilized", label: $translations.care.fertilized, icon: Leaf }, { value: "repotted", label: $translations.care.repotted, icon: Shovel }, { value: "pruned", label: $translations.care.pruned, icon: Scissors }, { value: "custom", label: $translations.care.custom, icon: PencilIcon }, ...(existingEvent?.event_type === "ai-consultation" ? [{ value: "ai-consultation", label: $translations.care.aiConsultation, icon: Sparkles }] : [])] as chip (chip.value)}
       <button
         class="chip chip-solid"
         class:active={eventType === chip.value}
         class:chip-invalid={Boolean(eventTypeError)}
+        aria-pressed={eventType === chip.value}
         onclick={() => {
           eventType = chip.value;
           eventTypeError = "";
@@ -160,29 +255,48 @@
 
   <div class="toolbar">
     <div class="toolbar-left">
-      {#if photoPreview}
+      {#if photoPreview || (existingEvent?.photo_url && !existingPhotoRemoved)}
         <div class="toolbar-compound">
           <div class="toolbar-thumb">
-            <img src={photoPreview} alt="" />
+            <img src={photoPreview ?? existingEvent?.photo_url} alt="" />
           </div>
           <button
             class="toolbar-dismiss"
-            onclick={clearPhoto}
-            aria-label={$translations.chat.removePhoto}
+            onclick={removePhoto}
+            aria-label={$translations.plant.removeLogPhoto}
           >
             <XIcon size={12} />
           </button>
-        </div>
-      {:else}
-        <label class="toolbar-btn" aria-label={$translations.plant.addLogPhoto}>
-          <Camera size={16} />
+          <button
+            class="toolbar-dismiss toolbar-replace"
+            onclick={openPhotoPicker}
+            aria-label={$translations.plant.replaceLogPhoto}
+          >
+            <Camera size={12} />
+          </button>
           <input
+            bind:this={photoInput}
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onchange={handlePhotoSelect}
             class="file-input-hidden"
           />
-        </label>
+        </div>
+      {:else}
+        <button
+          class="toolbar-btn"
+          onclick={openPhotoPicker}
+          aria-label={$translations.plant.addLogPhoto}
+        >
+          <Camera size={16} />
+        </button>
+        <input
+          bind:this={photoInput}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onchange={handlePhotoSelect}
+          class="file-input-hidden"
+        />
       {/if}
 
       {#if showOccurredAt}
@@ -191,18 +305,27 @@
             class="toolbar-date-input"
             type="datetime-local"
             max={nowLocalInputValue()}
+            step="1"
             bind:value={occurredAt}
+            aria-label={$translations.plant.when}
+            aria-invalid={Boolean(occurredAtError)}
+            aria-describedby={occurredAtError
+              ? "care-entry-occurred-at-error"
+              : undefined}
           />
-          <button
-            class="toolbar-dismiss"
-            onclick={() => {
-              showOccurredAt = false;
-              occurredAt = "";
-            }}
-            aria-label={$translations.common.cancel}
-          >
-            <XIcon size={12} />
-          </button>
+          {#if !isEditing}
+            <button
+              class="toolbar-dismiss"
+              onclick={() => {
+                showOccurredAt = false;
+                occurredAt = "";
+                occurredAtError = "";
+              }}
+              aria-label={$translations.common.cancel}
+            >
+              <XIcon size={12} />
+            </button>
+          {/if}
         </div>
       {:else}
         <button
@@ -211,6 +334,7 @@
             showOccurredAt = true;
             if (!occurredAt) occurredAt = nowLocalInputValue();
           }}
+          aria-label={$translations.plant.when}
         >
           <CalendarClock size={16} />
         </button>
@@ -224,12 +348,18 @@
       <button
         class="btn btn-primary"
         onclick={handleSubmit}
-        disabled={submitting}
+        disabled={submitting || $isOffline || !eventType}
       >
         {submitting ? $translations.common.saving : $translations.common.save}
       </button>
     </div>
   </div>
+
+  {#if occurredAtError}
+    <div id="care-entry-occurred-at-error" class="field-error">
+      {occurredAtError}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -257,7 +387,7 @@
   .field-error {
     color: var(--color-danger);
     font-size: 13px;
-    margin: 0 0 10px;
+    margin: 8px 0 0;
   }
 
   .log-notes {
@@ -366,6 +496,11 @@
   .toolbar-dismiss:hover {
     color: var(--color-danger);
     background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+  }
+
+  .toolbar-replace:hover {
+    color: var(--color-primary);
+    background: var(--color-primary-tint);
   }
 
   .file-input-hidden {

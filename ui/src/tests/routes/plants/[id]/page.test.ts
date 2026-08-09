@@ -85,6 +85,7 @@ import * as api from "$lib/api";
 const mockChatPlant = vi.spyOn(api, "chatPlant");
 const mockCreateCareEventApi = vi.spyOn(api, "createCareEvent");
 const mockDeleteCareEventApi = vi.spyOn(api, "deleteCareEvent");
+const mockUpdateCareEventApi = vi.spyOn(api, "updateCareEvent");
 const mockFetchCareEventsApi = vi.spyOn(api, "fetchCareEvents");
 const mockFetchPlantApi = vi.spyOn(api, "fetchPlant");
 const mockSummarizeChat = vi.spyOn(api, "summarizeChat");
@@ -169,6 +170,7 @@ beforeEach(() => {
   isOffline.set(false);
   vi.clearAllMocks();
   mockDeleteCareEventApi.mockResolvedValue(undefined);
+  mockUpdateCareEventApi.mockResolvedValue(makeCareEvent());
   mockFetchCareEventsApi.mockResolvedValue([]);
   mockFetchPlantApi.mockResolvedValue(makePlant());
 });
@@ -1116,6 +1118,139 @@ describe("log form photo upload", () => {
   });
 });
 
+describe("plant detail care event editing", () => {
+  it("opens an edit form, hides the add form, and cancels without an update", async () => {
+    const event = makeCareEvent({
+      event_type: "fertilized",
+      notes: "Original note",
+    });
+    await renderWithPlant({}, [event]);
+    await screen.findByRole("button", { name: "Edit log entry" });
+
+    await fireEvent.click(screen.getByText("+ Add log entry"));
+    expect(document.querySelector(".care-entry-form")).toBeTruthy();
+
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Edit log entry" }),
+    );
+    expect(screen.queryByText("+ Add log entry")).toBeNull();
+    expect(screen.getByDisplayValue("Original note")).toBeTruthy();
+
+    const cancel = screen
+      .getAllByRole("button", { name: "Cancel" })
+      .find((button) => button.closest(".care-entry-form"));
+    await fireEvent.click(cancel!);
+
+    await waitFor(() => {
+      expect(document.querySelector(".care-entry-form")).toBeNull();
+    });
+    expect(mockUpdateCareEventApi).not.toHaveBeenCalled();
+  });
+
+  it("reloads plant and timeline only after a successful edit", async () => {
+    const event = makeCareEvent({
+      event_type: "fertilized",
+      notes: "Original note",
+    });
+    const updated = { ...event, notes: "Updated note" };
+    mockUpdateCareEventApi.mockResolvedValue(updated);
+    mockFetchPlantApi.mockResolvedValue(
+      makePlant({ last_watered: "2025-02-01" }),
+    );
+    mockFetchCareEventsApi.mockResolvedValue([updated]);
+    await renderWithPlant({}, [event]);
+
+    await fireEvent.click(
+      await screen.findByRole("button", { name: "Edit log entry" }),
+    );
+    await fireEvent.input(screen.getByDisplayValue("Original note"), {
+      target: { value: "Updated note" },
+    });
+    await fireEvent.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(mockUpdateCareEventApi).toHaveBeenCalledWith(
+        1,
+        event.id,
+        expect.objectContaining({
+          event_type: "fertilized",
+          notes: "Updated note",
+        }),
+      );
+      expect(mockFetchPlantApi).toHaveBeenCalledWith(1);
+      expect(mockFetchCareEventsApi).toHaveBeenCalledWith(1);
+      expect(document.querySelector(".care-entry-form")).toBeNull();
+    });
+  });
+
+  it("keeps the edit form open when updating fails", async () => {
+    const event = makeCareEvent({ event_type: "fertilized", notes: "Keep" });
+    mockUpdateCareEventApi.mockRejectedValue(new Error("update failed"));
+    await renderWithPlant({}, [event]);
+
+    await fireEvent.click(
+      await screen.findByRole("button", { name: "Edit log entry" }),
+    );
+    await fireEvent.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(document.querySelector(".care-entry-form")).toBeTruthy();
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Failed to update care event" }),
+      );
+    });
+    expect(mockFetchPlantApi).not.toHaveBeenCalled();
+    expect(mockFetchCareEventsApi).toHaveBeenCalledTimes(1);
+  });
+
+  it("updates the selected event from an expanded watering group", async () => {
+    const groupedEvents = [
+      makeCareEvent({ id: 2, occurred_at: "2025-02-02T10:00:00Z" }),
+      makeCareEvent({ id: 1, occurred_at: "2025-02-01T10:00:00Z" }),
+    ];
+    await renderWithPlant({}, groupedEvents);
+    await waitFor(() => {
+      expect(document.querySelector(".timeline-group-summary")).toBeTruthy();
+    });
+
+    await fireEvent.click(
+      document.querySelector(".timeline-group-btn") as HTMLButtonElement,
+    );
+    const editButtons = await screen.findAllByRole("button", {
+      name: "Edit log entry",
+    });
+    await fireEvent.click(editButtons[1]);
+    await fireEvent.input(document.querySelector(".log-notes")!, {
+      target: { value: "Edited grouped event" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(mockUpdateCareEventApi).toHaveBeenCalledWith(
+        1,
+        groupedEvents[1].id,
+        expect.objectContaining({ notes: "Edited grouped event" }),
+      );
+    });
+  });
+
+  it("disables edit controls offline and retains an open edit form on connectivity loss", async () => {
+    const event = makeCareEvent({ event_type: "fertilized", notes: "Keep" });
+    await renderWithPlant({}, [event]);
+    const edit = await screen.findByRole("button", { name: "Edit log entry" });
+    await fireEvent.click(edit);
+    isOffline.set(true);
+
+    await waitFor(() => {
+      expect(screen.getByText("Save")).toHaveProperty("disabled", true);
+      expect(screen.getByDisplayValue("Keep")).toBeTruthy();
+    });
+    expect(
+      screen.getByRole("button", { name: "Edit log entry" }),
+    ).toHaveProperty("disabled", true);
+  });
+});
+
 describe("care journal event grouping", () => {
   it("groups consecutive waterings into a collapsible summary", async () => {
     await renderWithPlant({}, [
@@ -1150,11 +1285,17 @@ describe("care journal event grouping", () => {
     const groupBtn = document.querySelector(
       ".timeline-group-btn",
     ) as HTMLButtonElement;
+    expect(groupBtn.getAttribute("aria-expanded")).toBe("false");
+    expect(groupBtn.getAttribute("aria-label")).toBe("Expand watering entries");
     await fireEvent.click(groupBtn);
 
     await waitFor(() => {
       const nested = document.querySelectorAll(".timeline-nested");
       expect(nested.length).toBe(2);
+      expect(groupBtn.getAttribute("aria-expanded")).toBe("true");
+      expect(groupBtn.getAttribute("aria-label")).toBe(
+        "Collapse watering entries",
+      );
     });
   });
 

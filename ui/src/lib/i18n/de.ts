@@ -159,6 +159,11 @@ export const de: Translations = {
     soilOrchid: "Orchideensubstrat",
     soilPeat: "Torfmoos",
     addLogPhoto: "Foto hinzufügen",
+    editLogEntry: "Eintrag bearbeiten",
+    replaceLogPhoto: "Foto ersetzen",
+    removeLogPhoto: "Foto entfernen",
+    expandWateringGroup: "Gießeinträge ausklappen",
+    collapseWateringGroup: "Gießeinträge einklappen",
   },
   care: {
     title: "Tagebuch",
@@ -176,6 +181,8 @@ export const de: Translations = {
     selectTypeError: "Wähle einen Pflegetyp aus",
     wateredCount: "{count}\u00d7 gegossen",
     wateredSince: "{count}\u00d7 gegossen seit {from}",
+    invalidOccurredAt: "Gib einen gültigen Zeitpunkt ein",
+    futureOccurredAt: "Der Zeitpunkt darf nicht in der Zukunft liegen",
   },
   status: {
     overdue: "Überfällig",
@@ -441,6 +448,9 @@ export const de: Translations = {
     loadCareEvents: "Pflegeereignisse konnten nicht geladen werden",
     addCareEvent: "Pflegeereignis konnte nicht hinzugefügt werden",
     deleteCareEvent: "Pflegeereignis konnte nicht gelöscht werden",
+    updateCareEvent: "Pflegeereignis konnte nicht aktualisiert werden",
+    updateCareEventPhoto:
+      "Pflegeeintrag wurde gespeichert, aber die Fotoänderung ist fehlgeschlagen",
     loadLocations: "Standorte konnten nicht geladen werden",
     createLocation: "Standort konnte nicht erstellt werden",
     updateLocation: "Standort konnte nicht aktualisiert werden",

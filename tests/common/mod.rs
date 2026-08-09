@@ -4,6 +4,7 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::Request;
 use flowl::state::AppState;
+use rumqttc::AsyncClient;
 use sqlx::SqlitePool;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use tempfile::TempDir;
@@ -55,6 +56,15 @@ pub async fn test_app_with_uploads() -> (Router, TempDir) {
     let pool = test_pool().await;
     let tmp = TempDir::new().expect("Failed to create temp dir");
     let state = make_state(pool, tmp.path());
+    (flowl::server::router(state), tmp)
+}
+
+pub async fn test_app_with_mqtt(mqtt_client: AsyncClient) -> (Router, TempDir) {
+    let pool = test_pool().await;
+    let tmp = TempDir::new().expect("Failed to create temp dir");
+    let mut state = make_state(pool, tmp.path());
+    state.mqtt_client = Some(mqtt_client);
+    state.mqtt_disabled = false;
     (flowl::server::router(state), tmp)
 }
 

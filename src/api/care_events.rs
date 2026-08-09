@@ -2,6 +2,7 @@ use axum::Json;
 use axum::extract::{Multipart, Path, State};
 use axum::http::StatusCode;
 use axum_extra::extract::Query as ExtraQuery;
+use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
@@ -41,6 +42,25 @@ pub struct CreateCareEvent {
     pub occurred_at: Option<String>,
 }
 
+#[allow(clippy::option_option)]
+fn deserialize_nullable<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
+where
+    T: Deserialize<'de>,
+    D: serde::Deserializer<'de>,
+{
+    let value = Option::<T>::deserialize(deserializer)?;
+    Ok(Some(value))
+}
+
+#[derive(Deserialize)]
+pub struct UpdateCareEvent {
+    pub event_type: Option<String>,
+    #[allow(clippy::option_option)]
+    #[serde(default, deserialize_with = "deserialize_nullable")]
+    pub notes: Option<Option<String>>,
+    pub occurred_at: Option<String>,
+}
+
 #[derive(Deserialize)]
 pub struct GlobalCareQuery {
     pub limit: Option<i64>,
@@ -69,6 +89,26 @@ pub fn validate_event_type(event_type: &str) -> Result<(), ApiError> {
     } else {
         Err(ApiError::Validation("CARE_EVENT_INVALID_TYPE"))
     }
+}
+
+fn validate_occurred_at(occurred_at: &str) -> Result<String, ApiError> {
+    let occurred_at = DateTime::parse_from_rfc3339(occurred_at)
+        .map(|datetime| datetime.with_timezone(&Utc))
+        .or_else(|_| {
+            NaiveDateTime::parse_from_str(occurred_at, "%Y-%m-%dT%H:%M:%S")
+                .map(|datetime| datetime.and_utc())
+        })
+        .or_else(|_| {
+            NaiveDateTime::parse_from_str(occurred_at, "%Y-%m-%d %H:%M:%S")
+                .map(|datetime| datetime.and_utc())
+        })
+        .map_err(|_| ApiError::Validation("CARE_EVENT_INVALID_OCCURRED_AT"))?;
+
+    if occurred_at > Utc::now() {
+        return Err(ApiError::Validation("CARE_EVENT_INVALID_OCCURRED_AT"));
+    }
+
+    Ok(occurred_at.to_rfc3339_opts(SecondsFormat::Secs, true))
 }
 
 async fn plant_exists(pool: &SqlitePool, id: i64) -> Result<(), ApiError> {
@@ -179,6 +219,76 @@ pub async fn create_care_event(
 
     debug!(plant_id, event_type = %event_type, "Care event created");
     Ok((StatusCode::CREATED, Json(event)))
+}
+
+/// # Errors
+/// Returns `ApiError::NotFound` if the plant or care event does not exist,
+/// `ApiError::Validation` if the full editable payload is invalid, or
+/// `ApiError::InternalError` on database failures.
+pub async fn update_care_event(
+    State(state): State<AppState>,
+    Path((plant_id, event_id)): Path<(i64, i64)>,
+    JsonBody(body): JsonBody<UpdateCareEvent>,
+) -> Result<Json<CareEvent>, ApiError> {
+    plant_exists(&state.pool, plant_id).await?;
+
+    let event_type = body
+        .event_type
+        .filter(|event_type| !event_type.trim().is_empty())
+        .ok_or(ApiError::Validation("CARE_EVENT_TYPE_REQUIRED"))?;
+    let notes = body
+        .notes
+        .ok_or(ApiError::Validation("CARE_EVENT_NOTES_REQUIRED"))?;
+    let occurred_at = body
+        .occurred_at
+        .ok_or(ApiError::Validation("CARE_EVENT_OCCURRED_AT_REQUIRED"))?;
+
+    validate_event_type(&event_type)?;
+    let occurred_at = validate_occurred_at(&occurred_at)?;
+
+    let old_event_type = sqlx::query_scalar::<_, String>(
+        "SELECT event_type FROM care_events WHERE id = ? AND plant_id = ?",
+    )
+    .bind(event_id)
+    .bind(plant_id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(db_error)?
+    .ok_or(ApiError::NotFound("CARE_EVENT_NOT_FOUND"))?;
+
+    sqlx::query(
+        "UPDATE care_events SET event_type = ?, notes = ?, occurred_at = ? \
+         WHERE id = ? AND plant_id = ?",
+    )
+    .bind(&event_type)
+    .bind(&notes)
+    .bind(&occurred_at)
+    .bind(event_id)
+    .bind(plant_id)
+    .execute(&state.pool)
+    .await
+    .map_err(db_error)?;
+
+    let query = format!("{CARE_EVENT_SELECT} WHERE ce.id = ? AND ce.plant_id = ?");
+    let event = sqlx::query_as::<_, CareEvent>(sqlx::AssertSqlSafe(query.as_str()))
+        .bind(event_id)
+        .bind(plant_id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(db_error)?;
+
+    if old_event_type == "watered" || event_type == "watered" {
+        publish_plant_watering_mqtt(&state, plant_id).await;
+    }
+
+    debug!(
+        plant_id,
+        event_id,
+        old_event_type = %old_event_type,
+        event_type = %event_type,
+        "Care event updated"
+    );
+    Ok(Json(event))
 }
 
 /// # Errors
