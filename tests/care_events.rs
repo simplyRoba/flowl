@@ -1,7 +1,16 @@
 mod common;
 
-use axum::http::StatusCode;
+use std::io;
+use std::time::Duration;
+
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
 use common::{body_json, json_request};
+use rumqttc::{AsyncClient, MqttOptions};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::{mpsc, oneshot};
+use tokio::task::JoinHandle;
 use tower::ServiceExt;
 
 async fn app() -> (axum::Router, tempfile::TempDir) {
@@ -20,6 +29,187 @@ async fn create_plant(app: &axum::Router) -> i64 {
         .unwrap();
     let json = body_json(resp).await;
     json["id"].as_i64().unwrap()
+}
+
+fn multipart_request(uri: &str, content_type: &str, data: &[u8]) -> Request<Body> {
+    let boundary = "----testboundary";
+    let mut body_bytes = Vec::new();
+    body_bytes.extend_from_slice(b"------testboundary\r\n");
+    body_bytes.extend_from_slice(
+        format!(
+            "Content-Disposition: form-data; name=\"file\"; filename=\"test.jpg\"\r\n\
+             Content-Type: {content_type}\r\n\r\n"
+        )
+        .as_bytes(),
+    );
+    body_bytes.extend_from_slice(data);
+    body_bytes.extend_from_slice(b"\r\n------testboundary--\r\n");
+
+    Request::builder()
+        .method("POST")
+        .uri(uri)
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={boundary}"),
+        )
+        .body(Body::from(body_bytes))
+        .unwrap()
+}
+
+async fn plant_last_watered(app: &axum::Router, plant_id: i64) -> serde_json::Value {
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/plants/{plant_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    body_json(response).await["last_watered"].clone()
+}
+
+struct MqttPublication {
+    topic: String,
+    payload: Vec<u8>,
+}
+
+struct FakeMqttBroker {
+    port: u16,
+    publications: mpsc::Receiver<MqttPublication>,
+    connected: oneshot::Receiver<()>,
+    task: JoinHandle<()>,
+}
+
+async fn read_mqtt_packet(stream: &mut TcpStream) -> io::Result<Option<(u8, Vec<u8>)>> {
+    let mut header = [0];
+    match stream.read_exact(&mut header).await {
+        Ok(_) => {}
+        Err(error) if error.kind() == io::ErrorKind::UnexpectedEof => return Ok(None),
+        Err(error) => return Err(error),
+    }
+
+    let mut remaining_len = 0_usize;
+    let mut multiplier = 1_usize;
+    loop {
+        let encoded = stream.read_u8().await?;
+        remaining_len += usize::from(encoded & 0x7f) * multiplier;
+        if encoded & 0x80 == 0 {
+            break;
+        }
+        multiplier *= 128;
+    }
+
+    let mut payload = vec![0; remaining_len];
+    stream.read_exact(&mut payload).await?;
+    Ok(Some((header[0], payload)))
+}
+
+fn parse_mqtt_publish(header: u8, packet: Vec<u8>) -> MqttPublication {
+    let topic_len = usize::from(u16::from_be_bytes([packet[0], packet[1]]));
+    let topic = String::from_utf8(packet[2..2 + topic_len].to_vec()).expect("valid MQTT topic");
+    let packet_id_len = if (header >> 1) & 0x03 == 0 { 0 } else { 2 };
+    let payload = packet[2 + topic_len + packet_id_len..].to_vec();
+    MqttPublication { topic, payload }
+}
+
+async fn start_fake_mqtt_broker() -> FakeMqttBroker {
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("fake broker binds");
+    let port = listener.local_addr().expect("fake broker address").port();
+    let (publication_tx, publications) = mpsc::channel(8);
+    let (connected_tx, connected) = oneshot::channel();
+
+    let task = tokio::spawn(async move {
+        let (mut stream, _) = listener.accept().await.expect("MQTT client connects");
+        let (header, _) = read_mqtt_packet(&mut stream)
+            .await
+            .expect("MQTT CONNECT packet")
+            .expect("MQTT client remains connected");
+        assert_eq!(header >> 4, 1, "first MQTT packet is CONNECT");
+        stream
+            .write_all(&[0x20, 0x02, 0x00, 0x00])
+            .await
+            .expect("MQTT CONNACK write");
+        connected_tx
+            .send(())
+            .expect("connection readiness received");
+
+        while let Some((header, packet)) = read_mqtt_packet(&mut stream)
+            .await
+            .expect("valid MQTT packet")
+        {
+            if header >> 4 != 3 {
+                continue;
+            }
+
+            let qos = (header >> 1) & 0x03;
+            let packet_id_offset = usize::from(u16::from_be_bytes([packet[0], packet[1]])) + 2;
+            let packet_id = if qos == 0 {
+                None
+            } else {
+                Some([packet[packet_id_offset], packet[packet_id_offset + 1]])
+            };
+            publication_tx
+                .send(parse_mqtt_publish(header, packet))
+                .await
+                .expect("publication receiver remains available");
+            if let Some(packet_id) = packet_id {
+                stream
+                    .write_all(&[0x40, 0x02, packet_id[0], packet_id[1]])
+                    .await
+                    .expect("MQTT PUBACK write");
+            }
+        }
+    });
+
+    FakeMqttBroker {
+        port,
+        publications,
+        connected,
+        task,
+    }
+}
+
+async fn next_mqtt_publication(
+    publications: &mut mpsc::Receiver<MqttPublication>,
+) -> MqttPublication {
+    tokio::time::timeout(Duration::from_secs(1), publications.recv())
+        .await
+        .expect("timed out waiting for MQTT publication")
+        .expect("MQTT publication channel closed")
+}
+
+async fn assert_watering_mqtt_publications(
+    publications: &mut mpsc::Receiver<MqttPublication>,
+    plant_id: i64,
+    last_watered: Option<&str>,
+) {
+    let first = next_mqtt_publication(publications).await;
+    let second = next_mqtt_publication(publications).await;
+    let expected_state_topic = format!("flowl/plant/{plant_id}/state");
+    let expected_attributes_topic = format!("flowl/plant/{plant_id}/attributes");
+    let messages = [first, second];
+
+    let state = messages
+        .iter()
+        .find(|message| message.topic == expected_state_topic)
+        .expect("watering state publication");
+    assert!(matches!(
+        std::str::from_utf8(&state.payload).expect("UTF-8 state"),
+        "ok" | "due" | "overdue"
+    ));
+
+    let attributes = messages
+        .iter()
+        .find(|message| message.topic == expected_attributes_topic)
+        .expect("watering attributes publication");
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&attributes.payload).expect("attributes JSON")
+            ["last_watered"],
+        serde_json::json!(last_watered)
+    );
 }
 
 #[tokio::test]
@@ -78,6 +268,579 @@ async fn create_with_explicit_occurred_at() {
     assert_eq!(resp.status(), StatusCode::CREATED);
     let json = body_json(resp).await;
     assert_eq!(json["occurred_at"], "2026-02-14T10:00:00");
+}
+
+// --- Care event updates ---
+
+#[tokio::test]
+async fn update_event_preserves_immutable_fields_photo_and_clears_notes() {
+    let (app, _dir) = common::test_app_with_uploads().await;
+    let plant_id = create_plant(&app).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(
+                r#"{"event_type":"fertilized","notes":"Original note","occurred_at":"2026-02-10T10:00:00Z"}"#,
+            ),
+        ))
+        .await
+        .unwrap();
+    let created = body_json(response).await;
+    let event_id = created["id"].as_i64().unwrap();
+
+    let response = app
+        .clone()
+        .oneshot(multipart_request(
+            &format!("/api/plants/{plant_id}/care/{event_id}/photo"),
+            "image/jpeg",
+            &[0xFF, 0xD8, 0xFF, 0xE0],
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let with_photo = body_json(response).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{event_id}"),
+            Some(
+                r#"{"event_type":"pruned","notes":"Updated note","occurred_at":"2026-02-11T11:00:00Z"}"#,
+            ),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let updated = body_json(response).await;
+    assert_eq!(updated["event_type"], "pruned");
+    assert_eq!(updated["notes"], "Updated note");
+    assert_eq!(updated["occurred_at"], "2026-02-11T11:00:00Z");
+    assert_eq!(updated["id"], created["id"]);
+    assert_eq!(updated["plant_id"], created["plant_id"]);
+    assert_eq!(updated["photo_url"], with_photo["photo_url"]);
+    assert_eq!(updated["created_at"], created["created_at"]);
+
+    let response = app
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{event_id}"),
+            Some(r#"{"event_type":"pruned","notes":null,"occurred_at":"2026-02-11T11:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let cleared = body_json(response).await;
+    assert!(cleared["notes"].is_null());
+}
+
+#[tokio::test]
+async fn update_event_rejects_invalid_input_without_mutation() {
+    let (app, _dir) = app().await;
+    let plant_id = create_plant(&app).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"pruned","notes":"Original","occurred_at":"2026-02-10T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    let created = body_json(response).await;
+    let event_id = created["id"].as_i64().unwrap();
+    let update_uri = format!("/api/plants/{plant_id}/care/{event_id}");
+
+    let response = app
+        .clone()
+        .oneshot(json_request("PUT", &update_uri, Some("{")))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    let future = (chrono::Utc::now() + chrono::Days::new(1)).to_rfc3339();
+    let invalid_bodies = [
+        r#"{"notes":null,"occurred_at":"2026-02-11T10:00:00Z"}"#.to_string(),
+        r#"{"event_type":"pruned","occurred_at":"2026-02-11T10:00:00Z"}"#.to_string(),
+        r#"{"event_type":"pruned","notes":null}"#.to_string(),
+        r#"{"event_type":"unknown","notes":null,"occurred_at":"2026-02-11T10:00:00Z"}"#.to_string(),
+        r#"{"event_type":"pruned","notes":null,"occurred_at":"not-a-datetime"}"#.to_string(),
+        format!(r#"{{"event_type":"pruned","notes":null,"occurred_at":"{future}"}}"#),
+    ];
+
+    for body in invalid_bodies {
+        let response = app
+            .clone()
+            .oneshot(json_request("PUT", &update_uri, Some(&body)))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    }
+
+    let response = app
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/plants/{plant_id}/care"),
+            None,
+        ))
+        .await
+        .unwrap();
+    let events = body_json(response).await;
+    assert_eq!(events, serde_json::json!([created]));
+}
+
+#[tokio::test]
+async fn update_event_accepts_legacy_sqlite_datetime() {
+    let (app, _dir) = app().await;
+    let plant_id = create_plant(&app).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"pruned","occurred_at":"2026-02-10 10:00:00"}"#),
+        ))
+        .await
+        .unwrap();
+    let event_id = body_json(response).await["id"].as_i64().unwrap();
+
+    let response = app
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{event_id}"),
+            Some(r#"{"event_type":"fertilized","notes":null,"occurred_at":"2026-02-11 10:00:00"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        body_json(response).await["occurred_at"],
+        "2026-02-11T10:00:00Z"
+    );
+}
+
+#[tokio::test]
+async fn update_event_returns_not_found_for_missing_plant_or_wrong_owner() {
+    let (app, _dir) = app().await;
+    let first_plant_id = create_plant(&app).await;
+    let second_plant_id = create_plant(&app).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{second_plant_id}/care"),
+            Some(r#"{"event_type":"fertilized","notes":"Original","occurred_at":"2026-02-10T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    let created = body_json(response).await;
+    let event_id = created["id"].as_i64().unwrap();
+    let update_body =
+        r#"{"event_type":"pruned","notes":null,"occurred_at":"2026-02-11T10:00:00Z"}"#;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/999/care/{event_id}"),
+            Some(update_body),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{first_plant_id}/care/{event_id}"),
+            Some(update_body),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+    let response = app
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/plants/{second_plant_id}/care"),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(body_json(response).await, serde_json::json!([created]));
+}
+
+#[tokio::test]
+async fn update_watering_mqtt_publications_follow_old_and_new_event_types() {
+    let FakeMqttBroker {
+        port,
+        mut publications,
+        connected,
+        task: broker_task,
+    } = start_fake_mqtt_broker().await;
+    let options = MqttOptions::new("care-events-test", "127.0.0.1", port);
+    let (client, mut event_loop) = AsyncClient::new(options, 10);
+    let event_loop_task = tokio::spawn(async move { while event_loop.poll().await.is_ok() {} });
+    connected.await.expect("MQTT client receives CONNACK");
+
+    let (app, _dir) = common::test_app_with_mqtt(client).await;
+    let plant_id = create_plant(&app).await;
+    // Plant creation publishes discovery plus its initial state and attributes.
+    for _ in 0..3 {
+        next_mqtt_publication(&mut publications).await;
+    }
+    let now = chrono::Utc::now();
+    let added_at =
+        (now - chrono::Duration::minutes(3)).to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let moved_from =
+        (now - chrono::Duration::minutes(4)).to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let moved_to =
+        (now - chrono::Duration::minutes(2)).to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"fertilized"}"#),
+        ))
+        .await
+        .unwrap();
+    let added_event_id = body_json(response).await["id"].as_i64().unwrap();
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{added_event_id}"),
+            Some(
+                &serde_json::json!({
+                    "event_type": "watered",
+                    "notes": null,
+                    "occurred_at": &added_at,
+                })
+                .to_string(),
+            ),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_watering_mqtt_publications(&mut publications, plant_id, Some(&added_at)).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(&format!(
+                r#"{{"event_type":"watered","occurred_at":"{moved_from}"}}"#
+            )),
+        ))
+        .await
+        .unwrap();
+    let removed_event_id = body_json(response).await["id"].as_i64().unwrap();
+    assert_watering_mqtt_publications(&mut publications, plant_id, Some(&added_at)).await;
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{removed_event_id}"),
+            Some(
+                &serde_json::json!({
+                    "event_type": "fertilized",
+                    "notes": null,
+                    "occurred_at": &moved_from,
+                })
+                .to_string(),
+            ),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_watering_mqtt_publications(&mut publications, plant_id, Some(&added_at)).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(&format!(
+                r#"{{"event_type":"watered","occurred_at":"{moved_from}"}}"#
+            )),
+        ))
+        .await
+        .unwrap();
+    let moved_event_id = body_json(response).await["id"].as_i64().unwrap();
+    assert_watering_mqtt_publications(&mut publications, plant_id, Some(&added_at)).await;
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{moved_event_id}"),
+            Some(
+                &serde_json::json!({
+                    "event_type": "watered",
+                    "notes": null,
+                    "occurred_at": &moved_to,
+                })
+                .to_string(),
+            ),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_watering_mqtt_publications(&mut publications, plant_id, Some(&moved_to)).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"pruned"}"#),
+        ))
+        .await
+        .unwrap();
+    let non_watering_event_id = body_json(response).await["id"].as_i64().unwrap();
+    let response = app
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{non_watering_event_id}"),
+            Some(
+                &serde_json::json!({
+                    "event_type": "custom",
+                    "notes": null,
+                    "occurred_at": &moved_to,
+                })
+                .to_string(),
+            ),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert!(
+        tokio::time::timeout(Duration::from_millis(100), publications.recv())
+            .await
+            .is_err(),
+        "non-watered updates must not publish watering MQTT state"
+    );
+
+    event_loop_task.abort();
+    broker_task.abort();
+}
+
+#[tokio::test]
+async fn update_to_watered_updates_plant_last_watered() {
+    let (app, _dir) = app().await;
+    let plant_id = create_plant(&app).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"fertilized","occurred_at":"2026-02-10T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    let event_id = body_json(response).await["id"].as_i64().unwrap();
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{event_id}"),
+            Some(r#"{"event_type":"watered","notes":null,"occurred_at":"2026-02-15T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        plant_last_watered(&app, plant_id).await,
+        "2026-02-15T10:00:00Z"
+    );
+}
+
+#[tokio::test]
+async fn update_from_watered_recomputes_plant_last_watered() {
+    let (app, _dir) = app().await;
+    let plant_id = create_plant(&app).await;
+
+    app.clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"watered","occurred_at":"2026-02-10T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"watered","occurred_at":"2026-02-15T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    let event_id = body_json(response).await["id"].as_i64().unwrap();
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{event_id}"),
+            Some(
+                r#"{"event_type":"fertilized","notes":null,"occurred_at":"2026-02-15T10:00:00Z"}"#,
+            ),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        plant_last_watered(&app, plant_id).await,
+        "2026-02-10T10:00:00Z"
+    );
+}
+
+#[tokio::test]
+async fn update_offset_datetime_normalizes_and_preserves_last_watered_chronology() {
+    let (app, _dir) = app().await;
+    let plant_id = create_plant(&app).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"watered","occurred_at":"2026-02-10T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    let event_id = body_json(response).await["id"].as_i64().unwrap();
+
+    app.clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"watered","occurred_at":"2026-02-15T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{event_id}"),
+            Some(r#"{"event_type":"watered","notes":null,"occurred_at":"2026-02-15T09:30:00-01:00"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        body_json(response).await["occurred_at"],
+        "2026-02-15T10:30:00Z"
+    );
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/plants/{plant_id}/care"),
+            None,
+        ))
+        .await
+        .unwrap();
+    let events = body_json(response).await;
+    assert!(
+        events
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|event| event["id"] == event_id && event["occurred_at"] == "2026-02-15T10:30:00Z")
+    );
+    assert_eq!(
+        plant_last_watered(&app, plant_id).await,
+        "2026-02-15T10:30:00Z"
+    );
+}
+
+#[tokio::test]
+async fn update_watered_occurrence_recomputes_plant_last_watered() {
+    let (app, _dir) = app().await;
+    let plant_id = create_plant(&app).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"watered","occurred_at":"2026-02-10T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    let event_id = body_json(response).await["id"].as_i64().unwrap();
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{event_id}"),
+            Some(r#"{"event_type":"watered","notes":null,"occurred_at":"2026-02-15T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        plant_last_watered(&app, plant_id).await,
+        "2026-02-15T10:00:00Z"
+    );
+}
+
+#[tokio::test]
+async fn update_between_non_watered_events_does_not_change_last_watered() {
+    let (app, _dir) = app().await;
+    let plant_id = create_plant(&app).await;
+
+    app.clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"watered","occurred_at":"2026-02-10T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"fertilized","occurred_at":"2026-02-11T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    let event_id = body_json(response).await["id"].as_i64().unwrap();
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "PUT",
+            &format!("/api/plants/{plant_id}/care/{event_id}"),
+            Some(r#"{"event_type":"pruned","notes":null,"occurred_at":"2026-02-12T10:00:00Z"}"#),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        plant_last_watered(&app, plant_id).await,
+        "2026-02-10T10:00:00Z"
+    );
 }
 
 #[tokio::test]

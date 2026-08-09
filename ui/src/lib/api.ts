@@ -359,6 +359,12 @@ export interface CreateCareEvent {
   occurred_at?: string;
 }
 
+export interface UpdateCareEvent {
+  event_type: EventType;
+  notes: string | null;
+  occurred_at: string;
+}
+
 export interface CareEventsPage {
   events: CareEvent[];
   has_more: boolean;
@@ -388,6 +394,14 @@ export function createCareEvent(
   data: CreateCareEvent,
 ): Promise<CareEvent> {
   return request("POST", `/api/plants/${plantId}/care`, data);
+}
+
+export function updateCareEvent(
+  plantId: number,
+  eventId: number,
+  data: UpdateCareEvent,
+): Promise<CareEvent> {
+  return request("PUT", `/api/plants/${plantId}/care/${eventId}`, data);
 }
 
 export function deleteCareEvent(

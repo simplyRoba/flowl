@@ -12,7 +12,7 @@ pub mod stats;
 
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
-use axum::routing::{delete, get, post, put};
+use axum::routing::{get, post, put};
 
 use crate::state::AppState;
 
@@ -35,7 +35,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route(
             "/plants/{id}/care/{event_id}",
-            delete(care_events::delete_care_event),
+            put(care_events::update_care_event).delete(care_events::delete_care_event),
         )
         .route("/care", get(care_events::list_all_care_events))
         .route("/stats", get(stats::get_stats))

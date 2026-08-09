@@ -56,7 +56,10 @@ pub fn default_message(code: &str) -> &'static str {
         // Care events
         "CARE_EVENT_NOT_FOUND" => "Care event not found",
         "CARE_EVENT_TYPE_REQUIRED" => "Event type is required",
+        "CARE_EVENT_NOTES_REQUIRED" => "Notes are required",
+        "CARE_EVENT_OCCURRED_AT_REQUIRED" => "Occurrence time is required",
         "CARE_EVENT_INVALID_TYPE" => "Invalid event type",
+        "CARE_EVENT_INVALID_OCCURRED_AT" => "Invalid occurrence time",
 
         // Locations
         "LOCATION_NOT_FOUND" => "Location not found",

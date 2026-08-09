@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/stores";
@@ -80,6 +80,7 @@
   let deleting = $state(false);
   let watering = $state(false);
   let showLogForm = $state(false);
+  let editingEvent = $state<CareEvent | null>(null);
   let deletingEventId = $state<number | null>(null);
   let deleteEventDialogTarget = $state<CareEvent | null>(null);
   let backHref = $state<BackPath>("/");
@@ -99,15 +100,19 @@
     loadAiStatus();
   });
 
-  async function loadCareEvents(plantId: number) {
+  async function loadCareEvents(plantId: number): Promise<boolean> {
+    const previousCareEvents = untrack(() => careEvents);
     careLoading = true;
     careEvents = [];
     try {
       careEvents = await fetchCareEvents(plantId);
+      return true;
     } catch {
-      careEvents = [];
+      careEvents = previousCareEvents;
+      return false;
+    } finally {
+      careLoading = false;
     }
-    careLoading = false;
   }
 
   $effect(() => {
@@ -115,6 +120,7 @@
     plantLoadErrorCode = data.loadErrorCode;
     notFound = data.notFound;
     showLogForm = false;
+    editingEvent = null;
     deletingEventId = null;
     deleteEventDialogTarget = null;
     deleteDialogOpen = false;
@@ -136,10 +142,11 @@
   });
 
   async function refreshPlantDetails(plantId: number) {
-    const [nextPlant] = await Promise.all([
+    const [nextPlant, careEventsLoaded] = await Promise.all([
       fetchPlant(plantId),
       loadCareEvents(plantId),
     ]);
+    if (!careEventsLoaded) throw new Error("Failed to load care events");
 
     plant = nextPlant;
     plantLoadErrorCode = null;
@@ -238,6 +245,28 @@
 
   function handleEventDelete(event: CareEvent) {
     deleteEventDialogTarget = event;
+  }
+
+  function handleEventEdit(event: CareEvent) {
+    if ($isOffline) return;
+    showLogForm = false;
+    editingEvent = event;
+  }
+
+  async function handleEventEditSubmit() {
+    const plantId = plant?.id;
+    editingEvent = null;
+    if (!plantId) return;
+    expandedGroups.clear();
+    try {
+      await refreshPlantDetails(plantId);
+    } catch {
+      pushNotification({
+        title: $translations.plant.careJournalSection,
+        variant: "error",
+        message: $translations.error.loadCareEvents,
+      });
+    }
   }
 
   async function handleEventDeleteConfirm() {
@@ -586,6 +615,10 @@
                     <button
                       class="timeline-group-btn"
                       onclick={() => toggleCareGroup(key)}
+                      aria-expanded={expanded}
+                      aria-label={expanded
+                        ? $translations.plant.collapseWateringGroup
+                        : $translations.plant.expandWateringGroup}
                     >
                       <span class="timeline-icon">
                         <Droplet size={12} />
@@ -627,6 +660,14 @@
                             </span>
                           </span>
                           <span class="timeline-actions">
+                            <button
+                              class="btn btn-ghost event-edit"
+                              onclick={() => handleEventEdit(event)}
+                              disabled={$isOffline}
+                              aria-label={$translations.plant.editLogEntry}
+                            >
+                              <Pencil size={16} />
+                            </button>
                             <button
                               class="btn btn-ghost event-delete"
                               onclick={() => handleEventDelete(event)}
@@ -691,6 +732,14 @@
                     </span>
                     <span class="timeline-actions">
                       <button
+                        class="btn btn-ghost event-edit"
+                        onclick={() => handleEventEdit(item)}
+                        disabled={$isOffline}
+                        aria-label={$translations.plant.editLogEntry}
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
                         class="btn btn-ghost event-delete"
                         onclick={() => handleEventDelete(item)}
                         disabled={$isOffline || deletingEventId === item.id}
@@ -705,7 +754,16 @@
             </ul>
           {/if}
 
-          {#if showLogForm}
+          {#if editingEvent}
+            <CareEntryForm
+              plantId={plant.id}
+              existingEvent={editingEvent}
+              onsubmit={handleEventEditSubmit}
+              oncancel={() => {
+                editingEvent = null;
+              }}
+            />
+          {:else if showLogForm}
             <CareEntryForm
               plantId={plant.id}
               onsubmit={async () => {
@@ -720,7 +778,10 @@
           {:else}
             <button
               class="btn btn-ghost"
-              onclick={() => (showLogForm = true)}
+              onclick={() => {
+                editingEvent = null;
+                showLogForm = true;
+              }}
               disabled={$isOffline}
             >
               {$translations.plant.addLogEntry}
@@ -1032,11 +1093,18 @@
   .timeline-actions {
     display: flex;
     align-items: center;
+    gap: 4px;
     min-height: 24px;
   }
 
-  .event-delete {
+  .event-delete,
+  .event-edit {
     color: var(--color-text-muted);
+  }
+
+  .event-edit:hover:not(:disabled) {
+    color: var(--color-primary);
+    opacity: 1;
   }
 
   .event-delete:hover:not(:disabled) {
@@ -1120,7 +1188,7 @@
     border-radius: 4px;
   }
 
-  .btn-ghost:not(.event-delete) {
+  .btn-ghost:not(.event-delete):not(.event-edit) {
     margin-top: 8px;
   }
 

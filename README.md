@@ -32,7 +32,7 @@ A small Rust service that exposes plant care data (watering schedules, care need
 ## Features
 
 - **Watering at a glance** — see which plants need water and act with one tap
-- **Care journal** — log watering, fertilizing, repotting, pruning, and custom events with optional photos
+- **Care journal** — log and edit watering, fertilizing, repotting, pruning, and custom events with optional photos
 - **AI plant identification** — snap a photo, get the species and a full care profile
 - **AI care assistant** — ask plant-specific questions in a chat, save the advice to your journal
 - **Home Assistant integration** — each plant appears as an MQTT sensor with watering status
@@ -115,7 +115,8 @@ flowl works as an installable PWA and remains usable when your device can't reac
 
 **What's disabled offline:**
 
-- Watering, adding log entries, editing or deleting plants.
+- Watering and adding, editing, or deleting log entries.
+- Editing or deleting plants.
 - Creating new plants or editing existing ones.
 - AI chat and plant identification.
 - Data export and import.

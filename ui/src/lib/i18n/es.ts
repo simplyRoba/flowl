@@ -158,6 +158,11 @@ export const es: Translations = {
     soilOrchid: "Corteza de orquídea",
     soilPeat: "Turba",
     addLogPhoto: "Añadir foto",
+    editLogEntry: "Editar entrada",
+    replaceLogPhoto: "Reemplazar foto",
+    removeLogPhoto: "Eliminar foto",
+    expandWateringGroup: "Expandir entradas de riego",
+    collapseWateringGroup: "Contraer entradas de riego",
   },
   care: {
     title: "Diario de cuidados",
@@ -175,6 +180,8 @@ export const es: Translations = {
     selectTypeError: "Elige un tipo de cuidado",
     wateredCount: "Regada {count} veces",
     wateredSince: "Regada {count} veces desde {from}",
+    invalidOccurredAt: "Introduce una fecha y hora válidas",
+    futureOccurredAt: "La fecha y hora no pueden estar en el futuro",
   },
   status: {
     overdue: "Atrasado",
@@ -438,6 +445,9 @@ export const es: Translations = {
     loadCareEvents: "No se pudieron cargar los eventos de cuidado",
     addCareEvent: "No se pudo añadir el evento de cuidado",
     deleteCareEvent: "No se pudo eliminar el evento de cuidado",
+    updateCareEvent: "No se pudo actualizar el evento de cuidado",
+    updateCareEventPhoto:
+      "La entrada de cuidado se guardó, pero el cambio de foto falló",
     loadLocations: "No se pudieron cargar las ubicaciones",
     createLocation: "No se pudo crear la ubicación",
     updateLocation: "No se pudo actualizar la ubicación",

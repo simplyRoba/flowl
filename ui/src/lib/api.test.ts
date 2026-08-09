@@ -8,6 +8,7 @@ import {
   createLocation,
   fetchCareEvents,
   fetchAllCareEvents,
+  updateCareEvent,
   exportData,
   importData,
 } from "./api";
@@ -196,6 +197,32 @@ describe("API endpoint functions", () => {
     });
     await fetchAllCareEvents(20, undefined, []);
     expect(fn).toHaveBeenCalledWith("/api/care?limit=20", { method: "GET" });
+  });
+
+  it("updateCareEvent sends a typed PUT request and returns the event", async () => {
+    const event = {
+      id: 8,
+      plant_id: 4,
+      plant_name: "Fern",
+      event_type: "fertilized",
+      notes: null,
+      photo_url: null,
+      occurred_at: "2025-02-03T10:30:00Z",
+      created_at: "2025-02-01T10:30:00Z",
+    };
+    const fn = mockFetch({ ok: true, json: vi.fn().mockResolvedValue(event) });
+    const data = {
+      event_type: "fertilized" as const,
+      notes: null,
+      occurred_at: "2025-02-03T10:30:00Z",
+    };
+
+    await expect(updateCareEvent(4, 8, data)).resolves.toEqual(event);
+    expect(fn).toHaveBeenCalledWith("/api/plants/4/care/8", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
   });
 });
 
