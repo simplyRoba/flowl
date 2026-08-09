@@ -672,6 +672,10 @@
         <span class="setting-label">{$translations.settings.license}</span>
         <span>{appInfo.license}</span>
       </div>
+      <div class="about-row">
+        <span class="setting-label">{$translations.settings.copyright}</span>
+        <span>Copyright (C) 2026 simplyRoba.</span>
+      </div>
     </section>
   {/if}
 </div>

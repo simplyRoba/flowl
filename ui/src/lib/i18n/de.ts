@@ -259,6 +259,7 @@ export const de: Translations = {
     version: "Version",
     source: "Quelle",
     license: "Lizenz",
+    copyright: "Urheberrecht",
     failedToRename: "Umbenennung des Standorts fehlgeschlagen",
   },
   form: {

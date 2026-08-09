@@ -253,6 +253,7 @@ const en = {
     version: "Version",
     source: "Source",
     license: "License",
+    copyright: "Copyright",
     failedToRename: "Failed to rename location",
   },
   form: {

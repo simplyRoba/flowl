@@ -257,6 +257,7 @@ export const es: Translations = {
     version: "Versión",
     source: "Código fuente",
     license: "Licencia",
+    copyright: "Derechos de autor",
     failedToRename: "No se pudo renombrar la ubicación",
   },
   form: {
