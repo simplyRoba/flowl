@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.6.0](https://github.com/simplyRoba/flowl/compare/v1.5.14...v1.6.0) (2026-08-09)
+
+
+### Features
+
+* edit plant care entries ([09960c7](https://github.com/simplyRoba/flowl/commit/09960c78b9c4d0a280bd6be922cdb5031ad654b9))
+* show copyright in settings ([41be81a](https://github.com/simplyRoba/flowl/commit/41be81a25ac7b54d417f1770e56dcc8e9194d37c))
+
+
+### Bug Fixes
+
+* show all plant care entries ([fe80d8b](https://github.com/simplyRoba/flowl/commit/fe80d8b3753c33aa69df5cd50033b0023fbe6f86))
+
+
+### Documentation
+
+* add copyright notice ([b29a8f2](https://github.com/simplyRoba/flowl/commit/b29a8f2014763a239a9bad835bdd367844f37eb0))
+
+
+### Dependencies
+
+* bump base64 from 0.22.1 to 0.23.1 ([63403c1](https://github.com/simplyRoba/flowl/commit/63403c1c3e4bdbea06014935818ebfcf55fde647))
+* bump globals from 17.7.0 to 17.9.0 in /ui ([a0e7dad](https://github.com/simplyRoba/flowl/commit/a0e7dad6b954a7a3a83829e15ac294e42d25564c))
+* bump jsdom from 29.1.1 to 30.0.1 in /ui ([0d3600a](https://github.com/simplyRoba/flowl/commit/0d3600afffbc3b591ce4df08abdd1a8abf1d363a))
+* bump postcss from 8.5.22 to 8.5.26 in /ui ([0911a27](https://github.com/simplyRoba/flowl/commit/0911a27ab07fa05eaf21c8bb4c95a89bdb6dc6c0))
+* bump the eslint group across 1 directory with 2 updates ([09e9f94](https://github.com/simplyRoba/flowl/commit/09e9f9406d3eb448db675ec99b57e37591718cac))
+* bump the svelte group across 1 directory with 3 updates ([2a5580e](https://github.com/simplyRoba/flowl/commit/2a5580e211bddaf67cc5b72f154a5538bf726c4d))
+* bump tokio-stream in the tokio group across 1 directory ([a786a38](https://github.com/simplyRoba/flowl/commit/a786a38261772d505c5bf8ac2f0126e0d07bb165))
+
 ## [1.5.14](https://github.com/simplyRoba/flowl/compare/v1.5.13...v1.5.14) (2026-07-24)
 
 
