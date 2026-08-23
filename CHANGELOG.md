@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.7.0](https://github.com/simplyRoba/flowl/compare/v1.6.0...v1.7.0) (2026-08-23)
+
+
+### Features
+
+* paginate care journal history ([35c6e64](https://github.com/simplyRoba/flowl/commit/35c6e641c66d7fd26aea013b1733ab9bd685eac9))
+
+
+### Dependencies
+
+* bump @testing-library/user-event from 14.6.1 to 14.6.5 in /ui ([b4c84e3](https://github.com/simplyRoba/flowl/commit/b4c84e331e26b5619b92616b5e688fabc29dc222))
+* bump async-trait from 0.1.91 to 0.1.92 ([eeebc83](https://github.com/simplyRoba/flowl/commit/eeebc832df37864bb60229cc9fce7f382a04365b))
+* bump the eslint group across 1 directory with 3 updates ([7632292](https://github.com/simplyRoba/flowl/commit/76322927380934a9e12942017b48712b3cb6808e))
+* bump the svelte group across 1 directory with 3 updates ([fba810b](https://github.com/simplyRoba/flowl/commit/fba810bbef0206db5fc6f49c71bd95b1868a140e))
+* bump uuid from 1.24.0 to 1.24.1 ([468af26](https://github.com/simplyRoba/flowl/commit/468af2600d275cdd1d4de9250aac71642dd53a26))
+* bump vite from 8.1.5 to 8.2.2 in /ui ([8096ff1](https://github.com/simplyRoba/flowl/commit/8096ff1f28b7498c1f981a9ca38e508543af51d1))
+
 ## [1.6.0](https://github.com/simplyRoba/flowl/compare/v1.5.14...v1.6.0) (2026-08-09)
 
 
