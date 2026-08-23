@@ -1,5 +1,38 @@
 import { describe, expect, it } from "vitest";
+import { de } from "./de";
+import { en } from "./en";
+import { es } from "./es";
 import { plural } from "./plural";
+
+describe("watering group date ranges", () => {
+  it.each([
+    [
+      "English",
+      en,
+      "Watered 3 times, Feb 1 – Feb 3",
+      "Watered 3+ times, Feb 1 – Feb 3",
+    ],
+    ["German", de, "3× gegossen, Feb 1 – Feb 3", "3+× gegossen, Feb 1 – Feb 3"],
+    [
+      "Spanish",
+      es,
+      "Regada 3 veces, Feb 1 – Feb 3",
+      "Regada 3+ veces, Feb 1 – Feb 3",
+    ],
+  ])(
+    "renders complete and partial ranges in %s",
+    (_locale, translations, exact, partial) => {
+      const replacements = (template: string) =>
+        template
+          .replace("{count}", "3")
+          .replace("{from}", "Feb 1")
+          .replace("{to}", "Feb 3");
+
+      expect(replacements(translations.care.wateredSince)).toBe(exact);
+      expect(replacements(translations.care.partialWateredSince)).toBe(partial);
+    },
+  );
+});
 
 describe("plural", () => {
   it("returns the singular form for one", () => {
