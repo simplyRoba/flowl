@@ -7,6 +7,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use common::{body_json, json_request};
 use rumqttc::{AsyncClient, MqttOptions};
+use sqlx::SqlitePool;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, oneshot};
@@ -15,6 +16,46 @@ use tower::ServiceExt;
 
 async fn app() -> (axum::Router, tempfile::TempDir) {
     common::test_app().await
+}
+
+async fn app_with_pool() -> (axum::Router, SqlitePool, tempfile::TempDir) {
+    let pool = common::test_pool().await;
+    let tmp = tempfile::TempDir::new().expect("temporary upload directory");
+    let state = flowl::state::AppState {
+        pool: pool.clone(),
+        image_store: flowl::images::ImageStore::new(tmp.path().to_path_buf()),
+        mqtt_client: None,
+        mqtt_prefix: "flowl".to_string(),
+        mqtt_connected: None,
+        mqtt_host: "localhost".to_string(),
+        mqtt_port: 1883,
+        mqtt_disabled: true,
+        ai_provider: None,
+        ai_base_url: String::new(),
+        ai_model: String::new(),
+        ai_rate_limiter: None,
+    };
+
+    (flowl::server::router(state), pool, tmp)
+}
+
+async fn insert_care_event(
+    pool: &SqlitePool,
+    plant_id: i64,
+    event_type: &str,
+    occurred_at: &str,
+) -> i64 {
+    sqlx::query_scalar(
+        "INSERT INTO care_events (plant_id, event_type, occurred_at, created_at) \
+         VALUES (?, ?, ?, ?) RETURNING id",
+    )
+    .bind(plant_id)
+    .bind(event_type)
+    .bind(occurred_at)
+    .bind("2026-01-01T00:00:00Z")
+    .fetch_one(pool)
+    .await
+    .expect("care event inserted")
 }
 
 async fn create_plant(app: &axum::Router) -> i64 {
@@ -268,6 +309,33 @@ async fn create_with_explicit_occurred_at() {
     assert_eq!(resp.status(), StatusCode::CREATED);
     let json = body_json(resp).await;
     assert_eq!(json["occurred_at"], "2026-02-14T10:00:00");
+}
+
+#[tokio::test]
+async fn create_rejects_invalid_occurred_at() {
+    let (app, _dir) = app().await;
+    let id = create_plant(&app).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{id}/care"),
+            Some(r#"{"event_type":"repotted","occurred_at":"not-a-datetime"}"#),
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let json = body_json(response).await;
+    assert_eq!(json["code"], "CARE_EVENT_INVALID_OCCURRED_AT");
+    assert_eq!(json["message"], "Invalid occurrence time");
+
+    let response = app
+        .oneshot(json_request("GET", &format!("/api/plants/{id}/care"), None))
+        .await
+        .unwrap();
+    assert_eq!(body_json(response).await, serde_json::json!([]));
 }
 
 // --- Care event updates ---
@@ -1149,6 +1217,303 @@ async fn global_cursor_pagination() {
 }
 
 #[tokio::test]
+async fn global_defaults_to_twenty_and_preserves_page_shape() {
+    let (app, pool, _dir) = app_with_pool().await;
+    let plant_id = create_plant(&app).await;
+
+    for second in 0..21 {
+        insert_care_event(
+            &pool,
+            plant_id,
+            "watered",
+            &format!("2026-01-01T00:00:{second:02}Z"),
+        )
+        .await;
+    }
+
+    let response = app
+        .oneshot(json_request("GET", "/api/care", None))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let json = body_json(response).await;
+    assert_eq!(json.as_object().unwrap().len(), 2);
+    assert_eq!(json["events"].as_array().unwrap().len(), 20);
+    assert_eq!(json["has_more"], true);
+}
+
+#[tokio::test]
+async fn global_supports_and_caps_pages_at_five_hundred() {
+    let (app, pool, _dir) = app_with_pool().await;
+    let plant_id = create_plant(&app).await;
+
+    for _ in 0..501 {
+        insert_care_event(&pool, plant_id, "watered", "2026-01-01T00:00:00Z").await;
+    }
+
+    for limit in [500, 999] {
+        let response = app
+            .clone()
+            .oneshot(json_request(
+                "GET",
+                &format!("/api/care?limit={limit}"),
+                None,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let json = body_json(response).await;
+        let events = json["events"].as_array().unwrap();
+        assert_eq!(events.len(), 500);
+        assert_eq!(json["has_more"], true);
+        assert_eq!(events[0]["id"], 501);
+        assert_eq!(events[499]["id"], 2);
+    }
+}
+
+#[tokio::test]
+async fn global_cursor_follows_chronology_for_backdated_ids() {
+    let (app, pool, _dir) = app_with_pool().await;
+    let plant_id = create_plant(&app).await;
+    let newest_id = insert_care_event(&pool, plant_id, "watered", "2026-01-03T00:00:00Z").await;
+    let oldest_id = insert_care_event(&pool, plant_id, "watered", "2026-01-01T00:00:00Z").await;
+    let middle_id = insert_care_event(&pool, plant_id, "watered", "2026-01-02T00:00:00Z").await;
+
+    let mut before = None;
+    let mut actual_ids = Vec::new();
+    loop {
+        let uri = before.map_or_else(
+            || "/api/care?limit=1".to_string(),
+            |event_id| format!("/api/care?limit=1&before={event_id}"),
+        );
+        let response = app
+            .clone()
+            .oneshot(json_request("GET", &uri, None))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let json = body_json(response).await;
+        let events = json["events"].as_array().unwrap();
+        actual_ids.extend(events.iter().map(|event| event["id"].as_i64().unwrap()));
+
+        if !json["has_more"].as_bool().unwrap() {
+            break;
+        }
+        before = events.last().and_then(|event| event["id"].as_i64());
+    }
+
+    assert_eq!(actual_ids, [newest_id, middle_id, oldest_id]);
+}
+
+#[tokio::test]
+async fn global_cursor_orders_supported_timestamp_formats_chronologically() {
+    let (app, _dir) = app().await;
+    let plant_id = create_plant(&app).await;
+    let mut ids = Vec::new();
+
+    for occurred_at in [
+        "2026-02-15T10:00:00Z",
+        "2026-02-15T09:30:00-01:00",
+        "2026-02-15 09:00:00",
+    ] {
+        let response = app
+            .clone()
+            .oneshot(json_request(
+                "POST",
+                &format!("/api/plants/{plant_id}/care"),
+                Some(&format!(
+                    r#"{{"event_type":"watered","occurred_at":"{occurred_at}"}}"#
+                )),
+            ))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::CREATED);
+        ids.push(body_json(response).await["id"].as_i64().unwrap());
+    }
+
+    let expected_ids = [ids[1], ids[0], ids[2]];
+    let mut actual_ids = Vec::new();
+    let mut before = None;
+
+    loop {
+        let uri = before.map_or_else(
+            || "/api/care?limit=1".to_string(),
+            |event_id| format!("/api/care?limit=1&before={event_id}"),
+        );
+        let response = app
+            .clone()
+            .oneshot(json_request("GET", &uri, None))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let json = body_json(response).await;
+        let events = json["events"].as_array().unwrap();
+        actual_ids.extend(events.iter().map(|event| event["id"].as_i64().unwrap()));
+
+        if !json["has_more"].as_bool().unwrap() {
+            break;
+        }
+        before = events.last().and_then(|event| event["id"].as_i64());
+    }
+
+    assert_eq!(actual_ids, expected_ids);
+}
+
+#[tokio::test]
+async fn global_cursor_keeps_malformed_historical_timestamps_reachable() {
+    let (app, pool, _dir) = app_with_pool().await;
+    let plant_id = create_plant(&app).await;
+    let valid_id = insert_care_event(&pool, plant_id, "watered", "2026-01-01T00:00:00Z").await;
+    let first_malformed_id = insert_care_event(&pool, plant_id, "watered", "not-a-datetime").await;
+    let second_malformed_id = insert_care_event(&pool, plant_id, "watered", "also-invalid").await;
+
+    let mut actual_ids = Vec::new();
+    let mut before = None;
+    loop {
+        let uri = before.map_or_else(
+            || "/api/care?limit=1".to_string(),
+            |event_id| format!("/api/care?limit=1&before={event_id}"),
+        );
+        let response = app
+            .clone()
+            .oneshot(json_request("GET", &uri, None))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let json = body_json(response).await;
+        let events = json["events"].as_array().unwrap();
+        actual_ids.extend(events.iter().map(|event| event["id"].as_i64().unwrap()));
+
+        if !json["has_more"].as_bool().unwrap() {
+            break;
+        }
+        before = events.last().and_then(|event| event["id"].as_i64());
+    }
+
+    assert_eq!(
+        actual_ids,
+        [valid_id, second_malformed_id, first_malformed_id]
+    );
+}
+
+#[tokio::test]
+async fn global_cursor_breaks_equal_timestamps_by_descending_id() {
+    let (app, pool, _dir) = app_with_pool().await;
+    let plant_id = create_plant(&app).await;
+    let first_id = insert_care_event(&pool, plant_id, "watered", "2026-01-01T00:00:00Z").await;
+    let second_id = insert_care_event(&pool, plant_id, "watered", "2026-01-01T00:00:00Z").await;
+    let third_id = insert_care_event(&pool, plant_id, "watered", "2026-01-01T00:00:00Z").await;
+
+    let first_response = app
+        .clone()
+        .oneshot(json_request("GET", "/api/care?limit=2", None))
+        .await
+        .unwrap();
+    let first_page = body_json(first_response).await;
+    assert_eq!(first_page["events"][0]["id"], third_id);
+    assert_eq!(first_page["events"][1]["id"], second_id);
+    assert_eq!(first_page["has_more"], true);
+
+    let second_response = app
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/care?limit=2&before={second_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    let second_page = body_json(second_response).await;
+    assert_eq!(
+        second_page["events"],
+        serde_json::json!([{"id": first_id, "plant_id": plant_id, "plant_name": "TestPlant", "event_type": "watered", "notes": null, "photo_url": null, "occurred_at": "2026-01-01T00:00:00Z", "created_at": "2026-01-01T00:00:00Z"}])
+    );
+    assert_eq!(second_page["has_more"], false);
+}
+
+#[tokio::test]
+async fn global_filtered_continuation_paginates_matching_events() {
+    let (app, pool, _dir) = app_with_pool().await;
+    let plant_id = create_plant(&app).await;
+    let newest_id = insert_care_event(&pool, plant_id, "watered", "2026-01-04T00:00:00Z").await;
+    insert_care_event(&pool, plant_id, "fertilized", "2026-01-03T00:00:00Z").await;
+    let middle_id = insert_care_event(&pool, plant_id, "watered", "2026-01-02T00:00:00Z").await;
+    let oldest_id = insert_care_event(&pool, plant_id, "watered", "2026-01-01T00:00:00Z").await;
+
+    let first_response = app
+        .clone()
+        .oneshot(json_request("GET", "/api/care?limit=1&type=watered", None))
+        .await
+        .unwrap();
+    assert_eq!(first_response.status(), StatusCode::OK);
+    let first_page = body_json(first_response).await;
+    assert_eq!(first_page["events"][0]["id"], newest_id);
+    assert_eq!(first_page["has_more"], true);
+
+    let second_response = app
+        .clone()
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/care?limit=1&type=watered&before={newest_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(second_response.status(), StatusCode::OK);
+    let second_page = body_json(second_response).await;
+    assert_eq!(second_page["events"][0]["id"], middle_id);
+    assert_eq!(second_page["has_more"], true);
+
+    let third_response = app
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/care?limit=1&type=watered&before={middle_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(third_response.status(), StatusCode::OK);
+    let third_page = body_json(third_response).await;
+    assert_eq!(third_page["events"][0]["id"], oldest_id);
+    assert_eq!(third_page["has_more"], false);
+}
+
+#[tokio::test]
+async fn global_cursor_is_resolved_independent_of_event_type_filters() {
+    let (app, pool, _dir) = app_with_pool().await;
+    let plant_id = create_plant(&app).await;
+    let newest_id = insert_care_event(&pool, plant_id, "watered", "2026-01-03T00:00:00Z").await;
+    let cursor_id = insert_care_event(&pool, plant_id, "fertilized", "2026-01-02T00:00:00Z").await;
+    let oldest_id = insert_care_event(&pool, plant_id, "watered", "2026-01-01T00:00:00Z").await;
+
+    let response = app
+        .oneshot(json_request(
+            "GET",
+            &format!("/api/care?limit=1&type=watered&before={cursor_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let json = body_json(response).await;
+    assert_eq!(json["events"][0]["id"], oldest_id);
+    assert_ne!(json["events"][0]["id"], newest_id);
+    assert_eq!(json["has_more"], false);
+}
+
+#[tokio::test]
+async fn global_unknown_cursor_returns_validation_error() {
+    let (app, _dir) = app().await;
+
+    let response = app
+        .oneshot(json_request("GET", "/api/care?before=999", None))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let json = body_json(response).await;
+    assert_eq!(json["message"], "Care event not found");
+}
+
+#[tokio::test]
 async fn global_type_filter() {
     let (app, _dir) = app().await;
     let id = create_plant(&app).await;
@@ -1216,6 +1581,41 @@ async fn global_multi_type_filter() {
     assert!(types.contains(&"watered"));
     assert!(types.contains(&"fertilized"));
     assert!(!types.contains(&"pruned"));
+}
+
+#[tokio::test]
+async fn global_multi_type_filter_paginates_matching_events() {
+    let (app, pool, _dir) = app_with_pool().await;
+    let plant_id = create_plant(&app).await;
+    let newest_id = insert_care_event(&pool, plant_id, "watered", "2026-01-04T00:00:00Z").await;
+    insert_care_event(&pool, plant_id, "pruned", "2026-01-03T00:00:00Z").await;
+    let middle_id = insert_care_event(&pool, plant_id, "fertilized", "2026-01-02T00:00:00Z").await;
+    let oldest_id = insert_care_event(&pool, plant_id, "watered", "2026-01-01T00:00:00Z").await;
+
+    let mut actual_ids = Vec::new();
+    let mut before = None;
+    loop {
+        let uri = before.map_or_else(
+            || "/api/care?limit=1&type=watered&type=fertilized".to_string(),
+            |event_id| format!("/api/care?limit=1&type=watered&type=fertilized&before={event_id}"),
+        );
+        let response = app
+            .clone()
+            .oneshot(json_request("GET", &uri, None))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let json = body_json(response).await;
+        let events = json["events"].as_array().unwrap();
+        actual_ids.extend(events.iter().map(|event| event["id"].as_i64().unwrap()));
+
+        if !json["has_more"].as_bool().unwrap() {
+            break;
+        }
+        before = events.last().and_then(|event| event["id"].as_i64());
+    }
+
+    assert_eq!(actual_ids, [newest_id, middle_id, oldest_id]);
 }
 
 #[tokio::test]

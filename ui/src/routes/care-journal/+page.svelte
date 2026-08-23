@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { untrack } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
   import {
     SvelteDate,
     SvelteSet,
@@ -18,7 +18,7 @@
     ChevronRight,
   } from "lucide-svelte";
   import type { CareEvent, EventType } from "$lib/api";
-  import { fetchAllCareEvents } from "$lib/api";
+  import { ApiError, fetchAllCareEvents } from "$lib/api";
   import { resolveError } from "$lib/stores/errors";
   import { translations } from "$lib/stores/locale";
   import { isOffline } from "$lib/stores/network";
@@ -35,10 +35,25 @@
   let lightboxOpen = $state(false);
   let lightboxSrc = $state("");
 
+  const JOURNAL_PAGE_SIZE = 500;
+
   let events = $state<CareEvent[]>([]);
+  let hasMore = $state(false);
   let loading = $state(false);
+  let loadingMore = $state(false);
   let error = $state<string | null>(null);
+  let continuationError = $state<string | null>(null);
+  let continuationRequiresReset = $state(false);
   let expandedGroups: Set<string> = new SvelteSet();
+  let requestGeneration = 0;
+  let currentTypes: EventType[] | undefined;
+  let continuationButton = $state<HTMLButtonElement>();
+  let intersectionObserver: IntersectionObserver | undefined;
+  let resizeObserver: ResizeObserver | undefined;
+  let resizeHandler: (() => void) | undefined;
+  let monitoringVersion = 0;
+  let automaticLoadArmed = true;
+  let destroyed = false;
 
   const TYPE_VALUES = [
     "watered",
@@ -89,20 +104,203 @@
     }
   }
 
-  async function loadAllEvents() {
-    if (loading) return;
-    loading = true;
-    error = null;
-    expandedGroups.clear();
-    const types =
-      activeTypes.size > 0 ? ([...activeTypes] as EventType[]) : undefined;
-    try {
-      const result = await fetchAllCareEvents(10000, undefined, types);
-      events = result.events;
-    } catch (e) {
-      error = $isOffline ? null : resolveError(e, "loadCareEvents");
+  function cleanupContinuationMonitoring() {
+    monitoringVersion += 1;
+    intersectionObserver?.disconnect();
+    intersectionObserver = undefined;
+    resizeObserver?.disconnect();
+    resizeObserver = undefined;
+    if (resizeHandler && typeof window !== "undefined") {
+      window.removeEventListener("resize", resizeHandler);
     }
-    loading = false;
+    resizeHandler = undefined;
+  }
+
+  function reconcileIntersectionObserver(generation: number) {
+    intersectionObserver?.disconnect();
+    intersectionObserver = undefined;
+
+    if (
+      generation !== requestGeneration ||
+      !hasMore ||
+      loading ||
+      loadingMore ||
+      continuationError ||
+      !continuationButton ||
+      typeof document === "undefined" ||
+      typeof IntersectionObserver === "undefined"
+    ) {
+      return;
+    }
+
+    const scrollingElement = document.scrollingElement;
+    if (
+      !scrollingElement ||
+      scrollingElement.scrollHeight <= scrollingElement.clientHeight + 1
+    ) {
+      return;
+    }
+
+    const observerVersion = monitoringVersion;
+    intersectionObserver = new IntersectionObserver((entries) => {
+      if (observerVersion !== monitoringVersion) return;
+
+      const isIntersecting = entries.some((entry) => entry.isIntersecting);
+      if (!isIntersecting) {
+        automaticLoadArmed = true;
+        return;
+      }
+      if (!automaticLoadArmed) return;
+
+      automaticLoadArmed = false;
+      void loadOlderPage("observer", generation);
+    });
+    intersectionObserver.observe(continuationButton);
+  }
+
+  async function refreshContinuationMonitoring(generation: number) {
+    cleanupContinuationMonitoring();
+    const version = monitoringVersion;
+
+    if (
+      destroyed ||
+      generation !== requestGeneration ||
+      !hasMore ||
+      continuationError
+    ) {
+      return;
+    }
+
+    await tick();
+    if (
+      destroyed ||
+      version !== monitoringVersion ||
+      generation !== requestGeneration ||
+      !hasMore ||
+      continuationError ||
+      !continuationButton ||
+      typeof window === "undefined"
+    ) {
+      return;
+    }
+
+    resizeHandler = () => {
+      if (version === monitoringVersion) {
+        reconcileIntersectionObserver(generation);
+      }
+    };
+    window.addEventListener("resize", resizeHandler);
+
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        if (version === monitoringVersion) {
+          reconcileIntersectionObserver(generation);
+        }
+      });
+      resizeObserver.observe(document.documentElement);
+    }
+
+    reconcileIntersectionObserver(generation);
+  }
+
+  function appendUnseenEvents(
+    currentEvents: CareEvent[],
+    newEvents: CareEvent[],
+  ): CareEvent[] {
+    const ids = new SvelteSet(currentEvents.map((event) => event.id));
+    return [
+      ...currentEvents,
+      ...newEvents.filter((event) => {
+        if (ids.has(event.id)) return false;
+        ids.add(event.id);
+        return true;
+      }),
+    ];
+  }
+
+  async function resetPages(types: EventType[] | undefined) {
+    const generation = ++requestGeneration;
+    cleanupContinuationMonitoring();
+    currentTypes = types;
+    events = [];
+    hasMore = false;
+    loading = true;
+    loadingMore = false;
+    error = null;
+    continuationError = null;
+    continuationRequiresReset = false;
+    automaticLoadArmed = true;
+    expandedGroups.clear();
+
+    try {
+      const result = await fetchAllCareEvents(
+        JOURNAL_PAGE_SIZE,
+        undefined,
+        types,
+      );
+      if (generation !== requestGeneration) return;
+
+      events = appendUnseenEvents([], result.events);
+      hasMore = result.has_more;
+    } catch (e) {
+      if (generation !== requestGeneration) return;
+      error = $isOffline ? null : resolveError(e, "loadCareEvents");
+    } finally {
+      if (generation === requestGeneration) {
+        loading = false;
+        void refreshContinuationMonitoring(generation);
+      }
+    }
+  }
+
+  async function loadOlderPage(
+    source: "manual" | "observer",
+    generation = requestGeneration,
+  ) {
+    if (
+      generation !== requestGeneration ||
+      !hasMore ||
+      loading ||
+      loadingMore ||
+      events.length === 0 ||
+      (source === "observer" && continuationError)
+    ) {
+      return;
+    }
+
+    const before = events[events.length - 1].id;
+    const types = currentTypes;
+    automaticLoadArmed = false;
+    loadingMore = true;
+    continuationError = null;
+    continuationRequiresReset = false;
+    cleanupContinuationMonitoring();
+
+    try {
+      const result = await fetchAllCareEvents(JOURNAL_PAGE_SIZE, before, types);
+      if (generation !== requestGeneration) return;
+
+      events = appendUnseenEvents(events, result.events);
+      hasMore = result.has_more;
+    } catch (e) {
+      if (generation !== requestGeneration) return;
+      continuationRequiresReset =
+        e instanceof ApiError && e.code === "CARE_EVENT_NOT_FOUND";
+      continuationError = resolveError(e, "loadCareEvents");
+    } finally {
+      if (generation === requestGeneration) {
+        loadingMore = false;
+        void refreshContinuationMonitoring(generation);
+      }
+    }
+  }
+
+  function activateContinuation() {
+    if (continuationRequiresReset) {
+      void resetPages(currentTypes);
+    } else {
+      void loadOlderPage("manual");
+    }
   }
 
   function dayLabel(dateStr: string): string {
@@ -145,14 +343,14 @@
     });
   }
 
-  function groupKey(group: WateringGroup): string {
-    return `${group.plantId}-${group.firstAt}`;
-  }
-
   function groupSummaryText(group: WateringGroup): string {
-    return $translations.care.wateredSince
+    const summary = group.partial
+      ? $translations.care.partialWateredSince
+      : $translations.care.wateredSince;
+    return summary
       .replace("{count}", String(group.count))
-      .replace("{from}", formatShortDate(group.firstAt));
+      .replace("{from}", formatShortDate(group.firstAt))
+      .replace("{to}", formatShortDate(group.lastAt));
   }
 
   function toggleGroup(key: string) {
@@ -161,6 +359,7 @@
     } else {
       expandedGroups.add(key);
     }
+    void refreshContinuationMonitoring(requestGeneration);
   }
 
   function itemDayLabel(item: TimelineItem): string {
@@ -175,7 +374,9 @@
     items: TimelineItem[];
   }
 
-  let timelineItems: TimelineItem[] = $derived(groupCareEvents(events));
+  let timelineItems: TimelineItem[] = $derived(
+    groupCareEvents(events, hasMore),
+  );
 
   let groupedByDay: DayGroup[] = $derived.by(() => {
     const groups: DayGroup[] = [];
@@ -192,9 +393,20 @@
     return groups;
   });
 
+  onMount(() => {
+    return () => {
+      destroyed = true;
+      requestGeneration += 1;
+      cleanupContinuationMonitoring();
+    };
+  });
+
   $effect(() => {
-    void activeTypes.size;
-    untrack(() => loadAllEvents());
+    const types =
+      activeTypes.size > 0 ? ([...activeTypes] as EventType[]) : undefined;
+    untrack(() => {
+      void resetPages(types);
+    });
   });
 </script>
 
@@ -262,9 +474,9 @@
       {#each groupedByDay as dayGroup (dayGroup.label)}
         <div class="log-day-group">
           <div class="log-day-header">{dayGroup.label}</div>
-          {#each dayGroup.items as item (isGroup(item) ? groupKey(item) : item.id)}
+          {#each dayGroup.items as item (isGroup(item) ? item.key : item.id)}
             {#if isGroup(item)}
-              {@const key = groupKey(item)}
+              {@const key = item.key}
               {@const expanded = expandedGroups.has(key)}
               <div class="log-entry log-group-summary" class:expanded>
                 <div class="log-entry-left">
@@ -280,12 +492,19 @@
                   <div class="log-entry-action">
                     {groupSummaryText(item)}
                   </div>
+                  {#if item.partial}
+                    <div class="log-group-continuation">
+                      {$translations.care.partialWateringContinuation}
+                    </div>
+                  {/if}
                 </div>
                 <button
                   class="log-group-toggle"
                   onclick={() => toggleGroup(key)}
                   aria-expanded={expanded}
-                  aria-label={expanded ? "Collapse" : "Expand"}
+                  aria-label={expanded
+                    ? $translations.plant.collapseWateringGroup
+                    : $translations.plant.expandWateringGroup}
                 >
                   <div class="log-group-chevron" class:expanded>
                     <ChevronRight size={16} />
@@ -382,6 +601,31 @@
         </div>
       {/each}
     </div>
+
+    {#if hasMore}
+      <div class="continuation-control" aria-live="polite">
+        {#if continuationError}
+          <p class="continuation-error">{continuationError}</p>
+        {/if}
+        <button
+          bind:this={continuationButton}
+          class="continuation-button"
+          onclick={activateContinuation}
+          disabled={loadingMore}
+          aria-busy={loadingMore}
+        >
+          {#if loadingMore}
+            {$translations.care.loadingOlder}
+          {:else if continuationRequiresReset}
+            {$translations.care.refreshJournal}
+          {:else if continuationError}
+            {$translations.care.retryOlder}
+          {:else}
+            {$translations.care.loadOlder}
+          {/if}
+        </button>
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -626,6 +870,41 @@
   .error {
     color: var(--color-danger);
     padding: 16px;
+  }
+
+  .log-group-continuation {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+
+  .continuation-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin: 24px 0;
+  }
+
+  .continuation-button {
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .continuation-button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
+
+  .continuation-error {
+    margin: 0;
+    color: var(--color-danger);
+    font-size: 13px;
   }
 
   @media (max-width: 768px) {

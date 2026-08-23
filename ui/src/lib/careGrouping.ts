@@ -2,6 +2,10 @@ import type { CareEvent } from "$lib/api";
 
 export interface WateringGroup {
   kind: "group";
+  /** Stable identity anchored to the newest event in the streak. */
+  key: string;
+  /** Whether the streak may continue into unloaded older history. */
+  partial: boolean;
   plantId: number;
   plantName: string;
   count: number;
@@ -21,9 +25,14 @@ export function isGroup(item: TimelineItem): item is WateringGroup {
  * Events are expected newest-first. Only watering events with no notes
  * and no photo are eligible for grouping. Events from other plants do
  * NOT break a plant's streak — streaks are tracked independently per plant.
- * A streak of 2+ becomes a WateringGroup; streak of 1 stays individual.
+ * A streak of 2+ becomes a WateringGroup; an exact streak of 1 stays
+ * individual. When older history remains, every streak active at the oldest
+ * loaded boundary is unresolved and emitted as a partial group.
  */
-export function groupCareEvents(events: CareEvent[]): TimelineItem[] {
+export function groupCareEvents(
+  events: CareEvent[],
+  hasMore = false,
+): TimelineItem[] {
   type Annotated = {
     event: CareEvent;
     groupable: boolean; // watered, no notes, no photo
@@ -72,12 +81,15 @@ export function groupCareEvents(events: CareEvent[]): TimelineItem[] {
     }
   }
 
-  // Now build the result. Walk events in order. For each event:
-  // - If not part of a streak (streakIds[i] === null) -> emit as-is
-  // - If part of a streak of size 1 -> emit as-is
-  // - If part of a streak of size 2+ -> emit a WateringGroup at the
-  //   position of the streak's FIRST event (earliest index = newest),
-  //   skip subsequent members.
+  // Any streak still active after the oldest loaded event could continue
+  // into an older page. A same-plant breaker removes its streak from this map,
+  // so only truly unresolved boundary streaks are partial.
+  const partialStreaks = hasMore
+    ? new Set(activeStreak.values())
+    : new Set<number>();
+
+  // Now build the result. Walk events in order. Exact streaks need at least
+  // two members to group; unresolved boundary streaks group even with one.
 
   const emittedStreaks = new Set<number>();
   const result: TimelineItem[] = [];
@@ -90,7 +102,8 @@ export function groupCareEvents(events: CareEvent[]): TimelineItem[] {
     }
 
     const members = streakMembers.get(sid)!;
-    if (members.length < 2) {
+    const partial = partialStreaks.has(sid);
+    if (members.length < 2 && !partial) {
       result.push(annotated[i].event);
       continue;
     }
@@ -110,6 +123,8 @@ export function groupCareEvents(events: CareEvent[]): TimelineItem[] {
 
     result.push({
       kind: "group",
+      key: `watering-${memberEvents[0].id}`,
+      partial,
       plantId: memberEvents[0].plant_id,
       plantName: memberEvents[0].plant_name,
       count: memberEvents.length,

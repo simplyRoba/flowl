@@ -174,7 +174,7 @@ pub async fn list_care_events(
 
 /// # Errors
 /// Returns `ApiError::NotFound` if the plant does not exist,
-/// `ApiError::Validation` if `event_type` is missing or invalid, or
+/// `ApiError::Validation` if `event_type` or `occurred_at` is invalid, or
 /// `ApiError::InternalError` on database failures.
 pub async fn create_care_event(
     State(state): State<AppState>,
@@ -191,7 +191,12 @@ pub async fn create_care_event(
     validate_event_type(&event_type)?;
 
     let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-    let occurred_at = body.occurred_at.unwrap_or_else(|| now.clone());
+    let occurred_at = if let Some(occurred_at) = body.occurred_at {
+        validate_occurred_at(&occurred_at)?;
+        occurred_at
+    } else {
+        now.clone()
+    };
 
     let id = sqlx::query_scalar::<_, i64>(
         "INSERT INTO care_events (plant_id, event_type, notes, occurred_at, created_at) \
@@ -331,24 +336,45 @@ pub async fn delete_care_event(
 }
 
 /// # Errors
-/// Returns `ApiError::Validation` if any event type filter is invalid, or
+/// Returns `ApiError::Validation` if an event type filter or cursor is invalid, or
 /// `ApiError::InternalError` on database failures.
 pub async fn list_all_care_events(
     State(pool): State<SqlitePool>,
     ExtraQuery(params): ExtraQuery<GlobalCareQuery>,
 ) -> Result<Json<CareEventsPage>, ApiError> {
-    let limit = params.limit.unwrap_or(20).clamp(1, 100);
+    let limit = params.limit.unwrap_or(20).clamp(1, 500);
     let fetch_count = limit + 1;
 
     for event_type in &params.event_types {
         validate_event_type(event_type)?;
     }
 
+    let cursor = if let Some(event_id) = params.before {
+        Some(
+            sqlx::query_as::<_, (String, i64)>(
+                "SELECT occurred_at, id FROM care_events WHERE id = ?",
+            )
+            .bind(event_id)
+            .fetch_optional(&pool)
+            .await
+            .map_err(db_error)?
+            .ok_or(ApiError::Validation("CARE_EVENT_NOT_FOUND"))?,
+        )
+    } else {
+        None
+    };
+
     let mut query = String::from(CARE_EVENT_SELECT);
     let mut conditions: Vec<String> = Vec::new();
 
-    if params.before.is_some() {
-        conditions.push("ce.id < ?".to_string());
+    if cursor.is_some() {
+        conditions.push(
+            "(COALESCE(julianday(ce.occurred_at), -1.0) < \
+             COALESCE(julianday(?), -1.0) OR \
+             (COALESCE(julianday(ce.occurred_at), -1.0) = \
+              COALESCE(julianday(?), -1.0) AND ce.id < ?))"
+                .to_string(),
+        );
     }
     if !params.event_types.is_empty() {
         let placeholders: Vec<&str> = params.event_types.iter().map(|_| "?").collect();
@@ -360,11 +386,11 @@ pub async fn list_all_care_events(
         query.push_str(&conditions.join(" AND "));
     }
 
-    query.push_str(" ORDER BY ce.occurred_at DESC, ce.id DESC LIMIT ?");
+    query.push_str(" ORDER BY COALESCE(julianday(ce.occurred_at), -1.0) DESC, ce.id DESC LIMIT ?");
 
     let mut q = sqlx::query_as::<_, CareEvent>(sqlx::AssertSqlSafe(query.as_str()));
-    if let Some(before) = params.before {
-        q = q.bind(before);
+    if let Some((occurred_at, event_id)) = &cursor {
+        q = q.bind(occurred_at).bind(occurred_at).bind(event_id);
     }
     for event_type in &params.event_types {
         q = q.bind(event_type);
