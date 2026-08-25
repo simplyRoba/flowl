@@ -113,7 +113,7 @@ When authentication is enabled, Flowl SHALL perform standards-compliant OIDC dis
 
 ### Requirement: Authorization Code flow transaction
 
-`GET /auth/login` SHALL start a generic OIDC Authorization Code flow using PKCE S256, cryptographically random state and nonce, and the callback URI derived from `FLOWL_EXTERNAL_URL`. Pending login transactions SHALL be backend-only, bound to the initiating browser's opaque pre-authentication session, one-time, bounded in number and size, and expire after ten minutes.
+`GET /auth/login` SHALL start a generic OIDC Authorization Code flow using PKCE S256, cryptographically random state and nonce, and the callback URI derived from `FLOWL_EXTERNAL_URL`. Pending login transactions SHALL be backend-only, bound to the initiating browser's opaque pre-authentication session, one-time, bounded in number and size, and expire after five minutes.
 
 #### Scenario: Login authorization redirect
 
@@ -129,7 +129,7 @@ When authentication is enabled, Flowl SHALL perform standards-compliant OIDC dis
 
 #### Scenario: Expired transaction
 
-- **WHEN** a callback uses a transaction more than ten minutes after it was created
+- **WHEN** a callback uses a transaction five minutes or more after it was created
 - **THEN** the callback fails without exchanging the code
 
 #### Scenario: State transaction replay

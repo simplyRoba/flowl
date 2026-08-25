@@ -54,6 +54,43 @@ The `/login` Svelte route SHALL render outside the normal protected application 
 - **WHEN** `/login` loads and public auth configuration reports `enabled: false`
 - **THEN** the frontend navigates to `/`
 
+### Requirement: Responsive two-area login composition
+
+The `/login` page SHALL use Gazel's established login composition structurally while using only Flowl's own colors, spacing tokens, typography tokens, surfaces, shadows, and owl/sprout branding. The viewport SHALL center one login card vertically and horizontally.
+
+#### Scenario: Mobile login card
+
+- **WHEN** the viewport is narrower than `48rem`
+- **THEN** the page uses a single-column card with `width: min(100%, 400px)`
+- **AND** the card is centered within a `100dvh` minimum-height page with Flowl-token outer padding
+- **AND** branding/copy appears above the action area with centered text
+
+#### Scenario: Desktop two-column login card
+
+- **WHEN** the viewport is at least `48rem` wide
+- **THEN** the centered card uses `width: min(100%, 880px)` and `min-height: 380px`
+- **AND** it uses two columns sized `minmax(0, 1.15fr) minmax(300px, 0.85fr)`
+- **AND** text alignment changes to left within the left column
+
+#### Scenario: Left branding and copy column
+
+- **WHEN** the login card renders
+- **THEN** its first area contains the Flowl logo/wordmark, login heading, and short authentication-required copy in that order
+- **AND** at desktop width the area vertically centers those elements, uses a Flowl feature/surface background, and has a separating right border
+
+#### Scenario: Right raised action panel
+
+- **WHEN** the login card renders
+- **THEN** its second area contains one full-width raised panel using Flowl surface, border, and medium-shadow tokens
+- **AND** the panel contains the optional generic status message above exactly one full-width provider button
+- **AND** at desktop width the action area centers the raised panel vertically within the right column
+
+#### Scenario: Status and provider action ordering
+
+- **WHEN** authentication-failed, provider-unavailable, or logged-out state is present
+- **THEN** the translated status appears inside the raised action panel before the provider action
+- **AND** the provider button remains full width and is the only authentication action
+
 ### Requirement: Centralized authentication-expiry handling
 
 All frontend programmatic requests for protected API, export, import, AI, upload, protected-photo, and route-load resources SHALL pass non-success responses through one authentication-required handler. Only a response with both HTTP 401 and JSON code `AUTHENTICATION_REQUIRED` SHALL navigate to `/login?return_to=<current-local-path-query-hash>` during normal online operation.

@@ -33,6 +33,6 @@ Flowl currently assumes a trusted network or an external authentication proxy, w
 
 - Backend: `src/config.rs`, startup composition, `AppState`, Axum router/middleware, API error catalog, and new authentication/session/OIDC modules and endpoints.
 - Frontend: root layout, new `/login` route, Settings, translations, centralized fetch/error handling, route loaders, direct AI/export/photo fetches, service worker, and cache message protocol.
-- Dependencies: maintained Rust OIDC/OAuth validation and cookie/session primitives plus their transitive cryptography; no auth database, Redis, or external session service.
+- Dependencies: fixed `openidconnect` 4.0.1 and `tower-sessions` 0.15 foundations, with only small supporting utility dependencies required by that implementation; no alternative auth/session framework research, auth database, Redis, or external session service.
 - Operations/docs: README and deployment examples gain optional OIDC variables and reverse-proxy/TLS guidance; auth-enabled startup performs provider discovery and fails closed on invalid configuration or discovery.
 - Compatibility: auth-disabled deployments retain existing route and offline behavior. Auth-enabled process restarts invalidate all local sessions and in-flight login transactions by design.

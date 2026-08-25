@@ -26,20 +26,20 @@ Authentication therefore crosses startup, routing, token verification, process m
 
 ## Decisions
 
-### 1. Use the specified maintained OIDC and in-memory session crates
+### 1. Use the established fixed OIDC and session libraries
 
-Add exactly these application dependencies:
+The OIDC library is fixed to `openidconnect` 4.0.1 and the session library is fixed to `tower-sessions` 0.15, with the established feature sets:
 
 ```toml
 openidconnect = { version = "4.0.1", default-features = false, features = ["reqwest", "rustls-tls", "timing-resistant-secret-traits"] }
 tower-sessions = { version = "0.15", default-features = false, features = ["axum-core", "memory-store", "private"] }
 ```
 
+Do not research or substitute alternative OIDC, auth, or session frameworks. Small supporting utility dependencies may be added only when the chosen implementation requires them, such as OS randomness, time/URL handling, or local-provider test support; they must not replace protocol/session behavior owned by the fixed libraries.
+
 `openidconnect` supplies typed issuer URLs, discovery, authorization requests, PKCE S256, nonce/state types, confidential token exchange, ID-token verification, JWK types, and timing-resistant secret handling. `tower-sessions` supplies Axum integration, private cookies, an in-process memory store, deletion, and session-ID cycling. No SQL auth tables or external store are added.
 
-The crate validates standard ID-token claims and signatures. Flowl still orchestrates one-time transaction consumption and uses the crate's access-token-hash helper to compare a supplied applicable `at_hash`; it does not implement digest selection or comparison itself. Test-only maintained JWT signing support may be added as a dev dependency for the local provider, rather than hand-building signatures.
-
-**Alternatives considered:** implementing OAuth requests/JWT checks directly was rejected as unsafe; an auth database or Redis was rejected by scope; a self-contained signed-token session was rejected because logout/replay/absolute lifetime are clearer in process memory and because cookie payloads must contain no identity or provider token.
+The OIDC crate validates standard ID-token claims and signatures. Flowl orchestrates one-time transaction consumption and uses the crate's access-token-hash helper to compare a supplied applicable `at_hash`; it does not implement digest selection or comparison itself.
 
 ### 2. Split ordinary and security-strict configuration parsing
 
@@ -72,9 +72,9 @@ Discovery, token, and JWKS clients refuse redirects. Startup diagnostics identif
 
 ### 4. Bind one-time login transactions to a private pre-auth session
 
-`GET /auth/login` validates/bounds `return_to`, creates a private pre-auth `tower-sessions` session, and generates authorization URL values through `openidconnect`: random CSRF state, nonce, and `PkceCodeChallenge::new_random_sha256` plus verifier. A process-local `LoginTransactionStore` holds the secrets and validated return target for ten minutes, keyed by state and bound to a second random value held in the initiating private session. Entries are bounded and periodically/lazily pruned.
+`GET /auth/login` validates/bounds `return_to`, creates a private pre-auth `tower-sessions` session, and generates authorization URL values through `openidconnect`: random CSRF state, nonce, and `PkceCodeChallenge::new_random_sha256` plus verifier. Reuse the established transaction model: a process-local locked map keyed by state stores nonce, PKCE verifier, validated target, and absolute five-minute expiry, while the private tower session stores only that state binding. Starting a fresh login removes that session's prior pending transaction. Registry operations prune expired entries.
 
-The callback requires both state and the initiating private session binding. It atomically removes the transaction before token exchange, making success, provider error, validation failure, and concurrent replay one-time outcomes. Missing, expired, mismatched, or consumed transactions never reach the token endpoint.
+The callback compares returned state with the initiating session's stored state, atomically removes the matching registry entry while locked, and releases the lock before provider I/O. This makes success, provider error, validation failure, and concurrent replay one-time outcomes. Missing, expired, mismatched, or consumed transactions never reach the token endpoint.
 
 Reject duplicate `code`/`state`, mixed success/error parameters, and other ambiguous callback pollution before token use. After token exchange, require an ID token, pass the original PKCE verifier, and verify it with the stored nonce. Keep the library's strict additional-audience rejection and explicitly reject invalid `azp` when applicable; require the standard issued-at claim. Verify any supplied applicable `at_hash` with `openidconnect`'s hash helper against the returned access token. Discard authorization code, tokens, claims, nonce, state, verifier, and transaction immediately after completion.
 
@@ -116,23 +116,22 @@ Backend guards preserve request path and query; URL fragments never reach the ba
 
 **Alternative considered:** parsing against the request Host was rejected because host/forwarded headers are untrusted and because an explicit external URL already exists.
 
-### 8. Refresh rotated JWKS by generation with a non-poisoning cooldown
+### 8. Reuse the cached-CoreClient JWKS refresh model
 
-Keep current `Arc<CoreJsonWebKeySet>` plus a generation counter. Build an ID-token verifier for each attempt from the exact configured issuer, client ID/secret, discovery-permitted algorithms, and a snapshot of current keys rather than relying forever on the original `CoreClient` verifier.
+Store the normal configured `CoreClient` in a read/write-locked cache state with a generation counter and optional process-monotonic `refresh_retry_at`. The runtime also retains the validated provider metadata, client ID/secret, callback URL, selected Basic/Post auth method, and guarded HTTP client needed to rebuild that same client. Authorization URL creation, code exchange, and ID-token verification all clone and use the cached `CoreClient`; do not introduce a separate keyset cache or custom verifier architecture.
 
-Only key-selection/signature-verification failures that new signing material could plausibly fix enter refresh logic. Issuer, audience, expiry, nonce, algorithm-policy, `at_hash`, parsing, and other claim failures never trigger network refresh.
+Only `NoMatchingKey` and signature crypto failures that rotated keys could resolve enter refresh logic. Issuer, audience, expiry, nonce, algorithm-policy, `at_hash`, parsing, and other claim failures never refresh.
 
-A Tokio async mutex serializes refresh state:
+A separate Tokio mutex serializes targeted refresh:
 
-1. Record the key generation used by the failed verification.
-2. Acquire the refresh gate and re-read generation. If another callback already advanced it, retry verification once with that generation without fetching.
-3. If the last refresh failed and the injectable clock is before `retry_not_before`, fail without fetching.
-4. Otherwise fetch JWKS once. On success replace keys atomically, increment generation, clear cooldown, and retry verification exactly once.
-5. On failure retain last-known-good keys and set `retry_not_before = now + 30 seconds`. Do not cache a failed future/result permanently.
+1. Record the cached-client generation used by failed verification.
+2. Acquire the refresh mutex and re-read cache state. If another callback advanced the generation, reuse its cached client and retry verification once without fetching.
+3. If the same generation is still inside its failed-refresh cooldown, return provider unavailable without fetching.
+4. Otherwise fetch only the already validated discovery `jwks_uri`, validate usable signing keys, clone the retained provider metadata with the refreshed JWKS, and rebuild `CoreClient::from_provider_metadata`, reapplying the selected auth type and callback URL.
+5. On success atomically replace the cached client, increment generation, clear cooldown, and retry verification exactly once.
+6. On failure or unusable keys retain the last-known-good cached client/generation and set a 30-second process-monotonic cooldown. A later callback after cooldown may retry without restart.
 
-This deduplicates concurrent rotation while allowing recovery after provider failure. Tests control the clock and mock provider request count.
-
-**Alternatives considered:** refreshing for every invalid token creates a provider-amplification vector; a `OnceCell<Result<...>>` can permanently poison refresh after one outage; periodic unconditional refresh adds traffic and still does not guarantee immediate rotation recovery.
+This is the established cached-client model and needs no Flowl-specific deviation. Tests control the clock and provider request count.
 
 ### 9. Centralize frontend response classification without confusing offline state
 
@@ -148,7 +147,15 @@ Guard against repeated navigation and never redirect from `/login` or `/auth/*`;
 
 The root layout branches on the route: `/login` renders only public children with locally cached theme/locale initialization. It skips `/api/settings`, protected stores, sidebar/bottom nav, network monitor, service-worker update notifications, and pull-to-refresh initialization. The login page fetches `/auth/config`, displays Flowl's existing `Logo`, and treats recognized query flags only as generic translated states. A failed config request displays provider unavailable without conflating it with an authenticated app session.
 
-Normal routes retain current shell behavior. Do not modify `pull-to-refresh.ts` or its allowlist. Any necessary route-derived Svelte effects must use event handlers or `untrack`/one-directional state flow; no effect may read state that it or its cleanup mutates. Tests must fail on `effect_update_depth_exceeded` and confirm existing pull-to-refresh tests remain unchanged.
+The login page reuses Gazel's established structure without copying Gazel's visual identity:
+
+- page: `min-height: 100dvh`, centered grid, Flowl-token outer padding;
+- mobile `< 48rem`: one centered single-column card, `width: min(100%, 400px)`, centered branding/copy above the action area;
+- desktop `>= 48rem`: `width: min(100%, 880px)`, `min-height: 380px`, grid columns `minmax(0, 1.15fr) minmax(300px, 0.85fr)`;
+- left desktop column: Flowl logo/wordmark, heading, and authentication-required copy, vertically centered on a Flowl feature/surface background with a separating border;
+- right desktop column: vertically centered action area containing a full-width raised Flowl-surface panel with border and medium shadow; optional status appears above exactly one full-width provider button.
+
+Use Flowl's existing color, spacing, typography, surface, border, shadow, and logo tokens throughout. Normal routes retain current shell behavior. Do not modify `pull-to-refresh.ts` or its allowlist. Any necessary route-derived Svelte effects must use event handlers or `untrack`/one-directional state flow; no effect may read state that it or its cleanup mutates. Tests cover both sides of the `48rem` breakpoint, exact card constraints/areas, fail on `effect_update_depth_exceeded`, and confirm existing pull-to-refresh tests remain unchanged.
 
 ### 11. Keep protected offline content across outages/expiry, purge it on explicit logout
 
