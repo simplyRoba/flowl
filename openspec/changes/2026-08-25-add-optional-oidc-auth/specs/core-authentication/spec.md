@@ -113,7 +113,7 @@ When authentication is enabled, Flowl SHALL perform standards-compliant OIDC dis
 
 ### Requirement: Authorization Code flow transaction
 
-`GET /auth/login` SHALL start a generic OIDC Authorization Code flow using PKCE S256, cryptographically random state and nonce, and the callback URI derived from `FLOWL_EXTERNAL_URL`. Pending login transactions SHALL be backend-only, bound to the initiating browser's opaque pre-authentication session, one-time, bounded in number and size, and expire after five minutes.
+`GET /auth/login` SHALL start a generic OIDC Authorization Code flow using PKCE S256, cryptographically random state and nonce, and the callback URI derived from `FLOWL_EXTERNAL_URL`. Pending login transactions SHALL be backend-only, bound to the initiating browser's opaque pre-authentication session, one-time, and expire after five minutes. The process-local registry SHALL define `MAX_PENDING_LOGIN_TRANSACTIONS = 1_024` and enforce that hard process-wide maximum, pruning expired entries before checking capacity.
 
 #### Scenario: Login authorization redirect
 
@@ -131,6 +131,41 @@ When authentication is enabled, Flowl SHALL perform standards-compliant OIDC dis
 
 - **WHEN** a callback uses a transaction five minutes or more after it was created
 - **THEN** the callback fails without exchanging the code
+
+#### Scenario: Capacity boundary accepts the final slot
+
+- **WHEN** the registry contains 1,023 valid pending transactions after expired entries are pruned
+- **AND** a new login is requested
+- **THEN** the new transaction is created as the 1,024th pending transaction
+- **AND** Flowl redirects to the OIDC provider
+
+#### Scenario: Full registry rejects new login
+
+- **WHEN** the registry contains 1,024 valid pending transactions after expired entries are pruned
+- **AND** a new login is requested
+- **THEN** Flowl does not create or bind the new transaction
+- **AND** does not redirect to the OIDC provider
+- **AND** redirects through the existing generic `/login?error=provider_unavailable&return_to=<safe-target>` path
+
+#### Scenario: Expired entries free capacity before rejection
+
+- **WHEN** the registry has reached 1,024 entries
+- **AND** at least one entry is expired when a new login is requested
+- **THEN** Flowl prunes expired entries before checking capacity
+- **AND** creates the new transaction when the remaining valid count is below 1,024
+
+#### Scenario: Saturation does not evict active transactions
+
+- **WHEN** the registry is full of valid pending transactions
+- **AND** a new login is rejected for capacity
+- **THEN** every previously valid transaction remains present and usable
+- **AND** no existing transaction is evicted, including a prior transaction bound to the initiating session
+
+#### Scenario: Login succeeds after capacity becomes available
+
+- **WHEN** a login was rejected because the registry was full
+- **AND** a valid entry is later consumed or expires
+- **THEN** a subsequent login can create a transaction and redirect to the OIDC provider
 
 #### Scenario: State transaction replay
 
