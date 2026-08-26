@@ -142,7 +142,7 @@ With OIDC enabled, session expiry does not erase offline data. **Sign out** purg
 
 ## Security
 
-OIDC protects Flowl but does not add users, roles, per-user data, or provider logout; every accepted identity accesses the same data. If authentication is disabled, use a trusted network or an authenticating reverse proxy.
+Flowl includes optional built-in OIDC authentication for the UI, API, and uploads. It does not add users, roles, per-user data, or provider logout; every accepted identity accesses the same data. If built-in authentication is disabled, use a trusted network or an authenticating reverse proxy.
 
 ## Home Assistant
 

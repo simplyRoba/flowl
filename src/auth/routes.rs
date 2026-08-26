@@ -76,27 +76,21 @@ pub async fn callback(
         Ok(CallbackParameters::ProviderError {
             state: provider_state,
         }) => {
-            let target =
-                consume_bound_transaction(Some(auth.as_ref()), &session, provider_state.as_deref())
-                    .await;
+            let target = if let Some(state) = provider_state.as_deref() {
+                auth.consume_bound_transaction(&session, state)
+                    .await
+                    .map_or_else(|| SafeReturnTo::fallback("/"), |pending| pending.return_to)
+            } else {
+                SafeReturnTo::fallback("/")
+            };
             return generic_redirect("authentication_failed", &target);
         }
         Err(()) => return generic_redirect("authentication_failed", &SafeReturnTo::fallback("/")),
     };
 
-    let bound_state = session
-        .get::<String>(PREAUTH_STATE_KEY)
-        .await
-        .ok()
-        .flatten();
-    if bound_state.as_deref() != Some(state_value.as_str()) {
-        return generic_redirect("authentication_failed", &SafeReturnTo::fallback("/"));
-    }
-    let Some(pending) = auth.consume_transaction(&state_value).await else {
+    let Some(pending) = auth.consume_bound_transaction(&session, &state_value).await else {
         return generic_redirect("authentication_failed", &SafeReturnTo::fallback("/"));
     };
-    let _ = session.remove::<String>(PREAUTH_STATE_KEY).await;
-    let _ = session.save().await;
 
     let return_to = pending.return_to.clone();
     match auth.exchange_and_verify(code, pending).await {
@@ -164,27 +158,6 @@ async fn establish_authenticated_session(session: &Session, clock: &dyn Clock) -
     )));
     session.save().await.map_err(|_| ())?;
     Ok(())
-}
-
-async fn consume_bound_transaction(
-    auth: Option<&AuthState>,
-    session: &Session,
-    state: Option<&str>,
-) -> SafeReturnTo {
-    let (Some(auth), Some(state)) = (auth, state) else {
-        return SafeReturnTo::fallback("/");
-    };
-    let bound_state = session
-        .get::<String>(PREAUTH_STATE_KEY)
-        .await
-        .ok()
-        .flatten();
-    if bound_state.as_deref() != Some(state) {
-        return SafeReturnTo::fallback("/");
-    }
-    let pending = auth.consume_transaction(state).await;
-    let _ = session.remove::<String>(PREAUTH_STATE_KEY).await;
-    pending.map_or_else(|| SafeReturnTo::fallback("/"), |pending| pending.return_to)
 }
 
 fn seconds_since_epoch(time: SystemTime) -> u64 {

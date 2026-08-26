@@ -38,6 +38,19 @@ export function isProtectedCacheName(name: string): boolean {
   return PROTECTED_CACHE_PREFIXES.some((prefix) => name.startsWith(prefix));
 }
 
+export function activationKeepCaches(
+  shellCacheName: string,
+  apiCacheName: string,
+  photoCacheName: string,
+): Set<string> {
+  return new Set([
+    shellCacheName,
+    apiCacheName,
+    photoCacheName,
+    "flowl-sw-version",
+  ]);
+}
+
 /** Runs auth endpoints without consulting or modifying application caches. */
 export function networkOnly(
   request: Request,

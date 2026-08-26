@@ -18,6 +18,8 @@ use openidconnect::{
     AuthType, ClientId, ClientSecret, HttpClientError, JsonWebKey, JsonWebKeyAlgorithm,
     JsonWebKeyUse, JwsSigningAlgorithm, OAuth2TokenResponse, RedirectUrl, TokenResponse,
 };
+#[cfg(test)]
+use tokio::sync::{Barrier, Notify};
 use tokio::sync::{Mutex, RwLock};
 
 use crate::auth::return_to::SafeReturnTo;
@@ -166,9 +168,13 @@ pub struct AuthState {
     token_auth_method: TokenAuthMethod,
     clients: RwLock<ClientCache>,
     refresh_lock: Mutex<()>,
-    /// Serializes replacement of the browser binding with its registry entry.
+    /// Serializes replacement and consumption of the browser binding with its registry entry.
     login_lock: Mutex<()>,
     transactions: Mutex<HashMap<String, PendingLogin>>,
+    #[cfg(test)]
+    callback_consume_gate: Mutex<Option<(Arc<Barrier>, Arc<Barrier>)>>,
+    #[cfg(test)]
+    bind_transaction_reached: Mutex<Option<Arc<Notify>>>,
 }
 
 impl AuthState {
@@ -215,7 +221,7 @@ impl AuthState {
             http_client.client(),
         )
         .await
-        .map_err(|error| discovery_error_category(&error))?;
+        .map_err(|error| discovery_error_category(&error, config.issuer().raw()))?;
 
         validate_metadata(&config, &metadata)?;
         let token_auth_method = select_token_auth_method(&metadata)?;
@@ -236,6 +242,10 @@ impl AuthState {
             refresh_lock: Mutex::new(()),
             login_lock: Mutex::new(()),
             transactions: Mutex::new(HashMap::new()),
+            #[cfg(test)]
+            callback_consume_gate: Mutex::new(None),
+            #[cfg(test)]
+            bind_transaction_reached: Mutex::new(None),
         })
     }
 
@@ -296,6 +306,10 @@ impl AuthState {
         state: String,
         transaction: PendingLogin,
     ) -> Result<(), TransactionBindError> {
+        #[cfg(test)]
+        if let Some(reached) = self.bind_transaction_reached.lock().await.clone() {
+            reached.notify_one();
+        }
         let _login = self.login_lock.lock().await;
         let previous_state = session
             .get::<String>(crate::auth::routes::PREAUTH_STATE_KEY)
@@ -343,7 +357,37 @@ impl AuthState {
         Err(TransactionBindError::Failed)
     }
 
-    /// Consumes a transaction exactly once before any provider I/O.
+    /// Consumes a browser-bound transaction exactly once before any provider I/O.
+    pub(crate) async fn consume_bound_transaction(
+        &self,
+        session: &Session,
+        state: &str,
+    ) -> Option<PendingLogin> {
+        let _login = self.login_lock.lock().await;
+        let bound_state = session
+            .get::<String>(crate::auth::routes::PREAUTH_STATE_KEY)
+            .await
+            .ok()
+            .flatten();
+        if bound_state.as_deref() != Some(state) {
+            return None;
+        }
+
+        let pending = self.consume_transaction(state).await?;
+        #[cfg(test)]
+        if let Some((consumed, resume)) = self.callback_consume_gate.lock().await.clone() {
+            consumed.wait().await;
+            resume.wait().await;
+        }
+        let _ = session
+            .remove::<String>(crate::auth::routes::PREAUTH_STATE_KEY)
+            .await;
+        let _ = session.save().await;
+        Some(pending)
+    }
+
+    /// Consumes a transaction exactly once. Callers coordinating a browser binding must hold
+    /// `login_lock` for the complete session/registry operation.
     pub async fn consume_transaction(&self, state: &str) -> Option<PendingLogin> {
         let now = self.clock.now();
         let mut transactions = self.transactions.lock().await;
@@ -491,7 +535,10 @@ pub enum CallbackError {
     Unavailable,
 }
 
-fn discovery_error_category<E>(error: &openidconnect::DiscoveryError<E>) -> AuthStartupError
+fn discovery_error_category<E>(
+    error: &openidconnect::DiscoveryError<E>,
+    expected_issuer: &str,
+) -> AuthStartupError
 where
     E: std::error::Error + 'static,
 {
@@ -503,9 +550,22 @@ where
         openidconnect::DiscoveryError::Parse(_) | openidconnect::DiscoveryError::UrlParse(_) => {
             AuthStartupError::Parsing
         }
+        openidconnect::DiscoveryError::Validation(message)
+            if is_discovery_issuer_mismatch(message, expected_issuer) =>
+        {
+            AuthStartupError::IssuerMismatch
+        }
         openidconnect::DiscoveryError::Validation(_) => AuthStartupError::UnsafeMetadata,
         openidconnect::DiscoveryError::Other(_) | _ => AuthStartupError::Parsing,
     }
+}
+
+fn is_discovery_issuer_mismatch(message: &str, expected_issuer: &str) -> bool {
+    let expected_suffix = format!("` (expected `{expected_issuer}`)");
+    message
+        .strip_prefix("unexpected issuer URI `")
+        .and_then(|remainder| remainder.strip_suffix(&expected_suffix))
+        .is_some_and(|actual_issuer| !actual_issuer.is_empty() && actual_issuer != expected_issuer)
 }
 
 fn validate_metadata(
@@ -666,6 +726,17 @@ mod tests {
         assert_eq!(LOGIN_TRANSACTION_TTL, Duration::from_secs(300));
         assert_eq!(SESSION_TTL, Duration::from_hours(12));
         assert_eq!(MAX_PENDING_LOGIN_TRANSACTIONS, 1_024);
+    }
+
+    #[test]
+    fn unrelated_discovery_validation_remains_generic() {
+        let error = openidconnect::DiscoveryError::<std::io::Error>::Validation(
+            "provider-controlled validation detail".to_string(),
+        );
+        assert_eq!(
+            discovery_error_category(&error, "https://issuer.example"),
+            AuthStartupError::UnsafeMetadata
+        );
     }
 
     #[test]

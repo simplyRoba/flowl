@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  activationKeepCaches,
   cachedShellOrOffline,
   disabledApiNetworkFirst,
   disabledNavigationCacheFirst,
@@ -280,7 +281,7 @@ describe("authentication service-worker policy", () => {
     expect(storage.delete).not.toHaveBeenCalled();
   });
 
-  it("installs and retains public login resources while unauthenticated", async () => {
+  it("installs public resources and retains every current cache on activation", async () => {
     const storage = cacheStorage();
     const publicAssets = ["/offline.html", "/_app/immutable/login.js"];
 
@@ -289,16 +290,27 @@ describe("authentication service-worker policy", () => {
 
     storage.keys.mockResolvedValue([
       "flowl-cache-v1",
+      "flowl-api-v1",
+      "flowl-photo-v1",
       "flowl-cache-v2",
+      "flowl-api-v2",
+      "flowl-photo-v2",
       "flowl-sw-version",
     ]);
     await expect(
       removeObsoleteCaches(
         storage,
-        new Set(["flowl-cache-v2", "flowl-sw-version"]),
+        activationKeepCaches(
+          "flowl-cache-v2",
+          "flowl-api-v2",
+          "flowl-photo-v2",
+        ),
       ),
-    ).resolves.toEqual(["flowl-cache-v1"]);
+    ).resolves.toEqual(["flowl-cache-v1", "flowl-api-v1", "flowl-photo-v1"]);
+    expect(storage.delete).toHaveBeenCalledTimes(3);
     expect(storage.delete).toHaveBeenCalledWith("flowl-cache-v1");
+    expect(storage.delete).toHaveBeenCalledWith("flowl-api-v1");
+    expect(storage.delete).toHaveBeenCalledWith("flowl-photo-v1");
   });
 
   it("purges only current and obsolete protected API, photo, and runtime caches", async () => {

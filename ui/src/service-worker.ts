@@ -6,6 +6,7 @@
 import { build, files, version } from "$service-worker";
 import { isCacheableApi, isThumbnail } from "$lib/sw-patterns";
 import {
+  activationKeepCaches,
   cachedShellOrOffline,
   disabledApiNetworkFirst,
   disabledNavigationCacheFirst,
@@ -41,7 +42,11 @@ sw.addEventListener("install", (event) => {
 });
 
 sw.addEventListener("activate", (event) => {
-  const keepCaches = new Set([CACHE_NAME, API_CACHE_NAME, "flowl-sw-version"]);
+  const keepCaches = activationKeepCaches(
+    CACHE_NAME,
+    API_CACHE_NAME,
+    PHOTO_CACHE_NAME,
+  );
   event.waitUntil(
     removeObsoleteCaches(caches, keepCaches).then(() => sw.clients.claim()),
   );

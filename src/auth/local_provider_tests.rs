@@ -22,7 +22,7 @@ use rsa::traits::PublicKeyParts;
 use sha2::{Digest, Sha256};
 use sqlx::SqlitePool;
 use tokio::net::TcpListener;
-use tokio::sync::Mutex;
+use tokio::sync::{Barrier, Mutex, Notify};
 use tower::ServiceExt;
 use tracing::Level;
 use tracing_subscriber::fmt::MakeWriter;
@@ -577,7 +577,7 @@ async fn loopback_provider_rejects_an_exact_issuer_slash_mismatch() {
         Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
     )
     .await;
-    assert!(auth.is_err());
+    assert!(matches!(auth, Err(super::AuthStartupError::IssuerMismatch)));
     assert_eq!(
         provider.provider.discovery_requests.load(Ordering::SeqCst),
         1
@@ -1512,6 +1512,102 @@ async fn callback_binding_is_wrong_browser_safe_and_concurrent_consumption_is_si
         .expect("replay callback");
     assert_eq!(replay.status(), StatusCode::SEE_OTHER);
     assert_eq!(provider.provider.token_requests.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn callback_consumption_cannot_erase_a_concurrent_replacement_login() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = Arc::new(
+        AuthState::with_dependencies(
+            EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
+            Arc::new(super::SystemClock),
+            Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
+        )
+        .await
+        .expect("local discovery succeeds"),
+    );
+    let (state, _directory) = test_state(auth.clone());
+    let app = server::router(state);
+    let (original_cookie, old_state) = begin_login(&app, &provider).await;
+
+    let consumed = Arc::new(Barrier::new(2));
+    let resume = Arc::new(Barrier::new(2));
+    *auth.callback_consume_gate.lock().await = Some((Arc::clone(&consumed), Arc::clone(&resume)));
+
+    let old_callback = tokio::spawn({
+        let app = app.clone();
+        let original_cookie = original_cookie.clone();
+        async move {
+            app.oneshot(request(
+                &format!("/auth/callback?state={old_state}&error=access_denied"),
+                Some(&original_cookie),
+            ))
+            .await
+            .expect("old provider-error callback")
+        }
+    });
+    consumed.wait().await;
+
+    let replacement_reached = Arc::new(Notify::new());
+    *auth.bind_transaction_reached.lock().await = Some(Arc::clone(&replacement_reached));
+    let replacement_login = tokio::spawn({
+        let app = app.clone();
+        let original_cookie = original_cookie.clone();
+        async move {
+            app.oneshot(request(
+                "/auth/login?return_to=%2Freplacement",
+                Some(&original_cookie),
+            ))
+            .await
+            .expect("replacement login")
+        }
+    });
+    replacement_reached.notified().await;
+    resume.wait().await;
+
+    let old_callback = old_callback.await.expect("old callback task");
+    assert_eq!(old_callback.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        old_callback.headers().get(header::LOCATION),
+        Some(&HeaderValue::from_static(
+            "/login?error=authentication_failed&return_to=%2Fplants%3Ftab%3Dcare"
+        ))
+    );
+
+    let replacement_login = replacement_login.await.expect("replacement login task");
+    assert_eq!(replacement_login.status(), StatusCode::SEE_OTHER);
+    let replacement_cookie = cookie(&replacement_login);
+    let authorization_url = url::Url::parse(
+        replacement_login
+            .headers()
+            .get(header::LOCATION)
+            .expect("replacement authorization location")
+            .to_str()
+            .expect("replacement location text"),
+    )
+    .expect("replacement authorization URL");
+    let replacement_state = authorization_url
+        .query_pairs()
+        .find_map(|(key, value)| (key == "state").then(|| value.into_owned()))
+        .expect("replacement state");
+
+    *auth.callback_consume_gate.lock().await = None;
+    *auth.bind_transaction_reached.lock().await = None;
+    let replacement_callback = app
+        .oneshot(request(
+            &format!("/auth/callback?state={replacement_state}&error=access_denied"),
+            Some(&replacement_cookie),
+        ))
+        .await
+        .expect("replacement provider-error callback");
+    assert_eq!(replacement_callback.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        replacement_callback.headers().get(header::LOCATION),
+        Some(&HeaderValue::from_static(
+            "/login?error=authentication_failed&return_to=%2Freplacement"
+        ))
+    );
+    assert_eq!(provider.provider.token_requests.load(Ordering::SeqCst), 0);
 }
 
 #[tokio::test]
