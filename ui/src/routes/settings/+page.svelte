@@ -35,6 +35,7 @@
     type Locale,
   } from "$lib/stores/locale";
   import { plural } from "$lib/i18n/plural";
+  import { fetchAuthConfig, postLogout, purgeProtectedCaches } from "$lib/auth";
   import {
     fetchAppInfo,
     fetchStats,
@@ -86,6 +87,8 @@
   let repairLoading = $state(false);
   let importLoading = $state(false);
   let exportLoading = $state(false);
+  let authEnabled = $state(false);
+  let logoutLoading = $state(false);
   let fileInput: HTMLInputElement = $state() as HTMLInputElement;
 
   // Dialog state
@@ -140,6 +143,13 @@
         /* hide MQTT section on failure */
       });
     loadAiStatus();
+    fetchAuthConfig()
+      .then((config) => {
+        authEnabled = config.enabled;
+      })
+      .catch(() => {
+        authEnabled = false;
+      });
   });
 
   async function startEditing(id: number, name: string) {
@@ -233,6 +243,17 @@
       });
     } finally {
       exportLoading = false;
+    }
+  }
+
+  async function handleSignOut() {
+    if (logoutLoading) return;
+    logoutLoading = true;
+    try {
+      await purgeProtectedCaches();
+      postLogout();
+    } finally {
+      logoutLoading = false;
     }
   }
 
@@ -390,6 +411,23 @@
       </div>
     </div>
   </section>
+
+  {#if authEnabled}
+    <section class="section settings-section authentication-section">
+      <h2 class="section-title">{$translations.settings.authentication}</h2>
+      <div class="about-row">
+        <span class="setting-label"
+          >{$translations.settings.authentication}</span
+        >
+        <button
+          type="button"
+          class="btn btn-outline btn-sm"
+          disabled={logoutLoading}
+          onclick={handleSignOut}>{$translations.settings.signOut}</button
+        >
+      </div>
+    </section>
+  {/if}
 
   {#if $isOffline}
     <OfflineMessage />

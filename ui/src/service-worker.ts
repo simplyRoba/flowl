@@ -5,118 +5,121 @@
 
 import { build, files, version } from "$service-worker";
 import { isCacheableApi, isThumbnail } from "$lib/sw-patterns";
+import {
+  cachedShellOrOffline,
+  disabledApiNetworkFirst,
+  disabledNavigationCacheFirst,
+  disabledThumbnailCacheFirst,
+  isAuthPath,
+  installPublicAssets,
+  networkOnly,
+  protectedNavigationNetworkFirst,
+  protectedNetworkFirst,
+  purgeProtectedCaches,
+  removeObsoleteCaches,
+} from "$lib/sw-policy";
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
-
 const CACHE_NAME = `flowl-cache-${version}`;
 const API_CACHE_NAME = `flowl-api-${version}`;
+const PHOTO_CACHE_NAME = `flowl-photo-${version}`;
 const OFFLINE_PAGE = "/offline.html";
-
 const ASSETS = [...build, ...files];
 
+// Clients set this after reading the public config. Start in the safe mode so
+// a newly activated worker cannot cache a protected failure before its client
+// reports the disabled-mode configuration.
+let authEnabled = true;
+
+function cachedNavigationFallback(): Promise<Response> {
+  return cachedShellOrOffline(caches, "/index.html", OFFLINE_PAGE);
+}
+
 sw.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)),
-  );
+  event.waitUntil(installPublicAssets(caches, CACHE_NAME, ASSETS));
   sw.skipWaiting();
 });
 
 sw.addEventListener("activate", (event) => {
   const keepCaches = new Set([CACHE_NAME, API_CACHE_NAME, "flowl-sw-version"]);
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => !keepCaches.has(key))
-            .map((key) => caches.delete(key)),
-        ),
-      ),
+    removeObsoleteCaches(caches, keepCaches).then(() => sw.clients.claim()),
   );
 });
 
 sw.addEventListener("fetch", (event) => {
   const { request } = event;
-
-  if (request.method !== "GET") {
-    return;
-  }
-
+  if (request.method !== "GET") return;
   const url = new URL(request.url);
+  if (url.origin !== sw.location.origin) return;
 
-  // Only handle same-origin requests
-  if (url.origin !== sw.location.origin) {
+  // OIDC config, redirects, callback, and logout responses are always network-only.
+  if (isAuthPath(url.pathname)) {
+    event.respondWith(networkOnly(request, fetch));
     return;
   }
 
-  // Navigation requests: try cache, then network, fall back to offline page
   if (request.mode === "navigate") {
-    event.respondWith(
-      caches
-        .match(request)
-        .then(
-          (cached) =>
-            cached ||
-            fetch(request).catch(
-              () => caches.match(OFFLINE_PAGE) as Promise<Response>,
-            ),
+    if (authEnabled) {
+      event.respondWith(
+        protectedNavigationNetworkFirst(
+          request,
+          fetch,
+          cachedNavigationFallback,
         ),
-    );
+      );
+    } else {
+      event.respondWith(
+        disabledNavigationCacheFirst(
+          request,
+          fetch,
+          caches,
+          cachedNavigationFallback,
+        ),
+      );
+    }
     return;
   }
 
-  // Static assets: cache-first
   if (ASSETS.includes(url.pathname)) {
     event.respondWith(
-      caches.match(request).then((cached) => cached || fetch(request)),
+      caches.match(request).then((cached) => cached ?? fetch(request)),
     );
     return;
   }
 
-  // Cacheable API endpoints: network-first with stale fallback
   if (isCacheableApi(url.pathname)) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const clone = response.clone();
-          caches
-            .open(API_CACHE_NAME)
-            .then((cache) => cache.put(request, clone));
-          return response;
-        })
-        .catch((err) =>
-          caches.match(request).then((cached) => {
-            if (cached) return cached;
-            throw err;
-          }),
-        ),
+      authEnabled
+        ? protectedNetworkFirst(request, fetch, caches, API_CACHE_NAME)
+        : disabledApiNetworkFirst(request, fetch, caches, API_CACHE_NAME),
     );
     return;
   }
 
-  // Thumbnails: cache-first
   if (isThumbnail(url.pathname)) {
     event.respondWith(
-      caches.open(API_CACHE_NAME).then((cache) =>
-        cache.match(request).then(
-          (cached) =>
-            cached ||
-            fetch(request).then((response) => {
-              cache.put(request, response.clone());
-              return response;
-            }),
-        ),
-      ),
+      authEnabled
+        ? protectedNetworkFirst(request, fetch, caches, PHOTO_CACHE_NAME)
+        : disabledThumbnailCacheFirst(request, fetch, caches, PHOTO_CACHE_NAME),
     );
-    return;
   }
-
-  // Everything else: pass through to network
 });
 
 sw.addEventListener("message", (event) => {
   if (event.data?.type === "GET_VERSION") {
     event.ports[0]?.postMessage({ type: "VERSION", version });
+    return;
+  }
+  if (event.data?.type === "SET_AUTH_ENABLED") {
+    authEnabled = event.data.enabled === true;
+    return;
+  }
+  if (event.data?.type === "PURGE_PROTECTED_CACHES") {
+    event.waitUntil(
+      purgeProtectedCaches(caches).then(() => {
+        event.ports[0]?.postMessage({ type: "PROTECTED_CACHES_PURGED" });
+      }),
+    );
   }
 });

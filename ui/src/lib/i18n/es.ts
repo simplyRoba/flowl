@@ -24,6 +24,15 @@ export const es: Translations = {
     offlineMessage:
       "No tienes conexión. Conéctate a internet para ver esta página.",
   },
+  auth: {
+    title: "Inicia sesión en Flowl",
+    required: "Inicia sesión para seguir cuidando tus plantas.",
+    continueWith: "Continuar con {provider}",
+    authenticationFailed: "La autenticación falló. Inténtalo de nuevo.",
+    providerUnavailable:
+      "El proveedor de inicio de sesión no está disponible temporalmente.",
+    loggedOut: "Has cerrado sesión.",
+  },
   dashboard: {
     myPlants: "Mis Plantas",
     addPlant: "Añadir Planta",
@@ -203,6 +212,8 @@ export const es: Translations = {
   settings: {
     title: "Ajustes",
     appearance: "Apariencia",
+    authentication: "Autenticación",
+    signOut: "Cerrar sesión",
     theme: "Tema",
     themeLight: "Claro",
     themeDark: "Oscuro",
@@ -399,6 +410,7 @@ export const es: Translations = {
   },
   errorCode: {
     INTERNAL_ERROR: "Algo salió mal. Por favor, inténtalo de nuevo.",
+    AUTHENTICATION_REQUIRED: "Se requiere autenticación",
     INVALID_REQUEST_BODY: "Datos de solicitud no válidos",
     PLANT_NOT_FOUND: "Planta no encontrada",
     PLANT_NAME_REQUIRED: "El nombre de la planta es obligatorio",

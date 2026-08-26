@@ -28,6 +28,7 @@ pub enum ApiError {
     ServiceUnavailable(&'static str),
     InternalError(&'static str),
     TooManyRequests(&'static str),
+    Unauthorized(&'static str),
 }
 
 #[allow(clippy::needless_pass_by_value)]
@@ -39,6 +40,7 @@ pub fn db_error(e: sqlx::Error) -> ApiError {
 pub fn default_message(code: &str) -> &'static str {
     match code {
         // Generic
+        "AUTHENTICATION_REQUIRED" => "Authentication is required",
         "INTERNAL_ERROR" => "An internal error occurred",
         "INVALID_REQUEST_BODY" => "Invalid request body",
 
@@ -112,11 +114,19 @@ impl IntoResponse for ApiError {
             Self::ServiceUnavailable(c) => (StatusCode::SERVICE_UNAVAILABLE, c),
             Self::InternalError(c) => (StatusCode::INTERNAL_SERVER_ERROR, c),
             Self::TooManyRequests(c) => (StatusCode::TOO_MANY_REQUESTS, c),
+            Self::Unauthorized(c) => (StatusCode::UNAUTHORIZED, c),
         };
 
         let message = default_message(code);
         let body = axum::Json(json!({ "code": code, "message": message }));
-        (status, body).into_response()
+        let mut response = (status, body).into_response();
+        if code == "AUTHENTICATION_REQUIRED" {
+            response.headers_mut().insert(
+                axum::http::header::CACHE_CONTROL,
+                axum::http::HeaderValue::from_static("no-store"),
+            );
+        }
+        response
     }
 }
 
@@ -165,5 +175,28 @@ mod tests {
 
         let response = ApiError::TooManyRequests("AI_RATE_LIMITED").into_response();
         assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
+    }
+
+    #[tokio::test]
+    async fn authentication_required_is_fixed_no_store_json() {
+        let response = ApiError::Unauthorized("AUTHENTICATION_REQUIRED").into_response();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            response
+                .headers()
+                .get(axum::http::header::CACHE_CONTROL)
+                .unwrap(),
+            "no-store"
+        );
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(&body).unwrap(),
+            serde_json::json!({
+                "code": "AUTHENTICATION_REQUIRED",
+                "message": "Authentication is required"
+            })
+        );
     }
 }

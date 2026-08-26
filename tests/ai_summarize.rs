@@ -96,6 +96,7 @@ async fn test_app_with_provider(
         ai_base_url: "https://api.openai.com/v1".to_string(),
         ai_model: "gpt-4.1-mini".to_string(),
         ai_rate_limiter: None,
+        auth: None,
     };
     (flowl::server::router(state), pool, tmp)
 }
@@ -218,6 +219,7 @@ async fn summarize_returns_429_when_rate_limited() {
         ai_base_url: "https://api.openai.com/v1".to_string(),
         ai_model: "gpt-4.1-mini".to_string(),
         ai_rate_limiter: Some(Arc::new(AiRateLimiter::new(1))),
+        auth: None,
     };
     let app = flowl::server::router(state);
     let plant_id = insert_test_plant(&pool).await;

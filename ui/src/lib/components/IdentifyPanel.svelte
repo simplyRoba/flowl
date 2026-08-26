@@ -9,7 +9,7 @@
     ChevronRight,
   } from "lucide-svelte";
   import type { IdentifyResult } from "$lib/api";
-  import { ApiError, identifyPlant } from "$lib/api";
+  import { ApiError, fetchBlob, identifyPlant } from "$lib/api";
   import { resolveError } from "$lib/stores/errors";
   import { translations } from "$lib/stores/locale";
 
@@ -132,8 +132,7 @@
       if (photoFile) {
         photos.push(photoFile);
       } else if (existingPhotoUrl) {
-        const resp = await fetch(existingPhotoUrl);
-        const blob = await resp.blob();
+        const blob = await fetchBlob(existingPhotoUrl);
         photos.push(new File([blob], "photo.jpg", { type: blob.type }));
       }
 

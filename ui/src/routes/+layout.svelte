@@ -8,6 +8,11 @@
   import { initTheme, isThemePreference } from "$lib/stores/theme";
   import { initLocale, isLocale, translations } from "$lib/stores/locale";
   import { fetchSettings } from "$lib/api";
+  import {
+    fetchAuthConfig,
+    setServiceWorkerAuthMode,
+    setWorkerAuthMode,
+  } from "$lib/auth";
   import { pushNotification } from "$lib/stores/notifications";
   import {
     isOffline as isOfflineStore,
@@ -36,6 +41,7 @@
   import "$lib/styles/skeletons.css";
 
   let { children } = $props();
+  let isLoginRoute = $derived(page.url.pathname === "/login");
   let isOffline = $derived($isOfflineStore);
   let isStandalonePwa = $state(false);
   let isTouchCapable = $state(false);
@@ -75,9 +81,10 @@
     return page.url.pathname.startsWith(href);
   }
 
-  onMount(async () => {
+  async function bootstrapProtectedSettings(isCurrent: () => boolean) {
     try {
       const settings = await fetchSettings();
+      if (!isCurrent()) return;
       const theme = isThemePreference(settings.theme)
         ? settings.theme
         : undefined;
@@ -85,9 +92,22 @@
       initTheme(theme);
       initLocale(locale);
     } catch {
-      initTheme();
-      initLocale();
+      // Preferences already have safe local defaults.
     }
+  }
+
+  onMount(() => {
+    initTheme();
+    initLocale();
+  });
+
+  $effect(() => {
+    if (isLoginRoute) return;
+    let current = true;
+    void bootstrapProtectedSettings(() => current);
+    return () => {
+      current = false;
+    };
   });
 
   function addMediaListener(
@@ -235,7 +255,8 @@
     resetPullGesture();
   }
 
-  onMount(() => {
+  $effect(() => {
+    if (isLoginRoute) return;
     syncPullToRefreshCapabilities();
 
     const standaloneQuery = window.matchMedia("(display-mode: standalone)");
@@ -263,7 +284,8 @@
     };
   });
 
-  onMount(() => {
+  $effect(() => {
+    if (isLoginRoute) return;
     const stopNetworkMonitor = startNetworkMonitor();
 
     if ("serviceWorker" in navigator) {
@@ -292,27 +314,66 @@
         await cache.put(VERSION_URL, new Response(version));
       }
 
-      navigator.serviceWorker
+      let disposed = false;
+      let authEnabled = true;
+      let registration: ServiceWorkerRegistration | null = null;
+      const publishAuthMode = () => {
+        setServiceWorkerAuthMode(authEnabled);
+        if (!registration) return;
+        setWorkerAuthMode(registration.active, authEnabled);
+        setWorkerAuthMode(registration.installing, authEnabled);
+        setWorkerAuthMode(registration.waiting, authEnabled);
+      };
+      const handleControllerChange = () => publishAuthMode();
+
+      navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        handleControllerChange,
+      );
+      void fetchAuthConfig()
+        .then((config) => {
+          if (disposed) return;
+          authEnabled = config.enabled;
+          publishAuthMode();
+        })
+        .catch(() => {
+          if (!disposed) publishAuthMode();
+        });
+
+      void navigator.serviceWorker
         .register("/service-worker.js")
-        .then(async (registration) => {
+        .then(async (newRegistration) => {
+          if (disposed) return;
+          registration = newRegistration;
+          publishAuthMode();
+
           if (registration.active) {
             const current = await querySwVersion(registration.active);
-            if (current) await setStoredVersion(current);
+            if (current && !disposed) await setStoredVersion(current);
           }
 
           registration.addEventListener("updatefound", () => {
-            const newWorker = registration.installing;
-            if (!newWorker || !registration.active) return;
+            const newWorker = registration?.installing;
+            if (!newWorker) return;
+            publishAuthMode();
 
             newWorker.addEventListener("statechange", async () => {
-              if (newWorker.state !== "activated") return;
+              publishAuthMode();
+              if (
+                disposed ||
+                newWorker.state !== "activated" ||
+                !registration?.active
+              ) {
+                return;
+              }
 
               const newVersion = await querySwVersion(newWorker);
               const storedVersion = await getStoredVersion();
-
-              if (!newVersion || newVersion === storedVersion) return;
+              if (disposed || !newVersion || newVersion === storedVersion)
+                return;
 
               await setStoredVersion(newVersion);
+              if (disposed) return;
               pushNotification({
                 variant: "info",
                 message: $translations.notifications.updateAvailable,
@@ -329,6 +390,15 @@
         .catch(() => {
           // Registration failed — no action needed, SW is progressive enhancement.
         });
+
+      return () => {
+        disposed = true;
+        navigator.serviceWorker.removeEventListener?.(
+          "controllerchange",
+          handleControllerChange,
+        );
+        stopNetworkMonitor();
+      };
     }
 
     return () => {
@@ -358,77 +428,81 @@
   <title>flowl</title>
 </svelte:head>
 
-<div class="app-shell">
-  <div
-    class="pull-indicator"
-    class:visible={pullIndicatorVisible}
-    class:armed={pullIndicatorState === "release"}
-    class:refreshing={pullIndicatorState === "refreshing"}
-    aria-live="polite"
-    aria-hidden={!pullIndicatorVisible}
-    data-testid="pull-to-refresh-indicator"
-    class:settling={!gestureActive && pullIndicatorState !== "refreshing"}
-    style:transform="translateY({pullIndicatorVisible
-      ? Math.min(pullOffset, PULL_TO_REFRESH_THRESHOLD) - 68
-      : -100}px)"
-  >
-    <span>{pullIndicatorLabel}</span>
-    {#if pullIndicatorState === "release"}
-      <span class="pull-indicator-check" aria-hidden="true">
-        <Check size={22} strokeWidth={3} />
-      </span>
-    {:else}
-      <span
-        class="pull-indicator-spinner"
-        class:spinning={pullIndicatorState === "refreshing"}
-        aria-hidden="true"
-        style:transform={pullIndicatorState === "pulling"
-          ? `rotate(${spinnerRotation}deg)`
-          : undefined}
-      ></span>
-    {/if}
-  </div>
-
-  <div class="app">
-    <nav class="sidebar">
-      <div class="logo">
-        <Logo size={32} /><span class="nav-label brand">flowl</span>
-      </div>
-      <a href={resolve("/")} class="nav-item" class:active={isActive("/")}
-        ><Leaf size={20} /><span class="nav-label"
-          >{$translations.nav.plants}</span
-        ></a
-      >
-      <a
-        href={resolve("/care-journal")}
-        class="nav-item"
-        class:active={isActive("/care-journal")}
-        ><BookOpen size={20} /><span class="nav-label"
-          >{$translations.nav.careJournal}</span
-        ></a
-      >
-      <a
-        href={resolve("/settings")}
-        class="nav-item bottom"
-        class:active={isActive("/settings")}
-        ><span class="icon-badge"
-          ><Settings size={20} />{#if isOffline}<span
-              class="offline-dot"
-              aria-label="offline"
-            ></span>{/if}</span
-        ><span class="nav-label">{$translations.nav.settings}</span></a
-      >
-    </nav>
-    <main
-      class="content"
+{#if isLoginRoute}
+  {@render children()}
+{:else}
+  <div class="app-shell">
+    <div
+      class="pull-indicator"
+      class:visible={pullIndicatorVisible}
+      class:armed={pullIndicatorState === "release"}
+      class:refreshing={pullIndicatorState === "refreshing"}
+      aria-live="polite"
+      aria-hidden={!pullIndicatorVisible}
+      data-testid="pull-to-refresh-indicator"
       class:settling={!gestureActive && pullIndicatorState !== "refreshing"}
-      style:margin-top={contentOffset > 0 ? `${contentOffset}px` : undefined}
+      style:transform="translateY({pullIndicatorVisible
+        ? Math.min(pullOffset, PULL_TO_REFRESH_THRESHOLD) - 68
+        : -100}px)"
     >
-      {@render children()}
-    </main>
-    <ToastHost />
+      <span>{pullIndicatorLabel}</span>
+      {#if pullIndicatorState === "release"}
+        <span class="pull-indicator-check" aria-hidden="true">
+          <Check size={22} strokeWidth={3} />
+        </span>
+      {:else}
+        <span
+          class="pull-indicator-spinner"
+          class:spinning={pullIndicatorState === "refreshing"}
+          aria-hidden="true"
+          style:transform={pullIndicatorState === "pulling"
+            ? `rotate(${spinnerRotation}deg)`
+            : undefined}
+        ></span>
+      {/if}
+    </div>
+
+    <div class="app">
+      <nav class="sidebar">
+        <div class="logo">
+          <Logo size={32} /><span class="nav-label brand">flowl</span>
+        </div>
+        <a href={resolve("/")} class="nav-item" class:active={isActive("/")}
+          ><Leaf size={20} /><span class="nav-label"
+            >{$translations.nav.plants}</span
+          ></a
+        >
+        <a
+          href={resolve("/care-journal")}
+          class="nav-item"
+          class:active={isActive("/care-journal")}
+          ><BookOpen size={20} /><span class="nav-label"
+            >{$translations.nav.careJournal}</span
+          ></a
+        >
+        <a
+          href={resolve("/settings")}
+          class="nav-item bottom"
+          class:active={isActive("/settings")}
+          ><span class="icon-badge"
+            ><Settings size={20} />{#if isOffline}<span
+                class="offline-dot"
+                aria-label="offline"
+              ></span>{/if}</span
+          ><span class="nav-label">{$translations.nav.settings}</span></a
+        >
+      </nav>
+      <main
+        class="content"
+        class:settling={!gestureActive && pullIndicatorState !== "refreshing"}
+        style:margin-top={contentOffset > 0 ? `${contentOffset}px` : undefined}
+      >
+        {@render children()}
+      </main>
+      <ToastHost />
+    </div>
   </div>
-</div>
+{/if}
 
 <style>
   :global(:root) {

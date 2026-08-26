@@ -125,6 +125,7 @@ export interface ChatMessage {
   image?: string;
 }
 
+import { navigateToLogin, type FetchLike } from "./auth";
 import { recheckHealth } from "./stores/network";
 
 export class ApiError extends Error {
@@ -138,10 +139,32 @@ export class ApiError extends Error {
   }
 }
 
+interface ErrorBody {
+  code?: unknown;
+  message?: unknown;
+}
+
+/** Classifies received errors without treating network failures as expiry. */
+export async function classifyResponse(response: Response): Promise<void> {
+  if (response.ok) return;
+
+  const data = (await response.json().catch(() => ({}))) as ErrorBody;
+  const code = typeof data.code === "string" ? data.code : "UNKNOWN_ERROR";
+  const message =
+    typeof data.message === "string" ? data.message : response.statusText;
+
+  if (response.status === 401 && code === "AUTHENTICATION_REQUIRED") {
+    navigateToLogin();
+  }
+
+  throw new ApiError(response.status, code, message || response.statusText);
+}
+
 async function request<T>(
   method: string,
   url: string,
   body?: unknown,
+  fetchFn: FetchLike = fetch,
 ): Promise<T> {
   const init: RequestInit = { method };
   if (body instanceof FormData) {
@@ -153,26 +176,51 @@ async function request<T>(
 
   let resp: Response;
   try {
-    resp = await fetch(url, init);
+    resp = await fetchFn(url, init);
   } catch (err) {
     recheckHealth();
     throw err;
   }
 
-  if (!resp.ok) {
-    const data = await resp.json().catch(() => ({ message: resp.statusText }));
-    throw new ApiError(
-      resp.status,
-      data.code || "UNKNOWN_ERROR",
-      data.message || resp.statusText,
-    );
-  }
+  await classifyResponse(resp);
 
   if (resp.status === 204) {
     return undefined as T;
   }
 
   return resp.json();
+}
+
+/** Route-loader variant using SvelteKit's injected fetch implementation. */
+export async function fetchJson<T>(
+  fetchFn: FetchLike,
+  url: string,
+): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetchFn(url);
+  } catch (error) {
+    recheckHealth();
+    throw error;
+  }
+  await classifyResponse(response);
+  return response.json() as Promise<T>;
+}
+
+/** Fetches a protected binary resource through the shared error boundary. */
+export async function fetchBlob(
+  url: string,
+  fetchFn: FetchLike = fetch,
+): Promise<Blob> {
+  let response: Response;
+  try {
+    response = await fetchFn(url);
+  } catch (error) {
+    recheckHealth();
+    throw error;
+  }
+  await classifyResponse(response);
+  return response.blob();
 }
 
 function parseFilename(contentDisposition: string | null): string {
@@ -208,28 +256,7 @@ export async function identifyPlant(photos: File[]): Promise<IdentifyResponse> {
   for (const photo of photos) {
     formData.append("photos", photo);
   }
-
-  let resp: Response;
-  try {
-    resp = await fetch("/api/ai/identify", {
-      method: "POST",
-      body: formData,
-    });
-  } catch (err) {
-    recheckHealth();
-    throw err;
-  }
-
-  if (!resp.ok) {
-    const data = await resp.json().catch(() => ({ message: resp.statusText }));
-    throw new ApiError(
-      resp.status,
-      data.code || "UNKNOWN_ERROR",
-      data.message || resp.statusText,
-    );
-  }
-
-  return resp.json();
+  return request("POST", "/api/ai/identify", formData);
 }
 
 export interface MqttRepairResult {
@@ -299,14 +326,7 @@ export async function exportData(): Promise<void> {
     throw err;
   }
 
-  if (!resp.ok) {
-    const data = await resp.json().catch(() => ({ message: resp.statusText }));
-    throw new ApiError(
-      resp.status,
-      data.code || "UNKNOWN_ERROR",
-      data.message || resp.statusText,
-    );
-  }
+  await classifyResponse(resp);
 
   const blob = await resp.blob();
   const filename = parseFilename(resp.headers.get("Content-Disposition"));
@@ -475,14 +495,7 @@ export async function* chatPlant(
     throw err;
   }
 
-  if (!resp.ok) {
-    const data = await resp.json().catch(() => ({ message: resp.statusText }));
-    throw new ApiError(
-      resp.status,
-      data.code || "UNKNOWN_ERROR",
-      data.message || resp.statusText,
-    );
-  }
+  await classifyResponse(resp);
 
   const reader = resp.body!.getReader();
   const decoder = new TextDecoder();

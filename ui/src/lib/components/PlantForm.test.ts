@@ -71,6 +71,7 @@ describe("PlantForm identify feedback", () => {
     mockLoadAiStatus.mockResolvedValue(undefined);
     mockLoadLocations.mockResolvedValue(undefined);
     mockFetch.mockResolvedValue({
+      ok: true,
       blob: async () => new Blob(["img"], { type: "image/jpeg" }),
     });
   });
