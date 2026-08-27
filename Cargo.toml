@@ -46,7 +46,7 @@ codegen-units = 1
 strip = true
 
 [dev-dependencies]
-jsonwebtoken = "10"
+jsonwebtoken = { version = "10", features = ["rust_crypto"] }
 rand = "0.8"
 rsa = { version = "0.9", features = ["pem"] }
 sha2 = "0.10"
