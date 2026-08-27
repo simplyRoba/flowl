@@ -842,6 +842,33 @@ async fn unavailable_token_endpoint_redirects_callback_to_generic_provider_unava
 }
 
 #[tokio::test]
+async fn authorization_url_contains_openid_scope_exactly_once() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = AuthState::with_dependencies(
+        EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
+        Arc::new(super::SystemClock),
+        Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
+    )
+    .await
+    .expect("local discovery succeeds");
+
+    let (authorization_url, _state, _nonce, _verifier) =
+        auth.authorization_url().await.expect("authorization URL");
+    let scope_values: Vec<_> = authorization_url
+        .query_pairs()
+        .filter_map(|(name, value)| (name == "scope").then(|| value.into_owned()))
+        .collect();
+    let scopes: Vec<_> = scope_values
+        .iter()
+        .flat_map(|value| value.split(' '))
+        .filter(|scope| !scope.is_empty())
+        .collect();
+
+    assert!(scopes.contains(&"openid"));
+    assert_eq!(scopes.iter().filter(|scope| **scope == "openid").count(), 1);
+}
+
+#[tokio::test]
 #[allow(clippy::too_many_lines)]
 async fn loopback_provider_covers_discovery_pkce_callback_rotation_and_route_policy() {
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;

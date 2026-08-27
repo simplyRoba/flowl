@@ -289,7 +289,6 @@ impl AuthState {
                 openidconnect::CsrfToken::new_random,
                 openidconnect::Nonce::new_random,
             )
-            .add_scope(openidconnect::Scope::new("openid".to_string()))
             .set_pkce_challenge(challenge)
             .url();
         Ok((url, state, nonce, verifier))
