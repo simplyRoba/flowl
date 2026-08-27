@@ -47,7 +47,6 @@ strip = true
 
 [dev-dependencies]
 jsonwebtoken = { version = "11", features = ["rust_crypto"] }
-rand = "0.10"
-rsa = { version = "0.9", features = ["pem"] }
+rsa = { version = "0.9", features = ["getrandom", "pem"] }
 sha2 = "0.10"
 tempfile = "3.27.0"
