@@ -22,6 +22,14 @@ const en = {
     offlineMessage:
       "You're offline. Connect to the internet to view this page.",
   },
+  auth: {
+    title: "Sign in to Flowl",
+    required: "Sign in to continue caring for your plants.",
+    continueWith: "Continue with {provider}",
+    authenticationFailed: "Authentication failed. Please try again.",
+    providerUnavailable: "The sign-in provider is temporarily unavailable.",
+    loggedOut: "You have been signed out.",
+  },
   dashboard: {
     myPlants: "My Plants",
     addPlant: "Add Plant",
@@ -200,6 +208,8 @@ const en = {
   settings: {
     title: "Settings",
     appearance: "Appearance",
+    authentication: "Authentication",
+    signOut: "Sign out",
     theme: "Theme",
     themeLight: "Light",
     themeDark: "Dark",
@@ -394,6 +404,7 @@ const en = {
   },
   errorCode: {
     INTERNAL_ERROR: "Something went wrong. Please try again.",
+    AUTHENTICATION_REQUIRED: "Authentication is required",
     INVALID_REQUEST_BODY: "Invalid request data",
     PLANT_NOT_FOUND: "Plant not found",
     PLANT_NAME_REQUIRED: "Plant name is required",

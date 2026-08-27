@@ -111,6 +111,7 @@ async fn test_app_with_provider(provider: Arc<dyn AiProvider>) -> (Router, tempf
         ai_base_url: "https://api.openai.com/v1".to_string(),
         ai_model: "gpt-4.1-mini".to_string(),
         ai_rate_limiter: None,
+        auth: None,
     };
     (flowl::server::router(state), tmp)
 }
@@ -136,6 +137,7 @@ async fn test_app_rate_limited() -> (Router, tempfile::TempDir) {
         ai_base_url: "https://api.openai.com/v1".to_string(),
         ai_model: "gpt-4.1-mini".to_string(),
         ai_rate_limiter: Some(Arc::new(AiRateLimiter::new(1))),
+        auth: None,
     };
     (flowl::server::router(state), tmp)
 }

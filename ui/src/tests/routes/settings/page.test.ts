@@ -28,6 +28,9 @@ const mockDeleteLocation = vi.fn();
 const mockLoadLocations = vi.fn();
 const mockUpdateLocation = vi.fn();
 const mockPushNotification = vi.fn();
+const mockFetchAuthConfig = vi.fn();
+const mockPurgeProtectedCaches = vi.fn();
+const mockPostLogout = vi.fn();
 
 vi.mock("$lib/stores/network", async () => {
   const { writable } = await import("svelte/store");
@@ -53,6 +56,13 @@ vi.mock("$lib/stores/notifications", () => ({
   pushNotification: (...args: unknown[]) => mockPushNotification(...args),
 }));
 
+vi.mock("$lib/auth", () => ({
+  fetchAuthConfig: (...args: unknown[]) => mockFetchAuthConfig(...args),
+  purgeProtectedCaches: (...args: unknown[]) =>
+    mockPurgeProtectedCaches(...args),
+  postLogout: (...args: unknown[]) => mockPostLogout(...args),
+}));
+
 beforeEach(() => {
   localStorage.clear();
   setThemePreference("system");
@@ -63,6 +73,11 @@ beforeEach(() => {
   isOffline.set(false);
   vi.clearAllMocks();
   mockLoadLocations.mockResolvedValue(undefined);
+  mockFetchAuthConfig.mockResolvedValue({
+    enabled: false,
+    provider_name: null,
+  });
+  mockPurgeProtectedCaches.mockResolvedValue(undefined);
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -81,6 +96,92 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  setLocale("en");
+});
+
+describe("settings authentication", () => {
+  it("shows the translated sign-out control only when auth is enabled", async () => {
+    mockFetchAuthConfig.mockResolvedValue({
+      enabled: true,
+      provider_name: "Example SSO",
+    });
+    render(Page);
+
+    expect(
+      await screen.findByRole("button", { name: "Sign out" }),
+    ).toBeTruthy();
+  });
+
+  it.each([
+    ["en", "Authentication", "Sign out"],
+    ["de", "Authentifizierung", "Abmelden"],
+    ["es", "Autenticación", "Cerrar sesión"],
+  ] as const)(
+    "renders the authentication section in %s",
+    async (selectedLocale, heading, action) => {
+      setLocale(selectedLocale);
+      mockFetchAuthConfig.mockResolvedValue({
+        enabled: true,
+        provider_name: "Example SSO",
+      });
+      render(Page);
+
+      expect(
+        await screen.findByRole("heading", { name: heading }),
+      ).toBeTruthy();
+      expect(screen.getByRole("button", { name: action })).toBeTruthy();
+    },
+  );
+
+  it("purges protected caches before submitting logout", async () => {
+    const order: string[] = [];
+    mockFetchAuthConfig.mockResolvedValue({
+      enabled: true,
+      provider_name: "Example SSO",
+    });
+    mockPurgeProtectedCaches.mockImplementation(async () => {
+      order.push("purge");
+    });
+    mockPostLogout.mockImplementation(() => {
+      order.push("post");
+    });
+    render(Page);
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Sign out" }));
+
+    await waitFor(() => expect(order).toEqual(["purge", "post"]));
+  });
+
+  it.each([
+    ["en", "Authentication", "Sign out"],
+    ["de", "Authentifizierung", "Abmelden"],
+    ["es", "Autenticación", "Cerrar sesión"],
+  ] as const)(
+    "keeps the %s authentication labels available while offline",
+    async (selectedLocale, heading, action) => {
+      setLocale(selectedLocale);
+      isOffline.set(true);
+      mockFetchAuthConfig.mockResolvedValue({
+        enabled: true,
+        provider_name: "Example SSO",
+      });
+      render(Page);
+
+      expect(
+        await screen.findByRole("heading", { name: heading }),
+      ).toBeTruthy();
+      expect(screen.getByRole("button", { name: action })).toBeTruthy();
+      expect(screen.queryByText("Locations")).toBeNull();
+    },
+  );
+
+  it("hides authentication controls when auth is disabled", async () => {
+    render(Page);
+
+    await waitFor(() => expect(mockFetchAuthConfig).toHaveBeenCalled());
+    expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+  });
 });
 
 describe("settings appearance theme selector", () => {

@@ -10,6 +10,13 @@ services:
       # FLOWL_AI_API_KEY: "your-api-key"
       # FLOWL_AI_BASE_URL: "https://api.openai.com/v1"
       # FLOWL_AI_MODEL: "gpt-4.1-mini"
+      # Optional built-in OIDC authentication (configure all required values together).
+      # FLOWL_AUTH_ENABLED: "true"
+      # FLOWL_EXTERNAL_URL: "https://plants.example.com"
+      # FLOWL_OIDC_ISSUER: "https://id.example.com/application/o/flowl"
+      # FLOWL_OIDC_CLIENT_ID: "flowl"
+      # FLOWL_OIDC_CLIENT_SECRET: "replace-with-a-secret"
+      # FLOWL_OIDC_PROVIDER_NAME: "Example SSO"
 
 volumes:
   flowl-data:

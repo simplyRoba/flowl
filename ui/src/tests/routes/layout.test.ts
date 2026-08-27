@@ -7,15 +7,32 @@ import {
 } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SvelteURL } from "svelte/reactivity";
 import * as pullToRefresh from "$lib/pull-to-refresh";
 import * as notifications from "$lib/stores/notifications";
 import { isOffline } from "$lib/stores/network";
 
 import LayoutHarness from "./LayoutHarness.svelte";
 
-const mockFetchSettings = vi.fn();
+const {
+  mockFetchSettings,
+  mockFetchAuthConfig,
+  mockSetServiceWorkerAuthMode,
+  mockSetWorkerAuthMode,
+  mockStartNetworkMonitor,
+  mockStopNetworkMonitor,
+} = vi.hoisted(() => ({
+  mockFetchSettings: vi.fn(),
+  mockFetchAuthConfig: vi.fn(),
+  mockSetServiceWorkerAuthMode: vi.fn(),
+  mockSetWorkerAuthMode: vi.fn(),
+  mockStartNetworkMonitor: vi.fn(),
+  mockStopNetworkMonitor: vi.fn(),
+}));
 
-let mockUrl = new URL("http://localhost/");
+let mockUrl: URL = new SvelteURL("http://localhost/");
+let serviceWorkerRegister = vi.fn();
+let serviceWorkerRemoveEventListener = vi.fn();
 
 vi.mock("$app/paths", () => ({
   resolve: (value: string) => value,
@@ -31,6 +48,25 @@ vi.mock("$app/state", () => ({
 
 vi.mock("$lib/api", () => ({
   fetchSettings: (...args: unknown[]) => mockFetchSettings(...args),
+}));
+
+vi.mock("$lib/stores/network", async () => {
+  const { writable } = await import("svelte/store");
+  return {
+    isOffline: writable(false),
+    recheckHealth: vi.fn(),
+    startNetworkMonitor: () => {
+      mockStartNetworkMonitor();
+      return mockStopNetworkMonitor;
+    },
+  };
+});
+
+vi.mock("$lib/auth", () => ({
+  fetchAuthConfig: (...args: unknown[]) => mockFetchAuthConfig(...args),
+  setServiceWorkerAuthMode: (...args: unknown[]) =>
+    mockSetServiceWorkerAuthMode(...args),
+  setWorkerAuthMode: (...args: unknown[]) => mockSetWorkerAuthMode(...args),
 }));
 
 function mockMatchMedia({
@@ -60,6 +96,25 @@ function mockMatchMedia({
   });
 }
 
+function installIdleServiceWorker() {
+  serviceWorkerRegister = vi.fn().mockResolvedValue({
+    active: null,
+    installing: null,
+    waiting: null,
+    addEventListener: vi.fn(),
+  });
+  serviceWorkerRemoveEventListener = vi.fn();
+  Object.defineProperty(window.navigator, "serviceWorker", {
+    configurable: true,
+    value: {
+      register: serviceWorkerRegister,
+      controller: null,
+      addEventListener: vi.fn(),
+      removeEventListener: serviceWorkerRemoveEventListener,
+    },
+  });
+}
+
 function buildTouchEvent(
   type: string,
   yPositions: number[],
@@ -81,6 +136,107 @@ async function performPull(distance: number) {
   await fireEvent(window, buildTouchEvent("touchstart", [120]));
   await fireEvent(window, buildTouchEvent("touchmove", [120 + distance], true));
 }
+
+describe("app layout route isolation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUrl = new SvelteURL("http://localhost/login");
+    mockFetchSettings.mockResolvedValue({ theme: "system", locale: "en" });
+    mockFetchAuthConfig.mockResolvedValue({
+      enabled: false,
+      provider_name: null,
+    });
+    mockMatchMedia({ standalone: false, coarsePointer: false });
+    installIdleServiceWorker();
+  });
+
+  afterEach(() => {
+    cleanup();
+    Reflect.deleteProperty(window.navigator, "serviceWorker");
+    vi.restoreAllMocks();
+  });
+
+  it("does not bootstrap protected shell work on initial login", async () => {
+    const addEventListener = vi.spyOn(window, "addEventListener");
+    render(LayoutHarness);
+    await Promise.resolve();
+
+    expect(mockFetchSettings).not.toHaveBeenCalled();
+    expect(mockFetchAuthConfig).not.toHaveBeenCalled();
+    expect(mockStartNetworkMonitor).not.toHaveBeenCalled();
+    expect(serviceWorkerRegister).not.toHaveBeenCalled();
+    expect(window.matchMedia).not.toHaveBeenCalledWith(
+      "(display-mode: standalone)",
+    );
+    expect(window.matchMedia).not.toHaveBeenCalledWith("(pointer: coarse)");
+    for (const event of [
+      "touchstart",
+      "touchmove",
+      "touchend",
+      "touchcancel",
+    ]) {
+      expect(addEventListener).not.toHaveBeenCalledWith(
+        event,
+        expect.anything(),
+      );
+    }
+    expect(document.querySelector(".sidebar")).toBeNull();
+    expect(document.querySelector(".pull-indicator")).toBeNull();
+  });
+
+  it("starts and tears down protected network, service-worker, and pull setup across login transitions", async () => {
+    const removeEventListener = vi.spyOn(window, "removeEventListener");
+    render(LayoutHarness);
+    mockUrl.href = "http://localhost/";
+
+    await waitFor(() => expect(mockFetchSettings).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockStartNetworkMonitor).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() => expect(mockFetchAuthConfig).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(serviceWorkerRegister).toHaveBeenCalledTimes(1));
+    expect(mockSetServiceWorkerAuthMode).toHaveBeenCalledWith(false);
+    expect(document.querySelector(".sidebar")).not.toBeNull();
+
+    mockUrl.href = "http://localhost/login";
+    await waitFor(() => expect(document.querySelector(".sidebar")).toBeNull());
+    await waitFor(() =>
+      expect(mockStopNetworkMonitor).toHaveBeenCalledTimes(1),
+    );
+    expect(serviceWorkerRemoveEventListener).toHaveBeenCalledWith(
+      "controllerchange",
+      expect.anything(),
+    );
+    for (const event of [
+      "touchstart",
+      "touchmove",
+      "touchend",
+      "touchcancel",
+    ]) {
+      expect(removeEventListener).toHaveBeenCalledWith(
+        event,
+        expect.anything(),
+      );
+    }
+    expect(document.querySelector(".pull-indicator")).toBeNull();
+  });
+
+  it("does not create an effect update loop across repeated login transitions", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    render(LayoutHarness);
+
+    for (const path of ["/", "/login", "/settings", "/login"]) {
+      mockUrl.href = `http://localhost${path}`;
+      await Promise.resolve();
+    }
+
+    expect(consoleError.mock.calls.flat().join(" ")).not.toContain(
+      "effect_update_depth_exceeded",
+    );
+  });
+});
 
 describe("app layout pull-to-refresh", () => {
   beforeEach(() => {
@@ -211,6 +367,10 @@ describe("app layout service worker update notification", () => {
     isOffline.set(false);
     mockUrl = new URL("http://localhost/");
     mockFetchSettings.mockResolvedValue({ theme: "system", locale: "en" });
+    mockFetchAuthConfig.mockResolvedValue({
+      enabled: false,
+      provider_name: null,
+    });
     mockMatchMedia({ standalone: false, coarsePointer: false });
 
     // Mock Cache API (not available in jsdom)
@@ -270,9 +430,11 @@ describe("app layout service worker update notification", () => {
       }),
     };
 
+    const waitingWorker = createVersionWorker("waiting");
     const registration = {
       active: activeWorker,
       installing: installingWorker,
+      waiting: waitingWorker,
       addEventListener: vi.fn((event: string, handler: () => void) => {
         if (event === "updatefound") {
           updateFoundHandler = handler;
@@ -280,10 +442,15 @@ describe("app layout service worker update notification", () => {
       }),
     };
 
+    let controllerChangeHandler: (() => void) | null = null;
+    const controllerWorker = createVersionWorker("controller");
     const sw = {
       register: vi.fn().mockResolvedValue(registration),
-      controller: null,
-      addEventListener: vi.fn(),
+      controller: controllerWorker,
+      addEventListener: vi.fn((event: string, handler: () => void) => {
+        if (event === "controllerchange") controllerChangeHandler = handler;
+      }),
+      removeEventListener: vi.fn(),
     };
 
     Object.defineProperty(window.navigator, "serviceWorker", {
@@ -299,8 +466,42 @@ describe("app layout service worker update notification", () => {
         installingWorker.state = "activated";
         stateChangeHandler!();
       },
+      triggerControllerChange: () => controllerChangeHandler?.(),
+      workers: {
+        activeWorker,
+        installingWorker,
+        waitingWorker,
+        controllerWorker,
+      },
     };
   }
+
+  it("sends disabled auth mode to every worker lifecycle target", async () => {
+    const { triggerControllerChange, workers } = mockServiceWorker({
+      activeVersion: "v1",
+      newVersion: "v2",
+    });
+    render(LayoutHarness);
+
+    await waitFor(() => {
+      expect(mockSetServiceWorkerAuthMode).toHaveBeenCalledWith(false);
+      expect(mockSetWorkerAuthMode).toHaveBeenCalledWith(
+        workers.activeWorker,
+        false,
+      );
+      expect(mockSetWorkerAuthMode).toHaveBeenCalledWith(
+        workers.installingWorker,
+        false,
+      );
+      expect(mockSetWorkerAuthMode).toHaveBeenCalledWith(
+        workers.waitingWorker,
+        false,
+      );
+    });
+
+    triggerControllerChange();
+    expect(mockSetServiceWorkerAuthMode).toHaveBeenCalledTimes(3);
+  });
 
   it("shows update toast when the service worker version actually changed", async () => {
     const { triggerUpdate, activateNewWorker } = mockServiceWorker({

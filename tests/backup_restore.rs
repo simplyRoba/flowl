@@ -146,6 +146,7 @@ async fn export_populated_database_with_photo() {
         ai_base_url: String::new(),
         ai_model: String::new(),
         ai_rate_limiter: None,
+        auth: None,
     };
     let app = flowl::server::router(state.clone());
 
@@ -497,6 +498,7 @@ async fn failed_import_preserves_existing_photos() {
         ai_base_url: String::new(),
         ai_model: String::new(),
         ai_rate_limiter: None,
+        auth: None,
     };
 
     // Seed a plant with a photo via valid import
@@ -590,6 +592,7 @@ async fn round_trip_export_import_export() {
         ai_base_url: String::new(),
         ai_model: String::new(),
         ai_rate_limiter: None,
+        auth: None,
     };
 
     // Seed data via import
@@ -639,6 +642,7 @@ async fn round_trip_export_import_export() {
         ai_base_url: String::new(),
         ai_model: String::new(),
         ai_rate_limiter: None,
+        auth: None,
     };
 
     let app = flowl::server::router(state2.clone());

@@ -1,5 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { goto } = vi.hoisted(() => ({ goto: vi.fn() }));
+vi.mock("$app/navigation", () => ({ goto }));
+
+import { resetAuthNavigationForTests } from "$lib/auth";
 import { load } from "../../../../routes/plants/[id]/+page";
+
+beforeEach(() => {
+  goto.mockReset();
+  resetAuthNavigationForTests();
+  window.history.replaceState({}, "", "/plants/1");
+});
 
 describe("plant detail page load", () => {
   it("loads plant details from the route", async () => {
@@ -41,6 +52,44 @@ describe("plant detail page load", () => {
       notFound: true,
       loadErrorCode: null,
     });
+  });
+
+  it("redirects exact authentication expiry instead of treating it as a missing plant", async () => {
+    const result = await load({
+      fetch: vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            code: "AUTHENTICATION_REQUIRED",
+            message: "Authentication is required",
+          }),
+          { status: 401 },
+        ),
+      ),
+      params: { id: "1" },
+    } as never);
+
+    expect(result).toEqual({
+      plant: null,
+      notFound: false,
+      loadErrorCode: "AUTHENTICATION_REQUIRED",
+    });
+    expect(goto).toHaveBeenCalledWith("/login?return_to=%2Fplants%2F1", {
+      replaceState: true,
+    });
+  });
+
+  it("keeps route-loader transport failures distinct from authentication expiry", async () => {
+    const result = await load({
+      fetch: vi.fn().mockRejectedValue(new TypeError("offline")),
+      params: { id: "1" },
+    } as never);
+
+    expect(result).toEqual({
+      plant: null,
+      notFound: false,
+      loadErrorCode: "UNKNOWN_ERROR",
+    });
+    expect(goto).not.toHaveBeenCalled();
   });
 
   it("returns the API error code for non-404 failures", async () => {

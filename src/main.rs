@@ -1,19 +1,10 @@
-mod ai;
-mod api;
-mod config;
-mod db;
-mod embedded;
-mod images;
-mod mqtt;
-mod server;
-mod state;
-
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-use ai::openai::OpenAiProvider;
-use ai::provider::AiProvider;
+use flowl::ai::openai::OpenAiProvider;
+use flowl::ai::provider::AiProvider;
+use flowl::{auth, config, db, images, mqtt, server, state};
 use state::AppState;
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
@@ -21,6 +12,19 @@ use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
     let config = config::Config::load();
+    let auth_config = config::AuthConfig::load().unwrap_or_else(|error| {
+        eprintln!("Invalid authentication configuration: {error}");
+        std::process::exit(1);
+    });
+    let auth_state = match auth_config {
+        config::AuthConfig::Disabled => None,
+        config::AuthConfig::Enabled(config) => Some(Arc::new(
+            auth::AuthState::new(*config).await.unwrap_or_else(|error| {
+                eprintln!("Unable to initialize authentication: {error}");
+                std::process::exit(1);
+            }),
+        )),
+    };
 
     tracing_subscriber::fmt()
         .with_env_filter(
@@ -102,6 +106,7 @@ async fn main() {
         } else {
             None
         },
+        auth: auth_state,
     };
     let router = server::router(state);
 

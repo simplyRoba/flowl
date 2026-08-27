@@ -21,6 +21,7 @@ axum-extra = { version = "0.12", features = ["query"] }
 base64 = "0.23"
 chrono = "0.4"
 mime_guess = "2"
+openidconnect = { version = "4.0.1", default-features = false, features = ["reqwest", "rustls-tls", "timing-resistant-secret-traits"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
 rumqttc = "0.25"
 rust-embed = "8"
@@ -31,9 +32,11 @@ tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
 tower = "0.5"
 tower-http = { version = "0.7", features = ["fs", "compression-gzip"] }
+tower-sessions = { version = "0.15", default-features = false, features = ["axum-core", "memory-store", "private"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+url = "2"
 uuid = { version = "1", features = ["v4"] }
 zip = { version = "8", default-features = false, features = ["deflate"] }
 
@@ -43,4 +46,8 @@ codegen-units = 1
 strip = true
 
 [dev-dependencies]
+jsonwebtoken = "9"
+rand = "0.8"
+rsa = { version = "0.9", features = ["pem"] }
+sha2 = "0.10"
 tempfile = "3.27.0"

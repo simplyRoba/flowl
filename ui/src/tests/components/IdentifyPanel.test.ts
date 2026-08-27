@@ -5,7 +5,10 @@ import IdentifyPanel from "../../lib/components/IdentifyPanel.svelte";
 import { ApiError } from "$lib/api";
 import type { IdentifyResult } from "$lib/api";
 
+const { mockGoto } = vi.hoisted(() => ({ mockGoto: vi.fn() }));
 const mockIdentifyPlant = vi.fn();
+
+vi.mock("$app/navigation", () => ({ goto: mockGoto }));
 
 vi.mock("$lib/api", async () => {
   const actual = await vi.importActual<typeof import("$lib/api")>("$lib/api");
@@ -65,6 +68,7 @@ function renderPanel(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.history.replaceState({}, "", "/plants/1/edit");
 });
 
 afterEach(() => {
@@ -377,6 +381,47 @@ describe("IdentifyPanel", () => {
         expect(screen.getByText("Retry")).toBeTruthy();
         expect(screen.queryByText("Dismiss")).toBeNull();
       });
+    });
+  });
+
+  describe("existing protected photo", () => {
+    it("classifies exact expiry before converting the photo response into a blob", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            code: "AUTHENTICATION_REQUIRED",
+            message: "Authentication is required",
+          }),
+          { status: 401 },
+        ),
+      );
+      renderPanel({
+        photoFile: null,
+        photoPreview: null,
+        existingPhotoUrl: "/uploads/1.jpg",
+      });
+
+      const user = userEvent.setup();
+      await user.click(screen.getByText("Identify Plant"));
+
+      await waitFor(() => expect(mockGoto).toHaveBeenCalledTimes(1));
+      expect(mockIdentifyPlant).not.toHaveBeenCalled();
+    });
+
+    it("does not navigate when the protected photo fetch rejects", async () => {
+      globalThis.fetch = vi.fn().mockRejectedValue(new TypeError("offline"));
+      renderPanel({
+        photoFile: null,
+        photoPreview: null,
+        existingPhotoUrl: "/uploads/1.jpg",
+      });
+
+      const user = userEvent.setup();
+      await user.click(screen.getByText("Identify Plant"));
+
+      await waitFor(() => expect(screen.getByText("Retry")).toBeTruthy());
+      expect(mockGoto).not.toHaveBeenCalled();
+      expect(mockIdentifyPlant).not.toHaveBeenCalled();
     });
   });
 

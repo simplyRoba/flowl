@@ -42,6 +42,7 @@ fn make_state(pool: SqlitePool, upload_dir: &std::path::Path) -> AppState {
         ai_base_url: String::new(),
         ai_model: String::new(),
         ai_rate_limiter: None,
+        auth: None,
     }
 }
 

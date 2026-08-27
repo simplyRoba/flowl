@@ -34,6 +34,7 @@ async fn app_with_pool() -> (axum::Router, SqlitePool, tempfile::TempDir) {
         ai_base_url: String::new(),
         ai_model: String::new(),
         ai_rate_limiter: None,
+        auth: None,
     };
 
     (flowl::server::router(state), pool, tmp)

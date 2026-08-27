@@ -7,6 +7,7 @@ use rumqttc::AsyncClient;
 use sqlx::SqlitePool;
 
 use crate::ai::provider::AiProvider;
+use crate::auth::AuthState;
 use crate::images::ImageStore;
 
 pub struct AiRateLimiter {
@@ -62,6 +63,8 @@ pub struct AppState {
     pub ai_base_url: String,
     pub ai_model: String,
     pub ai_rate_limiter: Option<Arc<AiRateLimiter>>,
+    /// Present only when strict OIDC configuration has enabled the future auth boundary.
+    pub auth: Option<Arc<AuthState>>,
 }
 
 impl FromRef<AppState> for SqlitePool {

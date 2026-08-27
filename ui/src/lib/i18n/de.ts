@@ -24,6 +24,16 @@ export const de: Translations = {
     offlineMessage:
       "Du bist offline. Verbinde dich mit dem Internet, um diese Seite anzuzeigen.",
   },
+  auth: {
+    title: "Bei Flowl anmelden",
+    required: "Melde dich an, um dich weiter um deine Pflanzen zu kümmern.",
+    continueWith: "Weiter mit {provider}",
+    authenticationFailed:
+      "Die Anmeldung ist fehlgeschlagen. Bitte versuche es erneut.",
+    providerUnavailable:
+      "Der Anmeldeanbieter ist vorübergehend nicht verfügbar.",
+    loggedOut: "Du wurdest abgemeldet.",
+  },
   dashboard: {
     myPlants: "Meine Pflanzen",
     addPlant: "Pflanze hinzufügen",
@@ -204,6 +214,8 @@ export const de: Translations = {
   settings: {
     title: "Einstellungen",
     appearance: "Darstellung",
+    authentication: "Authentifizierung",
+    signOut: "Abmelden",
     theme: "Thema",
     themeLight: "Hell",
     themeDark: "Dunkel",
@@ -402,6 +414,7 @@ export const de: Translations = {
   },
   errorCode: {
     INTERNAL_ERROR: "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    AUTHENTICATION_REQUIRED: "Authentifizierung ist erforderlich",
     INVALID_REQUEST_BODY: "Ungültige Anfragedaten",
     PLANT_NOT_FOUND: "Pflanze nicht gefunden",
     PLANT_NAME_REQUIRED: "Pflanzenname ist erforderlich",

@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
         "/api": "http://localhost:4100",
         "/uploads": "http://localhost:4100",
         "/health": "http://localhost:4100",
+        "/auth": "http://localhost:4100",
       },
     },
   };

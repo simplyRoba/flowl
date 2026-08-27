@@ -59,6 +59,14 @@ function makeEvent(overrides: Partial<CareEvent> = {}): CareEvent {
   };
 }
 
+function shortDate(value: string): string {
+  return new Date(value).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "2-digit",
+  });
+}
+
 class MockIntersectionObserver {
   static instances: MockIntersectionObserver[] = [];
 
@@ -489,7 +497,9 @@ describe("care journal history loading", () => {
 
     await vi.waitFor(() => {
       expect(
-        view.getByText(/Watered 2\+ times, Feb 1, 25 – Feb 2, 25/),
+        view.getByText(
+          `Watered 2+ times, ${shortDate("2025-02-01T12:00:00Z")} – ${shortDate("2025-02-02T12:00:00Z")}`,
+        ),
       ).toBeTruthy();
     });
     expect(
@@ -874,8 +884,8 @@ describe("care journal event grouping", () => {
     // Should show one group, not three individual entries
     expect(document.querySelectorAll(".log-entry").length).toBe(1);
     expect(document.querySelector(".log-group-chevron")).toBeTruthy();
-    expect(document.querySelector(".log-entry-action")?.textContent).toMatch(
-      /Watered 3 times, Feb 1, 25 – Feb 3, 25/,
+    expect(document.querySelector(".log-entry-action")?.textContent).toBe(
+      `Watered 3 times, ${shortDate("2025-02-01T10:00:00Z")} – ${shortDate("2025-02-03T12:00:00Z")}`,
     );
   });
 
