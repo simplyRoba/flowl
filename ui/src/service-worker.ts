@@ -8,6 +8,7 @@ import { isCacheableApi, isThumbnail } from "$lib/sw-patterns";
 import {
   activationKeepCaches,
   cachedShellOrOffline,
+  createAuthModeController,
   disabledApiNetworkFirst,
   disabledNavigationCacheFirst,
   disabledThumbnailCacheFirst,
@@ -16,6 +17,7 @@ import {
   networkOnly,
   protectedNavigationNetworkFirst,
   protectedNetworkFirst,
+  shouldCacheProtectedThumbnailResponse,
   purgeProtectedCaches,
   removeObsoleteCaches,
 } from "$lib/sw-policy";
@@ -27,13 +29,32 @@ const PHOTO_CACHE_NAME = `flowl-photo-${version}`;
 const OFFLINE_PAGE = "/offline.html";
 const ASSETS = [...build, ...files];
 
-// Clients set this after reading the public config. Start in the safe mode so
-// a newly activated worker cannot cache a protected failure before its client
-// reports the disabled-mode configuration.
-let authEnabled = true;
+// A worker starts unknown and therefore protected. Disabled mode is established
+// only by a fresh network-only backend config response, never by client state.
+const authMode = createAuthModeController();
 
 function cachedNavigationFallback(): Promise<Response> {
   return cachedShellOrOffline(caches, "/index.html", OFFLINE_PAGE);
+}
+
+function fetchFreshAuthConfig(): Promise<Response> {
+  return fetch(
+    new Request(new URL("/auth/config", sw.location.origin), {
+      cache: "no-store",
+      redirect: "error",
+    }),
+  );
+}
+
+function withAuthMode(
+  disabledPolicy: () => Promise<Response>,
+  protectedPolicy: () => Promise<Response>,
+): Promise<Response> {
+  return authMode
+    .policyMode(fetchFreshAuthConfig)
+    .then((mode) =>
+      mode === "disabled" ? disabledPolicy() : protectedPolicy(),
+    );
 }
 
 sw.addEventListener("install", (event) => {
@@ -65,24 +86,23 @@ sw.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
-    if (authEnabled) {
-      event.respondWith(
-        protectedNavigationNetworkFirst(
-          request,
-          fetch,
-          cachedNavigationFallback,
-        ),
-      );
-    } else {
-      event.respondWith(
-        disabledNavigationCacheFirst(
-          request,
-          fetch,
-          caches,
-          cachedNavigationFallback,
-        ),
-      );
-    }
+    event.respondWith(
+      withAuthMode(
+        () =>
+          disabledNavigationCacheFirst(
+            request,
+            fetch,
+            caches,
+            cachedNavigationFallback,
+          ),
+        () =>
+          protectedNavigationNetworkFirst(
+            request,
+            fetch,
+            cachedNavigationFallback,
+          ),
+      ),
+    );
     return;
   }
 
@@ -95,18 +115,28 @@ sw.addEventListener("fetch", (event) => {
 
   if (isCacheableApi(url.pathname)) {
     event.respondWith(
-      authEnabled
-        ? protectedNetworkFirst(request, fetch, caches, API_CACHE_NAME)
-        : disabledApiNetworkFirst(request, fetch, caches, API_CACHE_NAME),
+      withAuthMode(
+        () => disabledApiNetworkFirst(request, fetch, caches, API_CACHE_NAME),
+        () => protectedNetworkFirst(request, fetch, caches, API_CACHE_NAME),
+      ),
     );
     return;
   }
 
   if (isThumbnail(url.pathname)) {
     event.respondWith(
-      authEnabled
-        ? protectedNetworkFirst(request, fetch, caches, PHOTO_CACHE_NAME)
-        : disabledThumbnailCacheFirst(request, fetch, caches, PHOTO_CACHE_NAME),
+      withAuthMode(
+        () =>
+          disabledThumbnailCacheFirst(request, fetch, caches, PHOTO_CACHE_NAME),
+        () =>
+          protectedNetworkFirst(
+            request,
+            fetch,
+            caches,
+            PHOTO_CACHE_NAME,
+            shouldCacheProtectedThumbnailResponse,
+          ),
+      ),
     );
   }
 });
@@ -117,7 +147,7 @@ sw.addEventListener("message", (event) => {
     return;
   }
   if (event.data?.type === "SET_AUTH_ENABLED") {
-    authEnabled = event.data.enabled === true;
+    authMode.updateFromClient(event.data.enabled === true);
     return;
   }
   if (event.data?.type === "PURGE_PROTECTED_CACHES") {

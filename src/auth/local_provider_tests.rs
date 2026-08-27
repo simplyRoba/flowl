@@ -229,6 +229,12 @@ impl RunningProvider {
         *self.provider.token_signing_key_override.lock().await = Some(generate_signing_key());
     }
 
+    async fn sign_tokens_with_invalid_same_kid_key(&self) {
+        let kid = self.provider.signing_key.lock().await.kid.clone();
+        *self.provider.token_signing_key_override.lock().await =
+            Some(generate_signing_key_with_kid(kid));
+    }
+
     async fn set_token_algorithm(&self, algorithm: Algorithm) {
         *self.provider.token_algorithm.lock().await = algorithm;
     }
@@ -1747,6 +1753,53 @@ async fn crypto_error_from_a_rotated_same_kid_key_refreshes_jwks_once() {
 }
 
 #[tokio::test]
+async fn invalid_signature_after_refresh_fails_callback_without_a_second_refresh() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = Arc::new(
+        AuthState::with_dependencies(
+            EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
+            Arc::new(super::SystemClock),
+            Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
+        )
+        .await
+        .expect("local discovery succeeds"),
+    );
+    let (state, _directory) = test_state(auth);
+    let app = server::router(state);
+    let (preauth_cookie, state) = begin_login(&app, &provider).await;
+    provider.sign_tokens_with_invalid_same_kid_key().await;
+
+    let callback = app
+        .clone()
+        .oneshot(request(
+            &format!("/auth/callback?state={state}&code=accepted-code"),
+            Some(&preauth_cookie),
+        ))
+        .await
+        .expect("callback response");
+    assert_eq!(callback.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        callback.headers().get(header::LOCATION),
+        Some(&HeaderValue::from_static(
+            "/login?error=authentication_failed&return_to=%2Fplants%3Ftab%3Dcare"
+        ))
+    );
+    assert_eq!(provider.provider.token_requests.load(Ordering::SeqCst), 1);
+    assert_eq!(
+        provider.provider.jwks_requests.load(Ordering::SeqCst),
+        2,
+        "initial discovery plus exactly one callback refresh"
+    );
+    assert_eq!(
+        app.oneshot(request("/api/info", Some(&preauth_cookie)))
+            .await
+            .expect("pre-auth session response")
+            .status(),
+        StatusCode::UNAUTHORIZED
+    );
+}
+
+#[tokio::test]
 async fn missing_key_refresh_is_deduplicated_for_concurrent_callbacks() {
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
     let auth = Arc::new(
@@ -1918,6 +1971,7 @@ async fn auth_config_is_minimal_data_and_all_auth_responses_are_no_store() {
 }
 
 #[tokio::test]
+#[allow(clippy::too_many_lines)]
 async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_correctly_scoped() {
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
     let auth = Arc::new(
@@ -1936,49 +1990,79 @@ async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_co
     )
     .expect("write test upload");
     let app = server::router(state);
-    for path in ["/login", "/offline.html", "/manifest.json", "/favicon.svg"] {
+    let immutable_asset = crate::embedded::immutable_asset_path();
+    for (method, path, expected_status) in [
+        ("GET", "/health", StatusCode::OK),
+        ("GET", "/login", StatusCode::OK),
+        ("GET", "/auth/config", StatusCode::OK),
+        ("GET", "/auth/login", StatusCode::SEE_OTHER),
+        ("GET", "/auth/callback", StatusCode::SEE_OTHER),
+        ("POST", "/auth/logout", StatusCode::SEE_OTHER),
+        ("GET", "/service-worker.js", StatusCode::OK),
+        ("GET", "/manifest.json", StatusCode::OK),
+        ("GET", "/favicon.svg", StatusCode::OK),
+        ("GET", "/icon-192.png", StatusCode::OK),
+        ("GET", "/offline.html", StatusCode::OK),
+        ("GET", immutable_asset.as_str(), StatusCode::OK),
+    ] {
         assert_eq!(
             app.clone()
-                .oneshot(request(path, None))
+                .oneshot(request_with_method(method, path, None))
                 .await
-                .expect("public resource")
+                .expect("public route response")
                 .status(),
-            StatusCode::OK,
-            "{path} must stay public"
+            expected_status,
+            "{method} {path} must remain a public or protocol route"
         );
     }
-    let document = app
-        .clone()
-        .oneshot(request("/plants/42?tab=care", None))
-        .await
-        .expect("protected document");
-    assert_eq!(document.status(), StatusCode::SEE_OTHER);
-    assert_eq!(
-        document.headers().get(header::LOCATION),
-        Some(&HeaderValue::from_static(
-            "/login?return_to=%2Fplants%2F42%3Ftab%3Dcare"
-        ))
-    );
-    let api = app
-        .clone()
-        .oneshot(request("/api/info", None))
-        .await
-        .expect("unauthenticated API");
-    assert_eq!(api.status(), StatusCode::UNAUTHORIZED);
-    assert_eq!(
-        api.headers().get(header::CACHE_CONTROL),
-        Some(&HeaderValue::from_static("no-store"))
-    );
-    let api_body = axum::body::to_bytes(api.into_body(), usize::MAX)
-        .await
-        .expect("API JSON body");
-    assert_eq!(
-        serde_json::from_slice::<serde_json::Value>(&api_body).expect("API JSON"),
-        serde_json::json!({
-            "code": "AUTHENTICATION_REQUIRED",
-            "message": "Authentication is required"
-        })
-    );
+    for (path, expected_location) in [
+        ("/", "/login?return_to=%2F"),
+        ("/index.html", "/login?return_to=%2Findex.html"),
+        (
+            "/plants/42?tab=care",
+            "/login?return_to=%2Fplants%2F42%3Ftab%3Dcare",
+        ),
+        (
+            "/unknown/route?source=test",
+            "/login?return_to=%2Funknown%2Froute%3Fsource%3Dtest",
+        ),
+    ] {
+        let document = app
+            .clone()
+            .oneshot(request(path, None))
+            .await
+            .expect("protected document");
+        assert_eq!(document.status(), StatusCode::SEE_OTHER, "{path}");
+        assert_eq!(
+            document.headers().get(header::LOCATION),
+            Some(&HeaderValue::from_str(expected_location).expect("expected redirect")),
+            "{path}"
+        );
+    }
+    for path in ["/api/info", "/api/ai/status"] {
+        let api = app
+            .clone()
+            .oneshot(request(path, None))
+            .await
+            .expect("unauthenticated API");
+        assert_eq!(api.status(), StatusCode::UNAUTHORIZED, "{path}");
+        assert_eq!(
+            api.headers().get(header::CACHE_CONTROL),
+            Some(&HeaderValue::from_static("no-store")),
+            "{path}"
+        );
+        let api_body = axum::body::to_bytes(api.into_body(), usize::MAX)
+            .await
+            .expect("API JSON body");
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(&api_body).expect("API JSON"),
+            serde_json::json!({
+                "code": "AUTHENTICATION_REQUIRED",
+                "message": "Authentication is required"
+            }),
+            "{path}"
+        );
+    }
     assert_eq!(
         app.clone()
             .oneshot(request("/uploads/public-test.txt", None))
@@ -2068,6 +2152,33 @@ async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_co
         .expect("disabled config JSON"),
         serde_json::json!({ "enabled": false, "provider_name": null })
     );
+    for path in [
+        "/health",
+        "/login",
+        "/service-worker.js",
+        "/manifest.json",
+        "/favicon.svg",
+        "/icon-192.png",
+        "/offline.html",
+        immutable_asset.as_str(),
+        "/",
+        "/index.html",
+        "/plants/42",
+        "/unknown/route",
+        "/api/info",
+        "/api/ai/status",
+    ] {
+        assert_eq!(
+            disabled
+                .clone()
+                .oneshot(request(path, None))
+                .await
+                .expect("disabled public response")
+                .status(),
+            StatusCode::OK,
+            "{path} must retain auth-disabled public behavior"
+        );
+    }
     let disabled_upload = disabled
         .oneshot(request("/uploads/public-test.txt", None))
         .await

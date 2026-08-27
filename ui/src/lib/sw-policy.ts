@@ -25,6 +25,13 @@ export interface CacheStorageLike {
 }
 
 export type WorkerFetch = (request: Request) => Promise<Response>;
+export type AuthMode = "unknown" | "enabled" | "disabled";
+export type AuthConfigFetch = () => Promise<Response>;
+
+export interface AuthModeController {
+  policyMode(fetchAuthConfig: AuthConfigFetch): Promise<AuthMode>;
+  updateFromClient(enabled: boolean): void;
+}
 
 export function isAuthPath(pathname: string): boolean {
   return pathname === "/auth" || pathname.startsWith("/auth/");
@@ -32,6 +39,84 @@ export function isAuthPath(pathname: string): boolean {
 
 export function shouldCacheProtectedResponse(response: Response): boolean {
   return response.status === 200 && !response.redirected;
+}
+
+/** Accepts only successful, non-redirected image media types for photo caches. */
+export function shouldCacheProtectedThumbnailResponse(
+  response: Response,
+): boolean {
+  const mediaType = response.headers
+    .get("content-type")
+    ?.split(";", 1)[0]
+    .trim();
+  return (
+    shouldCacheProtectedResponse(response) &&
+    mediaType !== undefined &&
+    /^image\/[!#$%&'*+\-.^_`|~0-9a-z]+$/i.test(mediaType)
+  );
+}
+
+/**
+ * Keeps the worker fail-closed until a fresh auth configuration confirms that
+ * authentication is disabled. A disabled worker rechecks before every policy
+ * that could expose cached application data; an outage retains established
+ * disabled-mode offline behavior.
+ */
+export function createAuthModeController(): AuthModeController {
+  let mode: AuthMode = "unknown";
+  let revision = 0;
+
+  async function freshMode(
+    fetchAuthConfig: AuthConfigFetch,
+  ): Promise<AuthMode> {
+    const response = await fetchAuthConfig();
+    if (!response.ok || response.redirected) {
+      throw new Error("Authentication configuration is unavailable");
+    }
+
+    const config: unknown = await response.json();
+    if (
+      typeof config !== "object" ||
+      config === null ||
+      typeof (config as { enabled?: unknown }).enabled !== "boolean"
+    ) {
+      throw new Error("Authentication configuration is invalid");
+    }
+
+    return (config as { enabled: boolean }).enabled ? "enabled" : "disabled";
+  }
+
+  return {
+    async policyMode(fetchAuthConfig) {
+      while (mode !== "enabled") {
+        const checkedMode = mode;
+        const checkedRevision = revision;
+        let freshAuthMode: AuthMode;
+        try {
+          freshAuthMode = await freshMode(fetchAuthConfig);
+        } catch {
+          // Do not turn an unknown state into an authoritative enabled state:
+          // fail closed for this request, then retry discovery next time.
+          if (revision !== checkedRevision) continue;
+          return checkedMode === "disabled" ? "disabled" : "enabled";
+        }
+
+        // Do not let an earlier config response override a client invalidation
+        // or a stricter observation that arrived while it was in flight.
+        if (revision !== checkedRevision) continue;
+        mode = freshAuthMode;
+        revision += 1;
+        return mode;
+      }
+      return mode;
+    },
+    updateFromClient(enabled) {
+      // A client may make the worker stricter, but cannot establish disabled
+      // mode without a fresh backend response.
+      mode = enabled ? "enabled" : "unknown";
+      revision += 1;
+    },
+  };
 }
 
 export function isProtectedCacheName(name: string): boolean {
@@ -75,17 +160,24 @@ export async function protectedNetworkFirst(
   fetchFn: WorkerFetch,
   cacheStorage: Pick<CacheStorageLike, "match" | "open">,
   cacheName: string,
+  shouldCache: (response: Response) => boolean = shouldCacheProtectedResponse,
 ): Promise<Response> {
+  let response: Response;
   try {
-    const response = await fetchFn(request);
-    if (shouldCacheProtectedResponse(response)) {
-      const cache = await cacheStorage.open(cacheName);
-      await cache.put(request, response.clone());
-    }
-    return response;
+    response = await fetchFn(request);
   } catch (error) {
     return staleOnTransportFailure(request, cacheStorage, error);
   }
+
+  if (shouldCache(response)) {
+    try {
+      const cache = await cacheStorage.open(cacheName);
+      await cache.put(request, response.clone());
+    } catch {
+      // A cache write must never replace a received network response with stale data.
+    }
+  }
+  return response;
 }
 
 /** Preserves auth-disabled navigation cache-first behavior. */

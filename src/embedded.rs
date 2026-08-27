@@ -6,6 +6,16 @@ use rust_embed::Embed;
 #[folder = "ui/build/"]
 struct Assets;
 
+#[cfg(test)]
+pub(crate) fn immutable_asset_path() -> String {
+    Assets::iter()
+        .find(|path| path.starts_with("_app/immutable/") && path.ends_with(".js"))
+        .map_or_else(
+            || panic!("embedded UI must contain an immutable JavaScript asset"),
+            |path| format!("/{path}"),
+        )
+}
+
 pub async fn static_handler(uri: axum::http::Uri) -> Response {
     let path = uri.path().trim_start_matches('/');
 

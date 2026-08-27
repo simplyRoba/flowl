@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   activationKeepCaches,
   cachedShellOrOffline,
+  createAuthModeController,
   disabledApiNetworkFirst,
   disabledNavigationCacheFirst,
   disabledThumbnailCacheFirst,
@@ -12,6 +13,7 @@ import {
   networkOnly,
   protectedNavigationNetworkFirst,
   protectedNetworkFirst,
+  shouldCacheProtectedThumbnailResponse,
   purgeProtectedCaches,
   removeObsoleteCaches,
 } from "./sw-policy";
@@ -20,8 +22,12 @@ function request(path = "/api/plants"): Request {
   return new Request(`http://localhost${path}`);
 }
 
-function response(status: number, body = String(status)): Response {
-  return new Response(body, { status });
+function response(
+  status: number,
+  body = String(status),
+  headers?: HeadersInit,
+): Response {
+  return new Response(body, { status, headers });
 }
 
 function cacheStorage(cached?: Response) {
@@ -103,6 +109,29 @@ describe("authentication service-worker policy", () => {
     },
   );
 
+  it.each(["open", "put"] as const)(
+    "returns a fresh API response without consulting stale data when cache.%s fails",
+    async (operation) => {
+      const stale = response(200, "stale");
+      const storage = cacheStorage(stale);
+      if (operation === "open") {
+        storage.open.mockRejectedValue(new Error("cache unavailable"));
+      } else {
+        storage.cache.put.mockRejectedValue(new Error("cache unavailable"));
+      }
+
+      const result = await protectedNetworkFirst(
+        request(),
+        vi.fn().mockResolvedValue(response(200, "fresh")),
+        storage,
+        "flowl-api-v1",
+      );
+
+      expect(await result.text()).toBe("fresh");
+      expect(storage.match).not.toHaveBeenCalled();
+    },
+  );
+
   it("uses a stale API response only after a rejected request", async () => {
     const stale = response(200, "stale");
     const storage = cacheStorage(stale);
@@ -117,13 +146,37 @@ describe("authentication service-worker policy", () => {
     expect(storage.cache.put).not.toHaveBeenCalled();
   });
 
-  it("caches a fresh thumbnail in auth mode", async () => {
+  it("does not cache a fresh HTML thumbnail or consult stale data", async () => {
+    const storage = cacheStorage(response(200, "stale image"));
+    const result = await protectedNetworkFirst(
+      request("/uploads/fern_200.jpg"),
+      vi
+        .fn()
+        .mockResolvedValue(
+          response(200, "login document", { "Content-Type": "text/html" }),
+        ),
+      storage,
+      "flowl-photo-v1",
+      shouldCacheProtectedThumbnailResponse,
+    );
+
+    expect(await result.text()).toBe("login document");
+    expect(storage.match).not.toHaveBeenCalled();
+    expect(storage.cache.put).not.toHaveBeenCalled();
+  });
+
+  it("caches a fresh JPEG thumbnail in auth mode", async () => {
     const storage = cacheStorage();
     const result = await protectedNetworkFirst(
       request("/uploads/fern_200.jpg"),
-      vi.fn().mockResolvedValue(response(200, "image")),
+      vi.fn().mockResolvedValue(
+        response(200, "image", {
+          "Content-Type": "IMAGE/JPEG; charset=binary",
+        }),
+      ),
       storage,
       "flowl-photo-v1",
+      shouldCacheProtectedThumbnailResponse,
     );
 
     expect(await result.text()).toBe("image");
@@ -166,6 +219,120 @@ describe("authentication service-worker policy", () => {
 
     expect(await result.text()).toBe("stale image");
     expect(storage.cache.put).not.toHaveBeenCalled();
+  });
+
+  it("establishes disabled mode from fresh config after a worker restart", async () => {
+    const firstWorker = createAuthModeController();
+    await expect(
+      firstWorker.policyMode(
+        vi.fn().mockResolvedValue(
+          response(200, JSON.stringify({ enabled: false }), {
+            "Content-Type": "application/json",
+          }),
+        ),
+      ),
+    ).resolves.toBe("disabled");
+
+    const restartedWorker = createAuthModeController();
+    const fetchConfig = vi.fn().mockResolvedValue(
+      response(200, JSON.stringify({ enabled: false }), {
+        "Content-Type": "application/json",
+      }),
+    );
+    await expect(restartedWorker.policyMode(fetchConfig)).resolves.toBe(
+      "disabled",
+    );
+    expect(fetchConfig).toHaveBeenCalledOnce();
+  });
+
+  it("moves an established disabled worker to protected mode after enabled config", async () => {
+    const worker = createAuthModeController();
+    const fetchConfig = vi
+      .fn()
+      .mockResolvedValueOnce(
+        response(200, JSON.stringify({ enabled: false }), {
+          "Content-Type": "application/json",
+        }),
+      )
+      .mockResolvedValueOnce(
+        response(200, JSON.stringify({ enabled: true }), {
+          "Content-Type": "application/json",
+        }),
+      );
+
+    await expect(worker.policyMode(fetchConfig)).resolves.toBe("disabled");
+    await expect(worker.policyMode(fetchConfig)).resolves.toBe("enabled");
+    await expect(
+      worker.policyMode(vi.fn().mockRejectedValue(new TypeError("offline"))),
+    ).resolves.toBe("enabled");
+    expect(fetchConfig).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps established disabled mode available when config revalidation is offline", async () => {
+    const worker = createAuthModeController();
+    await expect(
+      worker.policyMode(
+        vi.fn().mockResolvedValue(
+          response(200, JSON.stringify({ enabled: false }), {
+            "Content-Type": "application/json",
+          }),
+        ),
+      ),
+    ).resolves.toBe("disabled");
+
+    await expect(
+      worker.policyMode(vi.fn().mockRejectedValue(new TypeError("offline"))),
+    ).resolves.toBe("disabled");
+  });
+
+  it("fails closed and retries until disabled mode is freshly confirmed", async () => {
+    const worker = createAuthModeController();
+    worker.updateFromClient(false);
+    const fetchConfig = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("offline"))
+      .mockResolvedValueOnce(
+        response(200, JSON.stringify({ enabled: false }), {
+          "Content-Type": "application/json",
+        }),
+      );
+
+    await expect(worker.policyMode(fetchConfig)).resolves.toBe("enabled");
+    await expect(worker.policyMode(fetchConfig)).resolves.toBe("disabled");
+    expect(fetchConfig).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not accept a redirected config response as authoritative", async () => {
+    const worker = createAuthModeController();
+    const redirected = Object.defineProperty(
+      response(200, JSON.stringify({ enabled: false }), {
+        "Content-Type": "application/json",
+      }),
+      "redirected",
+      { value: true },
+    );
+
+    await expect(
+      worker.policyMode(vi.fn().mockResolvedValue(redirected)),
+    ).resolves.toBe("enabled");
+  });
+
+  it("does not let a stale disabled config response override enabled mode", async () => {
+    const worker = createAuthModeController();
+    let resolveConfig: (value: Response) => void;
+    const pendingConfig = new Promise<Response>((resolve) => {
+      resolveConfig = resolve;
+    });
+
+    const policyMode = worker.policyMode(() => pendingConfig);
+    worker.updateFromClient(true);
+    resolveConfig!(
+      response(200, JSON.stringify({ enabled: false }), {
+        "Content-Type": "application/json",
+      }),
+    );
+
+    await expect(policyMode).resolves.toBe("enabled");
   });
 
   it("always fetches protected navigation before a cached index and returns redirects", async () => {
