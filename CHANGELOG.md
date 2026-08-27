@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.8.0](https://github.com/simplyRoba/flowl/compare/v1.7.0...v1.8.0) (2026-08-27)
+
+
+### Features
+
+* add OIDC authentication option ([#336](https://github.com/simplyRoba/flowl/issues/336)) ([eeaa6ee](https://github.com/simplyRoba/flowl/commit/eeaa6ee406b3d7a480d2806c37dbd17e536569c4))
+
+
+### Bug Fixes
+
+* select jsonwebtoken crypto provider ([38b49a7](https://github.com/simplyRoba/flowl/commit/38b49a7e2f088ebbb845ab0867af286601f4f5e1))
+* use RSA-compatible random generator ([48b6307](https://github.com/simplyRoba/flowl/commit/48b63070282dd04ebaf50d17972aa4df17691fdc))
+
+
+### Dependencies
+
+* bump @testing-library/user-event from 14.6.5 to 14.6.6 in /ui ([315ff3f](https://github.com/simplyRoba/flowl/commit/315ff3f2a70f60ffeaa731e82cb6471ffc647144))
+* bump eslint from 10.8.1 to 10.9.0 in /ui in the eslint group ([11c99a8](https://github.com/simplyRoba/flowl/commit/11c99a808263e6e29c3edcd9867804cca23cba94))
+* bump globals from 17.9.0 to 17.11.0 in /ui ([de7a4fb](https://github.com/simplyRoba/flowl/commit/de7a4fb314322c6e62be03a1612f6daa00d18960))
+* bump jsonwebtoken from 9.3.1 to 11.0.0 ([03e63f5](https://github.com/simplyRoba/flowl/commit/03e63f57e8ff1f362a7d8d6168b8e5f1a6fce67f))
+* bump rand from 0.8.8 to 0.10.1 ([93bb8a7](https://github.com/simplyRoba/flowl/commit/93bb8a74e5bf6135972385a6bfd415c2f7d67c4f))
+* bump sha2 from 0.10.9 to 0.11.0 ([acb9be5](https://github.com/simplyRoba/flowl/commit/acb9be5da7cf8280b41121e6c9400fd5717c160d))
+* bump the svelte group in /ui with 2 updates ([2e90278](https://github.com/simplyRoba/flowl/commit/2e90278f26778a5b008785e34d334d6d03f5e837))
+* bump uuid from 1.24.1 to 1.25.0 ([63038d4](https://github.com/simplyRoba/flowl/commit/63038d4c594accc783c1a52d3eab383d2f12c217))
+* bump vitest from 4.1.10 to 4.1.11 in /ui ([b08b3f8](https://github.com/simplyRoba/flowl/commit/b08b3f8c67bd06edf94604a72c306d87e3616a8e))
+
 ## [1.7.0](https://github.com/simplyRoba/flowl/compare/v1.6.0...v1.7.0) (2026-08-23)
 
 
