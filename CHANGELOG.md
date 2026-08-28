@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.1](https://github.com/simplyRoba/flowl/compare/v1.8.0...v1.8.1) (2026-08-28)
+
+
+### Bug Fixes
+
+* avoid duplicate OIDC openid scope ([d3533f3](https://github.com/simplyRoba/flowl/commit/d3533f33fb7c6c178a824883cee9eb70404cebc8))
+
+
+### Dependencies
+
+* bump the eslint group in /ui with 2 updates ([b4fe8bb](https://github.com/simplyRoba/flowl/commit/b4fe8bb188839513c863a2df1f78f929f9e6aeb6))
+
 ## [1.8.0](https://github.com/simplyRoba/flowl/compare/v1.7.0...v1.8.0) (2026-08-27)
 
 
