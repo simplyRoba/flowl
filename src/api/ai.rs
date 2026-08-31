@@ -22,6 +22,38 @@ fn check_ai_rate_limit(state: &AppState) -> Result<(), ApiError> {
     Ok(())
 }
 
+fn validate_image_data_url(image: &str) -> Result<(), ApiError> {
+    let (media_type, encoded) = image
+        .strip_prefix("data:")
+        .and_then(|value| value.split_once(";base64,"))
+        .ok_or(ApiError::BadRequest("AI_INVALID_IMAGE"))?;
+    let bytes = STANDARD
+        .decode(encoded)
+        .map_err(|_| ApiError::BadRequest("AI_INVALID_IMAGE"))?;
+
+    let matches_declared_type = match media_type {
+        "image/jpeg" => bytes.starts_with(&[0xFF, 0xD8, 0xFF]),
+        "image/png" => bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+        "image/webp" => bytes.len() >= 12 && bytes[..4] == *b"RIFF" && bytes[8..12] == *b"WEBP",
+        _ => false,
+    };
+    if !matches_declared_type {
+        return Err(ApiError::BadRequest("AI_INVALID_IMAGE"));
+    }
+
+    Ok(())
+}
+
+fn validate_history_images(history: &[ChatMessage]) -> Result<(), ApiError> {
+    for message in history {
+        if let Some(image) = &message.image {
+            validate_image_data_url(image)?;
+        }
+    }
+
+    Ok(())
+}
+
 #[derive(Serialize)]
 pub struct AiStatus {
     pub enabled: bool,
@@ -175,37 +207,35 @@ pub async fn chat(
         .ai_provider
         .as_ref()
         .ok_or(ApiError::ServiceUnavailable("AI_NOT_CONFIGURED"))?;
+    validate_history_images(&body.history)?;
 
     let context = prompts::build_plant_context(&state.pool, body.plant_id).await?;
     let locale = get_locale(&state.pool).await;
     let system_prompt = prompts::build_chat_system_prompt(&context, &locale);
 
-    let image_bytes = body
-        .image
-        .as_ref()
-        .map(|b64| STANDARD.decode(b64))
-        .transpose()
-        .map_err(|_| ApiError::BadRequest("AI_INVALID_IMAGE"))?;
-
-    let image_ref = image_bytes.as_deref();
+    if let Some(image) = &body.image {
+        validate_image_data_url(image)?;
+    }
 
     // Build full message list: history + current message
     let mut messages = body.history;
     messages.push(ChatMessage {
         role: "user".to_string(),
         content: body.message,
-        image: None, // Current image is passed separately as raw bytes
+        image: body.image,
     });
 
     debug!(
         plant_id = body.plant_id,
-        has_image = image_ref.is_some(),
+        has_image = messages
+            .last()
+            .is_some_and(|message| message.image.is_some()),
         message_count = messages.len(),
         "AI chat request"
     );
 
     let stream = provider
-        .chat(&system_prompt, &messages, image_ref, &locale)
+        .chat(&system_prompt, &messages, None, &locale)
         .await
         .map_err(|e| {
             warn!(error = %e, "AI chat failed");

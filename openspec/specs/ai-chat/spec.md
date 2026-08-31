@@ -6,7 +6,7 @@ AI chat capability: streaming chat endpoint, plant context assembly, system prom
 
 ### Requirement: Chat endpoint
 
-The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `plant_id` (integer, required), `message` (string, required), `image` (base64-encoded string, optional), and `history` (array of `{ role, content }` objects, optional). The `history` objects SHALL NOT include image data. The endpoint SHALL return an SSE stream (`text/event-stream`). A `DefaultBodyLimit` of 30 MB SHALL be applied to the route.
+The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `plant_id` (integer, required), `message` (string, required), `image` (optional), and `history` (array of `{ role, content, image? }` objects, optional). Current and history `image` values SHALL be base64 data URLs with media type `image/jpeg`, `image/png`, or `image/webp`. The declared media type SHALL match the encoded image bytes. The endpoint SHALL validate images before forwarding them to the AI provider. The endpoint SHALL return an SSE stream (`text/event-stream`). A `DefaultBodyLimit` of 30 MB SHALL be applied to the route.
 
 #### Scenario: Successful chat request without image
 
@@ -17,8 +17,8 @@ The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `p
 
 #### Scenario: Chat request with image
 
-- **WHEN** a valid JSON body includes an `image` field containing a base64-encoded JPEG/PNG/WebP string
-- **THEN** the image SHALL be decoded and sent to the AI provider alongside the text message
+- **WHEN** a valid JSON body includes an `image` field containing a JPEG, PNG, or WebP base64 data URL
+- **THEN** the image SHALL be sent to the AI provider alongside the text message with its declared media type preserved
 - **AND** the response SHALL stream as normal
 
 #### Scenario: Chat request with conversation history
@@ -26,7 +26,18 @@ The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `p
 - **WHEN** a valid JSON body includes a `history` array of prior messages
 - **THEN** all history messages SHALL be included in the AI request as prior conversation turns
 - **AND** the current `message` SHALL be appended as the latest user turn
-- **AND** image data SHALL NOT be included in history entries
+
+#### Scenario: Conversation history includes an image
+
+- **WHEN** a history entry includes a valid JPEG, PNG, or WebP base64 data URL in `image`
+- **THEN** that image SHALL be included with the corresponding prior message sent to the AI provider
+- **AND** its declared media type SHALL be preserved
+
+#### Scenario: Conversation history includes an invalid image
+
+- **WHEN** a history entry includes an unsupported media type or invalid base64 data URL in `image`
+- **THEN** the endpoint SHALL return HTTP 400 with error code `AI_INVALID_IMAGE`
+- **AND** no request SHALL be sent to the AI provider
 
 #### Scenario: AI provider not configured
 

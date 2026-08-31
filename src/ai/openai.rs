@@ -260,13 +260,13 @@ fn build_chat_messages(
 
     // Add history messages
     for msg in messages {
-        if let Some(ref img_b64) = msg.image {
+        if let Some(ref image_data_url) = msg.image {
             // Message with image: use content array
             api_messages.push(json!({
                 "role": msg.role,
                 "content": [
                     { "type": "text", "text": msg.content },
-                    { "type": "image_url", "image_url": { "url": format!("data:image/jpeg;base64,{img_b64}") } }
+                    { "type": "image_url", "image_url": { "url": image_data_url } }
                 ]
             }));
         } else {
@@ -609,13 +609,16 @@ mod tests {
     #[test]
     fn chat_messages_prefix_stable_with_image_in_history() {
         let system = "You are a plant care assistant.";
-        let img_b64 = STANDARD.encode(b"fake-image");
+        let image_data_url = format!(
+            "data:image/png;base64,{}",
+            STANDARD.encode([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+        );
 
         // Turn 1: user sends a message with an image
         let turn1_messages = vec![ChatMessage {
             role: "user".to_string(),
             content: "What is this spot?".to_string(),
-            image: Some(img_b64.clone()),
+            image: Some(image_data_url.clone()),
         }];
         let turn1 = build_chat_messages(system, &turn1_messages, None);
 
@@ -624,7 +627,7 @@ mod tests {
             ChatMessage {
                 role: "user".to_string(),
                 content: "What is this spot?".to_string(),
-                image: Some(img_b64),
+                image: Some(image_data_url.clone()),
             },
             ChatMessage {
                 role: "assistant".to_string(),
@@ -638,6 +641,11 @@ mod tests {
             },
         ];
         let turn2 = build_chat_messages(system, &turn2_messages, None);
+
+        assert_eq!(
+            turn1[1]["content"][1]["image_url"]["url"], image_data_url,
+            "History image media type and data must be preserved"
+        );
 
         let turn1_json = serde_json::to_string(&turn1).unwrap();
         let turn2_prefix_json = serde_json::to_string(&turn2[..turn1.len()]).unwrap();

@@ -100,7 +100,11 @@
   }
 
   function getHistory(): ChatMessage[] {
-    const hist = messages.map((m) => ({ role: m.role, content: m.content }));
+    const hist = messages.map(({ role, content, image }) => ({
+      role,
+      content,
+      ...(image ? { image } : {}),
+    }));
     if (hist.length > MAX_HISTORY) {
       return hist.slice(hist.length - MAX_HISTORY);
     }
@@ -177,10 +181,9 @@
     noteSavedMessage = "";
     noteError = false;
 
-    let imageBase64: string | undefined;
     let imageDataUrl: string | undefined;
     if (photo) {
-      imageBase64 = await fileToBase64(photo);
+      const imageBase64 = await fileToBase64(photo);
       imageDataUrl = `data:${photo.type};base64,${imageBase64}`;
     }
 
@@ -205,7 +208,7 @@
         userMsg,
         historyWithoutCurrent,
         controller.signal,
-        imageBase64,
+        imageDataUrl,
       )) {
         messages[messages.length - 1].content += delta;
         scrollToBottom();

@@ -11,6 +11,7 @@ import {
   updateCareEvent,
   exportData,
   importData,
+  chatPlant,
 } from "./api";
 
 vi.mock("./stores/network", () => ({
@@ -57,6 +58,37 @@ describe("request helper (via public API functions)", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: "Fern" }),
     });
+  });
+
+  it("preserves images and media types in chat history", async () => {
+    const reader = {
+      read: vi.fn().mockResolvedValue({ done: true, value: undefined }),
+    };
+    const fn = mockFetch({
+      body: {
+        getReader: () => reader,
+      } as unknown as NonNullable<Response["body"]>,
+    });
+    const image = "data:image/webp;base64,aGlzdG9yeS1pbWFnZQ==";
+
+    await chatPlant(
+      1,
+      "What about now?",
+      [
+        { role: "user", content: "What is this?", image },
+        { role: "assistant", content: "It looks stressed." },
+      ],
+      undefined,
+      image,
+    ).next();
+
+    const request = fn.mock.calls[0][1] as RequestInit;
+    const body = JSON.parse(request.body as string);
+    expect(body.image).toBe(image);
+    expect(body.history).toEqual([
+      { role: "user", content: "What is this?", image },
+      { role: "assistant", content: "It looks stressed." },
+    ]);
   });
 
   it("throws ApiError on non-ok response", async () => {

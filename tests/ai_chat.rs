@@ -197,18 +197,72 @@ async fn chat_streams_with_history() {
 }
 
 #[tokio::test]
-async fn chat_streams_with_base64_image() {
+async fn chat_streams_with_image_in_history() {
     let (app, pool, _dir) = test_app_with_provider(Arc::new(MockChatProvider)).await;
     let plant_id = insert_test_plant(&pool).await;
-
-    // A small valid base64 string
-    let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, b"fake-img");
+    let image = base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
+    );
 
     let request = common::json_request(
         "POST",
         "/api/ai/chat",
         Some(&format!(
-            r#"{{"plant_id":{plant_id},"message":"What is this?","image":"{b64}"}}"#
+            r#"{{"plant_id":{plant_id},"message":"And now?","history":[{{"role":"user","content":"What is this?","image":"data:image/png;base64,{image}"}},{{"role":"assistant","content":"It looks stressed."}}]}}"#
+        )),
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn chat_rejects_invalid_history_image() {
+    let (app, pool, _dir) = test_app_with_provider(Arc::new(FailingChatProvider)).await;
+    let plant_id = insert_test_plant(&pool).await;
+
+    let png_as_jpeg = format!(
+        "data:image/jpeg;base64,{}",
+        base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
+        )
+    );
+    for image in [
+        "data:image/gif;base64,R0lGODlh".to_string(),
+        "data:image/png;base64,not-valid-base64!".to_string(),
+        png_as_jpeg,
+    ] {
+        let request = common::json_request(
+            "POST",
+            "/api/ai/chat",
+            Some(&format!(
+                r#"{{"plant_id":{plant_id},"message":"And now?","history":[{{"role":"user","content":"What is this?","image":"{image}"}}]}}"#
+            )),
+        );
+
+        let response = app.clone().oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let body = common::body_json(response).await;
+        assert_eq!(body["code"], "AI_INVALID_IMAGE");
+    }
+}
+
+#[tokio::test]
+async fn chat_streams_with_image_data_url() {
+    let (app, pool, _dir) = test_app_with_provider(Arc::new(MockChatProvider)).await;
+    let plant_id = insert_test_plant(&pool).await;
+    let image = base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        [0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50],
+    );
+
+    let request = common::json_request(
+        "POST",
+        "/api/ai/chat",
+        Some(&format!(
+            r#"{{"plant_id":{plant_id},"message":"What is this?","image":"data:image/webp;base64,{image}"}}"#
         )),
     );
 
@@ -229,7 +283,7 @@ async fn chat_returns_400_for_invalid_base64_image() {
         "POST",
         "/api/ai/chat",
         Some(&format!(
-            r#"{{"plant_id":{plant_id},"message":"What?","image":"!!!not-base64!!!"}}"#
+            r#"{{"plant_id":{plant_id},"message":"What?","image":"data:image/png;base64,!!!not-base64!!!"}}"#
         )),
     );
 

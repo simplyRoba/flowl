@@ -475,7 +475,13 @@ export async function* chatPlant(
   signal?: AbortSignal,
   image?: string,
 ): AsyncGenerator<string> {
-  const historyClean = history.map(({ role, content }) => ({ role, content }));
+  const historyClean = history.map(
+    ({ role, content, image: historyImage }) => ({
+      role,
+      content,
+      ...(historyImage ? { image: historyImage } : {}),
+    }),
+  );
   const body: Record<string, unknown> = {
     plant_id: plantId,
     message,
