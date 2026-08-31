@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.8.2](https://github.com/simplyRoba/flowl/compare/v1.8.1...v1.8.2) (2026-08-31)
+
+
+### Bug Fixes
+
+* **auth:** gate login action on config ([537c8f4](https://github.com/simplyRoba/flowl/commit/537c8f4833705f06acc3164e8896d49a9a4d2628))
+* enforce AI identification photo limit ([26328b2](https://github.com/simplyRoba/flowl/commit/26328b27fc71bca3fad17d4594731474bfa9e56e))
+* preserve images in AI chat history ([17eaada](https://github.com/simplyRoba/flowl/commit/17eaada4a58ebff729362cbe8d725d0d17f3e331))
+* terminate AI chat streams on error ([1a5067e](https://github.com/simplyRoba/flowl/commit/1a5067ea48322aef621f7a9e74df373cf729e2d3))
+* validate AI identification results ([acb3f3d](https://github.com/simplyRoba/flowl/commit/acb3f3d0688f7fd5ce4dd6478b395cd7a6148f55))
+
+
+### Documentation
+
+* **api:** clarify JSON error contract ([9b478d8](https://github.com/simplyRoba/flowl/commit/9b478d8a7b98aad989d71f830f1afe6009b842cf))
+
 ## [1.8.1](https://github.com/simplyRoba/flowl/compare/v1.8.0...v1.8.1) (2026-08-28)
 
 
