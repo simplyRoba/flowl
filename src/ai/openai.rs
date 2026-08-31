@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+use std::io;
 use std::time::Duration;
 
 use async_trait::async_trait;
@@ -21,6 +23,40 @@ pub struct OpenAiProvider {
     api_key: String,
     base_url: String,
     model: String,
+}
+
+fn validate_identify_response(
+    mut response: IdentifyResponse,
+) -> Result<IdentifyResponse, io::Error> {
+    if response.rejected == Some(true) {
+        let has_reason = response
+            .rejected_reason
+            .as_deref()
+            .is_some_and(|reason| !reason.trim().is_empty());
+        if !response.suggestions.is_empty() || !has_reason {
+            return Err(io::Error::other(
+                "Rejected identification must have no suggestions and a reason",
+            ));
+        }
+        return Ok(response);
+    }
+
+    if !(1..=3).contains(&response.suggestions.len()) || response.rejected_reason.is_some() {
+        return Err(io::Error::other(
+            "Accepted identification must have one to three suggestions and no rejection reason",
+        ));
+    }
+
+    response
+        .suggestions
+        .sort_by(|left, right| match (left.confidence, right.confidence) {
+            (Some(left), Some(right)) => right.total_cmp(&left),
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => Ordering::Equal,
+        });
+
+    Ok(response)
 }
 
 impl OpenAiProvider {
@@ -114,7 +150,8 @@ impl AiProvider for OpenAiProvider {
                         "properties": {
                             "suggestions": {
                                 "type": "array",
-                                "items": identify_item_schema
+                                "items": identify_item_schema,
+                                "maxItems": 3
                             },
                             "rejected": { "type": "boolean" },
                             "rejected_reason": { "type": ["string", "null"] }
@@ -144,7 +181,7 @@ impl AiProvider for OpenAiProvider {
         debug!(raw_content = %content_str, "AI raw response content");
 
         let result: IdentifyResponse = serde_json::from_str(content_str)?;
-        Ok(result)
+        Ok(validate_identify_response(result)?)
     }
 
     async fn chat(
@@ -352,6 +389,96 @@ fn parse_sse_line(line: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ai::types::IdentifyResult;
+
+    fn suggestion(name: &str, confidence: Option<f64>) -> IdentifyResult {
+        IdentifyResult {
+            common_name: name.to_string(),
+            scientific_name: format!("{name} scientific"),
+            confidence,
+            summary: None,
+            care_profile: None,
+        }
+    }
+
+    #[test]
+    fn validate_identify_response_sorts_accepted_suggestions() {
+        let response = IdentifyResponse {
+            suggestions: vec![
+                suggestion("Unknown", None),
+                suggestion("Medium", Some(0.6)),
+                suggestion("High", Some(0.9)),
+            ],
+            rejected: Some(false),
+            rejected_reason: None,
+        };
+
+        let validated = validate_identify_response(response).unwrap();
+        let names: Vec<&str> = validated
+            .suggestions
+            .iter()
+            .map(|item| item.common_name.as_str())
+            .collect();
+        assert_eq!(names, ["High", "Medium", "Unknown"]);
+    }
+
+    #[test]
+    fn validate_identify_response_rejects_invalid_accepted_results() {
+        for response in [
+            IdentifyResponse {
+                suggestions: vec![],
+                rejected: Some(false),
+                rejected_reason: None,
+            },
+            IdentifyResponse {
+                suggestions: vec![
+                    suggestion("One", Some(0.9)),
+                    suggestion("Two", Some(0.8)),
+                    suggestion("Three", Some(0.7)),
+                    suggestion("Four", Some(0.6)),
+                ],
+                rejected: Some(false),
+                rejected_reason: None,
+            },
+            IdentifyResponse {
+                suggestions: vec![suggestion("One", Some(0.9))],
+                rejected: Some(false),
+                rejected_reason: Some("unexpected".to_string()),
+            },
+        ] {
+            assert!(validate_identify_response(response).is_err());
+        }
+    }
+
+    #[test]
+    fn validate_identify_response_enforces_rejection_invariants() {
+        let valid = IdentifyResponse {
+            suggestions: vec![],
+            rejected: Some(true),
+            rejected_reason: Some("Not a plant".to_string()),
+        };
+        assert!(validate_identify_response(valid).is_ok());
+
+        for response in [
+            IdentifyResponse {
+                suggestions: vec![suggestion("Unexpected", Some(0.9))],
+                rejected: Some(true),
+                rejected_reason: Some("Not a plant".to_string()),
+            },
+            IdentifyResponse {
+                suggestions: vec![],
+                rejected: Some(true),
+                rejected_reason: None,
+            },
+            IdentifyResponse {
+                suggestions: vec![],
+                rejected: Some(true),
+                rejected_reason: Some("   ".to_string()),
+            },
+        ] {
+            assert!(validate_identify_response(response).is_err());
+        }
+    }
 
     #[test]
     fn completions_url_default_base() {
@@ -421,7 +548,8 @@ mod tests {
                         "properties": {
                             "suggestions": {
                                 "type": "array",
-                                "items": identify_item_schema
+                                "items": identify_item_schema,
+                                "maxItems": 3
                             },
                             "rejected": { "type": "boolean" },
                             "rejected_reason": { "type": ["string", "null"] }

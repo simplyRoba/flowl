@@ -131,6 +131,21 @@ The JSON schema sent to the AI SHALL include top-level `rejected` (boolean, requ
 - **WHEN** the AI response cannot be deserialized into `IdentifyResponse`
 - **THEN** the method returns an error
 
+#### Scenario: AI returns inconsistent accepted results
+
+- **WHEN** an accepted response contains zero or more than three suggestions or a rejection reason
+- **THEN** the method returns an error
+
+#### Scenario: AI returns inconsistent rejected results
+
+- **WHEN** a rejected response contains suggestions or lacks a non-empty rejection reason
+- **THEN** the method returns an error
+
+#### Scenario: Accepted suggestions are ordered by confidence
+
+- **WHEN** an accepted response contains suggestions in a different order
+- **THEN** the method returns them in descending confidence order with missing confidence values last
+
 #### Scenario: IdentifyResult is serializable
 
 - **WHEN** an `IdentifyResult` is serialized to JSON
