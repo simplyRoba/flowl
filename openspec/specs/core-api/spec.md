@@ -20,7 +20,7 @@ The application SHALL mount all REST API routes under the `/api` prefix on the A
 
 ### Requirement: JSON Error Responses
 
-The API SHALL return errors as JSON with a consistent structure containing a `code` field, a `message` field, and an appropriate HTTP status code. The `code` field SHALL be a stable, unique `SCREAMING_SNAKE_CASE` string identifying the error. The `message` field SHALL contain a human-readable English description derived from the code.
+Errors returned by Flowl application code through `ApiError`, including errors from handlers, middleware, and custom extractors, SHALL use JSON with a consistent structure containing a `code` field, a `message` field, and an appropriate HTTP status code. The `code` field SHALL be a stable, unique `SCREAMING_SNAKE_CASE` string identifying the error. The `message` field SHALL contain a human-readable English description derived from the code. Framework-generated rejections that bypass `ApiError`, including malformed path or query extraction and unmatched routes, are outside this requirement.
 
 #### Scenario: Validation error
 
