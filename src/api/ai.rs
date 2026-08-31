@@ -242,30 +242,37 @@ pub async fn chat(
             ApiError::InternalError("AI_PROVIDER_FAILED")
         })?;
 
-    let sse_stream = stream.map(|result| {
-        let event = match result {
-            Ok(delta) => Event::default().data(serde_json::json!({"delta": delta}).to_string()),
-            Err(err) => {
-                warn!("AI stream error: {err}");
-                let code = "AI_STREAM_ERROR";
-                Event::default().data(
-                    serde_json::json!({
-                        "error": { "code": code, "message": default_message(code) }
-                    })
-                    .to_string(),
-                )
+    let (sender, receiver) = tokio::sync::mpsc::channel(32);
+    tokio::spawn(async move {
+        let mut stream = stream;
+        while let Some(result) = stream.next().await {
+            let event = match result {
+                Ok(delta) => Event::default().data(serde_json::json!({"delta": delta}).to_string()),
+                Err(err) => {
+                    warn!("AI stream error: {err}");
+                    let code = "AI_STREAM_ERROR";
+                    let event = Event::default().data(
+                        serde_json::json!({
+                            "error": { "code": code, "message": default_message(code) }
+                        })
+                        .to_string(),
+                    );
+                    let _ = sender.send(Ok(event)).await;
+                    return;
+                }
+            };
+            if sender.send(Ok(event)).await.is_err() {
+                return;
             }
-        };
-        Ok(event)
+        }
+
+        let done = Event::default().data(serde_json::json!({"done": true}).to_string());
+        let _ = sender.send(Ok(done)).await;
     });
 
-    let done_event = tokio_stream::once(Ok(
-        Event::default().data(serde_json::json!({"done": true}).to_string())
-    ));
-
-    let full_stream = sse_stream.chain(done_event);
-
-    Ok(Sse::new(full_stream))
+    Ok(Sse::new(tokio_stream::wrappers::ReceiverStream::new(
+        receiver,
+    )))
 }
 
 /// # Errors

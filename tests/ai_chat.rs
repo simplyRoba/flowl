@@ -79,6 +79,44 @@ impl AiProvider for FailingChatProvider {
     }
 }
 
+struct StreamingErrorProvider;
+
+#[async_trait]
+impl AiProvider for StreamingErrorProvider {
+    async fn identify(
+        &self,
+        _images: &[&[u8]],
+        _locale: &str,
+    ) -> Result<IdentifyResponse, Box<dyn std::error::Error + Send + Sync>> {
+        unimplemented!()
+    }
+
+    async fn chat(
+        &self,
+        _system_prompt: &str,
+        _messages: &[ChatMessage],
+        _image: Option<&[u8]>,
+        _locale: &str,
+    ) -> Result<ChatResponseStream, Box<dyn std::error::Error + Send + Sync>> {
+        let (tx, rx) = tokio::sync::mpsc::channel(32);
+        tokio::spawn(async move {
+            let _ = tx.send(Ok("partial response".to_string())).await;
+            let _ = tx.send(Err("stream failed".to_string())).await;
+            let _ = tx.send(Ok("must not be sent".to_string())).await;
+        });
+        Ok(tokio_stream::wrappers::ReceiverStream::new(rx))
+    }
+
+    async fn summarize(
+        &self,
+        _system_prompt: &str,
+        _messages: &[ChatMessage],
+        _locale: &str,
+    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        unimplemented!()
+    }
+}
+
 async fn test_app_with_provider(
     provider: Arc<dyn AiProvider>,
 ) -> (Router, sqlx::SqlitePool, tempfile::TempDir) {
@@ -173,6 +211,27 @@ async fn chat_streams_sse_events() {
     assert!(body.contains(r#""delta":"Hello "#));
     assert!(body.contains(r#""delta":"plant friend!"#));
     assert!(body.contains(r#""done":true"#));
+}
+
+#[tokio::test]
+async fn chat_stream_error_is_terminal() {
+    let (app, pool, _dir) = test_app_with_provider(Arc::new(StreamingErrorProvider)).await;
+    let plant_id = insert_test_plant(&pool).await;
+
+    let request = common::json_request(
+        "POST",
+        "/api/ai/chat",
+        Some(&format!(r#"{{"plant_id":{plant_id},"message":"help"}}"#)),
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = String::from_utf8(body_bytes(response).await).unwrap();
+    assert!(body.contains(r#""delta":"partial response""#));
+    assert!(body.contains(r#""code":"AI_STREAM_ERROR""#));
+    assert!(!body.contains(r#""done":true"#));
+    assert!(!body.contains("must not be sent"));
 }
 
 #[tokio::test]
