@@ -6,12 +6,8 @@
   import { fetchAuthConfig, safeLocalTarget, type AuthConfig } from "$lib/auth";
   import { translations } from "$lib/stores/locale";
 
-  let config: AuthConfig = $state({
-    enabled: true,
-    provider_name: "OpenID Connect",
-  });
+  let config: AuthConfig | null = $state(null);
   let configUnavailable = $state(false);
-  let loaded = $state(false);
 
   const returnTo = $derived(
     safeLocalTarget(page.url.searchParams.get("return_to")),
@@ -41,8 +37,6 @@
         if (!config.enabled) await goto(resolve("/"), { replaceState: true });
       } catch {
         configUnavailable = true;
-      } finally {
-        loaded = true;
       }
     })();
   });
@@ -51,7 +45,7 @@
 <svelte:head><title>flowl — {$translations.auth.title}</title></svelte:head>
 
 <div class="login-page">
-  <section class="login-card" aria-busy={!loaded}>
+  <section class="login-card" aria-busy={config === null && !configUnavailable}>
     <div class="brand-area">
       <div class="brand"><Logo size={38} /><span>flowl</span></div>
       <h1>{$translations.auth.title}</h1>
@@ -59,15 +53,23 @@
     </div>
     <div class="action-area">
       <div class="action-panel">
-        {#if status}<p class="status" role="status">{status}</p>{/if}
-        <!-- Backend-only auth endpoint; its target is derived from resolve('/login'). -->
-        <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-        <a class="btn btn-primary provider-action" href={loginHref}>
-          {$translations.auth.continueWith.replace(
-            "{provider}",
-            config.provider_name ?? "OpenID Connect",
-          )}
-        </a>
+        {#if configUnavailable}
+          <p class="status" role="status">
+            {$translations.auth.providerUnavailable}
+          </p>
+        {:else if config === null}
+          <p class="status" role="status">{$translations.common.loading}</p>
+        {:else if config.enabled}
+          {#if status}<p class="status" role="status">{status}</p>{/if}
+          <!-- Backend-only auth endpoint; its target is derived from resolve('/login'). -->
+          <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+          <a class="btn btn-primary provider-action" href={loginHref}>
+            {$translations.auth.continueWith.replace(
+              "{provider}",
+              config.provider_name,
+            )}
+          </a>
+        {/if}
       </div>
     </div>
   </section>

@@ -43,6 +43,19 @@ afterEach(() => {
 });
 
 describe("login page", () => {
+  it("shows a branded loading state without a provider action while config is pending", () => {
+    fetchAuthConfig.mockReturnValue(new Promise(() => {}));
+
+    render(Page);
+
+    expect(
+      screen.getByRole("heading", { name: "Sign in to Flowl" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toBe("Loading...");
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(document.querySelector("[aria-busy='true']")).toBeTruthy();
+  });
+
   it("renders the configured provider in its single full-width action", async () => {
     render(Page);
 
@@ -133,5 +146,6 @@ describe("login page", () => {
         "The sign-in provider is temporarily unavailable.",
       ),
     ).toBeTruthy();
+    expect(screen.queryByRole("link")).toBeNull();
   });
 });

@@ -14,11 +14,23 @@ The frontend SHALL obtain authentication enablement and provider display name fr
 - **THEN** the frontend enables the login and logout experiences
 - **AND** displays the returned provider name as untrusted text
 
+#### Scenario: Authentication configuration is loading
+
+- **WHEN** the public auth-config request is pending
+- **THEN** the login page SHALL render the branded login card with a translated loading state
+- **AND** SHALL NOT render or enable an OIDC provider action
+
 #### Scenario: Authentication disabled
 
 - **WHEN** `/auth/config` returns `enabled: false`
 - **THEN** the frontend does not show authentication-only controls
 - **AND** normal Flowl behavior remains unchanged
+
+#### Scenario: Authentication configuration is unavailable
+
+- **WHEN** the public auth-config request fails
+- **THEN** the login page SHALL show a generic provider-unavailable state
+- **AND** SHALL NOT render or enable an OIDC provider action
 
 ### Requirement: Public login page
 
