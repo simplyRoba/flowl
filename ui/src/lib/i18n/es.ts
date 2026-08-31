@@ -446,6 +446,7 @@ export const es: Translations = {
     AI_PROVIDER_FAILED: "La solicitud al proveedor de IA falló",
     AI_STREAM_ERROR: "Respuesta de IA interrumpida",
     AI_INVALID_IMAGE: "Datos de imagen no válidos",
+    AI_TOO_MANY_IMAGES: "Se permiten como máximo tres imágenes",
     AI_HISTORY_EMPTY: "El historial de chat está vacío",
     AI_IDENTIFY_NOT_A_PLANT: "La foto no parece contener una planta",
     AI_RATE_LIMITED: "Demasiadas solicitudes de IA, por favor espera",

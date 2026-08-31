@@ -42,6 +42,18 @@ The endpoint SHALL reject requests that do not contain valid photo uploads.
 - **THEN** the response status is 422
 - **AND** the body contains `{"message": "..."}`
 
+#### Scenario: Too many photos
+
+- **WHEN** a POST request is made to `/api/ai/identify` with more than three files named `photos`
+- **THEN** the response status is 422
+- **AND** the body contains error code `AI_TOO_MANY_IMAGES`
+
+#### Scenario: Singular photo field is ignored
+
+- **WHEN** a POST request is made to `/api/ai/identify` with files only in a field named `photo`
+- **THEN** the response status is 422
+- **AND** the body contains error code `PHOTO_NO_FILE`
+
 ### Requirement: Identify endpoint returns 503 when AI is disabled
 
 The endpoint SHALL return HTTP 503 when the AI provider is not configured.

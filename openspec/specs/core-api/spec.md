@@ -103,7 +103,7 @@ The API SHALL define a fixed catalog of error codes. Each error code SHALL map t
 #### Scenario: AI errors
 
 - **WHEN** an AI operation fails
-- **THEN** the API uses one of: `AI_NOT_CONFIGURED` (503), `AI_PROVIDER_FAILED` (500), `AI_INVALID_IMAGE` (400), `AI_HISTORY_EMPTY` (422), `AI_RATE_LIMITED` (429), `AI_IDENTIFY_NOT_A_PLANT` (422), `AI_STREAM_ERROR` (500)
+- **THEN** the API uses one of: `AI_NOT_CONFIGURED` (503), `AI_PROVIDER_FAILED` (500), `AI_INVALID_IMAGE` (400), `AI_HISTORY_EMPTY` (422), `AI_RATE_LIMITED` (429), `AI_IDENTIFY_NOT_A_PLANT` (422), `AI_TOO_MANY_IMAGES` (422), `AI_STREAM_ERROR` (500)
 
 #### Scenario: MQTT errors
 

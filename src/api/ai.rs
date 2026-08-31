@@ -99,9 +99,11 @@ pub async fn identify_plant(
         .await
         .map_err(|_| ApiError::BadRequest("INVALID_REQUEST_BODY"))?
     {
-        let name = field.name().unwrap_or("").to_string();
-        if name != "photos" && name != "photo" {
+        if field.name() != Some("photos") {
             continue;
+        }
+        if photos.len() == 3 {
+            return Err(ApiError::Validation("AI_TOO_MANY_IMAGES"));
         }
 
         let content_type = field.content_type().unwrap_or("").to_string();

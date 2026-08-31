@@ -450,6 +450,7 @@ export const de: Translations = {
     AI_PROVIDER_FAILED: "KI-Anfrage fehlgeschlagen",
     AI_STREAM_ERROR: "KI-Antwort abgebrochen",
     AI_INVALID_IMAGE: "Ungültige Bilddaten",
+    AI_TOO_MANY_IMAGES: "Es sind maximal drei Bilder erlaubt",
     AI_HISTORY_EMPTY: "Chatverlauf ist leer",
     AI_IDENTIFY_NOT_A_PLANT: "Das Foto scheint keine Pflanze zu enthalten",
     AI_RATE_LIMITED: "Zu viele KI-Anfragen, bitte warten",

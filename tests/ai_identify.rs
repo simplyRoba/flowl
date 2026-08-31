@@ -288,6 +288,48 @@ async fn identify_returns_200_for_multiple_photos() {
 }
 
 #[tokio::test]
+async fn identify_rejects_more_than_three_photos() {
+    let (app, _dir) = test_app_mock().await;
+    let jpeg: &[u8] = &[0xFF, 0xD8, 0xFF];
+    let (content_type, body) = multipart_body(&[
+        ("photos", "image/jpeg", jpeg),
+        ("photos", "image/jpeg", jpeg),
+        ("photos", "image/jpeg", jpeg),
+        ("photos", "image/jpeg", jpeg),
+    ]);
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/ai/identify")
+        .header("content-type", content_type)
+        .body(Body::from(body))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let body = common::body_json(response).await;
+    assert_eq!(body["code"], "AI_TOO_MANY_IMAGES");
+}
+
+#[tokio::test]
+async fn identify_ignores_singular_photo_field() {
+    let (app, _dir) = test_app_mock().await;
+    let (content_type, body) = multipart_body(&[("photo", "image/jpeg", &[0xFF, 0xD8, 0xFF])]);
+
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/ai/identify")
+        .header("content-type", content_type)
+        .body(Body::from(body))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let body = common::body_json(response).await;
+    assert_eq!(body["code"], "PHOTO_NO_FILE");
+}
+
+#[tokio::test]
 async fn identify_returns_500_when_ai_provider_fails() {
     let (app, _dir) = test_app_failing().await;
 

@@ -440,6 +440,7 @@ const en = {
     AI_PROVIDER_FAILED: "AI provider request failed",
     AI_STREAM_ERROR: "AI response interrupted",
     AI_INVALID_IMAGE: "Invalid image data",
+    AI_TOO_MANY_IMAGES: "A maximum of three images is allowed",
     AI_HISTORY_EMPTY: "Chat history is empty",
     AI_IDENTIFY_NOT_A_PLANT: "The photo does not appear to contain a plant",
     AI_RATE_LIMITED: "Too many AI requests, please wait",
