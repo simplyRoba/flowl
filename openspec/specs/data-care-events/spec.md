@@ -221,7 +221,7 @@ The API SHALL return bounded, paginated care events across all plants via `GET /
 #### Scenario: Unknown cursor event
 
 - **WHEN** a GET request supplies a `before` ID that does not identify a care event
-- **THEN** the API responds with HTTP 422 and a JSON error message
+- **THEN** the API responds with HTTP 422 and error code `CARE_EVENT_INVALID_CURSOR`
 
 #### Scenario: Filter by single event type
 

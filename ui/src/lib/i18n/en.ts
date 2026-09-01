@@ -422,6 +422,7 @@ const en = {
     CARE_EVENT_NOTES_REQUIRED: "Notes are required",
     CARE_EVENT_OCCURRED_AT_REQUIRED: "Occurrence time is required",
     CARE_EVENT_INVALID_OCCURRED_AT: "Invalid occurrence time",
+    CARE_EVENT_INVALID_CURSOR: "Invalid care event cursor",
     LOCATION_NOT_FOUND: "Location not found",
     LOCATION_NAME_REQUIRED: "Location name is required",
     LOCATION_ALREADY_EXISTS: "A location with this name already exists",

@@ -358,7 +358,7 @@ pub async fn list_all_care_events(
             .fetch_optional(&pool)
             .await
             .map_err(db_error)?
-            .ok_or(ApiError::Validation("CARE_EVENT_NOT_FOUND"))?,
+            .ok_or(ApiError::Validation("CARE_EVENT_INVALID_CURSOR"))?,
         )
     } else {
         None

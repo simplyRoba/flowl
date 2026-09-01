@@ -1511,7 +1511,8 @@ async fn global_unknown_cursor_returns_validation_error() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     let json = body_json(response).await;
-    assert_eq!(json["message"], "Care event not found");
+    assert_eq!(json["code"], "CARE_EVENT_INVALID_CURSOR");
+    assert_eq!(json["message"], "Invalid care event cursor");
 }
 
 #[tokio::test]

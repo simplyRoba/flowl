@@ -432,6 +432,7 @@ export const de: Translations = {
     CARE_EVENT_NOTES_REQUIRED: "Notizen sind erforderlich",
     CARE_EVENT_OCCURRED_AT_REQUIRED: "Zeitpunkt ist erforderlich",
     CARE_EVENT_INVALID_OCCURRED_AT: "Ungültiger Zeitpunkt",
+    CARE_EVENT_INVALID_CURSOR: "Ungültiger Pflegeereignis-Cursor",
     LOCATION_NOT_FOUND: "Standort nicht gefunden",
     LOCATION_NAME_REQUIRED: "Standortname ist erforderlich",
     LOCATION_ALREADY_EXISTS: "Ein Standort mit diesem Namen existiert bereits",

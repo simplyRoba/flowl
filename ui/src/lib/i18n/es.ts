@@ -428,6 +428,7 @@ export const es: Translations = {
     CARE_EVENT_NOTES_REQUIRED: "Las notas son obligatorias",
     CARE_EVENT_OCCURRED_AT_REQUIRED: "La hora del evento es obligatoria",
     CARE_EVENT_INVALID_OCCURRED_AT: "Hora del evento no válida",
+    CARE_EVENT_INVALID_CURSOR: "Cursor de evento de cuidado no válido",
     LOCATION_NOT_FOUND: "Ubicación no encontrada",
     LOCATION_NAME_REQUIRED: "El nombre de la ubicación es obligatorio",
     LOCATION_ALREADY_EXISTS: "Ya existe una ubicación con este nombre",

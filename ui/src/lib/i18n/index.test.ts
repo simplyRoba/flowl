@@ -43,6 +43,7 @@ describe("care-event error translations", () => {
     expect(translations.errorCode.CARE_EVENT_NOTES_REQUIRED).toBeTruthy();
     expect(translations.errorCode.CARE_EVENT_OCCURRED_AT_REQUIRED).toBeTruthy();
     expect(translations.errorCode.CARE_EVENT_INVALID_OCCURRED_AT).toBeTruthy();
+    expect(translations.errorCode.CARE_EVENT_INVALID_CURSOR).toBeTruthy();
   });
 });
 
