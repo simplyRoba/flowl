@@ -17,21 +17,21 @@ The application SHALL allow operators to skip MQTT setup by setting `FLOWL_MQTT_
 
 ### Requirement: MQTT Client Connection
 
-The application SHALL connect an MQTT client to the broker specified by `FLOWL_MQTT_HOST` (default `localhost`) and `FLOWL_MQTT_PORT` (default `1883`) on startup when `FLOWL_MQTT_DISABLED` is not true. The connection function SHALL accept a shared `Arc<AtomicBool>` for live connection state and a separate `Arc<AtomicBool>` (`needs_republish`) that is set to `true` on every successful connection (ConnAck).
+The application SHALL connect to the broker specified by `FLOWL_MQTT_HOST` (default `localhost`) and `FLOWL_MQTT_PORT` (default `1883`) on startup when `FLOWL_MQTT_DISABLED` is not true, and SHALL maintain an accurate runtime connection status.
 
 #### Scenario: Successful connection
 
 - **WHEN** the application starts and the MQTT broker is reachable
 - **AND** `FLOWL_MQTT_DISABLED` is not `true`
 - **THEN** the MQTT client connects successfully
-- **AND** the shared `AtomicBool` is set to `true`
+- **AND** runtime status reports `connected`
 - **AND** a log message confirms the connection
 
 #### Scenario: Broker unreachable at startup
 
 - **WHEN** the application starts, the MQTT broker is not reachable, and `FLOWL_MQTT_DISABLED` is not `true`
 - **THEN** the HTTP server starts normally
-- **AND** the shared `AtomicBool` remains `false`
+- **AND** runtime status reports `disconnected`
 - **AND** the MQTT client retries connection in the background
 - **AND** a warning is logged
 
@@ -39,20 +39,20 @@ The application SHALL connect an MQTT client to the broker specified by `FLOWL_M
 
 - **WHEN** the application starts with `FLOWL_MQTT_DISABLED=true`
 - **THEN** no MQTT connection attempt is made
-- **AND** no `AtomicBool` is created
+- **AND** runtime status reports `disabled`
 - **AND** a log message notes that MQTT is disabled
 
 ### Requirement: MQTT Reconnection
 
-The MQTT client SHALL automatically reconnect when the connection to the broker is lost, provided MQTT is enabled (`FLOWL_MQTT_DISABLED` is not true). The shared `AtomicBool` SHALL reflect connection state transitions.
+The MQTT client SHALL automatically reconnect when the connection to the broker is lost, provided MQTT is enabled (`FLOWL_MQTT_DISABLED` is not true). Runtime connection status SHALL reflect connection state transitions.
 
 #### Scenario: Connection lost and recovered
 
 - **WHEN** the MQTT connection drops and `FLOWL_MQTT_DISABLED` is not `true`
-- **THEN** the shared `AtomicBool` is set to `false`
+- **THEN** runtime status changes to `disconnected`
 - **AND** the client automatically attempts to reconnect
 - **AND** a warning is logged on disconnect
-- **AND** the shared `AtomicBool` is set to `true` on successful reconnect
+- **AND** runtime status changes to `connected` on successful reconnect
 - **AND** an info message is logged on successful reconnect
 
 ### Requirement: MQTT Configuration
@@ -77,38 +77,6 @@ The MQTT client SHALL disconnect cleanly when the application shuts down, unless
 
 - **WHEN** the application receives a shutdown signal and `FLOWL_MQTT_DISABLED` is not `true`
 - **THEN** the MQTT client sends a disconnect packet to the broker
-
-### Requirement: MQTT Client Shared via AppState
-
-The MQTT `AsyncClient` SHALL be available in `AppState` as an optional field so API handlers can publish messages whenever MQTT is enabled.
-
-#### Scenario: MQTT client available
-
-- **WHEN** the MQTT client connects successfully and MQTT is enabled
-- **THEN** the `AsyncClient` is stored in `AppState`
-- **AND** API handlers can access it to publish messages
-
-#### Scenario: MQTT client unavailable
-
-- **WHEN** the MQTT client is not connected or MQTT is disabled
-- **THEN** `AppState` holds `None` for the MQTT client
-- **AND** API handlers skip MQTT publishing without error
-
-### Requirement: MQTT Configuration in AppState
-
-`AppState` SHALL include MQTT configuration fields (`mqtt_host`, `mqtt_port`, `mqtt_disabled`) and the shared connection status (`mqtt_connected: Option<Arc<AtomicBool>>`) so the status endpoint can report runtime state.
-
-#### Scenario: MQTT enabled
-
-- **WHEN** MQTT is enabled
-- **THEN** `AppState.mqtt_connected` holds `Some(Arc<AtomicBool>)`
-- **AND** `AppState.mqtt_host`, `mqtt_port`, and `mqtt_prefix` reflect the configured values
-
-#### Scenario: MQTT disabled
-
-- **WHEN** MQTT is disabled
-- **THEN** `AppState.mqtt_connected` holds `None`
-- **AND** `AppState.mqtt_disabled` is `true`
 
 ### Requirement: Home Assistant MQTT Auto-Discovery
 
