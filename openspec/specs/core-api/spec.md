@@ -78,7 +78,7 @@ The API SHALL define a fixed catalog of error codes. Each error code SHALL map t
 #### Scenario: Care event errors
 
 - **WHEN** a care event operation fails due to client input
-- **THEN** the API uses one of: `CARE_EVENT_NOT_FOUND` (404), `CARE_EVENT_TYPE_REQUIRED` (422), `CARE_EVENT_INVALID_TYPE` (422)
+- **THEN** the API uses one of: `CARE_EVENT_NOT_FOUND` (404), `CARE_EVENT_TYPE_REQUIRED` (422), `CARE_EVENT_INVALID_TYPE` (422), `CARE_EVENT_NOTES_REQUIRED` (422), `CARE_EVENT_OCCURRED_AT_REQUIRED` (422), `CARE_EVENT_INVALID_OCCURRED_AT` (422)
 
 #### Scenario: Location errors
 

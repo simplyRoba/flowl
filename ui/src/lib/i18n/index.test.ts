@@ -34,6 +34,18 @@ describe("watering group date ranges", () => {
   );
 });
 
+describe("care-event error translations", () => {
+  it.each([
+    ["English", en],
+    ["German", de],
+    ["Spanish", es],
+  ])("includes required care-event errors in %s", (_locale, translations) => {
+    expect(translations.errorCode.CARE_EVENT_NOTES_REQUIRED).toBeTruthy();
+    expect(translations.errorCode.CARE_EVENT_OCCURRED_AT_REQUIRED).toBeTruthy();
+    expect(translations.errorCode.CARE_EVENT_INVALID_OCCURRED_AT).toBeTruthy();
+  });
+});
+
 describe("plural", () => {
   it("returns the singular form for one", () => {
     expect(plural({ one: "{n} plant", other: "{n} plants" }, 1)).toBe(
