@@ -168,8 +168,17 @@ impl ImageStore {
     /// Returns `ImageError::InvalidContentType` if the content-type is not
     /// JPEG, PNG, or WebP, `ImageError::TooLarge` if the data exceeds 5 MB,
     /// or `ImageError::Io` on file-write failures.
-    pub async fn save(&self, data: &[u8], _content_type: &str) -> Result<String, ImageError> {
+    pub async fn save(&self, data: &[u8], content_type: &str) -> Result<String, ImageError> {
+        let declared_ext = match content_type {
+            "image/jpeg" => "jpg",
+            "image/png" => "png",
+            "image/webp" => "webp",
+            _ => return Err(ImageError::InvalidContentType),
+        };
         let ext = detect_image_type(data).ok_or(ImageError::InvalidContentType)?;
+        if ext != declared_ext {
+            return Err(ImageError::InvalidContentType);
+        }
 
         if data.len() > MAX_FILE_SIZE {
             return Err(ImageError::TooLarge);
@@ -426,7 +435,14 @@ mod tests {
     #[tokio::test]
     async fn save_rejects_invalid_content_type() {
         let (store, _dir) = temp_store();
-        let result = store.save(b"data", "text/plain").await;
+        let result = store.save(b"\xFF\xD8\xFFfake", "text/plain").await;
+        assert!(matches!(result, Err(ImageError::InvalidContentType)));
+    }
+
+    #[tokio::test]
+    async fn save_rejects_content_type_that_does_not_match_bytes() {
+        let (store, _dir) = temp_store();
+        let result = store.save(b"\xFF\xD8\xFFfake", "image/png").await;
         assert!(matches!(result, Err(ImageError::InvalidContentType)));
     }
 

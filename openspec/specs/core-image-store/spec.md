@@ -30,6 +30,12 @@ The system SHALL provide an `ImageStore` service that manages image file storage
 - **THEN** the service SHALL return an `InvalidContentType` error
 - **AND** no file SHALL be written to disk
 
+#### Scenario: Reject mismatched content type
+
+- **WHEN** `save` is called with JPEG bytes and content-type `image/png`
+- **THEN** the service SHALL return an `InvalidContentType` error
+- **AND** no file SHALL be written to disk
+
 #### Scenario: Reject oversized file
 
 - **WHEN** `save` is called with image bytes exceeding 5 MB

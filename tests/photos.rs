@@ -149,7 +149,7 @@ async fn upload_rejects_invalid_type() {
         .oneshot(multipart_request(
             &format!("/api/plants/{id}/photo"),
             "text/plain",
-            b"not an image",
+            &[0xFF, 0xD8, 0xFF],
         ))
         .await
         .unwrap();
