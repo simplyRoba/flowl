@@ -141,25 +141,21 @@ A Dockerfile SHALL provide a minimal multi-arch container image based on a Debia
 - **THEN** the AI provider is initialized and `GET /api/ai/status` returns `enabled: true`
 - **AND** `FLOWL_AI_BASE_URL` and `FLOWL_AI_MODEL` are optional with defaults
 
-### Requirement: Code Ownership
-
-A CODEOWNERS file SHALL assign `@simplyroba` as the default reviewer for all files.
-
-#### Scenario: PR opened
-
-- **WHEN** a pull request is opened
-- **THEN** `@simplyroba` is automatically requested as a reviewer
-
 ### Requirement: Dependency Updates
 
-Dependabot SHALL be configured to check for daily updates to cargo dependencies and GitHub Actions, using conventional commit prefixes.
+Dependabot SHALL repeatedly check for updates to Cargo dependencies, npm dependencies, and GitHub Actions, using the `deps: ` commit prefix.
 
 #### Scenario: Cargo dependency update available
 
-- **WHEN** a new version of a cargo dependency is available
-- **THEN** dependabot creates a PR with commit prefix `fix(deps): `
+- **WHEN** Dependabot finds a new version of a Cargo dependency during a scheduled check
+- **THEN** it creates a PR with commit prefix `deps: `
+
+#### Scenario: npm dependency update available
+
+- **WHEN** Dependabot finds a new version of an npm dependency during a scheduled check
+- **THEN** it creates a PR with commit prefix `deps: `
 
 #### Scenario: GitHub Actions update available
 
-- **WHEN** a new version of a GitHub Action is available
-- **THEN** dependabot creates a PR with commit prefix `fix(ci): `
+- **WHEN** Dependabot finds a new version of a GitHub Action during a scheduled check
+- **THEN** it creates a PR with commit prefix `deps: `
