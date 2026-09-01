@@ -20,18 +20,18 @@ The CI pipeline SHALL execute on every push to `main` and on every pull request 
 
 ### Requirement: Toolchain Setup
 
-The CI pipeline SHALL install the stable Rust toolchain with `rustfmt` and `clippy` components, add `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu` targets, install `gcc-aarch64-linux-gnu` cross-compiler, and cache Cargo artifacts.
+The CI pipeline SHALL install the stable Rust toolchain, include `rustfmt` and `clippy` in the Rust lint job, and cache Cargo artifacts. Cross-compilation toolchain setup SHALL remain the responsibility of the release workflow that compiles multi-architecture binaries.
 
 #### Scenario: Cache hit
 
 - **WHEN** the `Cargo.lock` hash matches a previously cached run
 - **THEN** the cached Cargo registry, git, and target directories are restored
 
-#### Scenario: Cross-compilation targets available
+#### Scenario: Normal CI toolchain
 
-- **WHEN** the setup job completes
-- **THEN** both `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu` targets are installed
-- **AND** the `gcc-aarch64-linux-gnu` cross-compiler is available
+- **WHEN** a Rust lint or test job starts
+- **THEN** the stable Rust toolchain is available
+- **AND** the lint job has `rustfmt` and `clippy` available
 
 ### Requirement: Lint Checks
 
