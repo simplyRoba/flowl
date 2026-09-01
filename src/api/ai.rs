@@ -8,7 +8,7 @@ use sqlx::SqlitePool;
 use tokio_stream::StreamExt;
 use tracing::{debug, warn};
 
-use super::error::{ApiError, default_message};
+use super::error::{ApiError, JsonBody, default_message};
 use crate::ai::prompts;
 use crate::ai::types::ChatMessage;
 use crate::state::AppState;
@@ -201,7 +201,7 @@ async fn get_locale(pool: &SqlitePool) -> String {
 /// `ApiError::InternalError` if the AI provider call fails.
 pub async fn chat(
     State(state): State<AppState>,
-    Json(body): Json<ChatRequest>,
+    JsonBody(body): JsonBody<ChatRequest>,
 ) -> Result<Sse<impl tokio_stream::Stream<Item = Result<Event, std::convert::Infallible>>>, ApiError>
 {
     check_ai_rate_limit(&state)?;
@@ -284,7 +284,7 @@ pub async fn chat(
 /// `ApiError::InternalError` if the AI provider call fails.
 pub async fn summarize(
     State(state): State<AppState>,
-    Json(body): Json<SummarizeRequest>,
+    JsonBody(body): JsonBody<SummarizeRequest>,
 ) -> Result<Json<SummarizeResponse>, ApiError> {
     check_ai_rate_limit(&state)?;
     let provider = state

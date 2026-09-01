@@ -176,6 +176,18 @@ async fn chat_returns_503_when_ai_not_configured() {
 }
 
 #[tokio::test]
+async fn chat_returns_standard_error_for_malformed_json() {
+    let (app, _dir) = common::test_app().await;
+    let request = common::json_request("POST", "/api/ai/chat", Some(r#"{"plant_id":1,"#));
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let body = common::body_json(response).await;
+    assert_eq!(body["code"], "INVALID_REQUEST_BODY");
+    assert_eq!(body["message"], "Invalid request body");
+}
+
+#[tokio::test]
 async fn chat_returns_404_when_plant_not_found() {
     let (app, _pool, _dir) = test_app_with_provider(Arc::new(MockChatProvider)).await;
 
