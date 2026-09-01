@@ -54,6 +54,12 @@ The system SHALL provide an `ImageStore` service that manages image file storage
 - **THEN** `abc.jpg` SHALL be deleted
 - **AND** the missing thumbnail SHALL be silently ignored
 
+#### Scenario: Delete encounters an unexpected filesystem failure
+
+- **WHEN** deletion of an original or thumbnail fails for a reason other than the file being absent
+- **THEN** the failure SHALL be logged at error level
+- **AND** deletion SHALL complete without returning an error so startup orphan cleanup can retry the file
+
 ### Requirement: Thumbnail generation on save
 
 After writing an original image to disk, `ImageStore::save()` SHALL decode the image and generate three JPEG thumbnail variants (quality 80) with the longest edge fitting within 200px, 600px, and 1000px, preserving aspect ratio. Thumbnails SHALL be written alongside the original using the naming convention `{stem}_{size}.jpg`.

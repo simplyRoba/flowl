@@ -40,10 +40,18 @@ Errors returned by Flowl application code through `ApiError`, including errors f
 
 #### Scenario: Internal failure
 
-- **WHEN** an unexpected server-side error occurs (database failure, IO error)
+- **WHEN** an unexpected server-side error prevents the requested logical state change (database failure, required IO error)
 - **THEN** the API responds with HTTP 500 and `{"code": "INTERNAL_ERROR", "message": "..."}`
 - **AND** the real error details SHALL be logged server-side
 - **AND** internal error details SHALL NOT be exposed to the client
+
+#### Scenario: Best-effort file cleanup after logical deletion
+
+- **GIVEN** a deletion has removed the file reference from the database
+- **WHEN** physical file cleanup fails unexpectedly
+- **THEN** the original deletion response remains successful
+- **AND** the filesystem error is logged at error level
+- **AND** startup orphan cleanup can retry removal
 
 #### Scenario: Rate limit exceeded
 
@@ -125,9 +133,9 @@ The API SHALL log the original error details for internal failures using `tracin
 - **THEN** the original `sqlx::Error` is logged at error level
 - **AND** the client receives `{"code": "INTERNAL_ERROR", "message": "..."}` with HTTP 500
 
-#### Scenario: IO error logged
+#### Scenario: Required IO error logged
 
-- **WHEN** a file system or IO operation fails internally
+- **WHEN** a filesystem or IO operation required to complete the requested logical state change fails
 - **THEN** the original error is logged at error level
 - **AND** the client receives a generic error code with HTTP 500
 

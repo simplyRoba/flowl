@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use image::ImageDecoder;
 use sqlx::SqlitePool;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 const MAX_FILE_SIZE: usize = 5 * 1024 * 1024; // 5 MB
 
@@ -194,18 +194,23 @@ impl ImageStore {
     }
 
     /// Delete a file from the uploads directory, including any thumbnail variants.
-    /// Logs a warning on failure.
+    /// Missing files are ignored; unexpected filesystem failures are logged as errors for
+    /// startup orphan cleanup to retry.
     pub async fn delete(&self, filename: &str) {
         let path = self.upload_dir.join(filename);
-        if let Err(e) = tokio::fs::remove_file(&path).await {
-            warn!(filename = %filename, error = %e, "Failed to remove image file");
+        if let Err(error) = tokio::fs::remove_file(&path).await {
+            if error.kind() == std::io::ErrorKind::NotFound {
+                warn!(filename = %filename, "Image file was already missing");
+            } else {
+                error!(filename = %filename, error = %error, "Failed to remove image file");
+            }
         }
         for thumb_name in thumbnail_paths(filename) {
             let thumb_path = self.upload_dir.join(&thumb_name);
-            if thumb_path.exists()
-                && let Err(e) = tokio::fs::remove_file(&thumb_path).await
+            if let Err(error) = tokio::fs::remove_file(&thumb_path).await
+                && error.kind() != std::io::ErrorKind::NotFound
             {
-                warn!(filename = %thumb_name, error = %e, "Failed to remove thumbnail");
+                error!(filename = %thumb_name, error = %error, "Failed to remove thumbnail");
             }
         }
     }
