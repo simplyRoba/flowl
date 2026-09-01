@@ -278,8 +278,9 @@ impl ImageStore {
                 continue;
             }
 
-            // Skip if this is a thumbnail of a referenced file
-            if let Some(base_stem) = thumbnail_base_stem(&filename)
+            // Skip if this is a generated JPEG thumbnail of a referenced file
+            if is_thumbnail_filename(&filename)
+                && let Some(base_stem) = thumbnail_base_stem(&filename)
                 && referenced_stems.contains(&base_stem)
             {
                 continue;
@@ -710,6 +711,33 @@ mod tests {
         assert!(store.upload_dir.join(format!("{stem}_200.jpg")).exists());
         assert!(store.upload_dir.join(format!("{stem}_600.jpg")).exists());
         assert!(store.upload_dir.join(format!("{stem}_1000.jpg")).exists());
+    }
+
+    #[tokio::test]
+    async fn cleanup_orphans_removes_non_jpeg_thumbnail_like_files() {
+        let (store, _dir) = temp_store();
+        let pool = test_pool().await;
+
+        let filename = store
+            .save(b"\xFF\xD8\xFF keep", "image/jpeg")
+            .await
+            .unwrap();
+        let stem = Path::new(&filename).file_stem().unwrap().to_str().unwrap();
+        let fake_thumbnail = format!("{stem}_200.png");
+        tokio::fs::write(store.upload_dir.join(&fake_thumbnail), b"orphan")
+            .await
+            .unwrap();
+
+        sqlx::query("INSERT INTO plants (id, photo_path) VALUES (1, ?)")
+            .bind(&filename)
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        store.cleanup_orphans(&pool).await;
+
+        assert!(store.upload_dir.join(&filename).exists());
+        assert!(!store.upload_dir.join(fake_thumbnail).exists());
     }
 
     #[tokio::test]

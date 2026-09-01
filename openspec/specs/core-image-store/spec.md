@@ -102,7 +102,7 @@ Thumbnail generation SHALL run on `spawn_blocking` to avoid blocking the Tokio r
 
 ### Requirement: Startup orphan cleanup
 
-On application startup, after database migrations have run, the `ImageStore` SHALL scan the uploads directory and delete any files not referenced by `plants.photo_path` or `care_events.photo_path`. Thumbnail files (`{stem}_200.jpg`, `{stem}_600.jpg`, and `{stem}_1000.jpg`) whose corresponding original stem matches a referenced `photo_path` SHALL NOT be treated as orphans. This provides self-healing cleanup for files orphaned by crashes or CASCADE deletes.
+On application startup, after database migrations have run, the `ImageStore` SHALL scan the uploads directory and delete any files not referenced by `plants.photo_path` or `care_events.photo_path`. Only generated JPEG thumbnail variants (`{stem}_200.jpg`, `{stem}_600.jpg`, and `{stem}_1000.jpg`) whose original stem matches a referenced `photo_path` SHALL be preserved as thumbnails. This provides self-healing cleanup for files orphaned by crashes or CASCADE deletes.
 
 #### Scenario: Orphaned file removed
 
