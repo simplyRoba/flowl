@@ -6,6 +6,7 @@ use flowl::ai::openai::OpenAiProvider;
 use flowl::ai::provider::AiProvider;
 use flowl::{auth, config, db, images, mqtt, server, state};
 use state::AppState;
+use tokio::sync::Notify;
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
@@ -44,20 +45,20 @@ async fn main() {
     info!("Database ready at {}", config.db_path);
 
     let mqtt_prefix = config.mqtt_topic_prefix.clone();
-    let (mqtt_handle, mqtt_connected, mqtt_needs_republish) = if config.mqtt_disabled {
+    let (mqtt_handle, mqtt_connected, mqtt_republish) = if config.mqtt_disabled {
         info!("FLOWL_MQTT_DISABLED set, skipping MQTT initialization");
         (None, None, None)
     } else {
         let connected = Arc::new(AtomicBool::new(false));
-        let needs_republish = Arc::new(AtomicBool::new(false));
-        let handle = mqtt::connect(&config, connected.clone(), needs_republish.clone());
+        let republish_notify = Arc::new(Notify::new());
+        let handle = mqtt::connect(&config, connected.clone(), republish_notify.clone());
         if handle.is_some() {
             info!(
                 "MQTT client connecting to {}:{}",
                 config.mqtt_host, config.mqtt_port
             );
         }
-        (handle, Some(connected), Some(needs_republish))
+        (handle, Some(connected), Some(republish_notify))
     };
     let mqtt_client = mqtt_handle.as_ref().map(|h| h.client.clone());
 
@@ -111,7 +112,7 @@ async fn main() {
     let router = server::router(state);
 
     let checker_handle =
-        mqtt::spawn_state_checker(pool, mqtt_client.clone(), mqtt_prefix, mqtt_needs_republish);
+        mqtt::spawn_state_checker(pool, mqtt_client.clone(), mqtt_prefix, mqtt_republish);
 
     if let Err(e) = server::serve(router, config.port).await {
         error!("Server error: {e}");

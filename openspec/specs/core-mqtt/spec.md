@@ -159,7 +159,7 @@ The application SHALL retry failed MQTT publishes up to 3 times with linear back
 
 ### Requirement: Background State Checker
 
-The application SHALL run a background task that periodically checks all plants for watering state transitions and publishes updates to MQTT whenever MQTT is enabled. The checker SHALL use a shared `needs_republish` flag (set by the event loop on every ConnAck) to detect initial connection and reconnection, triggering a full republish when the flag is set.
+The application SHALL run a background task that periodically checks all plants for watering state transitions and publishes updates to MQTT whenever MQTT is enabled. Every initial connection or reconnection confirmation SHALL wake the checker immediately and trigger a full republish.
 
 #### Scenario: State transition detected
 
@@ -182,15 +182,15 @@ The application SHALL run a background task that periodically checks all plants 
 - **WHEN** the application is running and MQTT is enabled
 - **THEN** the background state checker runs every 60 minutes
 
-#### Scenario: Full publish on startup
+#### Scenario: Full publish on initial connection
 
-- **WHEN** the application starts and MQTT is enabled
-- **THEN** the background checker publishes discovery configs, current state, and attributes for all existing plants
+- **WHEN** the initial MQTT connection is confirmed
+- **THEN** the background checker wakes immediately
+- **AND** publishes discovery configs, current state, and attributes for all existing plants
 
 #### Scenario: Full republish on reconnect
 
 - **GIVEN** the MQTT connection was lost and subsequently recovered
-- **AND** the event loop set `needs_republish` to `true` on ConnAck
-- **WHEN** the background checker runs its next tick
-- **THEN** the checker SHALL clear the `needs_republish` flag
-- **AND** republish discovery configs, current state, and attributes for all existing plants
+- **WHEN** the reconnection is confirmed
+- **THEN** the background checker wakes immediately
+- **AND** republishes discovery configs, current state, and attributes for all existing plants

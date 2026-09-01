@@ -6,6 +6,7 @@ use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
 use serde::Serialize;
 use serde_json::json;
 use sqlx::SqlitePool;
+use tokio::sync::Notify;
 use tokio::task::JoinHandle;
 use tracing::{debug, info, warn};
 
@@ -31,6 +32,23 @@ mod tests {
 
         let handle = spawn_state_checker(pool, None, "flowl".to_string(), None);
         assert!(handle.is_none());
+    }
+
+    #[tokio::test]
+    async fn connection_notification_wakes_checker_immediately() {
+        let notify = Notify::new();
+        let mut interval = tokio::time::interval(std::time::Duration::from_hours(1));
+        interval.tick().await;
+        notify.notify_one();
+
+        let wake = tokio::time::timeout(
+            std::time::Duration::from_millis(50),
+            next_checker_wake(&mut interval, &notify),
+        )
+        .await
+        .expect("connection notification should wake checker");
+
+        assert_eq!(wake, CheckerWake::FullRepublish);
     }
 
     #[test]
@@ -193,7 +211,7 @@ impl MqttHandle {
 pub fn connect(
     config: &Config,
     connected: Arc<AtomicBool>,
-    needs_republish: Arc<AtomicBool>,
+    republish_notify: Arc<Notify>,
 ) -> Option<MqttHandle> {
     if config.mqtt_disabled {
         info!("FLOWL_MQTT_DISABLED=true, skipping MQTT client setup");
@@ -213,7 +231,7 @@ pub fn connect(
             match event_loop.poll().await {
                 Ok(Event::Incoming(Packet::ConnAck(_))) => {
                     connected.store(true, Ordering::Relaxed);
-                    needs_republish.store(true, Ordering::Relaxed);
+                    republish_notify.notify_one();
                     delay = std::time::Duration::from_secs(5);
                     info!("MQTT connected");
                 }
@@ -556,29 +574,47 @@ fn cache_successful_publish(
     }
 }
 
-/// Spawn a background task that checks all plants every 60 seconds and publishes
-/// state transitions to MQTT. On first run or after reconnect, publishes discovery
-/// configs for all plants when MQTT is enabled.
+#[derive(Debug, PartialEq, Eq)]
+enum CheckerWake {
+    FullRepublish,
+    ScheduledCheck,
+}
+
+async fn next_checker_wake(
+    interval: &mut tokio::time::Interval,
+    republish_notify: &Notify,
+) -> CheckerWake {
+    tokio::select! {
+        () = republish_notify.notified() => CheckerWake::FullRepublish,
+        _ = interval.tick() => CheckerWake::ScheduledCheck,
+    }
+}
+
+/// Spawn a background task that checks all plants hourly and publishes state transitions to MQTT.
+/// On initial connection or reconnection, immediately publishes discovery configs for all plants.
 pub fn spawn_state_checker(
     pool: SqlitePool,
     client: Option<AsyncClient>,
     prefix: String,
-    needs_republish: Option<Arc<AtomicBool>>,
+    republish_notify: Option<Arc<Notify>>,
 ) -> Option<JoinHandle<()>> {
     let client = client?;
-    let needs_republish = needs_republish?;
+    let republish_notify = republish_notify?;
 
     info!("Starting MQTT background state checker");
 
     Some(tokio::spawn(async move {
         let mut cache: HashMap<i64, String> = HashMap::new();
+        let mut interval = tokio::time::interval(std::time::Duration::from_hours(1));
+        interval.tick().await;
 
         loop {
-            if needs_republish.swap(false, Ordering::Relaxed) {
+            if next_checker_wake(&mut interval, &republish_notify).await
+                == CheckerWake::FullRepublish
+            {
                 info!("MQTT (re)connected, triggering full republish");
                 republish_all(&pool, &client, &prefix).await;
                 cache.clear();
-                tokio::time::sleep(std::time::Duration::from_hours(1)).await;
                 continue;
             }
 
@@ -626,8 +662,6 @@ pub fn spawn_state_checker(
                     warn!("MQTT state checker query error: {e}");
                 }
             }
-
-            tokio::time::sleep(std::time::Duration::from_hours(1)).await;
         }
     }))
 }
