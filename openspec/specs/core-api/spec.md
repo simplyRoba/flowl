@@ -87,8 +87,13 @@ The API SHALL define a fixed catalog of error codes. Each error code SHALL map t
 
 #### Scenario: Photo errors
 
-- **WHEN** a photo operation fails due to client input
+- **WHEN** a photo operation or multipart photo upload fails due to client input
 - **THEN** the API uses one of: `PHOTO_NOT_FOUND` (404), `PHOTO_NO_FILE` (422), `PHOTO_INVALID_TYPE` (422), `PHOTO_TOO_LARGE` (422), `PHOTO_SAVE_FAILED` (500)
+
+#### Scenario: Identify multipart photo errors
+
+- **WHEN** an AI identification request has no `photos` files or has an unsupported photo content type
+- **THEN** the API uses `PHOTO_NO_FILE` (422) or `PHOTO_INVALID_TYPE` (422), respectively
 
 #### Scenario: Settings errors
 
@@ -102,7 +107,7 @@ The API SHALL define a fixed catalog of error codes. Each error code SHALL map t
 
 #### Scenario: AI errors
 
-- **WHEN** an AI operation fails
+- **WHEN** AI-specific validation, provider processing, or response streaming fails after request parsing
 - **THEN** the API uses one of: `AI_NOT_CONFIGURED` (503), `AI_PROVIDER_FAILED` (500), `AI_INVALID_IMAGE` (400), `AI_HISTORY_EMPTY` (422), `AI_RATE_LIMITED` (429), `AI_IDENTIFY_NOT_A_PLANT` (422), `AI_TOO_MANY_IMAGES` (422), `AI_STREAM_ERROR` (500)
 
 #### Scenario: MQTT errors

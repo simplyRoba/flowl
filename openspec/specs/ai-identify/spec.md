@@ -34,13 +34,13 @@ The endpoint SHALL reject requests that do not contain valid photo uploads.
 
 - **WHEN** a POST request is made to `/api/ai/identify` with no file fields
 - **THEN** the response status is 422
-- **AND** the body contains `{"message": "..."}`
+- **AND** the body contains error code `PHOTO_NO_FILE`
 
 #### Scenario: Invalid content type
 
 - **WHEN** a POST request is made to `/api/ai/identify` with a file that is not JPEG, PNG, or WebP
 - **THEN** the response status is 422
-- **AND** the body contains `{"message": "..."}`
+- **AND** the body contains error code `PHOTO_INVALID_TYPE`
 
 #### Scenario: Too many photos
 
