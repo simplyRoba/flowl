@@ -348,10 +348,14 @@ async fn stream_sse_deltas(
                     return;
                 }
                 while let Some(pos) = buf.find('\n') {
-                    if let Some(delta) = parse_sse_line(&buf[..pos])
-                        && tx.send(Ok(delta)).await.is_err()
-                    {
-                        return;
+                    match parse_sse_line(&buf[..pos]) {
+                        SseLine::Delta(delta) => {
+                            if tx.send(Ok(delta)).await.is_err() {
+                                return;
+                            }
+                        }
+                        SseLine::Done => return,
+                        SseLine::Ignore => {}
                     }
                     buf = buf[pos + 1..].to_string();
                 }
@@ -364,24 +368,35 @@ async fn stream_sse_deltas(
     }
 }
 
-/// Parse a single SSE line from the `OpenAI` streaming response.
-/// Returns `Some(delta_text)` if the line contains a content delta, `None` otherwise.
-fn parse_sse_line(line: &str) -> Option<String> {
-    let data = line.strip_prefix("data: ")?;
+#[derive(Debug, PartialEq, Eq)]
+enum SseLine {
+    Delta(String),
+    Done,
+    Ignore,
+}
 
-    // Skip the [DONE] marker and empty data
-    if data == "[DONE]" || data.is_empty() {
-        return None;
+/// Parse a single SSE line from the `OpenAI` streaming response.
+fn parse_sse_line(line: &str) -> SseLine {
+    let line = line.trim_end_matches('\r');
+    let Some(data) = line.strip_prefix("data: ") else {
+        return SseLine::Ignore;
+    };
+
+    if data == "[DONE]" {
+        return SseLine::Done;
+    }
+    if data.is_empty() {
+        return SseLine::Ignore;
     }
 
     match serde_json::from_str::<Value>(data) {
         Ok(parsed) => parsed["choices"][0]["delta"]["content"]
             .as_str()
             .filter(|s| !s.is_empty())
-            .map(String::from),
+            .map_or(SseLine::Ignore, |delta| SseLine::Delta(delta.to_string())),
         Err(e) => {
             warn!(line = %line, error = %e, "Failed to parse SSE chunk");
-            None
+            SseLine::Ignore
         }
     }
 }
@@ -609,41 +624,42 @@ mod tests {
     #[test]
     fn parse_sse_line_extracts_delta() {
         let line = r#"data: {"choices":[{"delta":{"content":"Hello"},"index":0}]}"#;
-        assert_eq!(parse_sse_line(line), Some("Hello".to_string()));
+        assert_eq!(parse_sse_line(line), SseLine::Delta("Hello".to_string()));
     }
 
     #[test]
-    fn parse_sse_line_skips_done_marker() {
-        assert_eq!(parse_sse_line("data: [DONE]"), None);
+    fn parse_sse_line_recognizes_done_marker() {
+        assert_eq!(parse_sse_line("data: [DONE]"), SseLine::Done);
+        assert_eq!(parse_sse_line("data: [DONE]\r"), SseLine::Done);
     }
 
     #[test]
     fn parse_sse_line_skips_empty_lines() {
-        assert_eq!(parse_sse_line(""), None);
-        assert_eq!(parse_sse_line("\n"), None);
+        assert_eq!(parse_sse_line(""), SseLine::Ignore);
+        assert_eq!(parse_sse_line("\n"), SseLine::Ignore);
     }
 
     #[test]
     fn parse_sse_line_skips_non_data_lines() {
-        assert_eq!(parse_sse_line("event: message"), None);
-        assert_eq!(parse_sse_line(": comment"), None);
+        assert_eq!(parse_sse_line("event: message"), SseLine::Ignore);
+        assert_eq!(parse_sse_line(": comment"), SseLine::Ignore);
     }
 
     #[test]
     fn parse_sse_line_skips_empty_content() {
         let line = r#"data: {"choices":[{"delta":{"content":""},"index":0}]}"#;
-        assert_eq!(parse_sse_line(line), None);
+        assert_eq!(parse_sse_line(line), SseLine::Ignore);
     }
 
     #[test]
     fn parse_sse_line_skips_role_only_delta() {
         let line = r#"data: {"choices":[{"delta":{"role":"assistant"},"index":0}]}"#;
-        assert_eq!(parse_sse_line(line), None);
+        assert_eq!(parse_sse_line(line), SseLine::Ignore);
     }
 
     #[test]
     fn parse_sse_line_handles_malformed_json() {
-        assert_eq!(parse_sse_line("data: {invalid json}"), None);
+        assert_eq!(parse_sse_line("data: {invalid json}"), SseLine::Ignore);
     }
 
     // --- Summarize response parsing tests ---
