@@ -155,6 +155,7 @@ The application SHALL retry failed MQTT publishes up to 3 times with linear back
 - **WHEN** the final retry fails
 - **THEN** a warning is logged indicating fallback to the background checker
 - **AND** no error is returned to the caller
+- **AND** the checker does not cache the state as published until both state and attributes succeed
 
 ### Requirement: Background State Checker
 

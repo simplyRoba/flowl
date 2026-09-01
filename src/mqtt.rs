@@ -34,6 +34,27 @@ mod tests {
     }
 
     #[test]
+    fn checker_caches_only_fully_published_state() {
+        let mut cache = HashMap::new();
+
+        for (state_published, attributes_published) in
+            [(false, false), (true, false), (false, true)]
+        {
+            cache_successful_publish(
+                &mut cache,
+                1,
+                "due".to_string(),
+                state_published,
+                attributes_published,
+            );
+            assert!(!cache.contains_key(&1));
+        }
+
+        cache_successful_publish(&mut cache, 1, "due".to_string(), true, true);
+        assert_eq!(cache.get(&1).map(String::as_str), Some("due"));
+    }
+
+    #[test]
     fn extract_plant_id_from_discovery_topic() {
         assert_eq!(
             extract_plant_id("homeassistant/sensor/flowl_plant_1/config", "flowl"),
@@ -258,7 +279,12 @@ fn removal_topics(prefix: &str, plant_id: i64) -> [String; 3] {
 /// Publish HA auto-discovery config for a plant sensor entity.
 const MAX_RETRIES: u32 = 3;
 
-async fn publish_with_retry(client: &AsyncClient, topic: &str, payload: &[u8], label: &str) {
+async fn publish_with_retry(
+    client: &AsyncClient,
+    topic: &str,
+    payload: &[u8],
+    label: &str,
+) -> bool {
     for attempt in 1..=MAX_RETRIES {
         match client
             .publish(topic, QoS::AtLeastOnce, true, payload.to_vec())
@@ -266,7 +292,7 @@ async fn publish_with_retry(client: &AsyncClient, topic: &str, payload: &[u8], l
         {
             Ok(()) => {
                 debug!(topic, label, "MQTT published");
-                return;
+                return true;
             }
             Err(e) => {
                 warn!(
@@ -281,6 +307,7 @@ async fn publish_with_retry(client: &AsyncClient, topic: &str, payload: &[u8], l
         topic,
         label, "MQTT publish failed after {MAX_RETRIES} retries, falling back to checker"
     );
+    false
 }
 
 pub async fn publish_discovery(
@@ -300,10 +327,10 @@ pub async fn publish_state(
     prefix: &str,
     plant_id: i64,
     status: &str,
-) {
-    let Some(client) = client else { return };
+) -> bool {
+    let Some(client) = client else { return false };
     let topic = state_topic(prefix, plant_id);
-    publish_with_retry(client, &topic, status.as_bytes(), "state").await;
+    publish_with_retry(client, &topic, status.as_bytes(), "state").await
 }
 
 /// Publish watering attributes (`next_due`, `last_watered`, interval) to the plant's attributes topic.
@@ -314,11 +341,11 @@ pub async fn publish_attributes(
     last_watered: Option<&str>,
     next_due: Option<&str>,
     interval_days: i64,
-) {
-    let Some(client) = client else { return };
+) -> bool {
+    let Some(client) = client else { return false };
     let (topic, payload) =
         attributes_topic_and_payload(prefix, plant_id, last_watered, next_due, interval_days);
-    publish_with_retry(client, &topic, payload.as_bytes(), "attributes").await;
+    publish_with_retry(client, &topic, payload.as_bytes(), "attributes").await
 }
 
 /// Remove a plant from HA by publishing empty retained payloads to its topics.
@@ -517,6 +544,18 @@ struct CheckerRow {
     last_watered: Option<String>,
 }
 
+fn cache_successful_publish(
+    cache: &mut HashMap<i64, String>,
+    plant_id: i64,
+    status: String,
+    state_published: bool,
+    attributes_published: bool,
+) {
+    if state_published && attributes_published {
+        cache.insert(plant_id, status);
+    }
+}
+
 /// Spawn a background task that checks all plants every 60 seconds and publishes
 /// state transitions to MQTT. On first run or after reconnect, publishes discovery
 /// configs for all plants when MQTT is enabled.
@@ -559,8 +598,9 @@ pub fn spawn_state_checker(
 
                         let changed = cache.get(&row.id).is_none_or(|prev| *prev != status);
                         if changed {
-                            publish_state(Some(&client), &prefix, row.id, &status).await;
-                            publish_attributes(
+                            let state_published =
+                                publish_state(Some(&client), &prefix, row.id, &status).await;
+                            let attributes_published = publish_attributes(
                                 Some(&client),
                                 &prefix,
                                 row.id,
@@ -569,7 +609,13 @@ pub fn spawn_state_checker(
                                 row.watering_interval_days,
                             )
                             .await;
-                            cache.insert(row.id, status);
+                            cache_successful_publish(
+                                &mut cache,
+                                row.id,
+                                status,
+                                state_published,
+                                attributes_published,
+                            );
                         }
                     }
 
