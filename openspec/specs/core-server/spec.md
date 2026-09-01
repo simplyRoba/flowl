@@ -75,19 +75,14 @@ The application SHALL use `tracing` for structured logging, configured via `FLOW
 - **WHEN** the application starts with `FLOWL_LOG_LEVEL=debug`
 - **THEN** log output includes `debug` level messages
 
-### Requirement: AppState
-
-The server SHALL use an `AppState` struct containing `SqlitePool` and `PathBuf` (upload directory) as the shared state for all routes.
-
-#### Scenario: AppState constructed
-
-- **WHEN** the application starts
-- **THEN** `AppState` is created with the database pool and upload directory path
-- **AND** the upload directory is created if it does not exist
-
 ### Requirement: Upload File Serving
 
-The server SHALL serve files from the upload directory at `/uploads/*` using `tower-http::ServeDir`.
+The server SHALL create the upload directory during startup if it does not exist and serve files from it at `/uploads/*` using `tower-http::ServeDir`.
+
+#### Scenario: Upload directory created
+
+- **WHEN** the application starts and the upload directory does not exist
+- **THEN** the directory is created before the server begins accepting requests
 
 #### Scenario: Uploaded file served
 
