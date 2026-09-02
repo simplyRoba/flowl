@@ -66,7 +66,7 @@ The API SHALL create a care event via `POST /api/plants/:id/care` with a JSON bo
 
 - **WHEN** a POST request is made to `/api/plants/1/care` with `{"event_type": "unknown"}`
 - **THEN** the API responds with HTTP 422
-- **AND** the error message indicates the valid event types
+- **AND** the body contains error code `CARE_EVENT_INVALID_TYPE`
 
 #### Scenario: Event type missing
 
