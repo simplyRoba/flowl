@@ -308,6 +308,39 @@ async fn import_version_mismatch() {
 }
 
 #[tokio::test]
+async fn import_malformed_versions_rejected() {
+    let major = env!("CARGO_PKG_VERSION_MAJOR");
+    let minor = env!("CARGO_PKG_VERSION_MINOR");
+    let versions = [
+        format!("{major}.{minor}"),
+        format!("{major}.{minor}.not-a-patch"),
+        format!("{major}.{minor}.0.extra"),
+    ];
+    let (app, _dir) = common::test_app().await;
+
+    for version in versions {
+        let json = format!(
+            r#"{{
+                "version": "{version}",
+                "exported_at": "2026-02-21T12:00:00Z",
+                "locations": [],
+                "plants": [],
+                "care_events": []
+            }}"#
+        );
+        let response = app
+            .clone()
+            .oneshot(multipart_import_request(&build_export_zip(&json)))
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let body = common::body_json(response).await;
+        assert_eq!(body["code"], "IMPORT_VERSION_MISMATCH");
+    }
+}
+
+#[tokio::test]
 async fn import_patch_version_difference_allowed() {
     let parts: Vec<&str> = env!("CARGO_PKG_VERSION").split('.').collect();
     let patch: u32 = parts[2].parse::<u32>().unwrap() + 1;

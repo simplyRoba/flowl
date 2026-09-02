@@ -70,16 +70,28 @@ pub struct ImportResult {
     pub photos: usize,
 }
 
-fn check_version(archive_version: &str) -> Result<(), ApiError> {
-    let server_version = env!("CARGO_PKG_VERSION");
-    let server_parts: Vec<&str> = server_version.split('.').collect();
-    let archive_parts: Vec<&str> = archive_version.split('.').collect();
-
-    if server_parts.len() < 2 || archive_parts.len() < 2 {
-        return Err(ApiError::BadRequest("IMPORT_VERSION_MISMATCH"));
+fn parse_archive_version(version: &str) -> Option<(u64, u64, u64)> {
+    let mut parts = version.split('.');
+    let major = parts.next()?.parse().ok()?;
+    let minor = parts.next()?.parse().ok()?;
+    let patch = parts.next()?.parse().ok()?;
+    if parts.next().is_some() {
+        return None;
     }
+    Some((major, minor, patch))
+}
 
-    if server_parts[0] != archive_parts[0] || server_parts[1] != archive_parts[1] {
+fn check_version(archive_version: &str) -> Result<(), ApiError> {
+    let (archive_major, archive_minor, _) = parse_archive_version(archive_version)
+        .ok_or(ApiError::BadRequest("IMPORT_VERSION_MISMATCH"))?;
+    let server_major = env!("CARGO_PKG_VERSION_MAJOR")
+        .parse::<u64>()
+        .map_err(|_| ApiError::InternalError("INTERNAL_ERROR"))?;
+    let server_minor = env!("CARGO_PKG_VERSION_MINOR")
+        .parse::<u64>()
+        .map_err(|_| ApiError::InternalError("INTERNAL_ERROR"))?;
+
+    if server_major != archive_major || server_minor != archive_minor {
         return Err(ApiError::BadRequest("IMPORT_VERSION_MISMATCH"));
     }
 

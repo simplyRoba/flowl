@@ -50,8 +50,13 @@ The system SHALL provide a `POST /api/data/import` endpoint that replaces all ex
 
 #### Scenario: Patch version difference allowed
 
-- **WHEN** the `data.json` has a `version` that differs from the server's crate version only in the patch component
+- **WHEN** the `data.json` has a valid numeric `major.minor.patch` version that differs from the server's crate version only in the patch component
 - **THEN** the import proceeds normally
+
+#### Scenario: Malformed version rejected
+
+- **WHEN** the `data.json` version is not exactly three numeric `major.minor.patch` components
+- **THEN** the response has status 400 with error code `IMPORT_VERSION_MISMATCH`
 
 #### Scenario: Path traversal protection
 
