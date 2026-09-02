@@ -1,6 +1,7 @@
-import { cleanup, render, screen } from "@testing-library/svelte";
+import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Plant } from "$lib/api";
+import { isOffline } from "$lib/stores/network";
 
 vi.mock("$lib/api", async () => {
   const actual = await vi.importActual<typeof import("$lib/api")>("$lib/api");
@@ -47,6 +48,7 @@ function makePlant(overrides: Partial<Plant> = {}): Plant {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  isOffline.set(false);
   HTMLDialogElement.prototype.showModal = vi.fn(function (
     this: HTMLDialogElement,
   ) {
@@ -114,5 +116,23 @@ describe("ChatDrawer", () => {
       },
     });
     expect(screen.getByText("Why is it overdue?")).toBeTruthy();
+  });
+
+  it("ignores dragged photos while offline", async () => {
+    isOffline.set(true);
+    const view = render(ChatDrawer, { props: defaultProps });
+    const messageArea = view.container.querySelector(".chat-messages");
+    const file = new File(["photo"], "plant.jpg", { type: "image/jpeg" });
+
+    expect(messageArea).not.toBeNull();
+    await fireEvent.dragEnter(messageArea!, {
+      dataTransfer: { files: [file] },
+    });
+    expect(messageArea!.classList.contains("dragging-file")).toBe(false);
+
+    await fireEvent.drop(messageArea!, {
+      dataTransfer: { files: [file] },
+    });
+    expect(view.container.querySelector(".photo-preview-strip")).toBeNull();
   });
 });

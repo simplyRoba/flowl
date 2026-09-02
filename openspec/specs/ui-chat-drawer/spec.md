@@ -445,10 +445,12 @@ The chat drawer SHALL disable all interactive controls when the device is offlin
 - **WHEN** the device is offline
 - **THEN** the text input and send button SHALL be disabled
 
-#### Scenario: Attach button disabled when offline
+#### Scenario: Photo attachment disabled when offline
 
 - **WHEN** the device is offline
 - **THEN** the photo attach button SHALL be disabled
+- **AND** dragging a photo over the message area SHALL NOT activate the drop target
+- **AND** dropping a photo SHALL NOT stage it
 
 #### Scenario: Quick chips disabled when offline
 

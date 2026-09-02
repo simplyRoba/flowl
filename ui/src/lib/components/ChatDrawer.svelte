@@ -115,7 +115,7 @@
   const VALID_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
   function stagePhoto(file: File) {
-    if (!VALID_IMAGE_TYPES.includes(file.type)) return;
+    if ($isOffline || !VALID_IMAGE_TYPES.includes(file.type)) return;
     if (attachedPreview) URL.revokeObjectURL(attachedPreview);
     attachedPhoto = file;
     attachedPreview = URL.createObjectURL(file);
@@ -148,7 +148,7 @@
 
   function handleFileDragEnter(e: DragEvent) {
     e.preventDefault();
-    isDraggingFile = true;
+    isDraggingFile = !$isOffline;
   }
 
   function handleFileDragLeave(e: DragEvent) {
@@ -160,6 +160,7 @@
   function handleFileDrop(e: DragEvent) {
     e.preventDefault();
     isDraggingFile = false;
+    if ($isOffline) return;
     const file = e.dataTransfer?.files?.[0];
     if (file && VALID_IMAGE_TYPES.includes(file.type)) {
       stagePhoto(file);
