@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import { fly } from "svelte/transition";
   import { Sparkles, X, Send, BookOpen, Camera } from "lucide-svelte";
   import { translations } from "$lib/stores/locale";
   import {
@@ -585,7 +586,10 @@
 {/snippet}
 
 {#if open && !isMobile}
-  <div class="chat-drawer">
+  <div
+    class="chat-drawer"
+    transition:fly={{ x: "100%", duration: 200, opacity: 1 }}
+  >
     {@render chatContent()}
   </div>
 {/if}
@@ -624,16 +628,6 @@
     border-left: 1px solid var(--color-border);
     display: flex;
     flex-direction: column;
-    animation: slideInRight 0.2s ease-out;
-  }
-
-  @keyframes slideInRight {
-    from {
-      transform: translateX(100%);
-    }
-    to {
-      transform: translateX(0);
-    }
   }
 
   @media (max-width: 768px) {
