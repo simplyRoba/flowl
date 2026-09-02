@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
     resolve: isTest ? { conditions: ["browser"] } : undefined,
     test: {
       environment: "jsdom",
+      setupFiles: ["./src/tests/setup.ts"],
     },
     server: {
       proxy: {
