@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.8.3](https://github.com/simplyRoba/flowl/compare/v1.8.2...v1.8.3) (2026-09-02)
+
+
+### Bug Fixes
+
+* animate desktop chat dismissal ([555883c](https://github.com/simplyRoba/flowl/commit/555883c483a295c15d6e29bdf0738b38e3a88871))
+* catalog care event validation errors ([12074c8](https://github.com/simplyRoba/flowl/commit/12074c8e6fdae88bace058dcbfe7883b6aadadb6))
+* distinguish invalid care event cursors ([349634b](https://github.com/simplyRoba/flowl/commit/349634bdcee766da0cf743e760a2a04a92a49128))
+* error-log deferred image cleanup failures ([ed264be](https://github.com/simplyRoba/flowl/commit/ed264be23087db11a57993a925873e84727e1f91))
+* ignore offline chat photo drops ([89e53d3](https://github.com/simplyRoba/flowl/commit/89e53d39767a87b7c4dea13036e480aa1248a8c7))
+* normalize malformed AI request errors ([07c5422](https://github.com/simplyRoba/flowl/commit/07c54227321237e75453890d2477e4e8d06c6e4b))
+* normalize oversized photo errors ([61ce042](https://github.com/simplyRoba/flowl/commit/61ce042908017c8f0993f19979c169be31c39dbf))
+* order watering events chronologically ([aee4d98](https://github.com/simplyRoba/flowl/commit/aee4d9868f56a2c3e5672d3350c7eee6da9fd1fc))
+* reject malformed backup versions ([c1475e1](https://github.com/simplyRoba/flowl/commit/c1475e1a1a5ff2dcc1ec41dd26d7a8e6eb4fdce2))
+* remove invalid thumbnail-like orphans ([02430b6](https://github.com/simplyRoba/flowl/commit/02430b6ff304b0ed8ff8f6fda208d45095d6dd9e))
+* republish MQTT state immediately on connect ([b948dcd](https://github.com/simplyRoba/flowl/commit/b948dcd0cc3a0570382c93b0bbc2afacfd1a441d))
+* retry uncached MQTT state publishes ([75afa0b](https://github.com/simplyRoba/flowl/commit/75afa0bfd793b5d2723587fd3b2fe2bd84326632))
+* stop AI streams at provider done marker ([8e8c02f](https://github.com/simplyRoba/flowl/commit/8e8c02f21cdafdbc2c0a2bf070d4daf7e6d02a22))
+* validate uploaded image content types ([b762afc](https://github.com/simplyRoba/flowl/commit/b762afcb4e9c1ae1da794c0642811ae77599342e))
+
+
+### Documentation
+
+* align care journal date display ([e75a7f2](https://github.com/simplyRoba/flowl/commit/e75a7f23db1eeb01d814b6d508b5735b23de9fdd))
+* align dependency update policy ([231d3f3](https://github.com/simplyRoba/flowl/commit/231d3f3be90a50da5283e81464794ef06bb21e7e))
+* align identify errors with API contract ([819ab39](https://github.com/simplyRoba/flowl/commit/819ab394f3ada71448390b6b61a3852ef6e4ede2))
+* align invalid care event errors ([bd8d013](https://github.com/simplyRoba/flowl/commit/bd8d01347f054d9eb0d02570601a160ccc4fb293))
+* align restore version errors ([af3e2b8](https://github.com/simplyRoba/flowl/commit/af3e2b8906f3e09afe820720396bd7b1996527ff))
+* clarify identify upload errors ([962dfc5](https://github.com/simplyRoba/flowl/commit/962dfc54769b434433f617bac709f7e2b82809e3))
+* describe responsive chat drawer width ([70fcb77](https://github.com/simplyRoba/flowl/commit/70fcb772e15fd257275b4e798144eae27d5ab885))
+* remove AppState implementation details ([7ab3134](https://github.com/simplyRoba/flowl/commit/7ab31342d942708e632193b1197e3375b8fc5e6e))
+* separate CI and release toolchains ([cf07009](https://github.com/simplyRoba/flowl/commit/cf07009f1daa356b0c1c734e39d5b55ef94710a9))
+* specify direct care photo replacement ([6331282](https://github.com/simplyRoba/flowl/commit/6331282918cc2053aa1361b89030f9e2b7169a3d))
+* specify MQTT behavior instead of state fields ([7560931](https://github.com/simplyRoba/flowl/commit/7560931ce1eb9ce49e81412537cb13c7c0f89ff2))
+
+
+### Dependencies
+
+* bump @humanfs/node from 0.16.7 to 0.16.8 in /ui ([e88a042](https://github.com/simplyRoba/flowl/commit/e88a04232e99e869bb38e280b4bd4393fc60ea38))
+* bump postcss-selector-parser from 7.1.1 to 7.1.5 in /ui ([c1285a6](https://github.com/simplyRoba/flowl/commit/c1285a661dda49d7658cc63e9a59bf208b1322f8))
+* bump svelte in /ui in the svelte group across 1 directory ([44e3e38](https://github.com/simplyRoba/flowl/commit/44e3e38a5fa674698ec28f118761fbf59796d77a))
+* bump uuid from 1.25.0 to 1.26.0 ([abd7c6a](https://github.com/simplyRoba/flowl/commit/abd7c6a6255e6e087207deb34aad8fbbef8e6501))
+
 ## [1.8.2](https://github.com/simplyRoba/flowl/compare/v1.8.1...v1.8.2) (2026-08-31)
 
 
