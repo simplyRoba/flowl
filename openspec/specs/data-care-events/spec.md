@@ -302,7 +302,7 @@ The API SHALL accept a photo upload via `POST /api/plants/:id/care/:event_id/pho
 #### Scenario: File too large
 
 - **WHEN** a file exceeding 5 MB is uploaded
-- **THEN** the API responds with HTTP 422
+- **THEN** the API responds with HTTP 422 and error code `PHOTO_TOO_LARGE`
 
 ### Requirement: Delete Care Event Photo
 

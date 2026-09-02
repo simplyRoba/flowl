@@ -4,7 +4,7 @@ use axum::http::StatusCode;
 
 use tracing::info;
 
-use super::error::{ApiError, db_error};
+use super::error::{ApiError, db_error, photo_multipart_error};
 use super::plants::{PLANT_SELECT, Plant, PlantRow};
 use crate::images::ImageError;
 use crate::state::AppState;
@@ -29,14 +29,14 @@ pub async fn upload_photo(
     let field = multipart
         .next_field()
         .await
-        .map_err(|_| ApiError::BadRequest("INVALID_REQUEST_BODY"))?
+        .map_err(|error| photo_multipart_error(&error))?
         .ok_or(ApiError::Validation("PHOTO_NO_FILE"))?;
 
     let content_type = field.content_type().unwrap_or("").to_string();
     let data = field
         .bytes()
         .await
-        .map_err(|_| ApiError::BadRequest("INVALID_REQUEST_BODY"))?;
+        .map_err(|error| photo_multipart_error(&error))?;
 
     let filename = state
         .image_store

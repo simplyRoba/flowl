@@ -175,7 +175,7 @@ The API SHALL accept a photo upload via `POST /api/plants/:id/photo` as multipar
 #### Scenario: File too large
 
 - **WHEN** a file exceeding 5 MB is uploaded
-- **THEN** the API responds with HTTP 422
+- **THEN** the API responds with HTTP 422 and error code `PHOTO_TOO_LARGE`
 
 ### Requirement: Delete Photo
 

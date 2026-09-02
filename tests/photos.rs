@@ -157,22 +157,27 @@ async fn upload_rejects_invalid_type() {
 }
 
 #[tokio::test]
-async fn upload_rejects_oversized_file() {
+async fn upload_rejects_files_above_image_and_request_limits() {
     let (app, _dir) = common::test_app().await;
     let id = create_plant(&app).await;
 
-    let mut data = vec![0u8; 6 * 1024 * 1024]; // 6 MB
-    data[..3].copy_from_slice(&[0xFF, 0xD8, 0xFF]);
-    let resp = app
-        .clone()
-        .oneshot(multipart_request(
-            &format!("/api/plants/{id}/photo"),
-            "image/jpeg",
-            &data,
-        ))
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    for size_mb in [6, 11] {
+        let mut data = vec![0u8; size_mb * 1024 * 1024];
+        data[..3].copy_from_slice(&[0xFF, 0xD8, 0xFF]);
+        let response = app
+            .clone()
+            .oneshot(multipart_request(
+                &format!("/api/plants/{id}/photo"),
+                "image/jpeg",
+                &data,
+            ))
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+        let body = body_json(response).await;
+        assert_eq!(body["code"], "PHOTO_TOO_LARGE");
+    }
 }
 
 #[tokio::test]

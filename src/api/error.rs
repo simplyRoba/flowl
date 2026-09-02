@@ -1,3 +1,4 @@
+use axum::extract::multipart::MultipartError;
 use axum::extract::{FromRequest, Request};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -17,6 +18,14 @@ where
             Ok(axum::Json(value)) => Ok(Self(value)),
             Err(_) => Err(ApiError::BadRequest("INVALID_REQUEST_BODY")),
         }
+    }
+}
+
+pub(super) fn photo_multipart_error(error: &MultipartError) -> ApiError {
+    if error.status() == StatusCode::PAYLOAD_TOO_LARGE {
+        ApiError::Validation("PHOTO_TOO_LARGE")
+    } else {
+        ApiError::BadRequest("INVALID_REQUEST_BODY")
     }
 }
 
