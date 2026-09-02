@@ -214,6 +214,12 @@ The plant API response SHALL include computed watering fields: `watering_status`
 - **WHEN** the plant is returned from any API endpoint
 - **THEN** `watering_status` = `due`, `last_watered` = null, `next_due` = null
 
+#### Scenario: Latest watering uses chronological order
+
+- **GIVEN** a plant has watering events recorded with different supported timezone offsets
+- **WHEN** the plant is returned from an API endpoint
+- **THEN** `last_watered` is the event representing the latest instant regardless of timestamp text ordering
+
 #### Scenario: Plant watered and not yet due
 
 - **GIVEN** a plant with a `watered` care event from yesterday and `watering_interval_days` = 7

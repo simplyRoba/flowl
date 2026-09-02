@@ -339,6 +339,20 @@ async fn create_rejects_invalid_occurred_at() {
     assert_eq!(body_json(response).await, serde_json::json!([]));
 }
 
+#[tokio::test]
+async fn last_watered_uses_chronological_timestamp_order() {
+    let (app, pool, _dir) = app_with_pool().await;
+    let plant_id = create_plant(&app).await;
+
+    insert_care_event(&pool, plant_id, "watered", "2026-01-01T10:00:00+02:00").await;
+    insert_care_event(&pool, plant_id, "watered", "2026-01-01T09:00:00Z").await;
+
+    assert_eq!(
+        plant_last_watered(&app, plant_id).await,
+        "2026-01-01T09:00:00Z"
+    );
+}
+
 // --- Care event updates ---
 
 #[tokio::test]
