@@ -46,7 +46,7 @@ The system SHALL provide a `POST /api/data/import` endpoint that replaces all ex
 #### Scenario: Version mismatch
 
 - **WHEN** the `data.json` has a `version` whose major or minor component does not match the server's crate version
-- **THEN** the response has status 400 with an error message indicating the expected and received versions
+- **THEN** the response has status 400 with error code `IMPORT_VERSION_MISMATCH`
 
 #### Scenario: Patch version difference allowed
 
