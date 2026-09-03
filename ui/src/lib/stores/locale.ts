@@ -100,21 +100,32 @@ locale.subscribe((target) => {
 });
 
 let initialized = false;
+let selectedByUser = false;
 
 export function initLocale(serverLocale?: Locale): void {
-  if (typeof window === "undefined" || initialized) return;
-  initialized = true;
+  if (typeof window === "undefined") return;
+
   const storage = getStorage();
-  const value = serverLocale ?? readLocale(storage);
-  locale.set(value);
-  if (serverLocale) writeLocale(storage, serverLocale);
+  if (serverLocale) {
+    initialized = true;
+    if (selectedByUser) return;
+    locale.set(serverLocale);
+    writeLocale(storage, serverLocale);
+    return;
+  }
+
+  if (initialized) return;
+  initialized = true;
+  locale.set(readLocale(storage));
 }
 
 export function destroyLocale(): void {
   initialized = false;
+  selectedByUser = false;
 }
 
 export function setLocale(l: Locale): void {
+  selectedByUser = true;
   locale.set(l);
   writeLocale(getStorage(), l);
   import("$lib/api")

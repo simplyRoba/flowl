@@ -20,6 +20,13 @@ A `locale` writable store SHALL hold the active locale (`'en' | 'de' | 'es'`), d
 - **THEN** the locale store is set to the backend value
 - **AND** `localStorage` key `flowl.locale` is updated to match
 
+#### Scenario: User selection wins over a pending startup response
+
+- **GIVEN** the backend locale request is in progress
+- **WHEN** the user selects a locale before the response arrives
+- **THEN** the response SHALL NOT replace the user's selection
+- **AND** the selected locale SHALL remain in `localStorage`
+
 #### Scenario: Backend unavailable falls back to localStorage
 
 - **WHEN** the application loads

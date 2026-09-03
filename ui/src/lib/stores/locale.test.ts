@@ -101,7 +101,7 @@ describe("initLocale", () => {
     expect(get(locale)).toBe("en");
   });
 
-  it("only initializes once until destroyed", () => {
+  it("only initializes from localStorage once until destroyed", () => {
     localStorage.setItem(LOCALE_STORAGE_KEY, "de");
     initLocale();
     expect(get(locale)).toBe("de");
@@ -109,6 +109,26 @@ describe("initLocale", () => {
     localStorage.setItem(LOCALE_STORAGE_KEY, "es");
     initLocale();
     expect(get(locale)).toBe("de");
+  });
+
+  it("replaces the local fallback with the backend locale", () => {
+    localStorage.setItem(LOCALE_STORAGE_KEY, "de");
+    initLocale();
+
+    initLocale("es");
+
+    expect(get(locale)).toBe("es");
+    expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe("es");
+  });
+
+  it("does not replace a user selection with a late backend response", () => {
+    initLocale();
+    setLocale("de");
+
+    initLocale("es");
+
+    expect(get(locale)).toBe("de");
+    expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe("de");
   });
 });
 
