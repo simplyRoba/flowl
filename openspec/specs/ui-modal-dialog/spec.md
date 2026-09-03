@@ -26,32 +26,32 @@ The system SHALL provide a reusable `ModalDialog` component using the HTML `<dia
 #### Scenario: Confirm callback
 - **WHEN** the user clicks the confirm button in confirm mode
 - **THEN** the `onconfirm` callback is fired
-- **AND** the dialog closes
+- **AND** the owning flow SHALL close the dialog by setting `open` to `false` after accepting the action
 
 #### Scenario: Cancel callback
 - **WHEN** the user clicks the cancel button in confirm mode
 - **THEN** the `oncancel` callback is fired
-- **AND** the dialog closes
+- **AND** the owning flow SHALL close the dialog by setting `open` to `false`
 
 #### Scenario: Alert close callback
 - **WHEN** the user clicks the OK button in alert mode
 - **THEN** the `onclose` callback is fired
-- **AND** the dialog closes
+- **AND** the owning flow SHALL close the dialog by setting `open` to `false`
 
 #### Scenario: Escape key in confirm mode
 - **WHEN** the user presses Escape while a confirm-mode dialog is open
 - **THEN** the `oncancel` callback is fired
-- **AND** the dialog closes
+- **AND** the owning flow SHALL close the dialog by setting `open` to `false`
 
 #### Scenario: Escape key in alert mode
 - **WHEN** the user presses Escape while an alert-mode dialog is open
 - **THEN** the `onclose` callback is fired
-- **AND** the dialog closes
+- **AND** the owning flow SHALL close the dialog by setting `open` to `false`
 
 #### Scenario: Backdrop click in confirm mode
 - **WHEN** the user clicks the backdrop behind a confirm-mode dialog
 - **THEN** the `oncancel` callback is fired
-- **AND** the dialog closes
+- **AND** the owning flow SHALL close the dialog by setting `open` to `false`
 
 #### Scenario: Backdrop click in alert mode
 - **WHEN** the user clicks the backdrop behind an alert-mode dialog
