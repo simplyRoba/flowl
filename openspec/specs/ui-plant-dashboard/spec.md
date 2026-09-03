@@ -67,7 +67,7 @@ The dashboard plant cards SHALL display the plant's photo when available, fallin
 
 ### Requirement: Dashboard Watering Status Indicators
 
-The dashboard plant cards SHALL display a visual indicator for plants that are due or overdue for watering.
+The dashboard plant cards SHALL display each plant's watering status and, when available, its relative next-due information.
 
 #### Scenario: Plant overdue
 
@@ -85,7 +85,8 @@ The dashboard plant cards SHALL display a visual indicator for plants that are d
 
 - **WHEN** a plant card is rendered
 - **AND** the plant's `watering_status` is `ok`
-- **THEN** no watering status indicator is shown
+- **THEN** a green status badge with "Ok" is displayed on the card
+- **AND** the badge includes the relative next-due interval when `next_due` is available
 
 ### Requirement: Dashboard Needs Attention Section
 
