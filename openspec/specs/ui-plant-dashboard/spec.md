@@ -145,16 +145,17 @@ Each attention card SHALL include a "Water" button that waters the plant directl
 
 ### Requirement: Dashboard Attention Section Responsive Layout
 
-The "Needs Attention" section SHALL adapt to the viewport width following the mockup design.
+The "Needs Attention" section SHALL adapt its columns to the available width while keeping each card readable.
 
-#### Scenario: Desktop and tablet layout
+#### Scenario: Multiple cards fit horizontally
 
-- **WHEN** the viewport width is > 768px
-- **THEN** attention cards SHALL display in a 2-column grid
+- **WHEN** sufficient horizontal space is available
+- **THEN** attention cards SHALL flow into multiple columns
+- **AND** additional columns MAY be used rather than stretching cards excessively
 
-#### Scenario: Mobile layout
+#### Scenario: Available width is limited
 
-- **WHEN** the viewport width is <= 768px
+- **WHEN** the available width cannot accommodate multiple readable cards
 - **THEN** attention cards SHALL stack in a single column
 
 ### Requirement: Dashboard offline browsing
