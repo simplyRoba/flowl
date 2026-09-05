@@ -1,23 +1,44 @@
 ## Purpose
 
-Plant entity — database schema, CRUD queries, validation, and photo upload/delete for managing plants.
+Durable Plant model, CRUD API, validation, and photo upload/delete for managing plants.
 
 ## Requirements
 
-### Requirement: Plant Database Schema
+### Requirement: Durable Plant Identity
 
-A `plants` table SHALL store plant entities with the following columns: `id` (integer primary key), `name` (text, required), `species` (text, optional), `icon` (text, default `🪴`), `photo_path` (text, nullable), `location_id` (integer, optional, foreign key to locations), `watering_interval_days` (integer, default 7), `light_needs` (text, default `indirect`), `difficulty` (text, nullable), `pet_safety` (text, nullable), `growth_speed` (text, nullable), `soil_type` (text, nullable), `soil_moisture` (text, nullable), `notes` (text, optional), `created_at` (text, ISO 8601), `updated_at` (text, ISO 8601).
+The system SHALL durably preserve each Plant with a generated numeric `id` and required `name`.
 
-#### Scenario: Table created by migration
+#### Scenario: Plant identity available
 
-- **WHEN** the application starts
-- **THEN** the `plants` table exists with all specified columns including `difficulty`, `pet_safety`, `growth_speed`, `soil_type`, and `soil_moisture`
-- **AND** the `plants` table SHALL NOT contain a `last_watered` column
+- **WHEN** the application manages plants
+- **THEN** each persisted plant has a generated numeric `id` and required `name`
 
-#### Scenario: Care info columns are nullable
+### Requirement: Durable Plant Attributes
+
+Each durable Plant SHALL preserve `species`, managed-photo association, `location_id`, and `notes` as nullable values; `icon` defaulting to `🪴`; `watering_interval_days` defaulting to 7; `light_needs` defaulting to `indirect`; and ISO 8601 `created_at` and `updated_at` timestamps. When `location_id` is not `null`, it SHALL identify an existing Location.
+
+#### Scenario: Plant attributes available
+
+- **WHEN** the application manages plants
+- **THEN** each persisted plant has the nullable, defaulted, and timestamped attributes defined by the durable Plant model
+
+### Requirement: Durable Care Info Values
+
+Each durable Plant SHALL preserve optional care-info values: `difficulty`, `pet_safety`, `growth_speed`, `soil_type`, and `soil_moisture`. Care-info values MAY be `null` when unset and, when set, SHALL use the allowed values defined in Care Info Enum Validation.
+
+#### Scenario: Care info is unset
 
 - **WHEN** a plant is created without specifying `difficulty`, `pet_safety`, `growth_speed`, `soil_type`, or `soil_moisture`
-- **THEN** those columns SHALL be NULL
+- **THEN** those care-info values are `null`
+
+### Requirement: Derived Watering History
+
+`last_watered` SHALL be derived from the chronologically latest `watered` Care Event for the Plant and SHALL NOT be an independently authoritative or mutable Plant property.
+
+#### Scenario: Last watered is derived
+
+- **WHEN** a Plant's watering history is evaluated
+- **THEN** `last_watered` is derived from its chronologically latest `watered` Care Event
 
 ### Requirement: List Plants
 
@@ -26,13 +47,13 @@ The API SHALL return all plants via `GET /api/plants` as a JSON array ordered by
 #### Scenario: Plants exist
 
 - **WHEN** a GET request is made to `/api/plants`
-- **AND** plants exist in the database
+- **AND** persisted plants exist
 - **THEN** the API responds with HTTP 200 and a JSON array of all plants with their location name included
 
 #### Scenario: No plants exist
 
 - **WHEN** a GET request is made to `/api/plants`
-- **AND** no plants exist in the database
+- **AND** no persisted plants exist
 - **THEN** the API responds with HTTP 200 and an empty JSON array `[]`
 
 ### Requirement: Get Plant
@@ -107,7 +128,7 @@ The API SHALL update an existing plant via `PUT /api/plants/:id` with a JSON bod
 #### Scenario: Care info field cleared
 
 - **WHEN** a PUT request is made to `/api/plants/1` with `{"difficulty": null}`
-- **THEN** the plant's `difficulty` is set to NULL
+- **THEN** the plant's `difficulty` is set to `null`
 
 #### Scenario: Invalid care info value on update
 
@@ -123,7 +144,7 @@ The API SHALL delete a plant via `DELETE /api/plants/:id`.
 - **WHEN** a DELETE request is made to `/api/plants/1`
 - **AND** a plant with id 1 exists
 - **THEN** the API responds with HTTP 204
-- **AND** the plant is removed from the database
+- **AND** the plant no longer exists in persisted application data
 
 #### Scenario: Plant not found
 
@@ -205,7 +226,7 @@ When a plant is deleted, its associated managed media and canonical renditions S
 
 ### Requirement: Plant API Response — Watering Fields
 
-The plant API response SHALL include computed watering fields: `watering_status` (string: `ok`, `due`, or `overdue`), `last_watered` (string or null, ISO 8601), and `next_due` (string or null, ISO 8601 date). The `last_watered` field SHALL be computed as the most recent `occurred_at` from `care_events` where `event_type = 'watered'` for the plant.
+The plant API response SHALL include computed watering fields: `watering_status` (string: `ok`, `due`, or `overdue`), `last_watered` (string or null, ISO 8601), and `next_due` (string or null, ISO 8601 date). The `last_watered` field SHALL be computed as the most recent `occurred_at` from the Plant's Care Events where `event_type = 'watered'`.
 
 #### Scenario: Plant never watered
 
@@ -299,7 +320,7 @@ The API SHALL validate care info fields against their allowed values. Allowed va
 - `soil_type`: `standard`, `cactus-mix`, `orchid-bark`, `peat-moss`
 - `soil_moisture`: `dry`, `moderate`, `moist`
 
-NULL is always allowed (field is optional).
+`null` is always allowed (the field is optional).
 
 #### Scenario: Valid values accepted
 

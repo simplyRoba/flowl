@@ -1,23 +1,28 @@
 ## Purpose
 
-Backend persistence for user preferences (theme, locale) via a single-row SQLite table and REST API.
+Durable current user preferences (theme and locale) and their REST API.
 
 ## Requirements
 
-### Requirement: User settings table
+### Requirement: Current User Preferences
 
-The system SHALL maintain a `user_settings` table with a single row containing `theme` and `locale` columns. The table SHALL be seeded with default values (`theme = 'system'`, `locale = 'en'`) on creation.
+The system SHALL maintain one durable current preference set containing `theme` and `locale`. On first use, the preference set SHALL default to `theme = 'system'` and `locale = 'en'`; successful updates SHALL persist.
 
-#### Scenario: Table exists after migration
+#### Scenario: Defaults on first use
 
-- **WHEN** the application starts
-- **THEN** the `user_settings` table contains exactly one row
-- **AND** the row has `theme = 'system'` and `locale = 'en'` if no prior updates were made
+- **WHEN** the current preference set is first used and no prior updates were made
+- **THEN** it has `theme = 'system'` and `locale = 'en'`
 
-#### Scenario: Single-row constraint
+#### Scenario: Updated preferences persist
 
-- **WHEN** an INSERT is attempted with `id != 1`
-- **THEN** the database rejects it with a CHECK constraint violation
+- **WHEN** one or both current preference values are successfully updated
+- **AND** the application restarts and reopens its durable data
+- **THEN** subsequent reads return the updated values
+
+#### Scenario: Defaults persist until changed
+
+- **WHEN** the application restarts before either preference has been updated
+- **THEN** the current preferences remain `theme = 'system'` and `locale = 'en'`
 
 ### Requirement: Get settings endpoint
 

@@ -1,51 +1,54 @@
 ## Purpose
 
-SQLite connection pool via sqlx, migration runner, and database file configuration.
+Durable application data configuration and safe startup data upgrades.
 
 ## Requirements
 
-### Requirement: SQLite Connection Pool
+### Requirement: Durable Application Data
 
-The application SHALL create a SQLite connection pool via sqlx at startup, using the path specified by `FLOWL_DB_PATH` (default `/data/flowl.db`).
+The application SHALL durably preserve application data in the data file specified by `FLOWL_DB_PATH`, which defaults to `/data/flowl.db`.
 
-#### Scenario: Database created on first startup
+#### Scenario: Data created on first startup
 
-- **WHEN** the application starts and no database file exists at `FLOWL_DB_PATH`
-- **THEN** a new SQLite database file is created at that path
+- **WHEN** the application starts and no data file exists at `FLOWL_DB_PATH`
+- **THEN** a durable application data file is initialized at that exact path
 
-#### Scenario: Existing database reused
+#### Scenario: Existing data reopened
 
-- **WHEN** the application starts and a database file exists at `FLOWL_DB_PATH`
-- **THEN** the existing database is opened without data loss
+- **WHEN** the application starts and a data file exists at `FLOWL_DB_PATH`
+- **THEN** that exact data file is reopened without loss
 
-#### Scenario: Custom database path
+#### Scenario: Custom data path
 
 - **WHEN** the application starts with `FLOWL_DB_PATH=/custom/path/flowl.db`
-- **THEN** the database is created or opened at `/custom/path/flowl.db`
+- **THEN** the application data file is initialized or reopened at exactly `/custom/path/flowl.db`
 
-### Requirement: Migration Runner
+### Requirement: Startup Data Upgrades
 
-The application SHALL run all pending sqlx migrations at startup before accepting HTTP requests.
+The application SHALL safely apply all required data upgrades in order during startup before accepting HTTP requests.
 
-#### Scenario: Migrations applied on startup
+#### Scenario: Upgrades applied on startup
 
-- **WHEN** the application starts with pending migrations
-- **THEN** all pending migrations are applied in order
+- **WHEN** the application starts with required data upgrades pending
+- **THEN** all required upgrades are applied in order before HTTP requests are accepted
 
-#### Scenario: No pending migrations
+#### Scenario: No upgrades required
 
-- **WHEN** the application starts with all migrations already applied
+- **WHEN** the application starts with application data already current
 - **THEN** startup proceeds without errors
 
-#### Scenario: Migration failure
+#### Scenario: Upgrade failure
 
-- **WHEN** a migration fails to apply
-- **THEN** the application exits with a non-zero exit code
-- **AND** an error message is logged describing the failure
+- **WHEN** a required data upgrade fails
+- **THEN** an error describing the failure is logged
+- **AND** the application exits with a non-zero exit code
 
-#### Scenario: Plant and location tables created
+### Requirement: Persisted Data Compatibility
 
-- **WHEN** the application starts with the phase-2 migration pending
-- **THEN** the `plants` table is created with columns: `id`, `name`, `species`, `icon`, `location_id`, `watering_interval_days`, `light_needs`, `notes`, `created_at`, `updated_at`
-- **AND** the `locations` table is created with columns: `id`, `name`
-- **AND** a foreign key from `plants.location_id` to `locations.id` is established
+The application SHALL preserve compatibility with application data persisted by existing Flowl installations.
+
+#### Scenario: Existing installation data upgraded
+
+- **WHEN** the application starts with data persisted by an earlier compatible Flowl version
+- **THEN** any required data upgrades complete before HTTP requests are accepted
+- **AND** existing logical records, identifiers, timestamps, optional values, relationships, and managed-media associations remain available without loss, except for deliberate transformations defined by an upgrade

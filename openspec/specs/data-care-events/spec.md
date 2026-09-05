@@ -1,24 +1,23 @@
 ## Purpose
 
-Care events entity — database schema, CRUD API, validation, and global paginated feed for tracking plant care history.
+Durable Care Event model, CRUD API, validation, and global paginated feed for tracking plant care history.
 
 ## Requirements
 
-### Requirement: Care Events Database Schema
+### Requirement: Durable Care Event Model
 
-A `care_events` table SHALL store care event records with the following columns: `id` (integer primary key), `plant_id` (integer, NOT NULL, foreign key to `plants.id` with ON DELETE CASCADE), `event_type` (text, NOT NULL), `notes` (text, nullable), `photo_path` (text, nullable), `occurred_at` (text, NOT NULL, ISO 8601 datetime), `created_at` (text, NOT NULL, ISO 8601 datetime).
+The system SHALL durably preserve each Care Event with a generated numeric `id`, a `plant_id` that identifies an existing Plant, a required `event_type`, nullable `notes` and managed-photo association, and ISO 8601 `occurred_at` and `created_at` timestamps.
 
-#### Scenario: Migration creates care_events table
+#### Scenario: Care event model available
 
-- **WHEN** the migration runs
-- **THEN** the `care_events` table exists with all specified columns including `photo_path`
-- **AND** a foreign key from `plant_id` to `plants.id` with ON DELETE CASCADE is established
+- **WHEN** the application manages care history for a plant
+- **THEN** each persisted care event has its generated numeric `id`, owning `plant_id`, required `event_type`, nullable `notes` and photo association, and ISO 8601 timestamps
 
-#### Scenario: Cascade delete on plant removal
+#### Scenario: Associated care events removed on plant deletion
 
 - **GIVEN** a plant with id 1 has care events
 - **WHEN** the plant is deleted via `DELETE /api/plants/1`
-- **THEN** all care events with `plant_id` = 1 are automatically deleted
+- **THEN** all care events with `plant_id` = 1 are deleted
 
 ### Requirement: List Care Events
 
@@ -127,14 +126,14 @@ The API SHALL delete a care event via `DELETE /api/plants/:id/care/:event_id`.
 - **GIVEN** a care event with id 5 belongs to plant with id 1
 - **WHEN** a DELETE request is made to `/api/plants/1/care/5`
 - **THEN** the API responds with HTTP 204
-- **AND** the care event is removed from the database
+- **AND** the care event no longer exists in the persisted care history
 
 #### Scenario: Care event with photo deleted
 
 - **GIVEN** a care event with id 5 has a photo
 - **WHEN** a DELETE request is made to `/api/plants/1/care/5`
 - **THEN** the associated managed media and its canonical renditions are removed
-- **AND** the care event is removed from the database
+- **AND** the care event no longer exists in the persisted care history
 
 #### Scenario: Watered event deletion triggers watering synchronization
 
@@ -205,7 +204,7 @@ The API SHALL return bounded, paginated care events across all plants via `GET /
 
 #### Scenario: Supported timestamp representations
 
-- **GIVEN** care events use valid UTC, explicit-offset, or legacy SQLite-compatible timestamps
+- **GIVEN** care events use RFC 3339 timestamps with UTC or explicit offsets, or legacy persisted date-time representations accepted by earlier Flowl releases, including timezone-less and fractional-second forms
 - **WHEN** the global journal is requested across multiple pages
 - **THEN** the events SHALL be ordered by their actual chronological instants rather than raw timestamp text
 - **AND** every event SHALL be returned exactly once

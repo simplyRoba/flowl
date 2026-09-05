@@ -1,17 +1,17 @@
 ## Purpose
 
-Location entity — database schema, queries, and plant count for reusable room/location labels.
+Durable Location model, APIs, and plant count for reusable room/location labels.
 
 ## Requirements
 
-### Requirement: Location Database Schema
+### Requirement: Durable Location Model
 
-A `locations` table SHALL store reusable room/location labels with the following columns: `id` (integer primary key), `name` (text, required, unique).
+The system SHALL durably preserve each reusable Location with a generated numeric `id` and a required unique `name`.
 
-#### Scenario: Table created by migration
+#### Scenario: Location model available
 
-- **WHEN** the application starts
-- **THEN** the `locations` table exists with all specified columns
+- **WHEN** the application manages locations
+- **THEN** each persisted location has a generated numeric `id` and a unique required `name`
 
 ### Requirement: List Locations
 
@@ -72,15 +72,15 @@ The API SHALL update an existing location via `PUT /api/locations/:id` with a JS
 
 ### Requirement: Delete Location
 
-The API SHALL delete a location via `DELETE /api/locations/:id`. Plants referencing the deleted location SHALL have their `location_id` set to NULL.
+The API SHALL delete a location via `DELETE /api/locations/:id`. Plants associated with the deleted location SHALL be retained and have their `location_id` set to `null`.
 
 #### Scenario: Location deleted
 
 - **WHEN** a DELETE request is made to `/api/locations/1`
 - **AND** a location with id 1 exists
 - **THEN** the API responds with HTTP 204
-- **AND** the location is removed from the database
-- **AND** any plants with `location_id` = 1 have their `location_id` set to NULL
+- **AND** the location no longer exists
+- **AND** any plants with `location_id` = 1 are retained with their `location_id` set to `null`
 
 #### Scenario: Location not found
 
