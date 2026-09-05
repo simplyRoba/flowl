@@ -37,7 +37,6 @@ pub struct ExportPlant {
     pub photo_path: Option<String>,
     pub location_id: Option<i64>,
     pub watering_interval_days: i64,
-    pub last_watered: Option<String>,
     pub light_needs: String,
     pub difficulty: Option<String>,
     pub pet_safety: Option<String>,
@@ -70,10 +69,9 @@ pub async fn export_data(State(state): State<AppState>) -> Result<Response, ApiE
 
     let plants = sqlx::query_as::<_, ExportPlant>(
         "SELECT p.id, p.name, p.species, p.icon, p.photo_path, p.location_id, p.watering_interval_days, \
-         lw.last_watered, \
          p.light_needs, p.difficulty, p.pet_safety, p.growth_speed, p.soil_type, \
          p.soil_moisture, p.notes, p.created_at, p.updated_at \
-         FROM plants p LEFT JOIN plant_last_watered lw ON lw.plant_id = p.id",
+         FROM plants p",
     )
     .fetch_all(&state.pool)
     .await

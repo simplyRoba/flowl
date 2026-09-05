@@ -178,6 +178,7 @@ async fn export_populated_database_with_photo() {
     assert_eq!(data["locations"].as_array().unwrap().len(), 1);
     assert_eq!(data["plants"].as_array().unwrap().len(), 1);
     assert_eq!(data["plants"][0]["name"], "Monstera");
+    assert!(data["plants"][0].get("last_watered").is_none());
     assert_eq!(data["care_events"].as_array().unwrap().len(), 1);
 }
 

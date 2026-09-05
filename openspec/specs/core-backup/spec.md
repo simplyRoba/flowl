@@ -22,8 +22,9 @@ The system SHALL provide a `GET /api/data/export` endpoint that returns all user
 - **THEN** `version` is a string matching the server's crate version
 - **AND** `exported_at` is an ISO 8601 UTC timestamp
 - **AND** `locations` is an array of all locations with their `id` and `name`
-- **AND** `plants` is an array of all plants with all columns including `location_id`, `photo_path`, `last_watered`, and care info fields (`difficulty`, `pet_safety`, `growth_speed`, `soil_type`, `soil_moisture`)
-- **AND** `care_events` is an array of all care events with `plant_id`, `event_type`, `notes`, `photo_path`, `occurred_at`
+- **AND** `plants` is an array containing each plant's `id`, `name`, `species`, `icon`, `photo_path`, `location_id`, `watering_interval_days`, `light_needs`, `difficulty`, `pet_safety`, `growth_speed`, `soil_type`, `soil_moisture`, `notes`, `created_at`, and `updated_at`
+- **AND** derived watering state is not included because it is reconstructed from care events
+- **AND** `care_events` is an array containing each event's `id`, `plant_id`, `event_type`, `notes`, `photo_path`, `occurred_at`, and `created_at`
 
 #### Scenario: Export includes original photos only
 
