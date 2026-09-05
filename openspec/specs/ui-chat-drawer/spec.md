@@ -115,7 +115,7 @@ The chat drawer SHALL consume the SSE stream from `POST /api/ai/chat` and render
 
 #### Scenario: Stream error
 
-- **WHEN** a `{"error": "..."}` event is received or the stream fails
+- **WHEN** the structured stream error event defined by the AI chat contract is received or the stream otherwise fails
 - **THEN** an error message SHALL be displayed in the chat
 - **AND** the input SHALL be re-enabled
 
