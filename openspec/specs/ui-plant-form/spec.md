@@ -181,9 +181,16 @@ The plant add and edit forms SHALL display an offline message and disable submis
 
 ### Requirement: Media section upload hint
 
-The photo upload placeholder in the Media section SHALL mention that a photo is needed for AI plant identification.
+The photo upload placeholder in the Media section SHALL describe available photo behavior without advertising unavailable AI capabilities.
 
-#### Scenario: Empty photo upload area
+#### Scenario: Empty photo upload area with AI enabled
 
 - **WHEN** the media section shows the empty photo upload dropzone
-- **THEN** a hint SHALL be displayed indicating that a photo is also needed to identify a plant
+- **AND** AI plant identification is available
+- **THEN** a hint SHALL indicate that a photo enables plant identification
+
+#### Scenario: Empty photo upload area with AI disabled
+
+- **WHEN** the media section shows the empty photo upload dropzone
+- **AND** AI plant identification is unavailable
+- **THEN** the upload guidance SHALL remain visible without the AI identification hint
