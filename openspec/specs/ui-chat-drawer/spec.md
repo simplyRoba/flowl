@@ -241,6 +241,7 @@ The frontend API client SHALL provide a `summarizeChat` function.
 
 - **WHEN** `summarizeChat(plantId, history)` is called
 - **THEN** a `POST` request SHALL be sent to `/api/ai/summarize` with `{ plant_id, history }` as JSON
+- **AND** each history entry SHALL contain only its role and text content, with attached image data omitted
 - **AND** the function SHALL return the `summary` string from the response
 
 #### Scenario: Summarize API error

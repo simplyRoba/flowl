@@ -539,9 +539,10 @@ export async function summarizeChat(
   plantId: number,
   history: ChatMessage[],
 ): Promise<string> {
+  const historyClean = history.map(({ role, content }) => ({ role, content }));
   const data: { summary: string } = await request("POST", "/api/ai/summarize", {
     plant_id: plantId,
-    history,
+    history: historyClean,
   });
   return data.summary;
 }

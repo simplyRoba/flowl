@@ -12,6 +12,7 @@ import {
   exportData,
   importData,
   chatPlant,
+  summarizeChat,
 } from "./api";
 
 vi.mock("./stores/network", () => ({
@@ -89,6 +90,27 @@ describe("request helper (via public API functions)", () => {
       { role: "user", content: "What is this?", image },
       { role: "assistant", content: "It looks stressed." },
     ]);
+  });
+
+  it("omits images from chat history when requesting a summary", async () => {
+    const fn = mockFetch({
+      json: vi.fn().mockResolvedValue({ summary: "Plant care summary" }),
+    });
+    const image = `data:image/jpeg;base64,${"a".repeat(3 * 1024 * 1024)}`;
+
+    const result = await summarizeChat(1, [
+      { role: "user", content: "What is this spot?", image },
+      { role: "assistant", content: "It may be sunburn." },
+    ]);
+
+    expect(result).toBe("Plant care summary");
+    const request = fn.mock.calls[0][1] as RequestInit;
+    const body = JSON.parse(request.body as string);
+    expect(body.history).toEqual([
+      { role: "user", content: "What is this spot?" },
+      { role: "assistant", content: "It may be sunburn." },
+    ]);
+    expect((request.body as string).length).toBeLessThan(1024);
   });
 
   it("throws ApiError on non-ok response", async () => {
