@@ -100,7 +100,6 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 
 - **WHEN** the chat drawer is open on mobile (viewport <= 768px)
 - **THEN** the page action bar (Back / Edit / Delete) SHALL be hidden
-- **AND** the bottom sheet SHALL sit directly above the bottom nav bar
 
 #### Scenario: Mobile action bar restored on chat close
 
