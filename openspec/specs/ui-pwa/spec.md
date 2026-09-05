@@ -159,7 +159,7 @@ The app SHALL register a service worker on page load in production builds.
 #### Scenario: Service worker registered in production
 
 - **WHEN** the app loads in a production build
-- **THEN** the app SHALL register a service worker via `navigator.serviceWorker.register`
+- **THEN** the app SHALL activate its PWA offline support
 
 #### Scenario: No service worker in development
 
@@ -173,7 +173,7 @@ The service worker SHALL precache all static build assets so they are available 
 #### Scenario: Build assets cached on install
 
 - **WHEN** the service worker installs
-- **THEN** it SHALL precache all SvelteKit build output files (JS, CSS, HTML shell)
+- **THEN** it SHALL precache all packaged application scripts, styles, and the HTML shell
 - **AND** it SHALL precache static assets (icons, manifest, favicon)
 
 #### Scenario: Cache-first for precached assets
@@ -190,7 +190,7 @@ The service worker SHALL precache all static build assets so they are available 
 
 ### Requirement: API response caching
 
-The service worker SHALL cache GET responses for plant-related API endpoints in the versioned API data cache `flowl-api-{version}` using a network-first strategy with stale fallback.
+For cacheable plant-related GET endpoints, the service worker SHALL prefer a fresh network response and use a stored response only when the network request fails without an HTTP response.
 
 #### Scenario: Cacheable API endpoints
 
@@ -201,21 +201,21 @@ The service worker SHALL cache GET responses for plant-related API endpoints in 
 
 - **WHEN** the service worker intercepts a cacheable API request
 - **AND** the network is available
-- **THEN** the service worker SHALL fetch the response from the network
-- **AND** it SHALL clone the response and store it in the `flowl-api-{version}` API data cache
-- **AND** it SHALL return the network response to the caller
+- **THEN** the service worker SHALL return the network response to the caller
+- **AND** when authentication is disabled, retain the received response for later offline fallback
+- **AND** when authentication is enabled, retain it only under the authentication-safe policy below
 
 #### Scenario: Stale fallback when offline
 
 - **WHEN** the service worker intercepts a cacheable API request
-- **AND** the network request fails
+- **AND** the network request rejects without an HTTP response
 - **AND** a cached response exists for the request URL
 - **THEN** the service worker SHALL return the cached response
 
 #### Scenario: No cache and no network
 
 - **WHEN** the service worker intercepts a cacheable API request
-- **AND** the network request fails
+- **AND** the network request rejects without an HTTP response
 - **AND** no cached response exists
 - **THEN** the service worker SHALL let the fetch fail naturally so the calling code receives the error
 
@@ -231,20 +231,20 @@ The service worker SHALL cache GET responses for plant-related API endpoints in 
 
 ### Requirement: Thumbnail image caching
 
-The service worker SHALL cache thumbnail images in the versioned photo cache `flowl-photo-{version}` using a cache-first strategy when authentication is disabled.
+When authentication is disabled, the service worker SHALL prefer a stored thumbnail response and fetch the thumbnail only when no stored response exists.
 
 #### Scenario: Thumbnail request cached
 
 - **WHEN** the browser requests a URL matching the thumbnail pattern (`/uploads/*_200.jpg`, `/uploads/*_600.jpg`, or `/uploads/*_1000.jpg`)
-- **THEN** the service worker SHALL check the photo cache for a stored response
+- **THEN** the service worker SHALL check for a stored response
 - **AND** if cached, it SHALL return the cached response without a network request
 
 #### Scenario: Thumbnail cache miss
 
 - **WHEN** the browser requests a thumbnail URL
-- **AND** no cached response exists in the photo cache
-- **THEN** the service worker SHALL fetch from the network
-- **AND** it SHALL store the response in the `flowl-photo-{version}` photo cache for future requests
+- **AND** no stored response exists
+- **THEN** the service worker SHALL fetch the response from the network
+- **AND** retain that response for future requests
 
 #### Scenario: Full-size images not cached
 
@@ -253,21 +253,17 @@ The service worker SHALL cache thumbnail images in the versioned photo cache `fl
 
 ### Requirement: API cache lifecycle
 
-The service worker SHALL maintain separate versioned caches for static application assets, API data, and thumbnail photos. Static assets SHALL use `flowl-cache-{version}`, cacheable API data SHALL use `flowl-api-{version}`, and thumbnails SHALL use `flowl-photo-{version}`, where each `{version}` matches the SvelteKit build version.
+The service worker SHALL keep current application assets, API data, and thumbnail photos isolated from one another so each category can follow its required freshness, privacy, and cleanup behavior.
 
-#### Scenario: Separate cache name
+#### Scenario: Cached content categories remain separate
 
-- **WHEN** the service worker stores static assets, cacheable API data, or thumbnails
-- **THEN** static assets SHALL use `flowl-cache-{version}`
-- **AND** cacheable API data SHALL use `flowl-api-{version}`
-- **AND** thumbnails SHALL use `flowl-photo-{version}`
+- **WHEN** the service worker stores application assets, cacheable API data, or thumbnails
+- **THEN** each category SHALL remain isolated so its own freshness, privacy, and cleanup policy can be applied
 
 #### Scenario: Current cache set retained on activation
 
 - **WHEN** a service worker version activates
-- **THEN** it SHALL retain the current `flowl-cache-{version}` static cache
-- **AND** it SHALL retain the current `flowl-api-{version}` API data cache
-- **AND** it SHALL retain the current `flowl-photo-{version}` thumbnail cache
+- **THEN** it SHALL retain current application assets, API data, and thumbnails
 
 #### Scenario: Old API caches cleaned on activation
 
@@ -293,7 +289,7 @@ The service worker SHALL serve a branded offline fallback page when a navigation
 
 ### Requirement: Stale cache cleanup on update
 
-The service worker SHALL remove obsolete versioned application caches when a new version activates while retaining the current static `flowl-cache-{version}`, API data `flowl-api-{version}`, and thumbnail `flowl-photo-{version}` caches.
+When a new application version activates, the service worker SHALL remove obsolete cached application content while retaining content belonging to the current version.
 
 #### Scenario: Old caches deleted on activation
 
@@ -304,20 +300,20 @@ The service worker SHALL remove obsolete versioned application caches when a new
 #### Scenario: New worker activates immediately
 
 - **WHEN** a new service worker version finishes installing
-- **THEN** it SHALL call `skipWaiting()` to activate immediately without waiting for existing clients to close
+- **THEN** it SHALL become active without requiring existing app windows to close first
 
 ### Requirement: Update notification
 
 The app SHALL notify the user when a new service worker version has activated so they can reload to get the latest version.
 
-#### Scenario: Update prompt shown on controller change
+#### Scenario: Update prompt shown when an update becomes active
 
-- **WHEN** a new service worker takes control of the page
+- **WHEN** a newly installed application version becomes active
 - **THEN** the app SHALL display a notification prompting the user to reload
 
 #### Scenario: No update prompt on first registration
 
-- **WHEN** the service worker is registered for the first time (no previous controller)
+- **WHEN** PWA offline support is activated for the first time
 - **THEN** the app SHALL NOT display an update notification
 
 ### Requirement: Authentication-safe API caching
@@ -377,12 +373,12 @@ When authentication is enabled, canonical thumbnail URLs SHALL use network-first
 
 ### Requirement: Authentication responses are network-only
 
-The service worker SHALL never place `/auth/*` requests or responses, login result responses, authorization redirects, callback responses, logout responses, or authentication-required error responses in offline application caches.
+The service worker SHALL always obtain `/auth/*` requests and responses, login results, authorization redirects, callbacks, logout responses, and authentication-required errors from the network and SHALL NOT store them in any PWA-managed cache or persistent offline store.
 
 #### Scenario: Auth endpoint requested
 
 - **WHEN** a request targets any `/auth/*` endpoint
-- **THEN** it goes to the network without application-cache lookup or insertion
+- **THEN** it is obtained from the network and is not stored in any PWA-managed cache or persistent offline store
 
 #### Scenario: Authentication redirect received
 
@@ -391,15 +387,14 @@ The service worker SHALL never place `/auth/*` requests or responses, login resu
 
 ### Requirement: Authentication-aware navigation fallback
 
-When authentication is enabled and the network responds, navigation to a normal application route SHALL reach the backend before any static/precache or runtime navigation lookup, including cached `index.html`. Only when navigation rejects without an HTTP response SHALL the service worker use the canonical cached-shell or branded-offline-page fallback. `/auth/*` navigation SHALL remain network-only, and public `/login` resources SHALL remain available.
+When authentication is enabled and the network responds, the backend response SHALL take precedence over cached application content for navigation to normal application routes. Only when navigation fails without an HTTP response SHALL the service worker use the cached application shell or branded offline fallback. `/auth/*` navigation SHALL remain network-only, and public `/login` resources SHALL remain available.
 
 #### Scenario: Online unauthenticated navigation reaches backend
 
 - **WHEN** authentication is enabled
 - **AND** `index.html` or another application shell is precached
 - **AND** an unauthenticated browser navigates online to a normal application route
-- **THEN** the service worker contacts the backend before every cache lookup
-- **AND** returns the backend login redirect
+- **THEN** the service worker returns the backend login redirect instead of cached application content
 
 #### Scenario: Temporary outage preserves canonical navigation fallback
 
@@ -409,13 +404,13 @@ When authentication is enabled and the network responds, navigation to a normal 
 
 ### Requirement: Explicit logout protected-cache purge
 
-The service worker SHALL support an acknowledged explicit-logout purge that deletes protected API, photo, and runtime application-navigation data across current and obsolete Flowl cache versions. It SHALL retain public login/PWA resources, service-worker version metadata, and local theme/locale preferences. Neither session expiry nor ordinary network loss SHALL trigger this purge.
+Explicit logout SHALL request removal of protected API, photo, and application-navigation data from both current and obsolete offline content and SHALL wait for confirmation that removal completed before logout navigation. It SHALL retain public login/PWA resources, update metadata, and local theme/locale preferences. Neither session expiry nor ordinary network loss SHALL trigger this removal.
 
 #### Scenario: Explicit logout purges protected content
 
-- **WHEN** the frontend sends the explicit logout purge message
-- **THEN** the service worker deletes protected API, photo, and runtime application-navigation cache entries
-- **AND** acknowledges completion before logout navigation proceeds
+- **WHEN** explicit logout begins
+- **THEN** the frontend requests removal of protected API, photo, and application-navigation offline content
+- **AND** logout navigation waits until the offline layer confirms that removal completed
 
 #### Scenario: Public login resources survive logout
 
@@ -434,48 +429,43 @@ The service worker SHALL support an acknowledged explicit-logout purge that dele
 - **THEN** the service worker does not purge protected caches merely because of expiry
 - **AND** the response reaches the frontend expiry handler
 
-### Requirement: Authoritative service-worker authentication mode
+### Requirement: Authoritative authentication state for offline content
 
-A newly started service worker SHALL begin with authentication mode unknown. Unknown mode SHALL use authentication-enabled protected, fail-closed policies. Disabled mode SHALL be established only by a fresh, successful, non-redirected, network-only `/auth/config` response reporting `enabled: false`; `/auth/config` SHALL never be satisfied from an application or offline cache. A client message MAY tighten the worker to enabled mode or invalidate its current mode, but SHALL NOT establish disabled mode. While disabled, the worker SHALL recheck authoritative backend configuration before navigation, API, or thumbnail policies capable of exposing cached application data so a disabled-to-enabled backend change is observed. If disabled mode was previously established and that fresh configuration request rejects solely because the network is unavailable, existing authentication-disabled offline behavior SHALL remain available. A configuration failure while mode is unknown SHALL NOT establish or assume disabled mode.
+Whenever the service-worker global starts or restarts, including after eviction and reactivation, it SHALL treat the authentication state as unconfirmed and apply authentication-enabled fail-closed rules to cached application content. Authentication-disabled behavior SHALL be established only by a fresh, successful, non-redirected `/auth/config` response obtained directly from the backend while bypassing all caches; confirmation from an earlier service-worker global lifetime, cached content, or browser-reported state SHALL NOT establish it. Before using authentication-disabled behavior for navigation, API data, or thumbnails, the service worker SHALL recheck the backend configuration so a change to enabled authentication is applied first. When disabled authentication was confirmed during the current service-worker global lifetime and the recheck fails solely because the network is unavailable, the existing authentication-disabled offline behavior SHALL remain available.
 
-#### Scenario: Newly started worker fails closed while mode is unknown
+#### Scenario: Unconfirmed authentication state fails closed
 
-- **WHEN** a service worker starts or restarts without an authoritative authentication mode
-- **AND** fresh `/auth/config` cannot establish the current mode
-- **THEN** the worker keeps its mode unknown
-- **AND** uses protected fail-closed navigation, API, and thumbnail policies
-- **AND** does not use disabled-mode cache-first behavior
+- **WHEN** the service-worker global starts or restarts, including after eviction and reactivation
+- **AND** a fresh `/auth/config` response cannot be obtained
+- **THEN** protected fail-closed navigation, API, and thumbnail behavior is used
+- **AND** authentication-disabled cache-first behavior is not used
 
-#### Scenario: Worker restart establishes disabled mode from the backend
+#### Scenario: Backend confirms authentication is disabled
 
-- **WHEN** a newly restarted worker has unknown authentication mode
-- **AND** a fresh network-only `/auth/config` response reports `enabled: false`
-- **THEN** the worker establishes disabled mode
-- **AND** preserves the canonical authentication-disabled cache behavior
+- **WHEN** a fresh non-redirected `/auth/config` response obtained directly from the backend while bypassing all caches reports `enabled: false`
+- **THEN** the canonical authentication-disabled cache behavior becomes available
 
-#### Scenario: Authentication config is network-only
+#### Scenario: Authentication config is obtained directly
 
-- **WHEN** the worker determines or rechecks authentication mode
-- **THEN** it requests `/auth/config` from the network without application-cache lookup or insertion
-- **AND** a cached application or offline response cannot establish disabled mode
+- **WHEN** the PWA determines or rechecks authentication state
+- **THEN** it obtains `/auth/config` directly from the backend while bypassing all caches and does not retain the response
+- **AND** cached application content cannot establish that authentication is disabled
 
 #### Scenario: Disabled-to-enabled transition is observed
 
-- **WHEN** the worker previously established disabled mode
+- **WHEN** the backend previously confirmed that authentication was disabled
 - **AND** the backend configuration changes to `enabled: true`
 - **AND** a navigation, cacheable API, or thumbnail request could expose cached application data
-- **THEN** the worker rechecks `/auth/config` before applying the disabled-mode policy
-- **AND** changes to enabled protected policies before handling that application request
+- **THEN** the PWA confirms the current backend configuration before using authentication-disabled behavior
+- **AND** applies authentication-enabled protection before handling that application request
 
-#### Scenario: Client cannot establish disabled mode
+#### Scenario: Browser state cannot establish disabled authentication
 
-- **WHEN** a client message reports that authentication is disabled
-- **THEN** the worker may invalidate its current mode and request fresh backend configuration
-- **AND** does not establish disabled mode from the client message alone
+- **WHEN** browser-side state reports that authentication is disabled without fresh backend confirmation
+- **THEN** authentication-disabled cache behavior is not enabled from that state
 
-#### Scenario: Previously established disabled mode remains usable offline
+#### Scenario: Previously confirmed disabled authentication remains usable offline
 
-- **WHEN** the worker previously established disabled mode from a fresh backend response
-- **AND** a later authoritative configuration request rejects solely because the network is unavailable
-- **THEN** the worker retains disabled mode for that request
-- **AND** existing authentication-disabled offline fallback remains available
+- **WHEN** the backend confirmed that authentication was disabled during the current service-worker global lifetime
+- **AND** a later configuration request fails solely because the network is unavailable
+- **THEN** existing authentication-disabled offline fallback remains available
