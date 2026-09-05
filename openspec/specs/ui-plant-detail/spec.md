@@ -163,11 +163,11 @@ The lightbox SHALL support zooming and panning of the photo for detailed inspect
 
 The plant detail view SHALL display watering status and a "Water now" action.
 
-#### Scenario: Watering status displayed
+#### Scenario: Watering status and details displayed
 
 - **WHEN** the plant detail view is rendered
-- **THEN** the watering info card shows the current watering status (`ok`, `due`, or `overdue`) with a colored indicator
-- **AND** the last watered date is shown (or "Never" if null)
+- **THEN** the current watering status (`ok`, `due`, or `overdue`) SHALL be displayed prominently with a colored indicator near the "Water now" action
+- **AND** the watering info card shows the last watered date (or "Never" if null)
 - **AND** the next due date is shown (or "N/A" if never watered)
 - **AND** the watering interval is shown
 
