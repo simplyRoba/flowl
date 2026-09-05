@@ -956,7 +956,7 @@ describe("settings offline message", () => {
     await waitFor(() => {
       expect(screen.getByText("Data")).toBeTruthy();
       expect(screen.getByText("About")).toBeTruthy();
-      expect(screen.getByText("Copyright (C) 2026 simplyRoba.")).toBeTruthy();
+      expect(screen.getByText("© 2026 simplyRoba.")).toBeTruthy();
     });
 
     // Go offline - stale sections should disappear
