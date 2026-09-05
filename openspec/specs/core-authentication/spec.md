@@ -38,7 +38,7 @@ OIDC authentication SHALL be disabled by default. `FLOWL_AUTH_ENABLED` SHALL be 
 
 ### Requirement: Exact issuer and external URL validation
 
-Flowl SHALL retain `FLOWL_OIDC_ISSUER` as its exact configured string and separately validate it as an absolute HTTPS issuer URL without changing that representation. `IssuerUrl` SHALL be constructed directly from the retained raw string, never from a reserialized `url::Url`; discovery and signature-verified ID-token issuer values SHALL also be compared to the retained raw string as a defense-in-depth exact check. URL-normalized alternatives SHALL NOT be accepted. `FLOWL_EXTERNAL_URL` SHALL be an explicit absolute HTTPS origin without credentials, query, fragment, or a non-root path, and SHALL be the sole basis for callback and same-origin security decisions.
+Flowl SHALL retain `FLOWL_OIDC_ISSUER` as its exact configured string and separately validate it as an absolute HTTPS issuer URL without changing that representation. Discovery and signature-verified ID-token issuer values SHALL also be compared to the retained configured string as a defense-in-depth exact check. URL-normalized alternatives SHALL NOT be accepted. `FLOWL_EXTERNAL_URL` SHALL be an explicit absolute HTTPS origin without credentials, query, fragment, or a non-root path, and SHALL be the sole basis for callback and same-origin security decisions.
 
 #### Scenario: Exact issuer representation is preserved
 
@@ -113,7 +113,7 @@ When authentication is enabled, Flowl SHALL perform standards-compliant OIDC dis
 
 ### Requirement: Authorization Code flow transaction
 
-`GET /auth/login` SHALL start a generic OIDC Authorization Code flow using PKCE S256, cryptographically random state and nonce, and the callback URI derived from `FLOWL_EXTERNAL_URL`. Pending login transactions SHALL be backend-only, bound to the initiating browser's opaque pre-authentication session, one-time, and expire after five minutes. The process-local registry SHALL define `MAX_PENDING_LOGIN_TRANSACTIONS = 1_024` and enforce that hard process-wide maximum, pruning expired entries before checking capacity.
+`GET /auth/login` SHALL start a generic OIDC Authorization Code flow using PKCE S256, cryptographically random state and nonce, and the callback URI derived from `FLOWL_EXTERNAL_URL`. Pending login transactions SHALL be backend-only, bound to the initiating browser's opaque pre-authentication session, one-time, expire after five minutes, and be invalidated by a process restart. Flowl SHALL allow at most 1,024 pending login transactions across the running instance, pruning expired entries before checking capacity.
 
 #### Scenario: Login authorization redirect
 
@@ -134,14 +134,14 @@ When authentication is enabled, Flowl SHALL perform standards-compliant OIDC dis
 
 #### Scenario: Capacity boundary accepts the final slot
 
-- **WHEN** the registry contains 1,023 valid pending transactions after expired entries are pruned
+- **WHEN** 1,023 valid pending transactions remain after expired entries are pruned
 - **AND** a new login is requested
 - **THEN** the new transaction is created as the 1,024th pending transaction
 - **AND** Flowl redirects to the OIDC provider
 
-#### Scenario: Full registry rejects new login
+#### Scenario: Full capacity rejects new login
 
-- **WHEN** the registry contains 1,024 valid pending transactions after expired entries are pruned
+- **WHEN** 1,024 valid pending transactions remain after expired entries are pruned
 - **AND** a new login is requested
 - **THEN** Flowl does not create or bind the new transaction
 - **AND** does not redirect to the OIDC provider
@@ -149,14 +149,14 @@ When authentication is enabled, Flowl SHALL perform standards-compliant OIDC dis
 
 #### Scenario: Expired entries free capacity before rejection
 
-- **WHEN** the registry has reached 1,024 entries
+- **WHEN** the pending transaction capacity has been reached
 - **AND** at least one entry is expired when a new login is requested
 - **THEN** Flowl prunes expired entries before checking capacity
 - **AND** creates the new transaction when the remaining valid count is below 1,024
 
 #### Scenario: Saturation does not evict active transactions
 
-- **WHEN** the registry is full of valid pending transactions
+- **WHEN** the pending transaction capacity is full of valid transactions
 - **AND** a new login is rejected for capacity
 - **THEN** every previously valid transaction remains present and usable
 - **AND** no existing transaction is evicted, including a prior transaction bound to the initiating session
@@ -213,9 +213,9 @@ When authentication is enabled, Flowl SHALL perform standards-compliant OIDC dis
 - **THEN** authentication fails
 - **AND** no authenticated session is created
 
-### Requirement: Process-local authenticated sessions
+### Requirement: Non-durable authenticated sessions
 
-Authenticated sessions SHALL use an opaque, cryptographically random session ID whose data exists only in process memory. The session cookie SHALL be host-only, `HttpOnly`, `Secure`, `SameSite=Lax`, scoped to `/`, and SHALL contain no OIDC token, identity claim, code, state, nonce, PKCE value, or client secret. Sessions SHALL have a non-sliding absolute lifetime of twelve hours from successful authentication and SHALL be invalidated by process restart.
+Authenticated sessions SHALL use an opaque, cryptographically random session ID with non-durable server-side session data. The session cookie SHALL be host-only, `HttpOnly`, `Secure`, `SameSite=Lax`, scoped to `/`, and SHALL contain no OIDC token, identity claim, code, state, nonce, PKCE value, or client secret. Sessions SHALL have a non-sliding absolute lifetime of twelve hours from successful authentication and SHALL be invalidated by process restart.
 
 #### Scenario: Session ID rotation after login
 
@@ -267,7 +267,7 @@ When authentication is enabled, only `/health`, `/login`, `/auth/config`, `/auth
 
 ### Requirement: Safe local return targets
 
-All backend and frontend authentication navigation SHALL use one shared behavioral policy for a bounded local `return_to`. A valid target SHALL begin with one `/`, contain a well-formed local path, and MAY contain query and fragment components. Flowl SHALL reject absolute or protocol-relative URLs, backslashes, malformed or encoded path confusion, control characters, auth/login routes, and targets longer than 2048 bytes, using `/` as the fallback. Backend-originated redirects SHALL preserve path and query; SPA reauthentication MAY additionally preserve `location.hash`.
+All backend and frontend authentication navigation SHALL apply equivalent validation for a bounded local `return_to`. A valid target SHALL begin with one `/`, contain a well-formed local path, and MAY contain query and fragment components. Flowl SHALL reject absolute or protocol-relative URLs, backslashes, malformed or encoded path confusion, control characters, auth/login routes, and targets longer than 2048 bytes, using `/` as the fallback. Backend-originated redirects SHALL preserve path and query; SPA reauthentication MAY additionally preserve `location.hash`.
 
 #### Scenario: Valid backend navigation target
 
@@ -330,7 +330,7 @@ Callback and provider failures SHALL return the browser to `/login` with only a 
 
 ### Requirement: Recoverable JWKS rotation
 
-Flowl SHALL retain the last valid JWKS in memory. When ID-token verification fails for a reason that a signing-key rotation could resolve, Flowl SHALL coordinate at most one refresh across concurrent callbacks, retry verification once with a newly fetched JWKS, and never refresh for issuer, audience, expiry, nonce, or other non-key claim failures. A failed refresh SHALL retain the last valid keys, impose a thirty-second retry cooldown, and allow a later callback to attempt refresh again without restarting Flowl.
+Flowl SHALL retain the last valid JWKS. When ID-token verification fails for a reason that a signing-key rotation could resolve, Flowl SHALL coordinate at most one refresh across concurrent callbacks, retry verification once with a newly fetched JWKS, and never refresh for issuer, audience, expiry, nonce, or other non-key claim failures. A failed refresh SHALL retain the last valid keys, impose a thirty-second retry cooldown, and allow a later callback to attempt refresh again without restarting Flowl.
 
 #### Scenario: New signing key succeeds after refresh
 

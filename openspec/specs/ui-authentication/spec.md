@@ -103,9 +103,9 @@ The `/login` page SHALL use Gazel's established login composition structurally w
 - **THEN** the translated status appears inside the raised action panel before the provider action
 - **AND** the provider button remains full width and is the only authentication action
 
-### Requirement: Centralized authentication-expiry handling
+### Requirement: Consistent authentication-expiry handling
 
-All frontend programmatic requests for protected API, export, import, AI, upload, protected-photo, and route-load resources SHALL pass non-success responses through one authentication-required handler. Only a response with both HTTP 401 and JSON code `AUTHENTICATION_REQUIRED` SHALL navigate to `/login?return_to=<current-local-path-query-hash>` during normal online operation.
+All frontend programmatic requests for protected API, export, import, AI, upload, protected-photo, and route-load resources SHALL handle authentication failures consistently. Only a response with both HTTP 401 and JSON code `AUTHENTICATION_REQUIRED` SHALL navigate to `/login?return_to=<current-local-path-query-hash>` during normal online operation.
 
 #### Scenario: Authentication-required API response
 
@@ -116,21 +116,21 @@ All frontend programmatic requests for protected API, export, import, AI, upload
 #### Scenario: Arbitrary 401 response
 
 - **WHEN** a request receives HTTP 401 without code `AUTHENTICATION_REQUIRED`
-- **THEN** the central handler does not start login navigation
+- **THEN** the frontend does not start login navigation
 
 #### Scenario: Other API failure
 
 - **WHEN** a request receives a non-401 API error
-- **THEN** the central handler does not start login navigation
+- **THEN** the frontend does not start login navigation
 - **AND** existing localized error behavior remains available
 
 #### Scenario: Network failure
 
 - **WHEN** a request fails without an HTTP response because of temporary network loss
-- **THEN** the central handler does not start login navigation
+- **THEN** the frontend does not start login navigation
 - **AND** existing connectivity/offline handling runs
 
-#### Scenario: Direct request paths use the handler
+#### Scenario: Direct request paths handle authentication consistently
 
 - **WHEN** export, AI identify, AI chat, protected-photo conversion, upload, or a plant route loader receives `401 AUTHENTICATION_REQUIRED`
 - **THEN** it performs the same login navigation as an ordinary API request
