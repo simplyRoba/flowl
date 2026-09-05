@@ -75,9 +75,9 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 
 #### Scenario: Widescreen detail layout
 
-- **WHEN** the viewport width is >= 1280px
-- **THEN** the detail page max-width SHALL be 960px (increased from 800px)
-- **AND** the hero photo/icon SHALL be 100px (increased from 80px)
+- **WHEN** sufficient horizontal space is available
+- **THEN** the detail page SHALL use a bounded, expanded content area
+- **AND** the hero SHALL place a prominent, proportionate plant photo or fallback icon alongside the plant information and actions
 
 #### Scenario: Ask AI button displayed
 
