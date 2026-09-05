@@ -41,8 +41,8 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 
 #### Scenario: Care journal delete control
 
-- **WHEN** the plant detail view is rendered
-- **THEN** each care journal entry shows a delete control
+- **WHEN** an individual care journal entry is visible, either directly in the timeline or within an expanded group
+- **THEN** the entry shows a delete control
 
 #### Scenario: Edit action
 
