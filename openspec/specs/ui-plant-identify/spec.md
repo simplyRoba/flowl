@@ -175,24 +175,30 @@ Clicking "Apply to form" SHALL auto-fill the PlantForm fields from the currently
 
 ### Requirement: Identify error state
 
-The identify section SHALL display an error state when the identification request fails. When the error code is `AI_IDENTIFY_NOT_A_PLANT`, the error message SHALL display the localized "not a plant" message from the `errorCode` i18n map. The error state SHALL include a "Retry" button regardless of the error code.
+The identify section SHALL display a localized error state with a recovery action appropriate to whether submitting the same photos again could reasonably succeed.
 
-#### Scenario: Error displayed
+#### Scenario: Retryable error displayed
 
-- **WHEN** the `POST /api/ai/identify` request fails (network error, 500, 503, or other error)
+- **WHEN** the identification request fails because of a temporary network, rate-limit, or provider error
 - **THEN** the identify section SHALL display an error message and a "Retry" button
 
 #### Scenario: Not-a-plant error displayed
 
-- **WHEN** the `POST /api/ai/identify` request returns 422 with code `AI_IDENTIFY_NOT_A_PLANT`
+- **WHEN** the identification request returns code `AI_IDENTIFY_NOT_A_PLANT`
 - **THEN** the identify section SHALL display the localized "not a plant" message from the `errorCode` i18n map
-- **AND** a "Retry" button SHALL be displayed
+- **AND** a "Dismiss" button SHALL be displayed instead of immediately retrying the unchanged photos
 
-#### Scenario: Retry after error
+#### Scenario: Retry after retryable error
 
 - **WHEN** the user clicks "Retry"
 - **THEN** the identification request SHALL be re-submitted with the same photos
 - **AND** the section SHALL transition to the loading state
+
+#### Scenario: Dismiss non-retryable error
+
+- **WHEN** the user dismisses an input-related identification error
+- **THEN** the section SHALL return to its idle controls
+- **AND** the user SHALL be able to change the photos before identifying again
 
 ### Requirement: Identify API client function
 
