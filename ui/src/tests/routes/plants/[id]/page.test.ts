@@ -541,6 +541,47 @@ describe("Ask AI button", () => {
   });
 });
 
+describe("care journal loading", () => {
+  it("shows an error instead of the empty state when care history fails", async () => {
+    mockFetchCareEventsApi.mockRejectedValue(new Error("offline"));
+
+    render(Page, {
+      props: {
+        data: {
+          plant: makePlant(),
+          notFound: false,
+          loadErrorCode: null,
+        },
+      },
+    });
+
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Failed to load care events",
+    );
+    expect(screen.queryByText("No care events recorded yet.")).toBeNull();
+  });
+
+  it("preserves loaded care history when a refresh fails", async () => {
+    const event = makeCareEvent({ event_type: "fertilized" });
+    const view = await renderWithPlant({}, [event]);
+    expect(await screen.findByText("Fertilized")).toBeTruthy();
+
+    mockFetchCareEventsApi.mockRejectedValue(new Error("offline"));
+    await view.rerender({
+      data: {
+        plant: makePlant(),
+        notFound: false,
+        loadErrorCode: null,
+      },
+    });
+
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Failed to load care events",
+    );
+    expect(screen.getByText("Fertilized")).toBeTruthy();
+  });
+});
+
 describe("care event delete reloads plant", () => {
   it("calls loadPlant after deleting a care event", async () => {
     mockDeleteCareEventApi.mockResolvedValue(undefined);

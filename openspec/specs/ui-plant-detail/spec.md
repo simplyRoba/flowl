@@ -287,7 +287,15 @@ The plant detail page SHALL be viewable offline using cached API data when the n
 
 - **WHEN** the plant detail loads from cache while offline
 - **AND** no cached response exists for `/api/plants/{id}/care`
-- **THEN** the care journal section SHALL display the existing skeleton followed by the care error state
+- **THEN** the care journal section SHALL display the existing skeleton followed by a localized care-load error
+- **AND** it SHALL NOT display the empty-journal state
+
+#### Scenario: Care history refresh fails
+
+- **GIVEN** the care journal already displays loaded events
+- **WHEN** a subsequent care-history request fails
+- **THEN** the loaded events SHALL remain visible
+- **AND** the care journal SHALL display a localized care-load error
 
 ### Requirement: Plant detail mutation controls disabled when offline
 

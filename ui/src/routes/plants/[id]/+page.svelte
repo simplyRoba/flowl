@@ -75,7 +75,9 @@
   let plant = $state<Plant | null>(null);
   let plantLoadErrorCode = $state<string | null>(null);
   let careEvents = $state<CareEvent[]>([]);
+  let careEventsPlantId = $state<number | null>(null);
   let careLoading = $state(false);
+  let careLoadError = $state<string | null>(null);
   let notFound = $state(false);
   let deleting = $state(false);
   let watering = $state(false);
@@ -101,14 +103,19 @@
   });
 
   async function loadCareEvents(plantId: number): Promise<boolean> {
-    const previousCareEvents = untrack(() => careEvents);
+    const previousCareEvents = untrack(() =>
+      careEventsPlantId === plantId ? careEvents : [],
+    );
     careLoading = true;
-    careEvents = [];
+    careLoadError = null;
+    careEvents = previousCareEvents;
+    careEventsPlantId = plantId;
     try {
       careEvents = await fetchCareEvents(plantId);
       return true;
-    } catch {
+    } catch (error) {
       careEvents = previousCareEvents;
+      careLoadError = resolveError(error, "loadCareEvents");
       return false;
     } finally {
       careLoading = false;
@@ -132,7 +139,9 @@
       loadCareEvents(data.plant.id);
     } else {
       careEvents = [];
+      careEventsPlantId = null;
       careLoading = false;
+      careLoadError = null;
     }
   });
 
@@ -588,7 +597,7 @@
             {$translations.plant.careJournalSection}
           </div>
 
-          {#if careLoading}
+          {#if careLoading && careEvents.length === 0}
             <div class="skeleton-list">
               {#each { length: 4 } as _, i (i)}
                 <div class="skeleton-entry">
@@ -603,9 +612,14 @@
                 </div>
               {/each}
             </div>
+          {:else if careLoadError && careEvents.length === 0}
+            <p class="journal-error" role="alert">{careLoadError}</p>
           {:else if careEvents.length === 0}
             <p class="journal-empty">{$translations.plant.noCareEvents}</p>
           {:else}
+            {#if careLoadError}
+              <p class="journal-error" role="alert">{careLoadError}</p>
+            {/if}
             <ul class="timeline">
               {#each groupedTimeline as item (isGroup(item) ? careGroupKey(item) : item.id)}
                 {#if isGroup(item)}
@@ -1011,6 +1025,12 @@
     color: var(--color-text-muted);
     font-size: 14px;
     margin: 8px 0 0;
+  }
+
+  .journal-error {
+    color: var(--color-danger);
+    font-size: 14px;
+    margin: 8px 0;
   }
 
   .timeline {
