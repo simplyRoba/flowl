@@ -290,12 +290,12 @@ The settings page Data section SHALL include export and import controls in addit
 
 ### Requirement: Language selector
 
-The settings page SHALL include a "Language" section (after Appearance) with a pill toggle showing "English", "Deutsch", "Español".
+The settings page SHALL provide a language selector after the theme controls in the Appearance section, with options for English, Deutsch, and Español.
 
 #### Scenario: Settings page shows language options
 
 - **WHEN** the user navigates to `/settings`
-- **THEN** the page displays a "Language" section after the Appearance section
+- **THEN** the Appearance section displays the language selector after the theme selector
 - **AND** the language selector shows English, Deutsch, and Español options
 
 #### Scenario: Language option selection
