@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dev } from "$app/environment";
   import { resolve } from "$app/paths";
   import { onMount, untrack } from "svelte";
   import { Leaf, BookOpen, Settings, Check } from "lucide-svelte";
@@ -288,7 +289,7 @@
     if (isLoginRoute) return;
     const stopNetworkMonitor = startNetworkMonitor();
 
-    if ("serviceWorker" in navigator) {
+    if (!dev && "serviceWorker" in navigator) {
       const VERSION_CACHE = "flowl-sw-version";
       const VERSION_URL = "/sw-version";
 

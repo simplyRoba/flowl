@@ -21,6 +21,7 @@ const {
   mockSetWorkerAuthMode,
   mockStartNetworkMonitor,
   mockStopNetworkMonitor,
+  mockEnvironment,
 } = vi.hoisted(() => ({
   mockFetchSettings: vi.fn(),
   mockFetchAuthConfig: vi.fn(),
@@ -28,11 +29,18 @@ const {
   mockSetWorkerAuthMode: vi.fn(),
   mockStartNetworkMonitor: vi.fn(),
   mockStopNetworkMonitor: vi.fn(),
+  mockEnvironment: { dev: false },
 }));
 
 let mockUrl: URL = new SvelteURL("http://localhost/");
 let serviceWorkerRegister = vi.fn();
 let serviceWorkerRemoveEventListener = vi.fn();
+
+vi.mock("$app/environment", () => ({
+  get dev() {
+    return mockEnvironment.dev;
+  },
+}));
 
 vi.mock("$app/paths", () => ({
   resolve: (value: string) => value,
@@ -140,6 +148,7 @@ async function performPull(distance: number) {
 describe("app layout route isolation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockEnvironment.dev = false;
     mockUrl = new SvelteURL("http://localhost/login");
     mockFetchSettings.mockResolvedValue({ theme: "system", locale: "en" });
     mockFetchAuthConfig.mockResolvedValue({
@@ -182,6 +191,19 @@ describe("app layout route isolation", () => {
     }
     expect(document.querySelector(".sidebar")).toBeNull();
     expect(document.querySelector(".pull-indicator")).toBeNull();
+  });
+
+  it("does not register the service worker in development", async () => {
+    mockEnvironment.dev = true;
+    mockUrl = new SvelteURL("http://localhost/");
+
+    render(LayoutHarness);
+
+    await waitFor(() =>
+      expect(mockStartNetworkMonitor).toHaveBeenCalledTimes(1),
+    );
+    expect(serviceWorkerRegister).not.toHaveBeenCalled();
+    expect(mockFetchAuthConfig).not.toHaveBeenCalled();
   });
 
   it("starts and tears down protected network, service-worker, and pull setup across login transitions", async () => {
