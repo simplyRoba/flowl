@@ -133,16 +133,16 @@ The API SHALL delete a plant via `DELETE /api/plants/:id`.
 
 ### Requirement: Photo URL in Response
 
-The plant API response SHALL include a `photo_url` field (string or null) computed from `photo_path`.
+The plant API response SHALL include a `photo_url` field (string or null) for the plant's associated original managed image.
 
 #### Scenario: Plant has photo
 
-- **WHEN** a plant has `photo_path` = `abc.jpg`
+- **WHEN** a plant has an associated original managed image available at `/uploads/abc.jpg`
 - **THEN** the response includes `photo_url` = `/uploads/abc.jpg`
 
 #### Scenario: Plant has no photo
 
-- **WHEN** a plant has `photo_path` = NULL
+- **WHEN** a plant has no associated photo
 - **THEN** the response includes `photo_url` = null
 
 ### Requirement: Upload Photo
@@ -151,16 +151,15 @@ The API SHALL accept a photo upload via `POST /api/plants/:id/photo` as multipar
 
 #### Scenario: Valid upload
 
-- **WHEN** a POST multipart request is made to `/api/plants/1/photo` with a JPEG file under 5 MB
-- **THEN** the file is saved to the upload directory with a UUID filename
-- **AND** the plant's `photo_path` is updated
+- **WHEN** a POST multipart request is made to `/api/plants/1/photo` with a valid supported image under 5 MB
+- **THEN** the image is accepted as managed media and associated with the plant
 - **AND** the API responds with HTTP 200 and the updated plant JSON
 
 #### Scenario: Replace existing photo
 
 - **WHEN** a photo is uploaded for a plant that already has a photo
-- **THEN** the old photo file is deleted from disk
-- **AND** the new photo is saved and `photo_path` is updated
+- **THEN** the new managed media is associated with the plant
+- **AND** the prior associated managed media and its canonical renditions are removed
 
 #### Scenario: Plant not found
 
@@ -185,8 +184,8 @@ The API SHALL delete a plant's photo via `DELETE /api/plants/:id/photo`.
 
 - **WHEN** a DELETE request is made to `/api/plants/1/photo`
 - **AND** the plant has a photo
-- **THEN** the file is deleted from disk
-- **AND** `photo_path` is set to NULL
+- **THEN** the photo association is removed
+- **AND** the associated managed media and its canonical renditions are removed
 - **AND** the API responds with HTTP 204
 
 #### Scenario: No photo to delete
@@ -197,12 +196,12 @@ The API SHALL delete a plant's photo via `DELETE /api/plants/:id/photo`.
 
 ### Requirement: Photo Cleanup on Plant Deletion
 
-When a plant is deleted, its photo file (if any) SHALL be deleted from disk.
+When a plant is deleted, its associated managed media and canonical renditions SHALL be removed. If immediate media removal is unavailable, recovery cleanup SHALL complete the removal without preserving unreferenced media.
 
 #### Scenario: Plant with photo deleted
 
 - **WHEN** a plant with a photo is deleted via `DELETE /api/plants/1`
-- **THEN** the photo file is removed from the upload directory
+- **THEN** its associated managed media and canonical renditions are removed or made eligible for recovery cleanup
 
 ### Requirement: Plant API Response — Watering Fields
 

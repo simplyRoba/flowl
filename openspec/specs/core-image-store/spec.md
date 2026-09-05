@@ -1,166 +1,139 @@
 ## Purpose
 
-Shared image storage service — validate content-type/size, save with UUID filename, generate thumbnails, delete from disk, startup orphan cleanup and thumbnail migration.
+Managed image behavior — validate accepted uploads, preserve originals, provide canonical responsive renditions, and recover referenced media.
 
 ## Requirements
 
-### Requirement: Image store service
+### Requirement: Managed image acceptance and originals
 
-The system SHALL provide an `ImageStore` service that manages image file storage on the local filesystem. The service SHALL accept image bytes and a content-type, validate the input, save the file with a UUID-based filename, and return the generated filename. The service SHALL support deletion of stored files by filename. When deleting a file, the service SHALL also delete any associated thumbnail variants (`{stem}_200.jpg`, `{stem}_600.jpg`, and `{stem}_1000.jpg`).
+The system SHALL accept JPEG, PNG, and WebP image uploads no larger than 5 MB. The declared content type SHALL match the image bytes. For a valid upload, the system SHALL persist the original image and return an opaque media reference. The owner SHALL retain that reference for association, URL derivation, deletion, reconciliation, and archive preservation. An original identified by `{reference}` SHALL remain available at `/uploads/{reference}`.
 
-#### Scenario: Save valid JPEG image
+#### Scenario: Save a valid supported image
 
-- **WHEN** `save` is called with valid JPEG bytes and content-type `image/jpeg`
-- **THEN** the file SHALL be written to the upload directory with a UUID filename ending in `.jpg`
-- **AND** the generated filename SHALL be returned
+- **WHEN** a valid JPEG, PNG, or WebP image no larger than 5 MB is submitted with a matching content type
+- **THEN** the original image is persisted
+- **AND** an opaque media reference is returned for association with the owner
+- **AND** the original is available at `/uploads/{reference}`
 
-#### Scenario: Save valid PNG image
+#### Scenario: Reject an unsupported declared content type
 
-- **WHEN** `save` is called with valid PNG bytes and content-type `image/png`
-- **THEN** the file SHALL be written with a UUID filename ending in `.png`
+- **WHEN** an image upload declares a content type other than JPEG, PNG, or WebP
+- **THEN** the upload is rejected
+- **AND** no original image is persisted
 
-#### Scenario: Save valid WebP image
+#### Scenario: Reject a mismatched content type
 
-- **WHEN** `save` is called with valid WebP bytes and content-type `image/webp`
-- **THEN** the file SHALL be written with a UUID filename ending in `.webp`
+- **WHEN** an image upload's declared content type does not match its bytes
+- **THEN** the upload is rejected
+- **AND** no original image is persisted
 
-#### Scenario: Reject invalid content type
+#### Scenario: Reject an oversized image
 
-- **WHEN** `save` is called with content-type `text/plain`
-- **THEN** the service SHALL return an `InvalidContentType` error
-- **AND** no file SHALL be written to disk
+- **WHEN** an image upload exceeds 5 MB
+- **THEN** the upload is rejected
+- **AND** no original image is persisted
 
-#### Scenario: Reject mismatched content type
+### Requirement: Canonical rendition URLs
 
-- **WHEN** `save` is called with JPEG bytes and content-type `image/png`
-- **THEN** the service SHALL return an `InvalidContentType` error
-- **AND** no file SHALL be written to disk
+For an original image URL `/uploads/{stem}.{ext}`, the system SHALL provide three canonical derived JPEG rendition URLs: `/uploads/{stem}_200.jpg`, `/uploads/{stem}_600.jpg`, and `/uploads/{stem}_1000.jpg`. These URLs are the cross-layer contract for managed responsive image renditions.
 
-#### Scenario: Reject oversized file
+#### Scenario: Canonical URLs for a JPEG original
 
-- **WHEN** `save` is called with image bytes exceeding 5 MB
-- **THEN** the service SHALL return a `TooLarge` error
-- **AND** no file SHALL be written to disk
+- **WHEN** an original is available at `/uploads/a1b2c3.jpg`
+- **THEN** its canonical rendition URLs are `/uploads/a1b2c3_200.jpg`, `/uploads/a1b2c3_600.jpg`, and `/uploads/a1b2c3_1000.jpg`
 
-#### Scenario: Delete existing file and its thumbnails
+#### Scenario: Canonical URLs for a non-JPEG original
 
-- **WHEN** `delete` is called with filename `abc.jpg` that exists on disk
-- **THEN** `abc.jpg` SHALL be removed from the upload directory
-- **AND** `abc_200.jpg`, `abc_600.jpg`, and `abc_1000.jpg` SHALL also be removed if they exist
+- **WHEN** an original is available at `/uploads/d4e5f6.png` or `/uploads/d4e5f6.webp`
+- **THEN** its canonical rendition URLs use the same stem and the `.jpg` extension
 
-#### Scenario: Delete non-existent file
+### Requirement: Generated renditions
 
-- **WHEN** `delete` is called with a filename that does not exist on disk
-- **THEN** the operation SHALL log a warning and complete without error
+The system SHALL generate the three canonical renditions as JPEG images with maximum longest-edge dimensions of 200, 600, and 1000 pixels while preserving aspect ratio. Rendition generation SHALL not degrade request-serving responsiveness.
 
-#### Scenario: Delete when thumbnail missing
+If rendition generation fails, the original SHALL remain available and the failure SHALL be logged as a warning.
 
-- **WHEN** `delete` is called with filename `abc.jpg`
-- **AND** `abc.jpg` exists but `abc_200.jpg` does not
-- **THEN** `abc.jpg` SHALL be deleted
-- **AND** the missing thumbnail SHALL be silently ignored
+#### Scenario: Generate all rendition sizes
 
-#### Scenario: Delete encounters an unexpected filesystem failure
+- **WHEN** a valid original image is persisted
+- **THEN** its 200, 600, and 1000 pixel canonical JPEG renditions are generated
 
-- **WHEN** deletion of an original or thumbnail fails for a reason other than the file being absent
-- **THEN** the failure SHALL be logged at error level
-- **AND** deletion SHALL complete without returning an error so startup orphan cleanup can retry the file
+#### Scenario: Preserve aspect ratio
 
-### Requirement: Thumbnail generation on save
+- **WHEN** an original image is 3000 by 2000 pixels
+- **THEN** its 1000, 600, and 200 pixel renditions are 1000 by 667, 600 by 400, and 200 by 133 pixels respectively
 
-After writing an original image to disk, `ImageStore::save()` SHALL decode the image and generate three JPEG thumbnail variants (quality 80) with the longest edge fitting within 200px, 600px, and 1000px, preserving aspect ratio. Thumbnails SHALL be written alongside the original using the naming convention `{stem}_{size}.jpg`.
+#### Scenario: Rendition generation fails
 
-Thumbnail generation SHALL run on `spawn_blocking` to avoid blocking the Tokio runtime. If generation fails (e.g., corrupt or unsupported image data), the error SHALL be logged as a warning and the original save SHALL still succeed.
+- **WHEN** rendition generation cannot process a persisted original
+- **THEN** the original remains available
+- **AND** the failure is logged as a warning
 
-#### Scenario: Save generates 200px, 600px, and 1000px thumbnails
+### Requirement: Managed media deletion
 
-- **WHEN** `save` is called with a valid image and produces filename `a1b2c3.jpg`
-- **THEN** the original file SHALL be written as `a1b2c3.jpg`
-- **AND** a 200px thumbnail SHALL be written as `a1b2c3_200.jpg` (JPEG, quality 80, longest edge <= 200px)
-- **AND** a 600px thumbnail SHALL be written as `a1b2c3_600.jpg` (JPEG, quality 80, longest edge <= 600px)
-- **AND** a 1000px thumbnail SHALL be written as `a1b2c3_1000.jpg` (JPEG, quality 80, longest edge <= 1000px)
+Deleting managed media SHALL delete its original and associated canonical renditions. An absent original SHALL be logged as a warning and SHALL NOT cause the operation to fail. An absent rendition SHALL be silently ignored. Any other deletion failure SHALL be logged at error level without causing the operation to fail, so later cleanup can retry it.
 
-#### Scenario: PNG original produces JPEG thumbnails
+#### Scenario: Delete associated media
 
-- **WHEN** `save` is called with a valid PNG image producing filename `d4e5f6.png`
-- **THEN** the original file SHALL be written as `d4e5f6.png`
-- **AND** thumbnails SHALL be written as `d4e5f6_200.jpg`, `d4e5f6_600.jpg`, and `d4e5f6_1000.jpg` (JPEG format)
+- **WHEN** managed media with an original and canonical renditions is deleted
+- **THEN** the original and all associated canonical renditions are removed
 
-#### Scenario: Aspect ratio preserved
+#### Scenario: Original is already absent
 
-- **WHEN** the original image is 3000x2000 pixels
-- **THEN** the 1000px thumbnail SHALL be 1000x667 pixels
-- **AND** the 600px thumbnail SHALL be 600x400 pixels
-- **AND** the 200px thumbnail SHALL be 200x133 pixels
+- **WHEN** deletion is requested for managed media whose original is already absent
+- **THEN** a warning is logged
+- **AND** the operation completes without error
 
-#### Scenario: Thumbnail generation fails gracefully
+#### Scenario: A rendition is already absent
 
-- **WHEN** `save` is called with image data the `image` crate cannot decode
-- **THEN** the original file SHALL still be saved successfully
-- **AND** a warning SHALL be logged
-- **AND** no thumbnail files SHALL be created
+- **WHEN** managed media is deleted while an associated canonical rendition is already absent
+- **THEN** the original and any other present canonical renditions are removed
+- **AND** the absent rendition is silently ignored
 
-### Requirement: Startup orphan cleanup
+#### Scenario: Deletion failure is recoverable
 
-On application startup, after database migrations have run, the `ImageStore` SHALL scan the uploads directory and delete any files not referenced by `plants.photo_path` or `care_events.photo_path`. Only generated JPEG thumbnail variants (`{stem}_200.jpg`, `{stem}_600.jpg`, and `{stem}_1000.jpg`) whose original stem matches a referenced `photo_path` SHALL be preserved as thumbnails. This provides self-healing cleanup for files orphaned by crashes or CASCADE deletes.
+- **WHEN** deleting an original or rendition fails for an unexpected reason
+- **THEN** the failure is logged at error level
+- **AND** the operation completes without error
+- **AND** later cleanup can retry the deletion
 
-#### Scenario: Orphaned file removed
+### Requirement: Media recovery and cleanup
 
-- **WHEN** the application starts
-- **AND** the uploads directory contains a file `abc.jpg` not referenced by any `plants.photo_path` or `care_events.photo_path`
-- **THEN** the file SHALL be deleted from disk
+At application startup, once logical media references are available, the system SHALL reconcile managed media before regenerating renditions. Reconciliation SHALL remove unreferenced originals and unreferenced or invalid rendition lookalikes while never removing a referenced original or its canonical renditions. The system SHALL then regenerate missing canonical renditions for referenced originals. If a referenced original is absent, regeneration SHALL be skipped and a warning logged.
 
-#### Scenario: Referenced file preserved
+#### Scenario: Unreferenced media is removed
 
-- **WHEN** the application starts
-- **AND** the uploads directory contains a file `def.jpg` referenced by a plant's `photo_path`
-- **THEN** the file SHALL NOT be deleted
+- **WHEN** startup reconciliation finds an original with no logical media reference
+- **THEN** that original and any associated rendition lookalikes are removed
 
-#### Scenario: Thumbnail of referenced file preserved
+#### Scenario: Referenced media is preserved
 
-- **WHEN** the application starts
-- **AND** the uploads directory contains `def_200.jpg`, `def_600.jpg`, and `def_1000.jpg`
-- **AND** `def.jpg` is referenced by a `photo_path` in the database
-- **THEN** `def_200.jpg`, `def_600.jpg`, and `def_1000.jpg` SHALL NOT be deleted
+- **WHEN** startup reconciliation finds a logically referenced original and its canonical renditions
+- **THEN** none of them are removed
 
-#### Scenario: Thumbnail of orphaned file removed
+#### Scenario: Invalid rendition lookalike is removed
 
-- **WHEN** the application starts
-- **AND** the uploads directory contains `orphan_200.jpg`, `orphan_600.jpg`, and `orphan_1000.jpg`
-- **AND** no `photo_path` references `orphan.jpg`
-- **THEN** `orphan_200.jpg`, `orphan_600.jpg`, and `orphan_1000.jpg` SHALL be deleted as orphans
+- **WHEN** startup reconciliation finds a rendition-like asset that is not a canonical rendition of a referenced original
+- **THEN** the asset is removed
 
-#### Scenario: No orphans
+#### Scenario: Missing renditions are regenerated
 
-- **WHEN** the application starts
-- **AND** all files in the uploads directory are referenced by database records or are thumbnails of referenced files
-- **THEN** no files SHALL be deleted
+- **WHEN** startup reconciliation has completed
+- **AND** a logically referenced original is present but one or more canonical renditions are missing
+- **THEN** the missing canonical renditions are regenerated
 
-#### Scenario: Empty uploads directory
+#### Scenario: Existing renditions are retained
 
-- **WHEN** the application starts
-- **AND** the uploads directory is empty
-- **THEN** the cleanup completes without error
+- **WHEN** a logically referenced original and all canonical renditions are present at startup
+- **THEN** no renditions are regenerated for that original
 
-### Requirement: Startup thumbnail migration
+#### Scenario: Referenced original is absent
 
-On application startup, after orphan cleanup, the system SHALL scan all `photo_path` values referenced in the database and generate any missing thumbnail variants (200px, 600px, 1000px).
+- **WHEN** a logical media reference has no available original
+- **THEN** rendition regeneration is skipped
+- **AND** a warning is logged
 
-#### Scenario: Missing thumbnails generated on startup
+#### Scenario: No managed media exists
 
-- **WHEN** the application starts
-- **AND** `plants.photo_path` references `abc.jpg` but `abc_1000.jpg` does not exist on disk
-- **THEN** `abc_200.jpg`, `abc_600.jpg`, and `abc_1000.jpg` SHALL be generated from `abc.jpg`
-
-#### Scenario: Existing thumbnails skipped
-
-- **WHEN** the application starts
-- **AND** `abc_200.jpg`, `abc_600.jpg`, and `abc_1000.jpg` already exist alongside `abc.jpg`
-- **THEN** no regeneration SHALL occur for `abc.jpg`
-
-#### Scenario: Original missing on disk
-
-- **WHEN** the application starts
-- **AND** `plants.photo_path` references `missing.jpg` but the file does not exist on disk
-- **THEN** thumbnail generation SHALL be skipped for that entry
-- **AND** a warning SHALL be logged
+- **WHEN** startup reconciliation finds no managed media
+- **THEN** reconciliation completes without error

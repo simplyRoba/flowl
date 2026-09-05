@@ -6,27 +6,24 @@ Import user data and photos from a previously exported ZIP archive, replacing al
 
 ### Requirement: Import data from ZIP
 
-The system SHALL provide a `POST /api/data/import` endpoint that replaces all existing data and photos with the contents of an uploaded ZIP archive. After importing photos, thumbnail variants SHALL be generated for all imported images using the same logic as the startup thumbnail migration.
+The system SHALL provide a `POST /api/data/import` endpoint that replaces all existing logical data and managed media with the contents of an uploaded ZIP archive. The archive SHALL be fully validated before replacement begins. After imported originals are available, the system SHALL regenerate the canonical derived renditions defined by `core-image-store`.
 
 #### Scenario: Successful import
 
 - **WHEN** a POST request is made to `/api/data/import` with a valid export ZIP archive
-- **THEN** the ZIP is fully validated before any existing data is modified (valid ZIP, valid JSON, valid version, valid filenames)
-- **AND** all existing locations, plants, and care events are deleted from the database
-- **AND** all existing files are removed from the uploads directory
-- **AND** photo files from the `photos/` directory in the ZIP are extracted to the uploads directory before the database is modified
-- **AND** all existing locations, plants, and care events from `data.json` are inserted
-- **AND** thumbnail variants (200px, 600px, 1000px) SHALL be generated for all imported photos
+- **THEN** the ZIP is fully validated before existing logical data or managed media is replaced, including ZIP validity, JSON validity, version compatibility, and valid archive filenames
+- **AND** all existing locations, plants, care events, and managed media are logically replaced by the archive contents
+- **AND** imported original photos are associated with the imported data
+- **AND** canonical derived renditions are regenerated for all imported photos
 - **AND** original timestamps (`created_at`, `updated_at`, `occurred_at`) are preserved
 - **AND** the response has status 200 with a summary of imported counts
 - **AND** MQTT repair is triggered to clear orphaned retained topics from pre-import plants and republish fresh state for all imported plants
 
-#### Scenario: Import is atomic for database data
+#### Scenario: Replacement failure preserves prior logical data
 
-- **WHEN** an import is in progress and a database error occurs mid-way
-- **THEN** the database changes are rolled back
-- **AND** the existing data remains unchanged
-- **AND** newly written photo files are cleaned up on next startup via orphan cleanup
+- **WHEN** an import fails during replacement
+- **THEN** the existing logical data remains unchanged
+- **AND** any staged imported media that remains unreferenced is removed during media recovery at the next application startup
 
 #### Scenario: Import body size
 

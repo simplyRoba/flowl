@@ -6,7 +6,7 @@ Export all user data and photos as a downloadable ZIP archive for backup purpose
 
 ### Requirement: Export all data as ZIP
 
-The system SHALL provide a `GET /api/data/export` endpoint that returns all user data and photos as a ZIP archive download. Thumbnail files (`_200`, `_600`, and `_1000` variants) SHALL be excluded from the archive as they are derived data that can be regenerated.
+The system SHALL provide a `GET /api/data/export` endpoint that returns all user data and original photos as a ZIP archive download. Canonical derived renditions defined by `core-image-store` SHALL be excluded from the archive because they can be regenerated.
 
 #### Scenario: Successful export
 
@@ -28,10 +28,10 @@ The system SHALL provide a `GET /api/data/export` endpoint that returns all user
 
 #### Scenario: Export includes original photos only
 
-- **WHEN** plants or care events have associated photo files
-- **THEN** the ZIP archive contains those original photo files under a `photos/` directory
-- **AND** each file's name in `photos/` matches the corresponding `photo_path` value
-- **AND** thumbnail variants (`_200.jpg`, `_600.jpg`, `_1000.jpg`) SHALL NOT be included in the archive
+- **WHEN** plants or care events have associated photos
+- **THEN** the ZIP archive contains their original photo files under a `photos/` directory
+- **AND** each file's name in `photos/` matches the corresponding `photo_path` archive-manifest value
+- **AND** canonical derived renditions defined by `core-image-store` are not included
 
 #### Scenario: Round-trip integrity
 

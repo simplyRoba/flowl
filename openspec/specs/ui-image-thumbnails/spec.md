@@ -1,76 +1,43 @@
 ## Purpose
 
-Shared thumbnail URL utility and fallback behavior for image thumbnails across the frontend.
+Responsive managed-image display and fallback behavior across the frontend.
 
 ## Requirements
 
-### Requirement: Thumbnail URL utility
+### Requirement: Responsive rendition selection
 
-The frontend SHALL provide a shared `thumbUrl(photoUrl: string, size: number): string` utility that derives a thumbnail URL from a `photo_url` by inserting a size suffix before the file extension.
-
-#### Scenario: Derive thumbnail URL
-
-- **WHEN** `thumbUrl('/uploads/a1b2c3.jpg', 200)` is called
-- **THEN** the return value SHALL be `'/uploads/a1b2c3_200.jpg'`
-
-#### Scenario: Derive thumbnail URL for PNG original
-
-- **WHEN** `thumbUrl('/uploads/d4e5f6.png', 600)` is called
-- **THEN** the return value SHALL be `'/uploads/d4e5f6_600.jpg'`
-
-### Requirement: Thumbnail srcset utility
-
-The frontend SHALL provide a shared `thumbSrcset(photoUrl: string): string` utility that returns an `srcset` attribute value listing all three thumbnail sizes with `w` descriptors.
-
-#### Scenario: Generate srcset string
-
-- **WHEN** `thumbSrcset('/uploads/a1b2c3.jpg')` is called
-- **THEN** the return value SHALL be `'/uploads/a1b2c3_200.jpg 200w, /uploads/a1b2c3_600.jpg 600w, /uploads/a1b2c3_1000.jpg 1000w'`
-
-#### Scenario: Generate srcset string for PNG original
-
-- **WHEN** `thumbSrcset('/uploads/d4e5f6.png')` is called
-- **THEN** the return value SHALL be `'/uploads/d4e5f6_200.jpg 200w, /uploads/d4e5f6_600.jpg 600w, /uploads/d4e5f6_1000.jpg 1000w'`
-
-### Requirement: Responsive thumbnail display
-
-All `<img>` elements that display stored photo thumbnails SHALL use `srcset` with all three thumbnail sizes (200, 600, 1000) and a `sizes` attribute matching the element's CSS container width, allowing the browser to select the optimal image for the device pixel ratio.
+For every stored-photo display, the frontend SHALL make all three canonical rendition URLs defined by `core-image-store` available for responsive selection. It SHALL enable selection according to the rendered container width and device pixel ratio while retaining the original `photo_url` as the fallback.
 
 #### Scenario: Attention card thumbnail
 
-- **WHEN** a plant attention card displays a photo thumbnail in a 120px-wide container
-- **THEN** the `<img>` SHALL include `srcset` with 200w, 600w, and 1000w variants
-- **AND** the `sizes` attribute SHALL be `120px`
+- **WHEN** a plant attention card displays a photo in a compact container
+- **THEN** all canonical renditions are available for selection according to that container's rendered width and device pixel ratio
 
 #### Scenario: Plant grid card thumbnail
 
-- **WHEN** a plant grid card displays a photo thumbnail
-- **THEN** the `<img>` SHALL include `srcset` with 200w, 600w, and 1000w variants
-- **AND** the `sizes` attribute SHALL reflect the grid column width
+- **WHEN** a plant grid card displays a photo
+- **THEN** all canonical renditions are available for selection according to the grid column's rendered width and device pixel ratio
 
 #### Scenario: Plant detail hero photo
 
-- **WHEN** the plant detail page displays the hero photo
-- **THEN** the `<img>` SHALL include `srcset` with 200w, 600w, and 1000w variants
-- **AND** the `sizes` attribute SHALL reflect the hero container width across breakpoints
+- **WHEN** the plant detail page displays a hero photo
+- **THEN** all canonical renditions are available for selection according to the hero container's rendered width and device pixel ratio
 
 #### Scenario: Timeline and journal photo thumbnails
 
-- **WHEN** a care timeline or care journal entry displays a photo thumbnail in a small container (72–80px)
-- **THEN** the `<img>` SHALL include `srcset` with 200w, 600w, and 1000w variants
-- **AND** the `sizes` attribute SHALL match the container width
+- **WHEN** a care timeline or care journal entry displays a photo in a compact container
+- **THEN** all canonical renditions are available for selection according to that container's rendered width and device pixel ratio
 
-### Requirement: Thumbnail image fallback
+### Requirement: Rendition fallback
 
-All `<img>` elements that use a thumbnail URL SHALL fall back to the original `photo_url` if the thumbnail fails to load. The `src` attribute SHALL use the smallest thumbnail (200px) as the default/fallback source.
+Stored-photo displays that use a canonical rendition SHALL gracefully fall back to the original `photo_url` when that rendition is unavailable.
 
-#### Scenario: Thumbnail loads successfully
+#### Scenario: Rendition loads successfully
 
-- **WHEN** an `<img>` element uses a thumbnail URL and the file exists on the server
-- **THEN** the thumbnail SHALL be displayed normally
+- **WHEN** a stored-photo display requests an available canonical rendition
+- **THEN** the rendition is displayed
 
-#### Scenario: Thumbnail fails to load
+#### Scenario: Rendition is unavailable
 
-- **WHEN** an `<img>` element uses a thumbnail URL and the server returns a 404 (e.g., thumbnail generation failed for a corrupt image)
-- **THEN** the `onerror` handler SHALL replace the `src` with the original `photo_url`
-- **AND** the original image SHALL be displayed as a graceful fallback
+- **WHEN** a stored-photo display requests a canonical rendition that is unavailable
+- **THEN** the original `photo_url` is displayed as a graceful fallback

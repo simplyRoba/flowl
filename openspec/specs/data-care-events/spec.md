@@ -133,7 +133,7 @@ The API SHALL delete a care event via `DELETE /api/plants/:id/care/:event_id`.
 
 - **GIVEN** a care event with id 5 has a photo
 - **WHEN** a DELETE request is made to `/api/plants/1/care/5`
-- **THEN** the photo file SHALL be deleted from disk
+- **THEN** the associated managed media and its canonical renditions are removed
 - **AND** the care event is removed from the database
 
 #### Scenario: Watered event deletion triggers MQTT publish
@@ -262,12 +262,12 @@ The care event API response SHALL include: `id` (number), `plant_id` (number), `
 
 #### Scenario: Care event with photo
 
-- **WHEN** a care event has `photo_path` = `abc.jpg`
+- **WHEN** a care event has an associated original managed image available at `/uploads/abc.jpg`
 - **THEN** the response includes `photo_url` = `/uploads/abc.jpg`
 
 #### Scenario: Care event without photo
 
-- **WHEN** a care event has `photo_path` = NULL
+- **WHEN** a care event has no associated photo
 - **THEN** the response includes `photo_url` = null
 
 ### Requirement: Upload Care Event Photo
@@ -276,17 +276,16 @@ The API SHALL accept a photo upload via `POST /api/plants/:id/care/:event_id/pho
 
 #### Scenario: Valid upload
 
-- **WHEN** a POST multipart request is made to `/api/plants/1/care/5/photo` with a JPEG file under 5 MB
+- **WHEN** a POST multipart request is made to `/api/plants/1/care/5/photo` with a valid supported image under 5 MB
 - **AND** care event 5 belongs to plant 1
-- **THEN** the file is saved to the upload directory with a UUID filename
-- **AND** the care event's `photo_path` is updated
+- **THEN** the image is accepted as managed media and associated with the care event
 - **AND** the API responds with HTTP 200 and the updated care event JSON
 
 #### Scenario: Replace existing photo
 
 - **WHEN** a photo is uploaded for a care event that already has a photo
-- **THEN** the old photo file is deleted from disk
-- **AND** the new photo is saved and `photo_path` is updated
+- **THEN** the new managed media is associated with the care event
+- **AND** the prior associated managed media and its canonical renditions are removed
 
 #### Scenario: Care event not found
 
@@ -312,8 +311,8 @@ The API SHALL delete a care event's photo via `DELETE /api/plants/:id/care/:even
 
 - **WHEN** a DELETE request is made to `/api/plants/1/care/5/photo`
 - **AND** the care event has a photo
-- **THEN** the file is deleted from disk
-- **AND** `photo_path` is set to NULL
+- **THEN** the photo association is removed
+- **AND** the associated managed media and its canonical renditions are removed
 - **AND** the API responds with HTTP 204
 
 #### Scenario: No photo to delete
@@ -324,17 +323,17 @@ The API SHALL delete a care event's photo via `DELETE /api/plants/:id/care/:even
 
 ### Requirement: Care Event Photo Cleanup on Plant Deletion
 
-When a plant is deleted, care event rows are removed by CASCADE. Any orphaned care event photo files on disk SHALL be cleaned up by the startup orphan cleanup (see `core/image-store`).
+When a plant is deleted, care events associated with it are removed and their managed media and canonical renditions SHALL be removed. If immediate media removal is unavailable, recovery cleanup SHALL complete the removal without preserving unreferenced media.
 
 #### Scenario: Plant with care event photos deleted
 
 - **WHEN** a plant with care events that have photos is deleted via `DELETE /api/plants/1`
-- **THEN** the CASCADE removes care event rows
-- **AND** orphaned photo files are deleted on the next application startup
+- **THEN** the care events are removed
+- **AND** their associated managed media and canonical renditions are removed or made eligible for recovery cleanup
 
 ### Requirement: Update Care Event
 
-The API SHALL update an existing care event via `PUT /api/plants/:id/care/:event_id` using a JSON body containing `event_type`, `notes`, and `occurred_at`. The update SHALL preserve the event's `id`, `plant_id`, `photo_path`, and `created_at`, and SHALL return the updated care event in the standard response format.
+The API SHALL update an existing care event via `PUT /api/plants/:id/care/:event_id` using a JSON body containing `event_type`, `notes`, and `occurred_at`. The update SHALL preserve the event's `id`, `plant_id`, existing photo association, and `created_at`, and SHALL return the updated care event in the standard response format.
 
 #### Scenario: Care event updated
 

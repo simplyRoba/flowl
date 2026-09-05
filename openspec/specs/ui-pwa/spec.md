@@ -184,7 +184,7 @@ The service worker SHALL precache all static build assets so they are available 
 
 #### Scenario: Non-precached requests pass through
 
-- **WHEN** the browser requests a URL not in the precache set and not matching a cacheable API endpoint or thumbnail pattern
+- **WHEN** the browser requests a URL not in the precache set and not matching a cacheable API endpoint or a canonical rendition URL defined by `core-image-store`
 - **THEN** the service worker SHALL NOT intercept or cache the request
 - **AND** the request SHALL go directly to the network
 
@@ -235,7 +235,7 @@ When authentication is disabled, the service worker SHALL prefer a stored thumbn
 
 #### Scenario: Thumbnail request cached
 
-- **WHEN** the browser requests a URL matching the thumbnail pattern (`/uploads/*_200.jpg`, `/uploads/*_600.jpg`, or `/uploads/*_1000.jpg`)
+- **WHEN** the browser requests a canonical rendition URL defined by `core-image-store`
 - **THEN** the service worker SHALL check for a stored response
 - **AND** if cached, it SHALL return the cached response without a network request
 
@@ -248,7 +248,7 @@ When authentication is disabled, the service worker SHALL prefer a stored thumbn
 
 #### Scenario: Full-size images not cached
 
-- **WHEN** the browser requests an upload URL that does not match the thumbnail pattern (e.g., `/uploads/abc123.png`)
+- **WHEN** the browser requests an original full-size upload URL rather than a canonical rendition URL defined by `core-image-store`
 - **THEN** the service worker SHALL NOT intercept or cache the request
 
 ### Requirement: API cache lifecycle
