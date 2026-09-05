@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.8.4](https://github.com/simplyRoba/flowl/compare/v1.8.3...v1.8.4) (2026-09-05)
+
+
+### Bug Fixes
+
+* distinguish unavailable care history ([f55e827](https://github.com/simplyRoba/flowl/commit/f55e827cbf3c8a145b324b7e3de8530e8d0b0853))
+* omit derived watering state from backups ([d740949](https://github.com/simplyRoba/flowl/commit/d740949b5a582f1a0f4e92a30dab19480a898844))
+* omit images from chat summaries ([ab4cffe](https://github.com/simplyRoba/flowl/commit/ab4cffea4e7cce11a14b4226e6a893519af93245))
+* restore backend locale on startup ([f9dfa81](https://github.com/simplyRoba/flowl/commit/f9dfa8184123245e8805696e0c246915bd8c8f95))
+* **settings:** use language-neutral copyright notice ([38f8938](https://github.com/simplyRoba/flowl/commit/38f8938acaa442846d37ec86a9727f1f32ffc36b))
+* skip service worker registration in development ([1e87c3d](https://github.com/simplyRoba/flowl/commit/1e87c3dff81f136d5e92b4e29625dff62ba935e6))
+
+
+### Documentation
+
+* align chat stream error contract ([4172647](https://github.com/simplyRoba/flowl/commit/41726476ec199fb701e256385891e77622ce9a2e))
+* align language selector settings layout ([2d060d2](https://github.com/simplyRoba/flowl/commit/2d060d2348182ec23834622664935c9bc6d4ac85))
+* centralize managed media behavior ([f867aee](https://github.com/simplyRoba/flowl/commit/f867aee13cf13b3e8e565e958c659a990789ab8d))
+* centralize mobile chat placement ([5cebc39](https://github.com/simplyRoba/flowl/commit/5cebc39099b6081ca69b19ccaf233216c195d51f))
+* clarify controlled modal closure ([81bc1b4](https://github.com/simplyRoba/flowl/commit/81bc1b4e832e702de982388960991a3b85d48e8d))
+* clarify grouped care entry controls ([66d6009](https://github.com/simplyRoba/flowl/commit/66d6009f0c4b78a5fe67cf631c03e7e4e0361bf4))
+* condition AI photo hint on availability ([bd487df](https://github.com/simplyRoba/flowl/commit/bd487dfa9206035f0abfb4c76efabc61b8801beb))
+* define logical persistence behavior ([005173d](https://github.com/simplyRoba/flowl/commit/005173ded4d616847cdfd86c7b5afbd8ce504c8e))
+* describe adaptive attention layout ([7db8c6d](https://github.com/simplyRoba/flowl/commit/7db8c6d3eb5f0800f2b36f0d7d578b9131eb3e01))
+* distinguish identification recovery actions ([8bdc1fd](https://github.com/simplyRoba/flowl/commit/8bdc1fd6bf5481b6f3ba2d44efecaf4f961ad4ff))
+* generalize widescreen plant hero ([22a3dbf](https://github.com/simplyRoba/flowl/commit/22a3dbfa62b29a71226ba25adb059b50ebe9896b))
+* keep watering status near primary action ([bf74703](https://github.com/simplyRoba/flowl/commit/bf74703ba5de823d77113a627ca82ac80e10b9e5))
+* retain healthy plant status badges ([d689263](https://github.com/simplyRoba/flowl/commit/d689263ec0f2c3fdf79e55d6eeaf58afd0551e3b))
+* separate auth behavior from implementation ([86a2f92](https://github.com/simplyRoba/flowl/commit/86a2f92981a2d37be7119c341024b2d47543afd5))
+* separate MQTT contracts from machinery ([86b53bd](https://github.com/simplyRoba/flowl/commit/86b53bdbe505115c56fda54153ac4f29fd289125))
+* separate PWA behavior from worker internals ([99f3086](https://github.com/simplyRoba/flowl/commit/99f3086acd67aa60486dc2025e3e42c4edec9e01))
+
 ## [1.8.3](https://github.com/simplyRoba/flowl/compare/v1.8.2...v1.8.3) (2026-09-02)
 
 
