@@ -258,41 +258,37 @@ The API SHALL record a watering event via `POST /api/plants/:id/water`.
 - **AND** no plant with id 999 exists
 - **THEN** the API responds with HTTP 404
 
-### Requirement: MQTT Publishing on Plant State Changes
+### Requirement: MQTT Synchronization on Plant State Changes
 
-The plant API handlers SHALL trigger MQTT publishing when plant state changes.
+Successful plant API operations SHALL synchronize or remove the plant's MQTT integration data as defined by `core-mqtt`.
 
 #### Scenario: Plant created
 
-- **WHEN** a new plant is created via `POST /api/plants`
-- **THEN** an MQTT auto-discovery config is published for the plant
-- **AND** the initial watering state is published
-- **AND** watering attributes (next_due, last_watered, watering_interval_days) are published
+- **WHEN** a new plant is successfully created via `POST /api/plants`
+- **THEN** its discovery configuration and current watering state and attributes are synchronized according to `core-mqtt`
 
 #### Scenario: Plant updated
 
-- **WHEN** a plant is updated via `PUT /api/plants/:id`
-- **THEN** the MQTT auto-discovery config is re-published (name may have changed)
-- **AND** the watering state is published
-- **AND** watering attributes are published
+- **WHEN** a plant is successfully updated via `PUT /api/plants/:id`
+- **THEN** its discovery configuration and current watering state and attributes are synchronized according to `core-mqtt`
 
 #### Scenario: Plant watered
 
-- **WHEN** a plant is watered via `POST /api/plants/:id/water`
-- **THEN** the watering state is published to MQTT
-- **AND** watering attributes are published
+- **WHEN** a plant is successfully watered via `POST /api/plants/:id/water`
+- **THEN** its current watering state and attributes are synchronized according to `core-mqtt`
 
 #### Scenario: Plant deleted
 
-- **WHEN** a plant is deleted via `DELETE /api/plants/:id`
-- **THEN** empty payloads are published to the plant's MQTT discovery, state, and attributes topics to remove it from Home Assistant
+- **WHEN** a plant is successfully deleted via `DELETE /api/plants/:id`
+- **THEN** its retained MQTT integration data is removed according to `core-mqtt`
 
-#### Scenario: MQTT unavailable
+#### Scenario: MQTT connection unavailable
 
-- **WHEN** any plant action triggers MQTT publishing
-- **AND** the MQTT client is not connected
-- **THEN** the API action completes successfully
-- **AND** the MQTT error is logged
+- **WHEN** a successful plant action requires MQTT synchronization or removal
+- **AND** MQTT is enabled but not connected
+- **THEN** the domain API action completes successfully
+- **AND** the MQTT failure is logged
+- **AND** the MQTT change remains recoverable through periodic reconciliation, connection-time synchronization, or broker repair, as applicable
 
 ### Requirement: Care Info Enum Validation
 

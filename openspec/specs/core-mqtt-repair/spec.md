@@ -1,6 +1,6 @@
 ## Purpose
 
-MQTT broker state repair: orphan discovery, cleanup, and full republish of current plant state.
+MQTT broker-state repair: orphan discovery, cleanup, and full republish of current plant state.
 
 ## Requirements
 
@@ -24,40 +24,30 @@ The API SHALL expose a `POST /api/mqtt/repair` endpoint that clears orphaned ret
 #### Scenario: MQTT disconnected
 
 - **WHEN** a POST request is made to `/api/mqtt/repair`
-- **AND** MQTT is enabled but the client is not connected
+- **AND** MQTT is enabled but not connected
 - **THEN** the server responds with HTTP 503 Service Unavailable
 
-### Requirement: Orphan Discovery via Temporary Subscribe
+### Requirement: Broker-Side Orphan Discovery
 
-The repair function SHALL discover orphaned plant topics on the broker by creating a temporary MQTT client, subscribing to wildcard topic patterns, and collecting retained messages.
-
-#### Scenario: Temporary client connects and subscribes
-
-- **WHEN** a repair is triggered
-- **THEN** a temporary MQTT client connects to the same broker as the main client
-- **AND** subscribes to `homeassistant/sensor/+/config`
-- **AND** subscribes to `{prefix}/plant/+/state`
-- **AND** subscribes to `{prefix}/plant/+/attributes`
-- **AND** collects retained messages until a silence timeout elapses
-- **AND** the temporary client disconnects after collection is complete
+The repair operation SHALL determine the retained plant IDs represented in the MQTT namespaces defined by `core-mqtt` and identify IDs that are absent from the current plants. Discovery SHALL terminate after a finite collection window rather than waiting indefinitely.
 
 #### Scenario: Orphaned plant detected
 
-- **GIVEN** the broker has retained messages for plant ID 5
-- **AND** plant ID 5 does not exist in the database
-- **WHEN** the repair function collects retained messages and diffs against the database
+- **GIVEN** the broker has retained messages representing plant ID 5 in the MQTT namespaces defined by `core-mqtt`
+- **AND** plant ID 5 is absent from the current plants
+- **WHEN** the repair operation discovers broker-side retained plant IDs
 - **THEN** plant ID 5 is identified as an orphan
 
 #### Scenario: No orphans
 
-- **GIVEN** the broker has retained messages only for plants that exist in the database
-- **WHEN** the repair function collects retained messages and diffs against the database
+- **GIVEN** the broker has retained messages only representing current plants
+- **WHEN** the repair operation discovers broker-side retained plant IDs
 - **THEN** no orphans are identified
 - **AND** the `cleared` count in the response is 0
 
 ### Requirement: Orphan Cleanup
 
-The repair function SHALL clear all three retained topics (discovery config, state, attributes) for each orphaned plant ID by publishing empty retained payloads via the main MQTT client.
+The repair operation SHALL clear every retained discovery, state, and attributes topic for each orphaned plant ID by publishing empty retained payloads. The exact topic paths and message contracts are defined by `core-mqtt`.
 
 #### Scenario: All orphan topics cleared
 
@@ -70,12 +60,12 @@ The repair function SHALL clear all three retained topics (discovery config, sta
 
 ### Requirement: Full Republish of Current Plants
 
-After orphan cleanup, the repair function SHALL republish discovery configs, current watering state, and attributes for all plants currently in the database.
+After orphan cleanup, the repair operation SHALL republish discovery configurations, current watering state, and attributes for all current plants according to the message contracts defined by `core-mqtt`.
 
 #### Scenario: All current plants republished
 
-- **GIVEN** the database contains plants with IDs 1, 2, and 3
+- **GIVEN** the current plants have IDs 1, 2, and 3
 - **AND** orphan cleanup has completed
 - **WHEN** the republish phase runs
-- **THEN** discovery config, state, and attributes are published for each of plants 1, 2, and 3
+- **THEN** discovery configuration, state, and attributes are published for each of plants 1, 2, and 3
 - **AND** all published messages are retained with QoS AtLeastOnce

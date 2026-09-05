@@ -73,15 +73,15 @@ The API SHALL create a care event via `POST /api/plants/:id/care` with a JSON bo
 - **WHEN** a POST request is made to `/api/plants/1/care` with `{}`
 - **THEN** the API responds with HTTP 422
 
-#### Scenario: Watered event triggers MQTT publish
+#### Scenario: Watered event triggers watering synchronization
 
-- **WHEN** a care event with `event_type` = `watered` is created for a plant
-- **THEN** the plant's watering state and attributes SHALL be published to MQTT
+- **WHEN** a care event with `event_type` = `watered` is successfully created for a plant
+- **THEN** the plant's current watering state and attributes are synchronized according to `core-mqtt` using the resulting care history
 
-#### Scenario: Non-watered event skips MQTT publish
+#### Scenario: Non-watered event skips watering synchronization
 
-- **WHEN** a care event with `event_type` other than `watered` is created
-- **THEN** no MQTT publish SHALL occur
+- **WHEN** a care event with `event_type` other than `watered` is successfully created
+- **THEN** no watering-state MQTT synchronization SHALL occur
 
 #### Scenario: Plant not found
 
@@ -136,15 +136,15 @@ The API SHALL delete a care event via `DELETE /api/plants/:id/care/:event_id`.
 - **THEN** the associated managed media and its canonical renditions are removed
 - **AND** the care event is removed from the database
 
-#### Scenario: Watered event deletion triggers MQTT publish
+#### Scenario: Watered event deletion triggers watering synchronization
 
-- **WHEN** a care event with `event_type` = `watered` is deleted
-- **THEN** the plant's watering state and attributes SHALL be republished to MQTT with the updated `last_watered` derived from remaining care events
+- **WHEN** a care event with `event_type` = `watered` is successfully deleted
+- **THEN** the plant's current watering state and attributes are synchronized according to `core-mqtt` using the resulting care history, including `last_watered` derived from remaining care events
 
-#### Scenario: Non-watered event deletion skips MQTT publish
+#### Scenario: Non-watered event deletion skips watering synchronization
 
-- **WHEN** a care event with `event_type` other than `watered` is deleted
-- **THEN** no MQTT publish SHALL occur
+- **WHEN** a care event with `event_type` other than `watered` is successfully deleted
+- **THEN** no watering-state MQTT synchronization SHALL occur
 
 #### Scenario: Care event not found
 
@@ -371,12 +371,12 @@ The API SHALL update an existing care event via `PUT /api/plants/:id/care/:event
 
 #### Scenario: Watering history affected by update
 
-- **GIVEN** an update changes an event from `watered`, to `watered`, or changes the occurrence time of a `watered` event
+- **GIVEN** an update changes an event to or from `watered`, or changes the occurrence time of an event that remains `watered`
 - **WHEN** the update succeeds
-- **THEN** the plant's watering state and attributes SHALL be republished to MQTT using the updated care history
+- **THEN** the plant's current watering state and attributes are synchronized according to `core-mqtt` using the resulting care history
 
 #### Scenario: Watering history unaffected by update
 
 - **GIVEN** both the existing and updated event types are not `watered`
 - **WHEN** the update succeeds
-- **THEN** no watering-state MQTT publish SHALL occur
+- **THEN** no watering-state MQTT synchronization SHALL occur
