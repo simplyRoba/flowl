@@ -1,12 +1,12 @@
 ## Purpose
 
-AI chat capability: streaming chat endpoint, plant context assembly, system prompt construction, image support, and SSE event formatting for conversational plant care assistance.
+AI chat capability: streaming chat endpoint, semantic plant context and assistant guidance, image support, and SSE event formatting for conversational plant care assistance.
 
 ## Requirements
 
 ### Requirement: Chat endpoint
 
-The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `plant_id` (integer, required), `message` (string, required), `image` (optional), and `history` (array of `{ role, content, image? }` objects, optional). Current and history `image` values SHALL be base64 data URLs with media type `image/jpeg`, `image/png`, or `image/webp`. The declared media type SHALL match the encoded image bytes. The endpoint SHALL validate images before forwarding them to the AI provider. The endpoint SHALL return an SSE stream (`text/event-stream`). A `DefaultBodyLimit` of 30 MB SHALL be applied to the route.
+The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `plant_id` (integer, required), `message` (string, required), `image` (optional), and `history` (array of `{ role, content, image? }` objects, optional). Current and history `image` values SHALL be base64 data URLs with media type `image/jpeg`, `image/png`, or `image/webp`. The declared media type SHALL match the encoded image bytes. The endpoint SHALL validate images before forwarding them to the AI provider. The endpoint SHALL return an SSE stream (`text/event-stream`) and enforce a maximum request body size of 30 MB.
 
 #### Scenario: Successful chat request without image
 
@@ -18,19 +18,19 @@ The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `p
 #### Scenario: Chat request with image
 
 - **WHEN** a valid JSON body includes an `image` field containing a JPEG, PNG, or WebP base64 data URL
-- **THEN** the image SHALL be sent to the AI provider alongside the text message with its declared media type preserved
+- **THEN** the image SHALL remain associated with the current text message and its declared media type SHALL be preserved
 - **AND** the response SHALL stream as normal
 
 #### Scenario: Chat request with conversation history
 
 - **WHEN** a valid JSON body includes a `history` array of prior messages
-- **THEN** all history messages SHALL be included in the AI request as prior conversation turns
-- **AND** the current `message` SHALL be appended as the latest user turn
+- **THEN** all history messages SHALL be included as prior conversation turns in their supplied order
+- **AND** the current `message` SHALL follow the history as the latest user turn
 
 #### Scenario: Conversation history includes an image
 
 - **WHEN** a history entry includes a valid JPEG, PNG, or WebP base64 data URL in `image`
-- **THEN** that image SHALL be included with the corresponding prior message sent to the AI provider
+- **THEN** that image SHALL remain associated with the corresponding prior message
 - **AND** its declared media type SHALL be preserved
 
 #### Scenario: Conversation history includes an invalid image
@@ -75,60 +75,50 @@ The chat endpoint SHALL emit SSE events as JSON objects. Each event MUST be one 
 - **THEN** an SSE event `data: {"error":{"code":"<CODE>","message":"<message>"}}` SHALL be sent
 - **AND** the stream SHALL close
 
-### Requirement: Plant context builder
+### Requirement: Plant context
 
-The system SHALL build a plant context for the AI system prompt by loading the plant record, watering dates from the last 1 year, and all non-watering care events (plus watering events with notes) from the last 5 years. The context SHALL be serialized as a JSON object with the following top-level structure:
+The system SHALL supply the AI with semantic context for the selected plant. That context SHALL include the plant's name, available species, location name, and notes; its current `watering_status` and available `last_watered` date; and its desired care preferences: `light_needs`, `watering_interval_days`, and available `difficulty`, `pet_safety`, `growth_speed`, `soil_type`, and `soil_moisture`. Care preferences describe desired conditions for the plant, not its current state.
 
-- `name` (string)
-- `species` (string, optional)
-- `location_name` (string, optional)
-- `notes` (string, optional)
-- `current_state` — an object containing fields that describe the plant's current condition: `watering_status` (string) and `last_watered` (string, optional)
-- `care_preferences` — an object containing fields that describe the desired care profile: `light_needs` (string), `watering_interval_days` (integer), `difficulty` (string, optional), `pet_safety` (string, optional), `growth_speed` (string, optional), `soil_type` (string, optional), `soil_moisture` (string, optional)
-- `watering_dates` — an array of date strings (YYYY-MM-DD) for all watering events from the last 1 year, ordered most recent first. Watering events with notes SHALL be included in this list.
-- `care_events` — an array of objects each with `event_type` (string), `date` (string), and optional `notes` (string), containing all non-watering events from the last 5 years plus watering events that have notes, ordered most recent first.
-
-Optional collection fields (`watering_dates`, `care_events`) SHALL be omitted from the JSON when empty.
+The supplied context SHALL also include watering dates (YYYY-MM-DD) for every watering event from the last 1 year, including watering events with notes, ordered newest first. It SHALL include records containing the event type, date, and available notes for all non-watering events and watering events with notes from the last 5 years, ordered newest first. No records older than the applicable retention period SHALL be supplied. Unavailable optional plant or event values MAY be absent or null.
 
 #### Scenario: Plant with mixed care events
 
-- **WHEN** context is built for a plant that has 40 watering events (2 with notes) and 5 fertilizing events spanning 3 years
-- **THEN** the `watering_dates` array SHALL contain only watering dates from the last 1 year, ordered most recent first
-- **AND** the `care_events` array SHALL contain all 5 fertilizing events and the 2 watering events that have notes (if within 5 years), ordered most recent first
-- **AND** the 2 watering events with notes SHALL appear in both `watering_dates` (as dates) and `care_events` (as full objects)
+- **WHEN** context is supplied for a plant that has 40 watering events (2 with notes) and 5 fertilizing events spanning 3 years
+- **THEN** it SHALL include only watering dates from the last 1 year, ordered newest first
+- **AND** it SHALL include all 5 fertilizing events and the 2 watering events that have notes (if within 5 years), ordered newest first
+- **AND** each watering event with notes from the last 1 year SHALL be represented both by its watering date and by its care-event details
+- **AND** a watering event with notes that is older than 1 year but within 5 years SHALL appear only in the care-event details
 
 #### Scenario: Plant with no care events
 
-- **WHEN** context is built for a plant that has no care events
-- **THEN** `watering_dates` and `care_events` SHALL be omitted from the context JSON
+- **WHEN** context is supplied for a plant that has no care events
+- **THEN** it SHALL not include any watering dates or care-event records
 
 #### Scenario: Plant with optional fields missing
 
-- **WHEN** the plant has `species`, `notes`, or `location_name` as NULL
-- **THEN** those fields SHALL be omitted or null in the context JSON
+- **WHEN** the plant has `species`, `notes`, or `location_name` as `null`
+- **THEN** the unavailable values SHALL be absent or null in the supplied context
 
-#### Scenario: Care preferences grouped separately from current state
+#### Scenario: Care preferences describe desired conditions
 
-- **WHEN** the context is serialized to JSON
-- **THEN** `watering_status` and `last_watered` SHALL appear under the `current_state` object
-- **AND** `light_needs`, `watering_interval_days`, `difficulty`, `pet_safety`, `growth_speed`, `soil_type`, and `soil_moisture` SHALL appear under the `care_preferences` object
-- **AND** care preference fields SHALL NOT appear at the top level
+- **WHEN** context is supplied for a plant with care preference fields set
+- **THEN** it SHALL distinguish the current `watering_status` and `last_watered` from `light_needs`, `watering_interval_days`, `difficulty`, `pet_safety`, `growth_speed`, `soil_type`, and `soil_moisture` as desired care conditions
 
-#### Scenario: Watering events older than 1 year excluded from watering_dates
+#### Scenario: Watering events older than 1 year excluded from watering dates
 
-- **WHEN** context is built for a plant with watering events older than 1 year
-- **THEN** `watering_dates` SHALL NOT contain dates older than 1 year
-- **AND** watering events older than 1 year that have notes SHALL still appear in `care_events` if within 5 years
+- **WHEN** context is supplied for a plant with watering events older than 1 year
+- **THEN** it SHALL not include watering dates older than 1 year
+- **AND** an older watering event with notes SHALL still be included as a care-event record if it is within 5 years
 
 #### Scenario: Non-watering events up to 5 years included
 
-- **WHEN** context is built for a plant with a repotting event from 4 years ago
-- **THEN** the repotting event SHALL appear in `care_events`
+- **WHEN** context is supplied for a plant with a repotting event from 4 years ago
+- **THEN** it SHALL include that repotting event
 
 #### Scenario: Events older than 5 years excluded
 
-- **WHEN** context is built for a plant with care events older than 5 years
-- **THEN** no events older than 5 years SHALL appear in either `watering_dates` or `care_events`
+- **WHEN** context is supplied for a plant with care events older than 5 years
+- **THEN** it SHALL not include those events
 
 ### Requirement: Chat rate limiting
 
@@ -145,26 +135,26 @@ The chat endpoint SHALL check the global AI rate limiter before processing the r
 - **THEN** the endpoint SHALL return HTTP 429 with `{"code": "AI_RATE_LIMITED", "message": "..."}`
 - **AND** no request SHALL be sent to the AI provider
 
-### Requirement: Chat system prompt
+### Requirement: Chat assistant guidance
 
-The system SHALL prepend a system message to every chat request. The system prompt SHALL establish the assistant identity as "flowl, a plant care assistant", instruct it to use the provided plant context for personalized advice, set a concise response style (2-4 short paragraphs, bullet points for actionable steps), instruct it to acknowledge uncertainty, and restrict responses to plant-care topics. The system prompt SHALL include the serialized plant context JSON. The system prompt SHALL explicitly instruct the model that the `care_preferences` section describes desired conditions for the plant, not its current state. The system prompt SHALL instruct the model to respond in the language matching the user's locale setting.
+For every chat request, the system SHALL direct the model to act as "flowl, a plant care assistant" and use the supplied plant context for personalized advice. The guidance SHALL request two to four short paragraphs, bullet points for actionable steps, acknowledgment of uncertainty, refusal of non-plant-care topics, and a response language matching the user's locale setting. It SHALL distinguish supplied care preferences as desired conditions rather than assertions about the plant's current state.
 
-#### Scenario: System prompt includes plant context
+#### Scenario: Assistant uses supplied plant context
 
 - **WHEN** a chat request is processed for a plant
-- **THEN** the AI request SHALL include a system message containing the plant's name, species, care profile, and recent care events
+- **THEN** the plant's name, available species, care preferences, and recent care events SHALL be supplied for personalized guidance
 
-#### Scenario: System prompt clarifies care preferences
+#### Scenario: Assistant distinguishes care preferences from current state
 
 - **WHEN** a chat request is processed for a plant with care preference fields set
-- **THEN** the system prompt SHALL contain an instruction clarifying that the `care_preferences` section describes the desired conditions, not the current state of the plant
+- **THEN** the model guidance SHALL identify those fields as desired conditions rather than the plant's current state
 
-#### Scenario: System prompt sets locale
+#### Scenario: Assistant respects locale
 
 - **WHEN** the user's locale is `de`
-- **THEN** the system prompt SHALL instruct the model to respond in German
+- **THEN** the model SHALL be directed to respond in German
 
-#### Scenario: System prompt restricts scope
+#### Scenario: Assistant restricts scope
 
 - **WHEN** a user asks a question unrelated to plant care
-- **THEN** the system prompt SHALL have instructed the model to decline non-plant-care questions
+- **THEN** the model SHALL have been directed to decline the unrelated question

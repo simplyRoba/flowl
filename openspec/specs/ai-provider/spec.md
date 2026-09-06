@@ -31,7 +31,7 @@ The system SHALL communicate with OpenAI-compatible API endpoints. AI requests S
 
 Chat requests SHALL include `stream: true`. The system SHALL process the streaming SSE response by parsing `data:` lines for delta content tokens. It SHALL ignore empty lines and the terminal `data: [DONE]` marker. The system SHALL make each parsed delta available progressively to the chat consumer.
 
-When an image is supplied for chat, the system SHALL encode it as a base64 data URL and place it in the latest user message's content array, together with a text part and an `image_url` part.
+For every current or history chat message with an image, the system SHALL represent that image as an `image_url` content part containing a base64 data URL alongside the corresponding text part. The data URL SHALL preserve the image media type and remain associated with its corresponding conversation turn.
 
 #### Scenario: Chat streams delta tokens
 
@@ -48,10 +48,11 @@ When an image is supplied for chat, the system SHALL encode it as a base64 data 
 - **WHEN** a streaming response includes a `data: [DONE]` line
 - **THEN** the system SHALL stop processing the response and complete the chat stream without error
 
-#### Scenario: Chat includes image in request
+#### Scenario: Chat includes images in their corresponding turns
 
-- **WHEN** a chat operation includes an image
-- **THEN** the latest user message content SHALL be an array containing a text part and an `image_url` part with the base64-encoded data URL
+- **WHEN** a chat operation includes an image in the current message or any history message
+- **THEN** each image SHALL be represented by an `image_url` content part with a base64 data URL alongside that message's text part
+- **AND** the image media type and association with its corresponding conversation turn SHALL be preserved
 
 #### Scenario: Chat stream completes
 
@@ -65,16 +66,16 @@ When an image is supplied for chat, the system SHALL encode it as a base64 data 
 
 ### Requirement: Structured summarization
 
-Summarization requests SHALL be non-streaming and SHALL use `response_format: { "type": "json_schema" }` with `strict: true` and a schema requiring exactly one `summary` string field. On a valid response, the system SHALL extract and return the summary text.
+Summarization requests SHALL be non-streaming and SHALL use `response_format: { "type": "json_schema" }` with `strict: true` and a schema requiring exactly one `summary` string field. This structured-output contract is required for provider compatibility. A conforming provider result SHALL supply the summary text; a missing or invalid structured result SHALL cause the summarization operation to fail.
 
-#### Scenario: Summarization returns extracted summary
+#### Scenario: Summarization returns summary
 
-- **WHEN** a summarization operation receives `{"summary":"..."}`
+- **WHEN** a summarization operation receives a conforming structured result with a summary
 - **THEN** the system SHALL return the summary string
 
 #### Scenario: Summarization handles missing or invalid summary
 
-- **WHEN** the AI response lacks a `summary` field or does not satisfy the required structured output
+- **WHEN** the AI response lacks a summary or does not satisfy the required structured output
 - **THEN** the summarization operation SHALL fail
 
 ### Requirement: Identification result envelope
@@ -100,9 +101,9 @@ Suggestions SHALL include `common_name` and `scientific_name`; `confidence`, `su
 
 ### Requirement: Structured plant identification
 
-The system SHALL accept one or more images and a locale for plant identification. It SHALL encode every image as a base64 data URL and include all images in one API request as separate image content parts. The request SHALL use structured output with `response_format: { "type": "json_schema" }`; its JSON schema SHALL define a root object with required `suggestions` (array), `rejected` (boolean), and `rejected_reason` (string or null) properties.
+The system SHALL accept one or more images and a locale for plant identification. It SHALL encode every image as a base64 data URL and include all images in one API request as separate `image_url` content parts. Each part SHALL use the OpenAI-compatible image content shape and contain its data URL. The request SHALL use structured output with `response_format: { "type": "json_schema" }`; its JSON schema SHALL define a root object with required `suggestions` (array), `rejected` (boolean), and `rejected_reason` (string or null) properties. These response-format and schema invariants are required for provider compatibility.
 
-The identification prompt SHALL instruct the model to provide its top three most likely identifications, rank suggestions by confidence, and use the supplied locale for free-text fields (`common_name`, `summary`) while retaining Latin `scientific_name` values. Enum-constrained fields in `care_profile` SHALL remain in English according to the JSON schema constraints. The prompt SHALL instruct the model to return `rejected: true`, a brief `rejected_reason`, and an empty `suggestions` array when the photo does not contain a plant. For a plant photo, it SHALL instruct the model to return `rejected: false`, `rejected_reason: null`, and populated suggestions.
+For a plant image, the identification request SHALL direct the model to provide one to three top likely identifications ranked by confidence, use the supplied locale for free-text `common_name` and `summary` values, retain Latin `scientific_name` values, and use the schema-defined English values for enum-constrained `care_profile` fields. For an image that does not contain a plant, the request SHALL direct the model to return `rejected: true`, a brief non-empty `rejected_reason`, and an empty `suggestions` array. For a plant image, it SHALL direct the model to return `rejected: false`, `rejected_reason: null`, and populated suggestions.
 
 The system SHALL reject identification results that do not satisfy the result-envelope rules or cannot be interpreted as the required structured output. In accepted results, it SHALL order suggestions by descending confidence, with suggestions without confidence last.
 
@@ -114,7 +115,7 @@ The system SHALL reject identification results that do not satisfy the result-en
 #### Scenario: Multi-image identification returns multiple suggestions
 
 - **WHEN** plant identification is requested for multiple images of a plant
-- **THEN** all images SHALL be included in the same API request as separate image content parts
+- **THEN** all images SHALL be included in the same API request as separate `image_url` content parts
 - **AND** the result SHALL be accepted and contain between one and three suggestions
 
 #### Scenario: Suggestions are ranked by confidence
@@ -161,11 +162,6 @@ The system SHALL reject identification results that do not satisfy the result-en
 
 - **WHEN** plant identification is requested for an image that does not contain a plant
 - **THEN** the result SHALL be rejected with a non-empty `rejected_reason` and an empty `suggestions` array
-
-#### Scenario: Identification prompt includes rejection instruction
-
-- **WHEN** an identification request is prepared
-- **THEN** its prompt SHALL instruct the model to set `rejected` to `true` when the photo does not show a plant
 
 ### Requirement: AI configuration via environment variables
 

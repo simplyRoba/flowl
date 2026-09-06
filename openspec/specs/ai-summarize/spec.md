@@ -1,6 +1,6 @@
 ## Purpose
 
-AI summarization capability: conversation-to-journal-note condensation endpoint, JSON-mode output, and locale-aware summaries for plant care conversations.
+AI summarization capability: conversation-to-journal-note condensation endpoint and locale-aware summaries for plant care conversations.
 
 ## Requirements
 
@@ -30,17 +30,17 @@ The system SHALL expose `POST /api/ai/summarize` accepting a JSON body with fiel
 
 ### Requirement: Summarize uses structured output
 
-The `summarize` provider method SHALL use `response_format: { "type": "json_schema" }` with `strict: true` and a schema requiring a single `summary` string field. The response SHALL be deserialized and the `summary` field extracted.
+The summarize endpoint SHALL rely on the structured-output interoperability defined by `ai-provider`. A conforming provider result SHALL supply a valid summary for the endpoint response. A malformed or missing summary SHALL cause the endpoint to return its existing HTTP 500 safe internal error.
 
-#### Scenario: Valid JSON response
+#### Scenario: Valid structured result
 
-- **WHEN** the AI returns `{"summary":"Diagnosed yellowing as overwatering."}`
+- **WHEN** the AI returns a valid structured result with summary `Diagnosed yellowing as overwatering.`
 - **THEN** the endpoint SHALL return that summary string in the response
 
-#### Scenario: AI returns unparseable response
+#### Scenario: AI returns malformed or missing summary
 
-- **WHEN** the AI response cannot be parsed as JSON or lacks a `summary` field
-- **THEN** the endpoint SHALL return HTTP 500 with an internal error message
+- **WHEN** the AI result is malformed or does not supply a summary
+- **THEN** the endpoint SHALL return HTTP 500 with its safe internal error message
 
 ### Requirement: Summarize rate limiting
 
@@ -57,9 +57,9 @@ The summarize endpoint SHALL check the global AI rate limiter before processing 
 - **THEN** the endpoint SHALL return HTTP 429 with `{"code": "AI_RATE_LIMITED", "message": "..."}`
 - **AND** no request SHALL be sent to the AI provider
 
-### Requirement: Summarize system prompt
+### Requirement: Summary generation
 
-The system prompt for summarization SHALL instruct the model to condense the conversation into a 1–3 sentence care journal note. It SHALL include the plant's name and species for context. It SHALL instruct the model to focus on diagnoses, advice given, and actions recommended. The response language SHALL match the user's locale setting.
+A generated summary SHALL be a one-to-three-sentence care journal note that uses the plant's name and available species as context. It SHALL focus on diagnoses, advice given, and actions recommended in the conversation. The summary language SHALL match the user's locale setting.
 
 #### Scenario: Summary reflects conversation content
 
