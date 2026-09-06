@@ -23,10 +23,10 @@ The plant detail view SHALL display a care journal section showing a chronologic
 - **AND** the plant has no care events
 - **THEN** the care journal section shows an empty state message
 
-#### Scenario: Event type icons
+#### Scenario: Event type visual markers
 
 - **WHEN** a care event is displayed
-- **THEN** the icon corresponds to the event type: droplet for `watered`, leaf for `fertilized`, shovel for `repotted`, scissors for `pruned`, pencil for `custom`, sparkles for `ai-consultation`
+- **THEN** it SHALL show a recognizable visual marker that distinguishes its event type
 
 #### Scenario: Event limit
 
@@ -138,17 +138,17 @@ Grouped watering events SHALL display as a summary row with an accessible chevro
 
 ### Requirement: Skeleton loading for global care journal
 
-The global care journal SHALL display skeleton shimmer lines while its initial care-event page is being fetched and SHALL preserve loaded content while fetching older pages.
+The global care journal SHALL display loading placeholders while its initial care-event page is being fetched and SHALL preserve loaded content while fetching older pages.
 
 #### Scenario: Loading state shown
 
 - **WHEN** the global care journal is fetching its initial event page
-- **THEN** skeleton shimmer lines SHALL be displayed in place of the event list
+- **THEN** loading placeholders SHALL be displayed in place of the event list
 
 #### Scenario: Loading state replaced by content
 
 - **WHEN** the initial events have finished loading
-- **THEN** the skeleton shimmer lines SHALL be replaced by the actual event list or empty state
+- **THEN** the loading placeholders SHALL be replaced by the actual event list or empty state
 
 #### Scenario: Older page loading state shown
 
@@ -157,10 +157,10 @@ The global care journal SHALL display skeleton shimmer lines while its initial c
 - **THEN** the loaded event list SHALL remain visible
 - **AND** the continuation control SHALL show a loading state
 
-#### Scenario: Shared skeleton styles
+#### Scenario: Consistent loading placeholders
 
-- **WHEN** skeleton loading is used
-- **THEN** it SHALL use the shared `.shimmer` class from `skeletons.css` rather than component-scoped styles
+- **WHEN** loading placeholders are used
+- **THEN** they SHALL have a consistent visual treatment across the application
 
 ### Requirement: Global care journal grouping integration
 
@@ -223,7 +223,7 @@ The plant detail view SHALL allow deleting individual care events.
 #### Scenario: Delete control shown
 
 - **WHEN** the care journal timeline is displayed
-- **THEN** each care event shows a delete icon button aligned to the right
+- **THEN** each care event shows a clearly identifiable delete control alongside its other actions
 
 #### Scenario: Care event deleted
 
@@ -445,17 +445,17 @@ The frontend SHALL provide a care events store that manages care event state for
 
 ### Requirement: AI consultation event styling
 
-The `ai-consultation` event type SHALL have distinct visual treatment in both the plant detail timeline and global care journal.
+The `ai-consultation` event type SHALL have a distinct visual treatment in both the plant detail timeline and global care journal.
 
-#### Scenario: AI consultation icon
+#### Scenario: AI consultation visual marker
 
 - **WHEN** an `ai-consultation` care event is displayed in any timeline
-- **THEN** the event icon SHALL be `Sparkles` (from lucide-svelte)
+- **THEN** it SHALL show a recognizable AI-specific visual marker
 
-#### Scenario: AI consultation color
+#### Scenario: AI consultation visual distinction
 
 - **WHEN** an `ai-consultation` care event is displayed in the global care journal
-- **THEN** the icon background SHALL use `var(--color-ai)` as its accent color
+- **THEN** its marker SHALL be visually distinct from other event types
 
 #### Scenario: AI consultation label
 
@@ -469,9 +469,8 @@ Care events with a `photo_url` SHALL display a clickable thumbnail in the plant 
 #### Scenario: Event with photo
 
 - **WHEN** a care event in the plant detail timeline has a `photo_url`
-- **THEN** a 72px rounded thumbnail (`object-fit: cover`) SHALL be displayed using the 200px thumbnail (derived via `thumbUrl(photo_url, 200)`)
-- **AND** the thumbnail SHALL float to the right of the text content, with text wrapping beside it on wider viewports
-- **AND** clicking the thumbnail SHALL open the PhotoLightbox with the original `photo_url` at full resolution
+- **THEN** a compact thumbnail using the canonical 200-pixel image rendition URL SHALL be displayed alongside the event content without reducing readability at supported viewport sizes
+- **AND** activating the thumbnail SHALL open the original `photo_url` in the photo viewer
 
 #### Scenario: Event without photo
 
@@ -485,13 +484,13 @@ The inline log care form SHALL allow attaching an optional photo to the care eve
 #### Scenario: Upload control displayed
 
 - **WHEN** the log care form is visible
-- **THEN** a compact photo upload control (camera icon label with hidden file input) SHALL appear below the notes textarea
+- **THEN** a compact photo upload control SHALL appear below the notes textarea
 - **AND** the control SHALL accept `image/jpeg`, `image/png`, `image/webp`
 
 #### Scenario: Photo preview shown
 
 - **WHEN** the user selects a photo via the upload control
-- **THEN** a ~64px thumbnail preview with a remove button SHALL replace the upload control
+- **THEN** a compact thumbnail preview with a remove button SHALL replace the upload control
 - **AND** clicking the remove button SHALL clear the staged photo and restore the upload control
 
 #### Scenario: Submit with photo
@@ -513,9 +512,8 @@ Care events with a `photo_url` SHALL display a clickable thumbnail in the global
 #### Scenario: Event with photo
 
 - **WHEN** a care event in the global journal has a `photo_url`
-- **THEN** a 80px rounded thumbnail (`object-fit: cover`) SHALL be displayed using the 200px thumbnail (derived via `thumbUrl(photo_url, 200)`)
-- **AND** the thumbnail SHALL float to the right of the text content, with text wrapping beside it on wider viewports
-- **AND** clicking the thumbnail SHALL open a PhotoLightbox with the original `photo_url` at full resolution
+- **THEN** a compact thumbnail using the canonical 200-pixel image rendition URL SHALL be displayed alongside the event content without reducing readability at supported viewport sizes
+- **AND** activating the thumbnail SHALL open the original `photo_url` in the photo viewer
 
 #### Scenario: Event without photo
 
@@ -563,7 +561,7 @@ The global care journal page SHALL display an offline-specific message instead o
 #### Scenario: Skeleton shown before offline determination
 
 - **WHEN** the care journal page is loading events
-- **THEN** the existing skeleton shimmer lines SHALL be displayed while the fetch is in progress
+- **THEN** the existing loading placeholders SHALL be displayed while the fetch is in progress
 - **AND** the offline message SHALL only appear after the fetch fails
 
 ### Requirement: Edit Care Event on Plant Detail Timeline

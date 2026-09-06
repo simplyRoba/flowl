@@ -6,22 +6,21 @@ Chat interface — conversational AI chat on the Plant Detail page with desktop 
 
 ### Requirement: Chat interface
 
-The system SHALL provide a conversational AI chat interface on the Plant Detail page. On desktop (>768px) it SHALL display as a bounded, responsive right-side panel using `position: fixed`. On mobile (<=768px) it SHALL display as a bottom sheet with a drag handle.
+The system SHALL provide a conversational AI chat interface on the Plant Detail page. In desktop mode, when the viewport is wider than `768px`, it SHALL display as a bounded, responsive panel on the right. In mobile mode, when the viewport is `768px` wide or narrower, it SHALL display as a bottom sheet with a drag handle.
 
 #### Scenario: Desktop drawer open
 
-- **WHEN** the chat drawer is opened on desktop (viewport > 768px)
-- **THEN** a bounded, responsive panel SHALL be `position: fixed` anchored to the right edge, spanning the full viewport height
-- **AND** the panel SHALL have `z-index: 90`
-- **AND** the panel SHALL overlay the page content without shifting it
+- **WHEN** the chat drawer is opened in desktop mode
+- **THEN** a bounded, responsive panel SHALL appear at the right edge and extend through the available viewport height
+- **AND** the panel SHALL appear above page content without shifting it
 
 #### Scenario: Mobile bottom sheet open
 
-- **WHEN** the chat drawer is opened on mobile (viewport <= 768px)
-- **THEN** a bottom sheet SHALL slide up covering the full viewport width, from `bottom: 0` to `top: 60px`
-- **AND** the sheet SHALL overlay the bottom nav bar
-- **AND** a semi-transparent backdrop SHALL overlay the page content
-- **AND** a drag handle bar SHALL be visible at the top of the sheet
+- **WHEN** the chat drawer is opened in mobile mode
+- **THEN** a bottom sheet SHALL slide up across the available viewport width while leaving a visible portion of the page above it
+- **AND** the sheet SHALL appear above the bottom navigation without obscuring its own controls
+- **AND** the page content behind the sheet SHALL be visibly deemphasized
+- **AND** a drag handle SHALL be visible at the top of the sheet
 
 #### Scenario: Close drawer on desktop
 
@@ -31,7 +30,7 @@ The system SHALL provide a conversational AI chat interface on the Plant Detail 
 
 #### Scenario: Close button hidden on mobile
 
-- **WHEN** the chat drawer is open on mobile (viewport <= 768px)
+- **WHEN** the chat drawer is open in mobile mode
 - **THEN** the close button (X) SHALL be hidden
 - **AND** the user SHALL dismiss via drag-to-dismiss or the Escape key
 
@@ -53,14 +52,14 @@ The chat drawer SHALL display a scrollable list of user and AI messages.
 #### Scenario: User message rendered
 
 - **WHEN** a user sends a message
-- **THEN** the message SHALL appear right-aligned with the AI accent color background (`--color-ai`) and white text
-- **AND** the message bubble SHALL have rounded corners with a flattened bottom-right corner
+- **THEN** the message SHALL appear on the user side with a high-contrast AI-accent treatment
+- **AND** the message styling SHALL remain clearly distinguishable from AI messages
 
 #### Scenario: AI message rendered
 
 - **WHEN** the AI responds
-- **THEN** the message SHALL appear left-aligned with the AI tint background (`--color-ai-tint`) and normal text color
-- **AND** the message bubble SHALL have rounded corners with a flattened bottom-left corner
+- **THEN** the message SHALL appear on the AI side with a lower-emphasis treatment and readable text
+- **AND** the message styling SHALL remain clearly distinguishable from user messages
 
 #### Scenario: Auto-scroll on new message
 
@@ -99,7 +98,7 @@ The chat drawer SHALL consume the SSE stream from `POST /api/ai/chat` and render
 #### Scenario: Typing indicator shown
 
 - **WHEN** a chat request is sent and before the first token arrives
-- **THEN** a typing indicator (three animated dots) SHALL be displayed in the AI message position
+- **THEN** a typing indicator SHALL be displayed in the AI message position
 
 #### Scenario: Tokens rendered incrementally
 
@@ -159,7 +158,7 @@ The chat drawer SHALL display context-aware quick-question chips when the chat i
 
 - **WHEN** the plant's `watering_status` is `overdue`
 - **THEN** a "Why is it overdue?" chip SHALL be prepended
-- **AND** it SHALL use danger styling (`--color-danger` border and text)
+- **AND** it SHALL use a distinguishable warning treatment
 
 #### Scenario: No species chip
 
@@ -179,7 +178,7 @@ The chat drawer SHALL display an empty state when no messages exist.
 #### Scenario: Empty state content
 
 - **WHEN** the chat drawer opens with no messages
-- **THEN** a centered sparkle icon and text "Ask anything about your [plant name]'s care" SHALL be displayed below the quick chips
+- **THEN** an AI-themed visual marker and the text "Ask anything about your [plant name]'s care" SHALL be displayed below the quick chips
 
 ### Requirement: AI gating
 
@@ -221,7 +220,7 @@ The chat drawer SHALL display a "Save note" button in the header that allows sav
 - **WHEN** the chat contains at least one assistant message
 - **AND** streaming is not in progress
 - **AND** the summary editor is not open
-- **THEN** a "Save note" button with a `BookOpen` icon and text label SHALL be visible in the chat header, left of the close button
+- **THEN** a clearly labeled "Save note" action with a recognizable note visual marker SHALL be visible in the chat header before the close action
 
 #### Scenario: Button hidden when no assistant messages
 
@@ -305,14 +304,14 @@ The chat drawer SHALL provide a save-note flow that summarizes the conversation 
 
 ### Requirement: Photo attachment button
 
-The chat drawer SHALL display a photo attach icon button to the left of the text input.
+The chat drawer SHALL display a photo-attachment control before the text input.
 
 #### Scenario: Attach button rendered
 
 - **WHEN** the chat input area is visible (not in summary editor mode)
-- **THEN** a `Camera` (or `Image`) icon button SHALL be rendered to the left of the text input
-- **AND** the button SHALL have a native tooltip (`title`) with the attach photo label
-- **AND** clicking it SHALL open a file picker accepting `image/jpeg`, `image/png`, `image/webp`
+- **THEN** a clearly identifiable photo-attachment control SHALL be rendered before the text input
+- **AND** the control SHALL expose the attach-photo label to users
+- **AND** activating it SHALL open a file picker accepting `image/jpeg`, `image/png`, `image/webp`
 
 #### Scenario: Attach button disabled during streaming
 
@@ -338,7 +337,7 @@ The chat drawer SHALL accept drag-and-drop photo attachment on the message list 
 #### Scenario: Drag enter shows overlay
 
 - **WHEN** the user drags a file over the chat message list area
-- **THEN** a visual drag indicator (border or overlay) SHALL appear on the message list
+- **THEN** a visual drop indicator SHALL appear on the message list
 
 #### Scenario: Drag leave hides overlay
 
@@ -364,8 +363,8 @@ The chat drawer SHALL display a preview strip above the input area when a photo 
 #### Scenario: Preview shown
 
 - **WHEN** a photo is staged (via file picker or drag-and-drop)
-- **THEN** a thumbnail (~48px) of the photo SHALL be displayed in a strip between the message list and the input row
-- **AND** a remove button (X icon) SHALL be displayed on the thumbnail corner
+- **THEN** a compact thumbnail of the photo SHALL be displayed in a strip between the message list and the input row
+- **AND** a clearly identifiable remove action SHALL be available with the thumbnail
 
 #### Scenario: Remove staged photo
 
@@ -387,7 +386,7 @@ The chat drawer SHALL display attached photos inline in user message bubbles.
 #### Scenario: User message with photo
 
 - **WHEN** a user message has an associated image
-- **THEN** the image SHALL be rendered as a rounded thumbnail (max-width ~200px) above the message text inside the user bubble
+- **THEN** the image SHALL be rendered as a compact thumbnail above the message text inside the user bubble without compromising message readability
 
 #### Scenario: User message without photo
 

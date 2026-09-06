@@ -1,18 +1,18 @@
 ## Purpose
 
-Plant dashboard — card grid with photo display, watering status indicators, greeting with attention subtitle, and "Needs Attention" section with inline water actions.
+Plant dashboard — plant-card collection with photo display, watering status indicators, greeting with attention subtitle, and "Needs Attention" section with inline water actions.
 
 ## Requirements
 
 ### Requirement: Plants Dashboard
 
-The root route (`/`) SHALL display a grid of plant cards showing each plant's icon, name, and location.
+The root route (`/`) SHALL display a collection of plant cards showing each plant's icon, name, and location.
 
 #### Scenario: Plants loaded
 
 - **WHEN** the user navigates to `/`
 - **THEN** the page fetches plants from `GET /api/plants`
-- **AND** displays a card grid with each plant's Noto emoji icon, name, and location name
+- **AND** displays plant cards with each plant's selected emoji icon, name, and location name
 
 #### Scenario: No plants
 
@@ -28,10 +28,9 @@ The root route (`/`) SHALL display a grid of plant cards showing each plant's ic
 #### Scenario: Widescreen dashboard layout
 
 - **WHEN** the viewport width is >= 1280px
-- **THEN** the dashboard max-width SHALL be 1400px (increased from 1200px)
-- **AND** the plant cards SHALL use a full-bleed image layout (240px tall photo area)
-- **AND** the card name and location SHALL float over the image via a bottom gradient overlay
-- **AND** the grid gap SHALL be 20px
+- **THEN** the dashboard SHALL use the wide page content tier
+- **AND** each plant card SHALL give the photo visual prominence
+- **AND** the card name and location SHALL remain legible over the lower portion of the photo through sufficient contrast and separation
 
 #### Scenario: Dynamic greeting subtitle when plants need attention
 
@@ -50,20 +49,21 @@ The root route (`/`) SHALL display a grid of plant cards showing each plant's ic
 
 The dashboard plant cards SHALL display the plant's photo when available, falling back to the emoji icon. Photo displays SHALL use thumbnail variants sized for the display context.
 
-#### Scenario: Plant has photo on grid card
+#### Scenario: Plant has photo on dashboard card
 
 - **WHEN** a plant has a `photo_url`
-- **THEN** the dashboard card shows the 200px thumbnail as `src` fallback (derived via `thumbUrl(photo_url, 200)`) with a `srcset` providing all thumbnail sizes for responsive loading
+- **THEN** the dashboard card SHALL use the canonical 200-pixel image rendition URL as its default image source
+- **AND** responsive image renditions SHALL be available when supported by the device
 
 #### Scenario: Plant has photo on attention card
 
 - **WHEN** a plant has a `photo_url` and appears in the "Needs Attention" section
-- **THEN** the attention card shows the 200px thumbnail (derived via `thumbUrl(photo_url, 200)`)
+- **THEN** the attention card SHALL use the canonical 200-pixel image rendition URL
 
 #### Scenario: Plant has no photo
 
 - **WHEN** a plant has no `photo_url`
-- **THEN** the dashboard card shows the Noto emoji icon as before
+- **THEN** the dashboard card shows the selected emoji icon as before
 
 ### Requirement: Dashboard Watering Status Indicators
 
@@ -90,12 +90,12 @@ The dashboard plant cards SHALL display each plant's watering status and, when a
 
 ### Requirement: Dashboard Needs Attention Section
 
-The dashboard SHALL display a "Needs Attention" section between the greeting and the "All Plants" grid, showing cards for plants that are overdue or due for watering.
+The dashboard SHALL display a "Needs Attention" section between the greeting and the "All Plants" collection, showing cards for plants that are overdue or due for watering.
 
 #### Scenario: Plants need attention
 
 - **WHEN** the dashboard renders with one or more plants having `watering_status` of `due` or `overdue`
-- **THEN** a "Needs Attention" section SHALL be displayed with an alert-triangle icon and the title "Needs Attention"
+- **THEN** a "Needs Attention" section SHALL be displayed with a visual attention indicator and the title "Needs Attention"
 - **AND** each overdue or due plant SHALL be rendered as an attention card showing the plant's photo (or emoji icon fallback), name, status badge, and a "Water" button
 
 #### Scenario: No plants need attention
@@ -166,7 +166,7 @@ The dashboard SHALL be browsable offline using cached API data when the network 
 
 - **WHEN** the user navigates to `/` while offline
 - **AND** cached responses exist for `/api/plants`
-- **THEN** the dashboard SHALL display the plant grid using the cached data
+- **THEN** the dashboard SHALL display the plant collection using the cached data
 
 #### Scenario: Dashboard with no cache and no network
 

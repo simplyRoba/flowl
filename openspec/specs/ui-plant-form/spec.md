@@ -41,7 +41,7 @@ The route `/plants/new` SHALL display a form to create a new plant.
 
 #### Scenario: Icon picker
 
-- **WHEN** the user selects an icon from the Noto emoji picker
+- **WHEN** the user selects an emoji icon from the icon picker
 - **THEN** the selected icon is shown on the form and sent with the request
 
 #### Scenario: Location selection

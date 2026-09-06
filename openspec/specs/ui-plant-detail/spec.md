@@ -13,7 +13,7 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 - **WHEN** the user navigates to `/plants/1`
 - **THEN** the page fetches the plant from `GET /api/plants/1`
 - **AND** displays icon, name, species, location, watering interval, and notes
-- **AND** the detail grid contains a "Watering" card and a "Care Info" card
+- **AND** the detail view contains a "Watering" card and a "Care Info" card
 
 #### Scenario: Care Info card content
 
@@ -83,8 +83,8 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 
 - **WHEN** the plant detail view is rendered
 - **AND** `GET /api/ai/status` returns `{ "enabled": true }`
-- **THEN** an "Ask AI" button with a sparkle icon SHALL be displayed in the hero section next to the "Water now" button
-- **AND** the button SHALL use the AI accent color (`--color-ai`)
+- **THEN** an "Ask AI" button SHALL be displayed in the hero section next to the "Water now" button
+- **AND** the button SHALL be visually distinct as an AI-related action
 
 #### Scenario: Ask AI button hidden when AI disabled
 
@@ -113,12 +113,13 @@ The plant detail hero section SHALL display the plant's photo when available, us
 #### Scenario: Plant has photo
 
 - **WHEN** a plant has a `photo_url`
-- **THEN** the detail hero shows the 200px thumbnail as `src` fallback (derived via `thumbUrl(photo_url, 200)`) with a `srcset` providing all thumbnail sizes for responsive loading
+- **THEN** the detail hero SHALL use the canonical 200-pixel image rendition URL as its default image source
+- **AND** responsive image renditions SHALL be available when supported by the device
 
 #### Scenario: Plant has no photo
 
 - **WHEN** a plant has no `photo_url`
-- **THEN** the detail hero shows the Noto emoji icon as before
+- **THEN** the detail hero shows the selected emoji icon as before
 
 ### Requirement: Detail image lightbox
 
@@ -256,9 +257,9 @@ Care events with a `photo_url` SHALL display a clickable thumbnail in the plant 
 #### Scenario: Event with photo
 
 - **WHEN** a care event in the plant detail timeline has a `photo_url`
-- **THEN** a 72px rounded thumbnail (`object-fit: cover`) SHALL be displayed using the 200px thumbnail (derived via `thumbUrl(photo_url, 200)`)
-- **AND** the thumbnail SHALL float to the right of the text content, with text wrapping beside it on wider viewports
-- **AND** clicking the thumbnail SHALL open the PhotoLightbox with the original `photo_url` at full resolution
+- **THEN** a compact, clickable photo preview SHALL be displayed using the canonical 200-pixel image rendition URL
+- **AND** the preview SHALL remain clearly associated with the event while preserving readable event text; where room permits, both may appear alongside one another
+- **AND** clicking the preview SHALL open the PhotoLightbox with the original `photo_url` at full resolution
 
 #### Scenario: Event without photo
 

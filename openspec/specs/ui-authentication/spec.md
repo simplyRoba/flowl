@@ -68,34 +68,35 @@ The `/login` Svelte route SHALL render outside the normal protected application 
 
 ### Requirement: Responsive two-area login composition
 
-The `/login` page SHALL use Gazel's established login composition structurally while using only Flowl's own colors, spacing tokens, typography tokens, surfaces, shadows, and owl/sprout branding. The viewport SHALL center one login card vertically and horizontally.
+The `/login` page SHALL use Flowl's established login composition and branding. It SHALL present one login card centered in the available viewport with a clear, readable hierarchy.
 
 #### Scenario: Mobile login card
 
-- **WHEN** the viewport is narrower than `48rem`
-- **THEN** the page uses a single-column card with `width: min(100%, 400px)`
-- **AND** the card is centered within a `100dvh` minimum-height page with Flowl-token outer padding
-- **AND** branding/copy appears above the action area with centered text
+- **WHEN** the viewport is below `48rem` wide
+- **THEN** the page presents a single-area login card that fits the available width without clipping or horizontal overflow
+- **AND** the card remains centered and visibly separated from the viewport edges
+- **AND** branding and explanatory copy appear above the action area with centered text
+- **AND** all copy and authentication actions remain visible and reachable
 
 #### Scenario: Desktop two-column login card
 
-- **WHEN** the viewport is at least `48rem` wide
-- **THEN** the centered card uses `width: min(100%, 880px)` and `min-height: 380px`
-- **AND** it uses two columns sized `minmax(0, 1.15fr) minmax(300px, 0.85fr)`
-- **AND** text alignment changes to left within the left column
+- **WHEN** the viewport is `48rem` wide or wider
+- **THEN** the centered card presents separate branding and action areas side by side
+- **AND** their content does not clip, overlap, or cause horizontal overflow
+- **AND** the branding-area text is left-aligned
 
 #### Scenario: Left branding and copy column
 
 - **WHEN** the login card renders
 - **THEN** its first area contains the Flowl logo/wordmark, login heading, and short authentication-required copy in that order
-- **AND** at desktop width the area vertically centers those elements, uses a Flowl feature/surface background, and has a separating right border
+- **AND** at desktop width those elements are vertically centered and the branding area is visually distinct from the action area
 
 #### Scenario: Right raised action panel
 
 - **WHEN** the login card renders
-- **THEN** its second area contains one full-width raised panel using Flowl surface, border, and medium-shadow tokens
-- **AND** the panel contains the optional generic status message above exactly one full-width provider button
-- **AND** at desktop width the action area centers the raised panel vertically within the right column
+- **THEN** its second area contains one visually elevated action panel that uses the available area width
+- **AND** the panel contains the optional generic status message above exactly one provider button that uses the available panel width
+- **AND** at desktop width the action panel is vertically centered within the action area
 
 #### Scenario: Status and provider action ordering
 

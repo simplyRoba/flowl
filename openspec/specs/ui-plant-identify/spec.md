@@ -32,7 +32,7 @@ The plant form SHALL display an "Identify Plant" section inside the Identity sec
 
 ### Requirement: Identify button
 
-The identify section SHALL display a button labeled "Identify Plant" with a sparkle icon that triggers the identification flow.
+The identify section SHALL display a clearly identifiable "Identify Plant" action that triggers the identification flow.
 
 #### Scenario: User clicks Identify Plant
 
@@ -47,18 +47,18 @@ The identify section SHALL display two optional photo upload slots below the ide
 #### Scenario: Empty extra photo slots
 
 - **WHEN** the identify section is in idle state
-- **THEN** two upload slots SHALL be displayed with dashed borders, a camera icon, and their respective labels
+- **THEN** two clearly available upload affordances SHALL be displayed with their respective labels
 
 #### Scenario: Add extra photo
 
 - **WHEN** the user clicks an empty extra photo slot and selects a file
-- **THEN** a thumbnail preview of the selected photo SHALL replace the dashed slot
+- **THEN** a thumbnail preview of the selected photo SHALL replace the empty upload affordance
 - **AND** a remove button SHALL appear on the thumbnail
 
 #### Scenario: Remove extra photo
 
 - **WHEN** the user clicks the remove button on a filled extra photo slot
-- **THEN** the slot SHALL return to its empty dashed-border state
+- **THEN** the slot SHALL return to its clearly available empty state
 
 #### Scenario: Extra photos included in identify request
 
@@ -77,9 +77,9 @@ The identify section SHALL display a loading state while the identification requ
 #### Scenario: Loading state displayed
 
 - **WHEN** the identify request is in progress
-- **THEN** the identify button SHALL be replaced by a spinner and "Identifying..." text
-- **AND** thumbnails of the submitted photos SHALL be displayed
-- **AND** shimmer placeholder lines SHALL be shown below the thumbnails
+- **THEN** the identify action SHALL be replaced by a visible loading indicator and "Identifying..." text
+- **AND** previews of the submitted photos SHALL be displayed
+- **AND** non-final content placeholders SHALL communicate that results are still loading
 
 #### Scenario: Loading state prevents re-submission
 
@@ -101,17 +101,17 @@ The identify section SHALL display a suggestion carousel when the AI returns res
 #### Scenario: Navigate between suggestions with buttons
 
 - **WHEN** the suggestion carousel is visible with multiple suggestions
-- **THEN** left and right chevron navigation buttons SHALL be displayed
-- **AND** clicking the right button SHALL advance to the next suggestion
-- **AND** clicking the left button SHALL return to the previous suggestion
+- **THEN** previous and next navigation controls SHALL be displayed
+- **AND** activating the next control SHALL advance to the next suggestion
+- **AND** activating the previous control SHALL return to the previous suggestion
 - **AND** navigation SHALL wrap around (last → first, first → last)
 
-#### Scenario: Dot indicators
+#### Scenario: Suggestion position indicators
 
 - **WHEN** the suggestion carousel is visible with multiple suggestions
-- **THEN** dot indicators SHALL be displayed between the navigation buttons
-- **AND** the active suggestion's dot SHALL be visually distinct (filled vs. outline)
-- **AND** clicking a dot SHALL navigate directly to that suggestion
+- **THEN** position indicators SHALL be displayed with the navigation controls
+- **AND** the active suggestion's indicator SHALL be visually distinguishable from the others
+- **AND** activating an indicator SHALL navigate directly to that suggestion
 
 #### Scenario: Touch swipe navigation on mobile
 
@@ -234,14 +234,14 @@ The identify section SHALL adapt to the viewport width.
 #### Scenario: Desktop layout
 
 - **WHEN** the viewport width is > 768px
-- **THEN** extra photo slots SHALL be 88×88px
-- **AND** suggestion card action buttons SHALL display side by side
+- **THEN** the extra-photo controls SHALL remain easy to scan and use without crowding
+- **AND** suggestion card actions SHALL appear alongside one another
 
 #### Scenario: Mobile layout
 
 - **WHEN** the viewport width is ≤ 768px
-- **THEN** extra photo slots SHALL be 80×80px
-- **AND** suggestion card action buttons SHALL stack full-width with 44px minimum touch target height
+- **THEN** the extra-photo controls SHALL remain usable without crowding
+- **AND** suggestion card actions SHALL stack vertically, use the available width, and provide touch targets at least 44px in height
 
 ### Requirement: Not-a-plant error code in i18n
 

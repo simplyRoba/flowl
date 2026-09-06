@@ -55,14 +55,14 @@ The toast host SHALL adapt to viewport constraints and MUST NOT compete with the
 
 #### Scenario: Desktop and tablet placement
 
-- **WHEN** the viewport width is greater than 768px
-- **THEN** the visible toast stack SHALL be anchored to the bottom-right of the viewport
+- **WHEN** the viewport is wider than `768px`
+- **THEN** the visible toast stack SHALL appear at the bottom-right of the viewport
 
 #### Scenario: Mobile placement
 
-- **WHEN** the viewport width is less than or equal to 768px
-- **THEN** the visible toast stack SHALL be anchored near the top of the viewport below the safe-area inset
-- **AND** it SHALL NOT be anchored above the fixed bottom nav area
+- **WHEN** the viewport is `768px` wide or narrower
+- **THEN** the visible toast stack SHALL appear near the top of the viewport below the safe-area inset
+- **AND** it SHALL NOT overlap the mobile bottom navigation area
 
 ### Requirement: Toast Severity Behavior
 
