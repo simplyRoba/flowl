@@ -1,23 +1,23 @@
 ## Purpose
 
-Self-contained care entry form component with toolbar-absorbed layout, compound photo/date controls, grouped flex wrapping, and encapsulated state.
+Care entry form with toolbar-absorbed layout, compound photo/date controls, and grouped flex wrapping.
 
 ## Requirements
 
-### Requirement: CareEntryForm component
+### Requirement: Care entry form
 
-The `CareEntryForm` component (`$lib/components/CareEntryForm.svelte`) SHALL be a self-contained form for creating or editing care events on a plant. It SHALL accept a `plantId` prop, an optional existing care event for edit mode, and emit `onsubmit` and `oncancel` callbacks.
+The system SHALL provide a form for creating or editing care events for a plant.
 
-#### Scenario: Component renders with event type chips
+#### Scenario: Add form displays event type chips
 
-- **WHEN** the component is rendered without an existing care event
+- **WHEN** the care entry form is opened to add an event
 - **THEN** it SHALL display a row of event type chips: watered, fertilized, repotted, pruned, custom
 - **AND** each chip SHALL use the corresponding lucide icon and translation label
 - **AND** no chip SHALL be selected by default
 
-#### Scenario: Edit mode renders with existing type selected
+#### Scenario: Edit form displays existing type selected
 
-- **WHEN** the component is rendered with an existing care event
+- **WHEN** the care entry form is opened to edit an existing care event
 - **THEN** it SHALL display the same event type chips
 - **AND** the existing event type chip SHALL be selected
 
@@ -29,7 +29,7 @@ The `CareEntryForm` component (`$lib/components/CareEntryForm.svelte`) SHALL be 
 
 #### Scenario: Notes textarea
 
-- **WHEN** the component is rendered
+- **WHEN** the care entry form is opened
 - **THEN** a textarea SHALL be displayed below the type chips with placeholder text from translations
 - **AND** the textarea SHALL be 2 rows by default
 - **AND** in edit mode it SHALL contain the existing notes when present
@@ -40,7 +40,7 @@ The form SHALL display a toolbar row below the textarea containing tool buttons 
 
 #### Scenario: Toolbar structure
 
-- **WHEN** the component is rendered
+- **WHEN** the care entry form is opened
 - **THEN** the toolbar SHALL be a flex container with `flex-wrap: wrap`
 - **AND** it SHALL contain two inner groups: toolbar-left and toolbar-right
 - **AND** toolbar-right SHALL use `margin-left: auto` to align right
@@ -105,30 +105,30 @@ The toolbar-left group SHALL contain a backdate tool button that morphs between 
 
 ### Requirement: Action buttons
 
-The toolbar-right group SHALL contain cancel and save action buttons appropriate to the form mode.
+The toolbar-right group SHALL contain cancel and save action buttons appropriate to adding or editing an event.
 
 #### Scenario: Save button
 
-- **WHEN** the form is rendered without an existing care event
+- **WHEN** the care entry form is opened to add an event
 - **THEN** a primary save button SHALL be displayed
 - **AND** it SHALL be disabled until an event type is selected
 - **AND** clicking it SHALL submit the care event via `POST /api/plants/{id}/care`
 - **AND** if a photo is attached, it SHALL be uploaded after event creation
-- **AND** on success, the `onsubmit` callback SHALL be called
+- **AND** on success, the form SHALL close and the saved event SHALL appear in the visible care history
 
-#### Scenario: Save button in edit mode
+#### Scenario: Save button while editing
 
-- **WHEN** the form is rendered with an existing care event
+- **WHEN** the care entry form is opened to edit an existing care event
 - **THEN** clicking the primary save button SHALL update the event via `PUT /api/plants/{id}/care/{event_id}`
 - **AND** SHALL apply any requested photo replacement or removal using the care-event photo API
-- **AND** on success, the `onsubmit` callback SHALL be called with the updated event
+- **AND** on success, the form SHALL close and the updated event SHALL appear in the visible care history
 
 #### Scenario: Cancel button
 
 - **WHEN** the user clicks cancel
-- **THEN** all local form state SHALL be reset
+- **THEN** unsaved entries and changes SHALL be discarded
 - **AND** no pending event or photo mutation SHALL be sent
-- **AND** the `oncancel` callback SHALL be called
+- **AND** the form SHALL close without changing the care history
 
 #### Scenario: Submitting state
 
@@ -147,11 +147,11 @@ The toolbar-right group SHALL contain cancel and save action buttons appropriate
 - **WHEN** the save request fails after passing validation
 - **THEN** the entered form state SHALL remain populated
 - **AND** a global toast notification SHALL describe the failure
-- **AND** the `onsubmit` callback SHALL NOT be called
+- **AND** the form SHALL remain open
 
-### Requirement: CareEntryForm Edit Initialization
+### Requirement: Care entry edit initialization
 
-In edit mode, `CareEntryForm` SHALL initialize all editable fields from the existing care event while preserving the existing event until the user saves.
+When editing a care event, the form SHALL initialize all editable fields from that event while preserving the existing event until the user saves.
 
 #### Scenario: Existing values initialized
 
@@ -185,6 +185,6 @@ In edit mode, `CareEntryForm` SHALL initialize all editable fields from the exis
 
 #### Scenario: Edit form disabled offline
 
-- **WHEN** the edit form is rendered while offline
+- **WHEN** the edit form is open while offline
 - **THEN** its save action SHALL be disabled
 - **AND** existing field values and staged changes SHALL remain populated

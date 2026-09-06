@@ -1,64 +1,62 @@
 ## Purpose
 
-Reusable modal dialog component for themed confirmation prompts and alert messages using the HTML `<dialog>` element.
+Themed confirmation prompts and alert messages using the HTML `<dialog>` element.
 
 ## Requirements
 
-### Requirement: ModalDialog component
-The system SHALL provide a reusable `ModalDialog` component using the HTML `<dialog>` element for themed confirmation prompts and alert messages.
+### Requirement: Confirmation and alert dialogs
+The system SHALL provide themed confirmation prompts and alert messages using the HTML `<dialog>` element.
 
-#### Scenario: Confirm mode renders two buttons
-- **WHEN** a `ModalDialog` is opened with `mode="confirm"`
-- **THEN** the dialog displays a title, message, a "Cancel" button, and a confirm button with the `confirmLabel` text
+#### Scenario: Confirmation prompt displays two buttons
+- **WHEN** a confirmation prompt is opened
+- **THEN** the dialog displays a title, message, a "Cancel" button, and an action button with an action-specific label
 
-#### Scenario: Alert mode renders one button
-- **WHEN** a `ModalDialog` is opened with `mode="alert"`
+#### Scenario: Alert displays one button
+- **WHEN** an alert is opened
 - **THEN** the dialog displays a title, message, and a single "OK" button
 
-#### Scenario: Danger variant styling
-- **WHEN** a `ModalDialog` is opened with `variant="danger"`
-- **THEN** the confirm/OK button uses danger styling (red)
+#### Scenario: Destructive dialog styling
+- **WHEN** a destructive confirmation prompt or alert is opened
+- **THEN** its action or OK button uses danger styling (red)
 
-#### Scenario: Warning variant styling
-- **WHEN** a `ModalDialog` is opened with `variant="warning"`
-- **THEN** the confirm/OK button uses primary styling
+#### Scenario: Warning dialog styling
+- **WHEN** a warning confirmation prompt or alert is opened
+- **THEN** its action or OK button uses primary styling
 
-#### Scenario: Confirm callback
-- **WHEN** the user clicks the confirm button in confirm mode
-- **THEN** the `onconfirm` callback is fired
-- **AND** the owning flow SHALL close the dialog by setting `open` to `false` after accepting the action
+#### Scenario: Confirmation accepted
+- **WHEN** the user clicks the action button in a confirmation prompt
+- **THEN** the requested action SHALL proceed
+- **AND** the dialog SHALL close
 
-#### Scenario: Cancel callback
-- **WHEN** the user clicks the cancel button in confirm mode
-- **THEN** the `oncancel` callback is fired
-- **AND** the owning flow SHALL close the dialog by setting `open` to `false`
+#### Scenario: Confirmation cancelled
+- **WHEN** the user clicks the cancel button in a confirmation prompt
+- **THEN** the requested action SHALL NOT proceed
+- **AND** the dialog SHALL close
 
-#### Scenario: Alert close callback
-- **WHEN** the user clicks the OK button in alert mode
-- **THEN** the `onclose` callback is fired
-- **AND** the owning flow SHALL close the dialog by setting `open` to `false`
+#### Scenario: Alert acknowledged
+- **WHEN** the user clicks the OK button in an alert
+- **THEN** the alert SHALL close
 
-#### Scenario: Escape key in confirm mode
-- **WHEN** the user presses Escape while a confirm-mode dialog is open
-- **THEN** the `oncancel` callback is fired
-- **AND** the owning flow SHALL close the dialog by setting `open` to `false`
+#### Scenario: Escape key in confirmation prompt
+- **WHEN** the user presses Escape while a confirmation prompt is open
+- **THEN** the requested action SHALL NOT proceed
+- **AND** the dialog SHALL close
 
-#### Scenario: Escape key in alert mode
-- **WHEN** the user presses Escape while an alert-mode dialog is open
-- **THEN** the `onclose` callback is fired
-- **AND** the owning flow SHALL close the dialog by setting `open` to `false`
+#### Scenario: Escape key in alert
+- **WHEN** the user presses Escape while an alert is open
+- **THEN** the alert SHALL close
 
-#### Scenario: Backdrop click in confirm mode
-- **WHEN** the user clicks the backdrop behind a confirm-mode dialog
-- **THEN** the `oncancel` callback is fired
-- **AND** the owning flow SHALL close the dialog by setting `open` to `false`
+#### Scenario: Backdrop click in confirmation prompt
+- **WHEN** the user clicks the backdrop behind a confirmation prompt
+- **THEN** the requested action SHALL NOT proceed
+- **AND** the dialog SHALL close
 
-#### Scenario: Backdrop click in alert mode
-- **WHEN** the user clicks the backdrop behind an alert-mode dialog
+#### Scenario: Backdrop click in alert
+- **WHEN** the user clicks the backdrop behind an alert
 - **THEN** the dialog remains open
 
-#### Scenario: Open prop controls visibility
-- **WHEN** the `open` prop changes from `false` to `true`
+#### Scenario: Dialog visibility
+- **WHEN** a confirmation prompt or alert is opened
 - **THEN** the dialog opens via `showModal()`
-- **AND** when `open` changes from `true` to `false`
+- **AND** when it is closed
 - **THEN** the dialog closes via `close()`

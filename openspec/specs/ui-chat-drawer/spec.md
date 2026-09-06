@@ -1,12 +1,12 @@
 ## Purpose
 
-Chat drawer UI component — conversational AI chat interface on the Plant Detail page with desktop drawer and mobile bottom sheet layouts, streaming response rendering, and context-aware quick-question chips.
+Chat interface — conversational AI chat on the Plant Detail page with desktop drawer and mobile bottom sheet layouts, streaming response rendering, and context-aware quick-question chips.
 
 ## Requirements
 
-### Requirement: Chat drawer component
+### Requirement: Chat interface
 
-A `ChatDrawer.svelte` component SHALL provide a conversational AI chat interface on the Plant Detail page. On desktop (>768px) it SHALL render as a bounded, responsive right-side panel using `position: fixed`. On mobile (<=768px) it SHALL render as a bottom sheet with a drag handle.
+The system SHALL provide a conversational AI chat interface on the Plant Detail page. On desktop (>768px) it SHALL display as a bounded, responsive right-side panel using `position: fixed`. On mobile (<=768px) it SHALL display as a bottom sheet with a drag handle.
 
 #### Scenario: Desktop drawer open
 
@@ -119,9 +119,9 @@ The chat drawer SHALL consume the SSE stream from `POST /api/ai/chat` and render
 - **THEN** an error message SHALL be displayed in the chat
 - **AND** the input SHALL be re-enabled
 
-#### Scenario: Abort on unmount
+#### Scenario: Abort when interface is removed
 
-- **WHEN** the component is destroyed while a stream is in progress
+- **WHEN** the chat interface is closed or removed while a stream is in progress
 - **THEN** the in-flight fetch SHALL be aborted via `AbortController`
 
 ### Requirement: Chat history
@@ -269,8 +269,8 @@ The chat drawer SHALL provide a save-note flow that summarizes the conversation 
 
 - **WHEN** the user clicks "Save" on the summary editor
 - **THEN** a `POST /api/plants/:id/care` request SHALL be sent with `event_type: "ai-consultation"` and the textarea content as `notes`
-- **AND** the `onsave` callback SHALL be invoked to notify the parent component
-- **AND** the drawer SHALL close
+- **AND** the chat interface SHALL close
+- **AND** the Plant Detail care history SHALL refresh
 
 #### Scenario: Save confirmed success feedback
 
@@ -403,9 +403,9 @@ The chat drawer SHALL revoke object URLs for photo previews to prevent memory le
 - **WHEN** a new photo replaces a previously staged photo
 - **THEN** `URL.revokeObjectURL()` SHALL be called on the previous preview URL
 
-#### Scenario: Cleanup on component destroy
+#### Scenario: Cleanup when interface is removed
 
-- **WHEN** the chat drawer component is destroyed while a photo is staged
+- **WHEN** the chat interface is closed or removed while a photo is staged
 - **THEN** `URL.revokeObjectURL()` SHALL be called on the staged preview URL
 
 ### Requirement: Save note photo attachment
@@ -430,7 +430,8 @@ The chat drawer's save-note flow SHALL auto-attach the last user-sent photo to t
 - **WHEN** the user confirms save with a photo attached
 - **THEN** the care event SHALL be created first via `POST /api/plants/:id/care`
 - **AND** the photo SHALL be uploaded via `POST /api/plants/:id/care/:event_id/photo`
-- **AND** the `onsave` callback SHALL be invoked and the drawer SHALL close
+- **AND** the chat interface SHALL close
+- **AND** the Plant Detail care history SHALL refresh
 
 #### Scenario: Save after removing photo
 

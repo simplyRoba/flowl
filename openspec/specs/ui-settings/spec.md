@@ -75,7 +75,7 @@ The settings page SHALL include a "Locations" section listing all locations with
 #### Scenario: Delete location with plants
 
 - **WHEN** the user clicks delete on a location with `plant_count` > 0
-- **THEN** a `ModalDialog` is shown in confirm mode with danger variant
+- **THEN** a destructive confirmation dialog is displayed
 - **AND** the dialog message includes the location name and plant count warning
 - **AND** the location is deleted only when the user confirms
 
@@ -194,7 +194,7 @@ The settings page SHALL include an "MQTT" section displaying the MQTT connection
 
 - **GIVEN** the MQTT section is visible and status is "connected"
 - **WHEN** the user clicks the "Repair" button
-- **THEN** a `ModalDialog` is shown in confirm mode with warning variant
+- **THEN** a warning confirmation dialog is displayed
 - **AND** the dialog message warns that MQTT topics will be cleared and republished
 
 #### Scenario: Repair confirmed
@@ -262,7 +262,7 @@ The settings page Data section SHALL include export and import controls in addit
 
 #### Scenario: Import confirmation
 - **WHEN** the user selects a ZIP file for import
-- **THEN** a `ModalDialog` is shown in confirm mode with danger variant
+- **THEN** a destructive confirmation dialog is displayed
 - **AND** the dialog message warns that all existing data and photos will be replaced
 - **AND** the dialog message includes the file name
 

@@ -52,7 +52,7 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 #### Scenario: Delete action
 
 - **WHEN** the user clicks the delete button on the detail view
-- **THEN** a `ModalDialog` is shown in confirm mode with danger variant
+- **THEN** a destructive confirmation dialog is displayed
 - **AND** the dialog message includes the plant name
 - **AND** deletion only proceeds when the user confirms
 
@@ -94,16 +94,16 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 #### Scenario: Ask AI opens chat drawer
 
 - **WHEN** the user clicks the "Ask AI" button
-- **THEN** the `ChatDrawer` component SHALL open with the current plant's data
+- **THEN** a chat interface SHALL open with the current plant's data
 
 #### Scenario: Mobile action bar hidden during chat
 
-- **WHEN** the chat drawer is open on mobile (viewport <= 768px)
+- **WHEN** the chat interface is open on mobile (viewport <= 768px)
 - **THEN** the page action bar (Back / Edit / Delete) SHALL be hidden
 
 #### Scenario: Mobile action bar restored on chat close
 
-- **WHEN** the chat drawer is closed on mobile
+- **WHEN** the chat interface is closed on mobile
 - **THEN** the page action bar SHALL reappear
 
 ### Requirement: Photo Display on Detail View
@@ -201,7 +201,7 @@ A shared API client module SHALL provide typed functions for all plant and locat
 #### Scenario: API error
 
 - **WHEN** an API call returns an error status
-- **THEN** the client extracts the error message and surfaces it to the calling component
+- **THEN** the client extracts the error message and surfaces it to the calling flow
 
 ### Requirement: API Client — Water Plant
 
@@ -224,31 +224,30 @@ The plant store SHALL provide a `waterPlant` function that calls the API and upd
 
 ### Requirement: Care entry form on detail view
 
-The plant detail view SHALL render the care entry form using the `CareEntryForm` component.
+The plant detail view SHALL provide a care entry form for adding or editing care events.
 
 #### Scenario: Add log entry button
 
 - **WHEN** the plant detail view is rendered
 - **AND** the care entry form is not visible
 - **THEN** an "Add log entry" button SHALL be displayed below the care journal
-- **AND** clicking it SHALL show the `CareEntryForm` component
+- **AND** clicking it SHALL display a care entry form
 
-#### Scenario: Care entry form rendered via component
+#### Scenario: Care entry form displayed
 
 - **WHEN** the user clicks the "Add log entry" button
-- **THEN** the plant detail page SHALL render `<CareEntryForm plantId={plant.id} />` inline
-- **AND** the page SHALL NOT contain any form state variables (event type, notes, photo, backdate, submitting) — all state SHALL be encapsulated within the component
+- **THEN** a care entry form SHALL be displayed inline for the current plant
 
-#### Scenario: Form submit reloads events
+#### Scenario: Successful add refreshes events
 
-- **WHEN** the `CareEntryForm` emits `onsubmit`
+- **WHEN** a new care entry is saved successfully
 - **THEN** the plant detail page SHALL reload care events
 - **AND** the form SHALL be hidden
 
-#### Scenario: Form cancel hides form
+#### Scenario: Add cancelled
 
-- **WHEN** the `CareEntryForm` emits `oncancel`
-- **THEN** the form SHALL be hidden
+- **WHEN** the user cancels a new care entry
+- **THEN** the form SHALL be hidden without changing the care history
 
 ### Requirement: Care event photo in plant detail timeline
 
@@ -325,25 +324,25 @@ Mutation actions on the plant detail page SHALL be disabled when the device is o
 
 ### Requirement: Plant Detail Care Event Edit Lifecycle
 
-The plant detail page SHALL own which care event is being edited while the `CareEntryForm` component SHALL own all editable form fields and submission state.
+The plant detail page SHALL support adding or editing one care event at a time.
 
 #### Scenario: Open edit form
 
 - **WHEN** the user activates an individual care event's edit control
-- **THEN** the page renders `CareEntryForm` in edit mode for that event
+- **THEN** a care entry form for that event SHALL be displayed with its existing values populated
 - **AND** any add-entry form or other care-event edit form is hidden
 
 #### Scenario: Successful edit refreshes dependent data
 
-- **WHEN** the edit form reports a successful submission
-- **THEN** the page hides the form
-- **AND** reloads both the plant and its care events
+- **WHEN** an edit is saved successfully
+- **THEN** the form SHALL be hidden
+- **AND** the page SHALL reload both the plant and its care events
 - **AND** `last_watered`, `watering_status`, and `next_due` reflect the updated history
 
 #### Scenario: Cancel edit
 
-- **WHEN** the edit form reports cancellation
-- **THEN** the page hides the form without changing the displayed event
+- **WHEN** the user cancels an edit
+- **THEN** the form SHALL be hidden without changing the displayed event
 
 #### Scenario: Edit action disabled offline
 

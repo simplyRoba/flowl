@@ -6,18 +6,18 @@ AI plant identification flow — identify section visibility, photo upload slots
 
 ### Requirement: Identify section visibility
 
-The PlantForm SHALL display an "Identify Plant" section inside the Identity section (below the name and species fields), when both conditions are met: a photo is present and the AI provider is enabled. The form SHALL check AI status via `GET /api/ai/status` on mount. The identify section SHALL display a read-only thumbnail of the main photo so the user can see which image will be used for identification without scrolling back to the Media section. This thumbnail SHALL NOT have a remove button — photo management is handled exclusively in the Media section.
+The plant form SHALL display an "Identify Plant" section inside the Identity section (below the name and species fields), when both conditions are met: a photo is present and the AI provider is enabled. Before determining whether to display the section, the form SHALL check AI status via `GET /api/ai/status`. The identify section SHALL display a read-only thumbnail of the main photo so the user can see which image will be used for identification without scrolling back to the Media section. This thumbnail SHALL NOT have a remove button — photo management is handled exclusively in the Media section.
 
 #### Scenario: Photo present and AI enabled
 
-- **WHEN** the PlantForm renders with a photo (new upload or existing `photo_url`)
+- **WHEN** the plant form is displayed with a photo (new upload or existing `photo_url`)
 - **AND** `GET /api/ai/status` returns `{ "enabled": true }`
 - **THEN** the identify section SHALL be visible inside the Identity section, above the name and species fields
 - **AND** a read-only thumbnail of the main photo SHALL be displayed at the top of the identify section
 
 #### Scenario: No photo present
 
-- **WHEN** the PlantForm renders without a photo (icon mode or empty media)
+- **WHEN** the plant form is displayed without a photo (icon mode or empty media)
 - **THEN** the identify section SHALL NOT be visible
 
 #### Scenario: AI not enabled
@@ -92,7 +92,7 @@ The identify section SHALL display a suggestion carousel when the AI returns res
 
 #### Scenario: Suggestion carousel content
 
-- **WHEN** the AI returns an `IdentifyResponse` with multiple suggestions
+- **WHEN** the AI returns multiple identification suggestions
 - **THEN** the section SHALL display a carousel card showing the first suggestion
 - **AND** the header SHALL show "AI Suggestion" with a counter indicating the current position (e.g., "1 / 3")
 - **AND** the card SHALL display the scientific name, confidence badge, common name, summary, and "Will fill" chips for the active suggestion
@@ -146,7 +146,7 @@ The identify section SHALL display a suggestion carousel when the AI returns res
 
 ### Requirement: Apply AI suggestion to form
 
-Clicking "Apply to form" SHALL auto-fill the PlantForm fields from the currently active AI suggestion. The user can edit any field after applying.
+Clicking "Apply to form" SHALL auto-fill plant form fields from the currently active AI suggestion. The user can edit any field after applying.
 
 #### Scenario: Fields filled from active suggestion
 
@@ -209,7 +209,7 @@ The frontend API client SHALL provide an `identifyPlant` function that sends pho
 - **WHEN** `identifyPlant(photos)` is called with an array of `File` objects
 - **THEN** a `POST` request SHALL be sent to `/api/ai/identify` with multipart form data
 - **AND** each file SHALL be appended under the field name `photos`
-- **AND** the response SHALL be parsed as an `IdentifyResponse` containing a `suggestions` array of `IdentifyResult` entries
+- **AND** the response SHALL provide identification result data containing a `suggestions` array
 
 #### Scenario: API error
 
