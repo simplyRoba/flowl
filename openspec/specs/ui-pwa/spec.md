@@ -152,19 +152,21 @@ The app SHALL provide visible feedback while the gesture is active and SHALL sup
 - **WHEN** the app is running in a normal browser tab instead of standalone PWA mode
 - **THEN** the custom pull-to-refresh gesture SHALL NOT arm
 
-### Requirement: Service worker registration
+### Requirement: PWA offline support activation
 
-The app SHALL register a service worker on page load in production builds.
+The app SHALL automatically activate PWA offline support when a production page loads.
 
-#### Scenario: Service worker registered in production
+#### Scenario: PWA offline support activated in production
 
-- **WHEN** the app loads in a production build
-- **THEN** the app SHALL activate its PWA offline support
+- **WHEN** a production page loads
+- **THEN** PWA offline support SHALL be active
+- **AND** the caching, offline fallback, privacy, and update behavior specified by this capability SHALL apply
 
-#### Scenario: No service worker in development
+#### Scenario: PWA offline support inactive in development
 
-- **WHEN** the app loads in a development build
-- **THEN** no service worker SHALL be registered
+- **WHEN** a development page loads
+- **THEN** the PWA offline worker SHALL NOT be activated or registered
+- **AND** its caching SHALL NOT be activated
 
 ### Requirement: Static asset precaching
 

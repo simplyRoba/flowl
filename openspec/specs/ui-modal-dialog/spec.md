@@ -1,11 +1,11 @@
 ## Purpose
 
-Themed confirmation prompts and alert messages using the HTML `<dialog>` element.
+Themed confirmation prompts and alert messages with accessible true-modal behavior.
 
 ## Requirements
 
 ### Requirement: Confirmation and alert dialogs
-The system SHALL provide themed confirmation prompts and alert messages using the HTML `<dialog>` element.
+The system SHALL provide themed confirmation prompts and alert messages with accessible true-modal behavior.
 
 #### Scenario: Confirmation prompt displays two buttons
 - **WHEN** a confirmation prompt is opened
@@ -55,8 +55,13 @@ The system SHALL provide themed confirmation prompts and alert messages using th
 - **WHEN** the user clicks the backdrop behind an alert
 - **THEN** the dialog remains open
 
-#### Scenario: Dialog visibility
+#### Scenario: Accessible true-modal behavior
 - **WHEN** a confirmation prompt or alert is opened
-- **THEN** the dialog opens via `showModal()`
-- **AND** when it is closed
-- **THEN** the dialog closes via `close()`
+- **THEN** the modal is visible
+- **AND** interaction with the background is unavailable
+- **AND** keyboard focus enters the modal and remains within it while the modal is open
+
+#### Scenario: Focus returns after close
+- **GIVEN** a confirmation prompt or alert was opened by an available initiating control
+- **WHEN** the modal is closed
+- **THEN** keyboard focus returns to that initiating control

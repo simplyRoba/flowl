@@ -118,10 +118,11 @@ The chat drawer SHALL consume the SSE stream from `POST /api/ai/chat` and render
 - **THEN** an error message SHALL be displayed in the chat
 - **AND** the input SHALL be re-enabled
 
-#### Scenario: Abort when interface is removed
+#### Scenario: Streaming cancelled when interface is removed
 
-- **WHEN** the chat interface is closed or removed while a stream is in progress
-- **THEN** the in-flight fetch SHALL be aborted via `AbortController`
+- **WHEN** the chat interface begins closing or is removed while a stream is in progress
+- **THEN** cancellation of the in-flight streaming request SHALL begin before the close or removal completes
+- **AND** no further stream chunks or streaming-related UI updates SHALL be applied after the interface closes
 
 ### Requirement: Chat history
 
@@ -328,7 +329,7 @@ The chat drawer SHALL display a photo-attachment control before the text input.
 
 - **WHEN** a photo is already staged and the user selects another
 - **THEN** the previous photo SHALL be replaced by the new one
-- **AND** the previous preview object URL SHALL be revoked
+- **AND** the temporary preview resources for the previous photo SHALL be released
 
 ### Requirement: Photo drag-and-drop
 
@@ -371,7 +372,7 @@ The chat drawer SHALL display a preview strip above the input area when a photo 
 - **WHEN** the user clicks the remove button on the preview strip
 - **THEN** the staged photo SHALL be cleared
 - **AND** the preview strip SHALL be hidden
-- **AND** the preview object URL SHALL be revoked
+- **AND** the temporary preview resources for the removed photo SHALL be released
 
 #### Scenario: Preview cleared after send
 
@@ -393,19 +394,24 @@ The chat drawer SHALL display attached photos inline in user message bubbles.
 - **WHEN** a user message has no associated image
 - **THEN** the message bubble SHALL render text only (no change from existing behavior)
 
-### Requirement: Photo memory cleanup
+### Requirement: Temporary photo preview resource cleanup
 
-The chat drawer SHALL revoke object URLs for photo previews to prevent memory leaks.
+The chat drawer SHALL release temporary resources for staged and save-note photo previews when those previews are no longer needed.
 
 #### Scenario: Cleanup on photo replace
 
 - **WHEN** a new photo replaces a previously staged photo
-- **THEN** `URL.revokeObjectURL()` SHALL be called on the previous preview URL
+- **THEN** the temporary preview resources for the previous photo SHALL be released
+
+#### Scenario: Cleanup on photo removal
+
+- **WHEN** the user removes a staged photo
+- **THEN** the temporary preview resources for that photo SHALL be released
 
 #### Scenario: Cleanup when interface is removed
 
-- **WHEN** the chat interface is closed or removed while a photo is staged
-- **THEN** `URL.revokeObjectURL()` SHALL be called on the staged preview URL
+- **WHEN** the chat interface is closed or removed
+- **THEN** temporary resources for any staged or save-note photo previews SHALL be released
 
 ### Requirement: Save note photo attachment
 

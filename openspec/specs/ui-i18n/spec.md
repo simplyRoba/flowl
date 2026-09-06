@@ -6,7 +6,7 @@ Client-side i18n system providing translations for English, German, and Spanish.
 
 ### Requirement: Locale store
 
-A `locale` writable store SHALL hold the active locale (`'en' | 'de' | 'es'`), defaulting to `'en'`.
+A `locale` writable store SHALL hold the active locale (`'en' | 'de' | 'es'`), defaulting to `'en'`. The active locale SHALL have a durable browser-local fallback preference that persists across reloads and remains available when the backend cannot be reached.
 
 #### Scenario: Default locale
 
@@ -16,36 +16,43 @@ A `locale` writable store SHALL hold the active locale (`'en' | 'de' | 'es'`), d
 #### Scenario: Persisted locale restored from backend
 
 - **WHEN** the application loads
-- **AND** `GET /api/settings` returns a valid locale
+- **AND** `GET /api/settings` returns a supported locale
+- **AND** the user has not selected a locale since that request began
 - **THEN** the locale store is set to the backend value
-- **AND** `localStorage` key `flowl.locale` is updated to match
+- **AND** the durable browser-local fallback preference is synchronized to match
 
 #### Scenario: User selection wins over a pending startup response
 
 - **GIVEN** the backend locale request is in progress
-- **WHEN** the user selects a locale before the response arrives
+- **WHEN** the user selects a supported locale before the response arrives
 - **THEN** the response SHALL NOT replace the user's selection
-- **AND** the selected locale SHALL remain in `localStorage`
+- **AND** the selected locale SHALL remain in the durable browser-local fallback preference across reloads
 
-#### Scenario: Backend unavailable falls back to localStorage
-
-- **WHEN** the application loads
-- **AND** `GET /api/settings` fails
-- **AND** `localStorage` key `flowl.locale` contains a valid locale (`'en'`, `'de'`, or `'es'`)
-- **THEN** the locale store is set to the `localStorage` value
-
-#### Scenario: Both backend and localStorage unavailable
+#### Scenario: Backend unavailable falls back to the browser-local preference
 
 - **WHEN** the application loads
-- **AND** `GET /api/settings` fails
-- **AND** `localStorage` key `flowl.locale` is missing or invalid
+- **AND** `GET /api/settings` fails or the backend is unavailable
+- **AND** the durable browser-local fallback preference contains a supported locale (`'en'`, `'de'`, or `'es'`)
+- **THEN** the locale store is set to that browser-local value
+
+#### Scenario: Backend and browser-local preference unavailable
+
+- **WHEN** the application loads
+- **AND** `GET /api/settings` fails or the backend is unavailable
+- **AND** the durable browser-local fallback preference is missing or unsupported
 - **THEN** the locale store falls back to `'en'`
+
+#### Scenario: Unsupported persisted locale is rejected
+
+- **WHEN** a locale value from the backend or durable browser-local fallback preference is not `'en'`, `'de'`, or `'es'`
+- **THEN** the value SHALL NOT be applied as the active locale
+- **AND** the application SHALL use another supported available value or `'en'`
 
 #### Scenario: Locale change persisted to backend
 
-- **WHEN** the locale is changed
+- **WHEN** the locale is changed to a supported value
 - **THEN** the new value is sent to the backend via `PUT /api/settings`
-- **AND** the new value is written to `localStorage` key `flowl.locale` as a fallback cache
+- **AND** the durable browser-local fallback preference is updated so the selection persists across reloads and remains usable offline
 
 ### Requirement: Translation dictionaries
 

@@ -294,7 +294,7 @@ The route `/care-journal` SHALL display a bounded, progressively loaded feed of 
 #### Scenario: URL updates without history pollution
 
 - **WHEN** the user toggles a filter chip
-- **THEN** the URL SHALL be updated using `replaceState` with no new browser history entry
+- **THEN** the URL SHALL be updated without adding a browser history entry
 
 #### Scenario: Initial event page is bounded
 
@@ -548,14 +548,14 @@ The global care journal page SHALL display an offline-specific message instead o
 
 - **WHEN** the care journal page attempts to load events
 - **AND** the fetch fails
-- **AND** `navigator.onLine` is `false`
+- **AND** the application has detected an offline state
 - **THEN** the page SHALL display a translated offline message instead of the generic load error text
 
-#### Scenario: Generic error shown when fetch fails online
+#### Scenario: Generic error shown when no offline state is detected
 
 - **WHEN** the care journal page attempts to load events
 - **AND** the fetch fails
-- **AND** `navigator.onLine` is `true`
+- **AND** the application has not detected an offline state
 - **THEN** the page SHALL display the existing generic error text from `resolveError()`
 
 #### Scenario: Skeleton shown before offline determination

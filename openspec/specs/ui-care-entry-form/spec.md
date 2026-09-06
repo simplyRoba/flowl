@@ -76,7 +76,7 @@ The tool-controls group SHALL contain a photo control that changes between inact
 - **WHEN** the user clicks the dismiss button on the photo compound group
 - **THEN** the photo SHALL be cleared
 - **AND** the control SHALL revert to the inactive photo-attachment control
-- **AND** the preview object URL SHALL be revoked
+- **AND** any temporary preview resources for the cleared photo SHALL be released
 
 ### Requirement: Backdate tool button
 

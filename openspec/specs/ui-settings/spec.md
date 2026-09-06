@@ -96,7 +96,7 @@ The settings page SHALL include a "Locations" section listing all locations with
 
 ### Requirement: Appearance theme selector
 
-The settings page SHALL include an Appearance section that lets the user choose Light, Dark, or System theme.
+The settings page SHALL include an Appearance section that lets the user choose Light, Dark, or System theme. The selected theme SHALL have a durable browser-local fallback preference that persists across reloads and remains usable when the backend is unavailable.
 
 #### Scenario: Settings page shows theme options
 
@@ -107,23 +107,37 @@ The settings page SHALL include an Appearance section that lets the user choose 
 #### Scenario: Theme option selection
 
 - **GIVEN** the settings page is visible
-- **WHEN** the user selects a theme option
+- **WHEN** the user selects a supported theme option
 - **THEN** the selected option is visually indicated as active
 - **AND** the preference is persisted to the backend via `PUT /api/settings`
-- **AND** the preference is also written to `localStorage` as a fallback cache
+- **AND** the durable browser-local fallback preference is updated so the selection persists across reloads and remains usable offline
 
 #### Scenario: Theme initialised from backend
 
 - **WHEN** the application loads
-- **THEN** the theme preference is fetched from `GET /api/settings`
-- **AND** the theme store is seeded with the backend value
-- **AND** `localStorage` is updated to match
+- **AND** `GET /api/settings` returns a supported theme
+- **AND** the user has not selected a theme since that request began
+- **THEN** the backend value seeds the theme store
+- **AND** the durable browser-local fallback preference is synchronized to match
+
+#### Scenario: User selection wins over a pending startup response
+
+- **GIVEN** the backend settings request is in progress
+- **WHEN** the user selects a supported theme before the response arrives
+- **THEN** the response SHALL NOT replace the user's selection
+- **AND** the selected theme SHALL remain in the durable browser-local fallback preference across reloads
 
 #### Scenario: Backend unavailable on init
 
-- **WHEN** the application loads and `GET /api/settings` fails
-- **THEN** the theme store falls back to the `localStorage` value
-- **AND** if `localStorage` is also empty, the default `'system'` is used
+- **WHEN** the application loads and `GET /api/settings` fails or the backend is unavailable
+- **THEN** the theme store falls back to a supported durable browser-local preference
+- **AND** if that preference is missing or unsupported, the default `'system'` is used
+
+#### Scenario: Unsupported persisted theme is rejected
+
+- **WHEN** a theme value from the backend or durable browser-local fallback preference is not `light`, `dark`, or `system`
+- **THEN** the value SHALL NOT be applied as the active theme
+- **AND** the application SHALL use another supported available value or the default `'system'`
 
 ### Requirement: About Section
 
@@ -304,7 +318,7 @@ The settings page SHALL provide a language selector after the theme controls in 
 - **WHEN** the user selects a language option
 - **THEN** the selected option is visually indicated as active
 - **AND** the locale store is updated immediately
-- **AND** the preference is persisted to `localStorage`
+- **AND** the preference is retained in the durable browser-local fallback so it persists across reloads and remains usable offline or when the backend is unavailable
 
 #### Scenario: Reactive UI update
 
@@ -319,21 +333,22 @@ The settings page SHALL display an offline-specific message when the network is 
 #### Scenario: Offline message shown when offline
 
 - **WHEN** the settings page loads
-- **AND** `navigator.onLine` is `false`
+- **AND** the application-detected connection state is offline
 - **AND** data fetches for settings sections fail
 - **THEN** the page SHALL display a translated offline message in place of the sections that failed to load
 
 #### Scenario: Appearance and language sections remain functional offline
 
-- **WHEN** the settings page loads while offline
+- **WHEN** the settings page loads while the application-detected connection state is offline
 - **THEN** the Appearance theme selector and Language selector SHALL remain functional
-- **AND** theme and language changes SHALL be applied locally (stored in `localStorage`)
+- **AND** theme and language changes SHALL be applied to their durable browser-local fallback preferences
 - **AND** the server-side persistence (`PUT /api/settings`) MAY fail silently
 
-#### Scenario: Normal errors shown when online
+#### Scenario: Normal errors shown when no offline state is detected
 
-- **WHEN** the settings page loads while online
+- **WHEN** the settings page loads
 - **AND** a data fetch fails
+- **AND** the application has not detected an offline state
 - **THEN** the existing behavior SHALL apply (sections not rendered on failure)
 
 ### Requirement: Authentication Settings section
