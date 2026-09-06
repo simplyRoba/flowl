@@ -111,7 +111,7 @@ The API SHALL define a fixed catalog of error codes. Each error code SHALL map t
 #### Scenario: Import errors
 
 - **WHEN** an import operation fails due to client input
-- **THEN** the API uses one of: `IMPORT_NO_FILE` (400), `IMPORT_INVALID_ARCHIVE` (400), `IMPORT_INVALID_DATA` (400), `IMPORT_VERSION_MISMATCH` (400), `IMPORT_INVALID_FILENAME` (400), `IMPORT_FILE_TOO_LARGE` (400), `IMPORT_VALIDATION_FAILED` (422)
+- **THEN** the API uses one of: `IMPORT_NO_FILE` (400), `IMPORT_INVALID_ARCHIVE` (400), `IMPORT_INVALID_DATA` (400), `IMPORT_VERSION_MISMATCH` (422), `IMPORT_INVALID_FILENAME` (400), `IMPORT_FILE_TOO_LARGE` (400), `IMPORT_VALIDATION_FAILED` (422)
 
 #### Scenario: AI errors
 

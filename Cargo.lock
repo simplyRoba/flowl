@@ -922,6 +922,7 @@ dependencies = [
  "rsa",
  "rumqttc",
  "rust-embed",
+ "semver",
  "serde",
  "serde_json",
  "sha2 0.11.0",

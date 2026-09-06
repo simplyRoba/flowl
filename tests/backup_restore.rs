@@ -303,7 +303,7 @@ async fn import_version_mismatch() {
         .await
         .unwrap();
 
-    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     let body = common::body_json(response).await;
     assert_eq!(body["code"], "IMPORT_VERSION_MISMATCH");
 }
@@ -337,15 +337,19 @@ async fn import_malformed_versions_rejected() {
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
         let body = common::body_json(response).await;
-        assert_eq!(body["code"], "IMPORT_VERSION_MISMATCH");
+        assert_eq!(body["code"], "INVALID_REQUEST_BODY");
     }
 }
 
 #[tokio::test]
 async fn import_patch_version_difference_allowed() {
-    let parts: Vec<&str> = env!("CARGO_PKG_VERSION").split('.').collect();
-    let patch: u32 = parts[2].parse::<u32>().unwrap() + 1;
-    let compatible_version = format!("{}.{}.{}", parts[0], parts[1], patch);
+    let server_version = semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+    let compatible_version = format!(
+        "{}.{}.{}",
+        server_version.major,
+        server_version.minor,
+        server_version.patch + 1
+    );
 
     let json = format!(
         r#"{{
@@ -358,6 +362,35 @@ async fn import_patch_version_difference_allowed() {
     );
     let zip_bytes = build_export_zip(&json);
 
+    let (app, _dir) = common::test_app().await;
+
+    let response = app
+        .oneshot(multipart_import_request(&zip_bytes))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn import_prerelease_and_build_version_difference_allowed() {
+    let server_version = semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+    let compatible_version = format!(
+        "{}.{}.{}-next.1+portable",
+        server_version.major,
+        server_version.minor,
+        server_version.patch + 1
+    );
+    let json = format!(
+        r#"{{
+            "version": "{compatible_version}",
+            "exported_at": "2026-02-21T12:00:00Z",
+            "locations": [],
+            "plants": [],
+            "care_events": []
+        }}"#
+    );
+    let zip_bytes = build_export_zip(&json);
     let (app, _dir) = common::test_app().await;
 
     let response = app

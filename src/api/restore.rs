@@ -3,6 +3,7 @@ use std::sync::atomic::Ordering;
 
 use axum::Json;
 use axum::extract::{Multipart, State};
+use semver::Version;
 use serde::{Deserialize, Serialize};
 
 use tracing::info;
@@ -70,29 +71,18 @@ pub struct ImportResult {
     pub photos: usize,
 }
 
-fn parse_archive_version(version: &str) -> Option<(u64, u64, u64)> {
-    let mut parts = version.split('.');
-    let major = parts.next()?.parse().ok()?;
-    let minor = parts.next()?.parse().ok()?;
-    let patch = parts.next()?.parse().ok()?;
-    if parts.next().is_some() {
-        return None;
-    }
-    Some((major, minor, patch))
-}
-
 fn check_version(archive_version: &str) -> Result<(), ApiError> {
-    let (archive_major, archive_minor, _) = parse_archive_version(archive_version)
-        .ok_or(ApiError::BadRequest("IMPORT_VERSION_MISMATCH"))?;
-    let server_major = env!("CARGO_PKG_VERSION_MAJOR")
-        .parse::<u64>()
-        .map_err(|_| ApiError::InternalError("INTERNAL_ERROR"))?;
-    let server_minor = env!("CARGO_PKG_VERSION_MINOR")
-        .parse::<u64>()
-        .map_err(|_| ApiError::InternalError("INTERNAL_ERROR"))?;
+    let archive_version = Version::parse(archive_version)
+        .map_err(|_| ApiError::BadRequest("INVALID_REQUEST_BODY"))?;
+    let server_version = Version::parse(env!("CARGO_PKG_VERSION")).map_err(|error| {
+        tracing::error!(%error, "Running application version is not valid SemVer");
+        ApiError::InternalError("INTERNAL_ERROR")
+    })?;
 
-    if server_major != archive_major || server_minor != archive_minor {
-        return Err(ApiError::BadRequest("IMPORT_VERSION_MISMATCH"));
+    if server_version.major != archive_version.major
+        || server_version.minor != archive_version.minor
+    {
+        return Err(ApiError::Validation("IMPORT_VERSION_MISMATCH"));
     }
 
     Ok(())

@@ -42,18 +42,18 @@ The system SHALL provide a `POST /api/data/import` endpoint that replaces all ex
 
 #### Scenario: Version mismatch
 
-- **WHEN** the `data.json` has a `version` whose major or minor component does not match the server's crate version
-- **THEN** the response has status 400 with error code `IMPORT_VERSION_MISMATCH`
+- **WHEN** the `data.json` has a valid SemVer `version` whose major or minor component does not match the server's version
+- **THEN** the response has status 422 with error code `IMPORT_VERSION_MISMATCH`
 
-#### Scenario: Patch version difference allowed
+#### Scenario: Compatible version difference allowed
 
-- **WHEN** the `data.json` has a valid numeric `major.minor.patch` version that differs from the server's crate version only in the patch component
-- **THEN** the import proceeds normally
+- **WHEN** the `data.json` has a valid SemVer version with the same major and minor components as the server
+- **THEN** the import proceeds regardless of patch, prerelease, or build-metadata differences
 
 #### Scenario: Malformed version rejected
 
-- **WHEN** the `data.json` version is not exactly three numeric `major.minor.patch` components
-- **THEN** the response has status 400 with error code `IMPORT_VERSION_MISMATCH`
+- **WHEN** the `data.json` version is not valid SemVer
+- **THEN** the response has status 400 with error code `INVALID_REQUEST_BODY`
 
 #### Scenario: Path traversal protection
 
