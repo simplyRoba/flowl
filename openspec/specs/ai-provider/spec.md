@@ -1,200 +1,201 @@
 ## Purpose
 
-AI provider abstraction layer: trait definition, OpenAI-compatible client implementation, configuration via environment variables, and provider lifecycle in AppState.
+AI integration behavior: OpenAI-compatible interoperability, configuration via environment variables, identification, streamed chat, and summarization.
 
 ## Requirements
 
-### Requirement: AI provider trait
+### Requirement: AI integration capabilities
 
-The system SHALL define an `AiProvider` async trait with methods `identify`, `chat`, and `summarize`. The trait MUST be object-safe and `Send + Sync` so it can be shared across async request handlers via `Arc<dyn AiProvider>`.
+When AI is enabled, the system SHALL provide identification, streamed chat, and summarization capabilities using configuration established at application startup. All AI operations SHALL use that configuration consistently until the application restarts.
 
-The `chat` method SHALL accept a system prompt string, a slice of `ChatMessage`, an optional image as a byte slice, and a locale string. It SHALL return a `ChatResponseStream` (`ReceiverStream<Result<String, String>>`).
+#### Scenario: AI capabilities use a consistent configuration
 
-The `summarize` method SHALL accept a system prompt string, a slice of `ChatMessage`, and a locale string. It SHALL return a `Result<String>` containing the summary text.
+- **WHEN** AI is enabled and an identification, chat, or summarization operation is performed
+- **THEN** the operation SHALL use the configuration established at startup
 
-#### Scenario: Trait is object-safe
+### Requirement: OpenAI-compatible interoperability
 
-- **WHEN** an `AiProvider` implementation is constructed
-- **THEN** it can be stored as `Arc<dyn AiProvider>` in shared application state
+The system SHALL communicate with OpenAI-compatible API endpoints. AI requests SHALL target `{base_url}/chat/completions`.
 
-#### Scenario: Chat method signature
+#### Scenario: Requests target configured base URL
 
-- **WHEN** `chat` is called with a system prompt, messages, optional image bytes, and locale
-- **THEN** it SHALL return a `ChatResponseStream` that yields text deltas
-
-#### Scenario: Summarize method signature
-
-- **WHEN** `summarize` is called with a system prompt, messages, and locale
-- **THEN** it SHALL return a `Result<String>` containing the summary
-
-### Requirement: OpenAI-compatible provider
-
-The system SHALL implement `OpenAiProvider` that communicates with any OpenAI-compatible API endpoint. The provider MUST use a single `reqwest::Client` instance for connection pooling and MUST send requests to `{base_url}/chat/completions`.
-
-The `chat` implementation SHALL send requests with `stream: true`, read the SSE response via `reqwest`'s streaming support, parse `data:` lines to extract delta content tokens, and forward them through an `mpsc` channel. It SHALL skip empty lines and `data: [DONE]` markers. It SHALL handle the optional image by encoding it as a base64 data URL in the latest user message's content array.
-
-The `summarize` implementation SHALL send a non-streaming request with `response_format: { "type": "json_schema" }` using `strict: true` and a schema requiring a single `summary` string field, deserialize the response, and extract the `summary` field.
-
-#### Scenario: Provider targets configured base URL
-
-- **WHEN** `OpenAiProvider` is constructed with base URL `https://api.openai.com/v1`
+- **WHEN** the base URL is `https://api.openai.com/v1`
 - **THEN** API requests are sent to `https://api.openai.com/v1/chat/completions`
 
-#### Scenario: Provider targets custom base URL
+#### Scenario: Requests target custom base URL
 
-- **WHEN** `OpenAiProvider` is constructed with base URL `http://localhost:11434/v1`
+- **WHEN** the base URL is `http://localhost:11434/v1`
 - **THEN** API requests are sent to `http://localhost:11434/v1/chat/completions`
 
-#### Scenario: Chat streams tokens via channel
+### Requirement: Streamed chat behavior
 
-- **WHEN** `chat` is called and the AI returns a streaming response
-- **THEN** the provider SHALL spawn a background task that parses SSE `data:` lines
-- **AND** each delta content token SHALL be sent through the `mpsc` channel
-- **AND** the channel SHALL be closed when the stream ends or on error
+Chat requests SHALL include `stream: true`. The system SHALL process the streaming SSE response by parsing `data:` lines for delta content tokens. It SHALL ignore empty lines and the terminal `data: [DONE]` marker. The system SHALL make each parsed delta available progressively to the chat consumer.
+
+When an image is supplied for chat, the system SHALL encode it as a base64 data URL and place it in the latest user message's content array, together with a text part and an `image_url` part.
+
+#### Scenario: Chat streams delta tokens
+
+- **WHEN** a chat operation receives a streaming AI response
+- **THEN** each delta content token from its SSE `data:` lines SHALL be made available progressively to the chat consumer
+
+#### Scenario: Chat handles empty lines
+
+- **WHEN** a streaming response includes empty lines
+- **THEN** the system SHALL ignore them
 
 #### Scenario: Chat handles [DONE] marker
 
-- **WHEN** the streaming response includes a `data: [DONE]` line
-- **THEN** the provider SHALL stop processing and close the channel without error
+- **WHEN** a streaming response includes a `data: [DONE]` line
+- **THEN** the system SHALL stop processing the response and complete the chat stream without error
 
 #### Scenario: Chat includes image in request
 
-- **WHEN** `chat` is called with `image: Some(bytes)`
+- **WHEN** a chat operation includes an image
 - **THEN** the latest user message content SHALL be an array containing a text part and an `image_url` part with the base64-encoded data URL
 
-#### Scenario: Summarize returns extracted summary
+#### Scenario: Chat stream completes
 
-- **WHEN** `summarize` is called and the AI returns `{"summary":"..."}`
-- **THEN** the provider SHALL return the summary string
+- **WHEN** the streaming response ends without an error
+- **THEN** the chat stream SHALL complete after its available deltas have been delivered
 
-#### Scenario: Summarize handles missing summary field
+#### Scenario: Chat stream fails
 
-- **WHEN** the AI returns valid JSON without a `summary` field
-- **THEN** the provider SHALL return an error
+- **WHEN** the upstream streaming response reports an error
+- **THEN** the chat consumer SHALL receive an error outcome and the chat stream SHALL end
 
-### Requirement: IdentifyResponse wrapper type
+### Requirement: Structured summarization
 
-The system SHALL define an `IdentifyResponse` struct containing a `suggestions` field of type `Vec<IdentifyResult>`, a `rejected` field of type `Option<bool>`, and a `rejected_reason` field of type `Option<String>`. The struct SHALL derive `Serialize` and `Deserialize`. When `rejected` is `true`, `suggestions` SHALL be empty and `rejected_reason` SHALL contain the AI's explanation. When `rejected` is `false` or `None`, `suggestions` SHALL contain 1–3 results and `rejected_reason` SHALL be `None`.
+Summarization requests SHALL be non-streaming and SHALL use `response_format: { "type": "json_schema" }` with `strict: true` and a schema requiring exactly one `summary` string field. On a valid response, the system SHALL extract and return the summary text.
 
-#### Scenario: IdentifyResponse with multiple suggestions
+#### Scenario: Summarization returns extracted summary
 
-- **WHEN** an `IdentifyResponse` is deserialized from JSON `{ "suggestions": [{ "common_name": "A", "scientific_name": "B" }, { "common_name": "C", "scientific_name": "D" }], "rejected": false, "rejected_reason": null }`
-- **THEN** the `suggestions` field SHALL contain 2 `IdentifyResult` entries
-- **AND** `rejected` SHALL be `Some(false)`
+- **WHEN** a summarization operation receives `{"summary":"..."}`
+- **THEN** the system SHALL return the summary string
 
-#### Scenario: IdentifyResponse serialization round-trip
+#### Scenario: Summarization handles missing or invalid summary
 
-- **WHEN** an `IdentifyResponse` is serialized to JSON
-- **THEN** the output SHALL contain a `suggestions` array with each suggestion's fields
+- **WHEN** the AI response lacks a `summary` field or does not satisfy the required structured output
+- **THEN** the summarization operation SHALL fail
 
-#### Scenario: IdentifyResponse with rejection
+### Requirement: Identification result envelope
 
-- **WHEN** an `IdentifyResponse` is deserialized from JSON `{ "suggestions": [], "rejected": true, "rejected_reason": "This is a coffee mug" }`
-- **THEN** `rejected` SHALL be `Some(true)`
-- **AND** `rejected_reason` SHALL be `Some("This is a coffee mug")`
-- **AND** `suggestions` SHALL be empty
+Identification results SHALL use a JSON envelope containing `suggestions` and supporting `rejected` and `rejected_reason`. For backward compatibility, an accepted provider result MAY omit `rejected` and `rejected_reason` or set them to `null`; otherwise it SHALL have `rejected: false`. An accepted result SHALL contain one to three suggestions and no non-null rejection reason. A rejected result SHALL have `rejected: true`, zero suggestions, and a non-empty rejection reason. Newly requested structured output SHALL require all three envelope fields as defined by the identification schema.
 
-### Requirement: Identify method
+Suggestions SHALL include `common_name` and `scientific_name`; `confidence`, `summary`, and `care_profile` MAY be absent or `null` to represent unavailable values and otherwise retain their existing meanings. `common_name` and `summary` are free-text fields, while `scientific_name` is a Latin scientific name and enum-constrained `care_profile` fields use their schema-defined English values.
 
-The `identify` method SHALL accept a list of images (as byte slices) and a `locale` string, encode the images as base64 data URLs, send them to the configured model using structured output (`response_format: { "type": "json_schema" }`) with the `IdentifyResponse` schema, and deserialize the response into an `IdentifyResponse` containing a `suggestions` array of up to 3 `IdentifyResult` entries ranked by confidence. The prompt SHALL instruct the model to provide its top 3 most likely identifications. The prompt SHALL instruct the model to respond in the language matching the given locale for free-text fields (`common_name`, `summary`) while keeping `scientific_name` in Latin. Enum-constrained fields in `care_profile` remain in English by virtue of the JSON schema constraints. The `IdentifyResult` and `CareProfile` types SHALL derive both `Serialize` and `Deserialize` so they can be used as HTTP response bodies.
+#### Scenario: Identification result with multiple suggestions
 
-The JSON schema sent to the AI SHALL include top-level `rejected` (boolean, required) and `rejected_reason` (string or null, required) fields alongside the existing `suggestions` array. The prompt SHALL instruct the model to set `rejected` to `true` with a brief `rejected_reason` and an empty `suggestions` array when the photo does not contain a plant. When the photo does contain a plant, the model SHALL set `rejected` to `false`, `rejected_reason` to `null`, and populate `suggestions` as before.
+- **WHEN** the AI returns `{ "suggestions": [{ "common_name": "A", "scientific_name": "B" }, { "common_name": "C", "scientific_name": "D" }], "rejected": false, "rejected_reason": null }`
+- **THEN** the identification result SHALL contain the two suggestions and no rejection reason
+
+#### Scenario: Backward-compatible accepted result
+
+- **WHEN** the AI returns an envelope with one to three valid suggestions and omits `rejected` and `rejected_reason`
+- **THEN** the identification result SHALL be accepted with no rejection reason
+
+#### Scenario: Identification result with rejection
+
+- **WHEN** the AI returns `{ "suggestions": [], "rejected": true, "rejected_reason": "This is a coffee mug" }`
+- **THEN** the identification result SHALL be rejected with that rejection reason and no suggestions
+
+### Requirement: Structured plant identification
+
+The system SHALL accept one or more images and a locale for plant identification. It SHALL encode every image as a base64 data URL and include all images in one API request as separate image content parts. The request SHALL use structured output with `response_format: { "type": "json_schema" }`; its JSON schema SHALL define a root object with required `suggestions` (array), `rejected` (boolean), and `rejected_reason` (string or null) properties.
+
+The identification prompt SHALL instruct the model to provide its top three most likely identifications, rank suggestions by confidence, and use the supplied locale for free-text fields (`common_name`, `summary`) while retaining Latin `scientific_name` values. Enum-constrained fields in `care_profile` SHALL remain in English according to the JSON schema constraints. The prompt SHALL instruct the model to return `rejected: true`, a brief `rejected_reason`, and an empty `suggestions` array when the photo does not contain a plant. For a plant photo, it SHALL instruct the model to return `rejected: false`, `rejected_reason: null`, and populated suggestions.
+
+The system SHALL reject identification results that do not satisfy the result-envelope rules or cannot be interpreted as the required structured output. In accepted results, it SHALL order suggestions by descending confidence, with suggestions without confidence last.
 
 #### Scenario: Single image identification returns multiple suggestions
 
-- **WHEN** `identify` is called with one image of a plant
-- **THEN** the response SHALL be deserialized into an `IdentifyResponse` with `rejected: false` and up to 3 suggestions
+- **WHEN** plant identification is requested for one image of a plant
+- **THEN** the result SHALL be accepted and contain between one and three suggestions
 
 #### Scenario: Multi-image identification returns multiple suggestions
 
-- **WHEN** `identify` is called with multiple images of a plant
-- **THEN** all images are included in the same API request as separate image content parts
-- **AND** the response SHALL contain `rejected: false` and up to 3 suggestions
+- **WHEN** plant identification is requested for multiple images of a plant
+- **THEN** all images SHALL be included in the same API request as separate image content parts
+- **AND** the result SHALL be accepted and contain between one and three suggestions
 
 #### Scenario: Suggestions are ranked by confidence
 
 - **WHEN** the AI returns multiple suggestions
-- **THEN** the suggestions SHALL be ordered by descending confidence (highest first)
+- **THEN** the suggestions SHALL be ordered by descending confidence, highest first
 
-#### Scenario: AI returns fewer than 3 suggestions
+#### Scenario: AI returns fewer than three suggestions
 
-- **WHEN** the AI returns only 1 or 2 suggestions
-- **THEN** the `IdentifyResponse` SHALL contain only the returned suggestions without error
+- **WHEN** the AI returns one or two suggestions for an accepted result
+- **THEN** the result SHALL contain only those suggestions without error
 
 #### Scenario: AI returns incomplete optional fields
 
-- **WHEN** the AI response omits optional fields (confidence, summary, care_profile)
-- **THEN** those fields are `None` in the deserialized `IdentifyResult`
+- **WHEN** the AI response omits optional `confidence`, `summary`, or `care_profile` fields or sets them to `null`
+- **THEN** the identification result SHALL treat those fields as unavailable
 
 #### Scenario: AI returns unparseable response
 
-- **WHEN** the AI response cannot be deserialized into `IdentifyResponse`
-- **THEN** the method returns an error
+- **WHEN** the AI response cannot be interpreted as the required identification result envelope
+- **THEN** the identification operation SHALL fail
 
 #### Scenario: AI returns inconsistent accepted results
 
 - **WHEN** an accepted response contains zero or more than three suggestions or a rejection reason
-- **THEN** the method returns an error
+- **THEN** the identification operation SHALL fail
 
 #### Scenario: AI returns inconsistent rejected results
 
 - **WHEN** a rejected response contains suggestions or lacks a non-empty rejection reason
-- **THEN** the method returns an error
+- **THEN** the identification operation SHALL fail
 
 #### Scenario: Accepted suggestions are ordered by confidence
 
 - **WHEN** an accepted response contains suggestions in a different order
-- **THEN** the method returns them in descending confidence order with missing confidence values last
-
-#### Scenario: IdentifyResult is serializable
-
-- **WHEN** an `IdentifyResult` is serialized to JSON
-- **THEN** the output contains `common_name`, `scientific_name`, and any present optional fields
+- **THEN** the system SHALL return them in descending confidence order with missing confidence values last
 
 #### Scenario: JSON schema wraps results in suggestions array
 
-- **WHEN** the identify request is built
-- **THEN** the `json_schema` response format SHALL define a root object with `suggestions` (array), `rejected` (boolean), and `rejected_reason` (string or null) properties
+- **WHEN** the identification request is prepared
+- **THEN** the `json_schema` response format SHALL define a root object with required `suggestions` (array), `rejected` (boolean), and `rejected_reason` (string or null) properties
 
 #### Scenario: Non-plant photo triggers rejection
 
-- **WHEN** `identify` is called with an image that does not contain a plant
-- **THEN** the response SHALL be deserialized into an `IdentifyResponse` with `rejected: true`, a non-null `rejected_reason`, and an empty `suggestions` array
+- **WHEN** plant identification is requested for an image that does not contain a plant
+- **THEN** the result SHALL be rejected with a non-empty `rejected_reason` and an empty `suggestions` array
 
-#### Scenario: Identify prompt includes rejection instruction
+#### Scenario: Identification prompt includes rejection instruction
 
-- **WHEN** `build_identify_prompt` is called
-- **THEN** the prompt text SHALL instruct the model to set `rejected` to `true` when the photo does not show a plant
+- **WHEN** an identification request is prepared
+- **THEN** its prompt SHALL instruct the model to set `rejected` to `true` when the photo does not show a plant
 
 ### Requirement: AI configuration via environment variables
 
 The system SHALL read AI configuration from environment variables: `FLOWL_AI_API_KEY` (required to enable AI, no default), `FLOWL_AI_BASE_URL` (default: `https://api.openai.com/v1`), and `FLOWL_AI_MODEL` (default: `gpt-4.1-mini`).
 
-#### Scenario: All AI env vars set
+#### Scenario: All AI environment variables set
 
-- **WHEN** `FLOWL_AI_API_KEY`, `FLOWL_AI_BASE_URL`, and `FLOWL_AI_MODEL` are set
-- **THEN** the AI provider is constructed with the specified values
+- **WHEN** `FLOWL_AI_API_KEY`, `FLOWL_AI_BASE_URL`, and `FLOWL_AI_MODEL` are set at startup
+- **THEN** AI operations SHALL use the specified values
 
 #### Scenario: Only API key set
 
-- **WHEN** only `FLOWL_AI_API_KEY` is set
-- **THEN** the AI provider uses base URL `https://api.openai.com/v1` and model `gpt-4.1-mini`
+- **WHEN** only `FLOWL_AI_API_KEY` is set at startup
+- **THEN** AI operations SHALL use base URL `https://api.openai.com/v1` and model `gpt-4.1-mini`
 
 #### Scenario: No API key set
 
-- **WHEN** `FLOWL_AI_API_KEY` is not set
-- **THEN** the AI provider is not constructed and AI features are disabled
+- **WHEN** `FLOWL_AI_API_KEY` is not set at startup
+- **THEN** AI capabilities SHALL be unavailable
 
-### Requirement: Provider lifecycle in AppState
+### Requirement: AI availability at startup
 
-The system SHALL store `Option<Arc<dyn AiProvider>>` in `AppState`. The value MUST be `Some` when `FLOWL_AI_API_KEY` is set and `None` otherwise. The provider instance is created once at startup and shared across all request handlers.
+The system SHALL determine AI availability at startup: AI SHALL be available when `FLOWL_AI_API_KEY` is set and unavailable otherwise. That availability and the associated configuration SHALL remain in effect until the application restarts.
 
 #### Scenario: AI enabled at startup
 
 - **WHEN** the application starts with `FLOWL_AI_API_KEY` set
-- **THEN** `AppState` contains `Some(Arc<dyn AiProvider>)`
+- **THEN** AI capabilities SHALL be available
 
 #### Scenario: AI disabled at startup
 
 - **WHEN** the application starts without `FLOWL_AI_API_KEY`
-- **THEN** `AppState` contains `None` for the AI provider field
+- **THEN** AI capabilities SHALL be unavailable
