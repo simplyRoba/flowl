@@ -1,42 +1,18 @@
 ## Purpose
 
-SvelteKit project scaffold with build pipeline, embedded in the Rust binary and served as the default route.
+Application shell providing Flowl branding, navigation, and the shared visual structure for browser application routes.
 
 ## Requirements
 
-### Requirement: SvelteKit Project Structure
+### Requirement: Application shell
 
-A SvelteKit project SHALL exist at `ui/` with `@sveltejs/adapter-static` producing a fully static build output.
-
-#### Scenario: Static build output
-
-- **WHEN** `npm run build` is executed in the `ui/` directory
-- **THEN** a static build is produced at `ui/build/` containing `index.html` and all assets
-
-### Requirement: Build Integration
-
-The Rust build process SHALL compile the SvelteKit project before embedding its output via `rust-embed`.
-
-#### Scenario: Frontend built during cargo build
-
-- **WHEN** `cargo build` is executed
-- **THEN** `build.rs` runs `npm run build` in the `ui/` directory
-- **AND** the build output at `ui/build/` is embedded into the binary
-
-#### Scenario: Frontend build failure
-
-- **WHEN** `npm run build` fails during `cargo build`
-- **THEN** the Rust compilation fails with an error referencing the frontend build
-
-### Requirement: Empty Shell Layout
-
-The SvelteKit project SHALL include a root layout with the application name and navigation placeholder, ready for feature screens in later phases.
+The browser application SHALL render a shared shell for normal application routes that displays the "flowl" brand and navigation.
 
 #### Scenario: Shell renders
 
-- **WHEN** the SPA is loaded in a browser
+- **WHEN** a normal application route is loaded
 - **THEN** the page displays the application name "flowl"
-- **AND** a placeholder layout is visible
+- **AND** application navigation is visible
 
 #### Scenario: Widescreen expanded sidebar
 
@@ -254,8 +230,8 @@ The public `/login` route SHALL render outside Flowl's protected application she
 
 - **WHEN** `/login` is loaded
 - **THEN** the branded login content is visible without the application sidebar or bottom navigation
-- **AND** the root layout does not request `/api/settings` or other protected application data
-- **AND** it does not initialize the network monitor, service-worker update UI, or pull-to-refresh behavior
+- **AND** the login route does not request `/api/settings` or other protected application data
+- **AND** the login route does not initialize the network monitor, service-worker update UI, or pull-to-refresh behavior
 
 #### Scenario: Normal routes retain canonical shell
 

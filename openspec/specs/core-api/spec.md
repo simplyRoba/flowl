@@ -1,26 +1,26 @@
 ## Purpose
 
-REST API layer providing JSON request/response handling, error responses, and route mounting under the `/api` prefix.
+REST API contract providing JSON request and response behavior, including error responses, under the `/api` prefix.
 
 ## Requirements
 
-### Requirement: API Router
+### Requirement: API namespace
 
-The application SHALL mount all REST API routes under the `/api` prefix on the Axum server.
+The application SHALL expose all REST API routes under the `/api/*` namespace.
 
 #### Scenario: API route accessible
 
 - **WHEN** a request is made to `/api/plants`
-- **THEN** the API router handles the request
+- **THEN** the application processes it as an API request
 
-#### Scenario: Non-API route falls through
+#### Scenario: Non-API request uses browser routing
 
-- **WHEN** a request is made to a path not starting with `/api`
-- **THEN** the request falls through to the SPA static file handler
+- **WHEN** a request is made outside the `/api` namespace
+- **THEN** the request follows the applicable browser UI, asset, or managed-media routing defined by `core-server`
 
 ### Requirement: JSON Error Responses
 
-Errors returned by Flowl application code through `ApiError`, including errors from handlers, middleware, and custom extractors, SHALL use JSON with a consistent structure containing a `code` field, a `message` field, and an appropriate HTTP status code. The `code` field SHALL be a stable, unique `SCREAMING_SNAKE_CASE` string identifying the error. The `message` field SHALL contain a human-readable English description derived from the code. Framework-generated rejections that bypass `ApiError`, including malformed path or query extraction and unmatched routes, are outside this requirement.
+Errors returned for application-defined API conditions SHALL use JSON with a consistent structure containing a `code` field, a `message` field, and an appropriate HTTP status code. The `code` field SHALL be a stable, unique `SCREAMING_SNAKE_CASE` string identifying the error. The `message` field SHALL contain a human-readable English description derived from the code. Responses to malformed path or query input and unmatched routes are outside this requirement.
 
 #### Scenario: Validation error
 
@@ -40,18 +40,18 @@ Errors returned by Flowl application code through `ApiError`, including errors f
 
 #### Scenario: Internal failure
 
-- **WHEN** an unexpected server-side error prevents the requested logical state change (database failure, required IO error)
+- **WHEN** an unexpected server-side error prevents the requested logical state change
 - **THEN** the API responds with HTTP 500 and `{"code": "INTERNAL_ERROR", "message": "..."}`
 - **AND** the real error details SHALL be logged server-side
 - **AND** internal error details SHALL NOT be exposed to the client
 
 #### Scenario: Best-effort file cleanup after logical deletion
 
-- **GIVEN** a deletion has removed the file reference from the database
-- **WHEN** physical file cleanup fails unexpectedly
+- **GIVEN** a deletion has removed a managed-media reference from application data
+- **WHEN** managed-media cleanup fails unexpectedly
 - **THEN** the original deletion response remains successful
-- **AND** the filesystem error is logged at error level
-- **AND** startup orphan cleanup can retry removal
+- **AND** the cleanup failure is logged at error level
+- **AND** later managed-media recovery can retry removal
 
 #### Scenario: Rate limit exceeded
 
@@ -61,7 +61,7 @@ Errors returned by Flowl application code through `ApiError`, including errors f
 
 #### Scenario: Conflict
 
-- **WHEN** a request would create a duplicate or violate a uniqueness constraint
+- **WHEN** a request would create a duplicate or violate a logical uniqueness rule
 - **THEN** the API responds with HTTP 409 and `{"code": "..._ALREADY_EXISTS", "message": "..."}`
 
 #### Scenario: Service unavailable
@@ -125,23 +125,23 @@ The API SHALL define a fixed catalog of error codes. Each error code SHALL map t
 
 ### Requirement: Internal Error Logging
 
-The API SHALL log the original error details for internal failures using `tracing::error!` before returning a generic error response.
+The API SHALL record original error details for internal failures at error level before returning a generic error response.
 
-#### Scenario: Database error logged
+#### Scenario: Application-data failure logged
 
-- **WHEN** a database query fails
-- **THEN** the original `sqlx::Error` is logged at error level
+- **WHEN** access to required application data fails
+- **THEN** the original error details are logged at error level
 - **AND** the client receives `{"code": "INTERNAL_ERROR", "message": "..."}` with HTTP 500
 
-#### Scenario: Required IO error logged
+#### Scenario: Required managed-media operation failure logged
 
-- **WHEN** a filesystem or IO operation required to complete the requested logical state change fails
-- **THEN** the original error is logged at error level
+- **WHEN** a managed-media operation required to complete the requested logical state change fails
+- **THEN** the original error details are logged at error level
 - **AND** the client receives a generic error code with HTTP 500
 
 ### Requirement: API authentication-required response
 
-When OIDC authentication is enabled, every unauthenticated request under `/api/*` SHALL return HTTP 401 in the existing JSON error format with code `AUTHENTICATION_REQUIRED` and its fixed safe default message. API authentication failures SHALL include `Cache-Control: no-store` and SHALL NOT redirect to `/login`, return SPA HTML, or redirect to the OIDC provider.
+When OIDC authentication is enabled, every unauthenticated request in the `/api` namespace, including the exact `/api` path and its descendants, SHALL return HTTP 401 in the existing JSON error format with code `AUTHENTICATION_REQUIRED` and its fixed safe default message. API authentication failures SHALL include `Cache-Control: no-store` and SHALL NOT redirect to `/login`, return SPA HTML, or redirect to the OIDC provider.
 
 #### Scenario: Unauthenticated API request
 

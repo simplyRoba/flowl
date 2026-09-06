@@ -1,12 +1,12 @@
 ## Purpose
 
-Axum HTTP server lifecycle, health endpoint, static file serving for the embedded SvelteKit SPA, upload file serving, and graceful shutdown.
+HTTP server lifecycle, health endpoint, browser UI document and asset serving from the deployed application artifact, managed media serving, and graceful shutdown.
 
 ## Requirements
 
 ### Requirement: HTTP Server Startup
 
-The application SHALL start an Axum HTTP server listening on the port specified by `FLOWL_PORT` (default `4100`).
+The application SHALL listen for HTTP requests on the port specified by `FLOWL_PORT` (default `4100`).
 
 #### Scenario: Server starts on default port
 
@@ -20,50 +20,56 @@ The application SHALL start an Axum HTTP server listening on the port specified 
 
 ### Requirement: Health Endpoint
 
-The server SHALL expose a `GET /health` endpoint that checks database connectivity and returns a JSON body indicating service health.
+The server SHALL expose a `GET /health` endpoint that checks durable application-data availability and returns a JSON body indicating service health.
 
 #### Scenario: Health check succeeds
 
 - **WHEN** a GET request is made to `/health`
-- **AND** the database is reachable
+- **AND** durable application data is available
 - **THEN** the server responds with HTTP 200
 - **AND** the response body is `{"status": "ok"}`
 
 #### Scenario: Health check fails
 
 - **WHEN** a GET request is made to `/health`
-- **AND** the database is not reachable
+- **AND** durable application data is unavailable
 - **THEN** the server responds with HTTP 503
 - **AND** the response body is `{"status": "unhealthy"}`
 
-### Requirement: SPA Static File Serving
+### Requirement: Browser UI document and asset serving
 
-The server SHALL serve the embedded SvelteKit build output as static files. Any request that does not match an API route SHALL fall back to the SPA's `index.html`.
+The server SHALL make the browser UI available from the deployed application artifact without requiring a separately deployed frontend. It SHALL serve the UI index document and app assets with their correct MIME types. A browser UI route outside the reserved `/api` and `/uploads` namespaces that does not match an app asset SHALL receive the UI `index.html` document for client-side routing.
 
-#### Scenario: Root path serves SPA
+#### Scenario: Root path serves the UI document
 
 - **WHEN** a GET request is made to `/`
-- **THEN** the server responds with the SvelteKit `index.html`
+- **THEN** the server responds with the UI `index.html` document
 
-#### Scenario: Static asset served
+#### Scenario: App asset served
 
-- **WHEN** a GET request is made to a path matching an embedded static file (e.g., `/_app/immutable/entry/start.js`)
-- **THEN** the server responds with the file contents and correct MIME type
+- **WHEN** a GET request is made to the exact path of an app asset included in the deployed application artifact
+- **THEN** the server responds with the asset contents and correct MIME type
 
-#### Scenario: Unknown path falls back to SPA
+#### Scenario: Unknown browser route falls back to the UI document
 
-- **WHEN** a GET request is made to a path that does not match any API route or static file
-- **THEN** the server responds with the SvelteKit `index.html` for client-side routing
+- **WHEN** a GET request is made to a browser UI path outside the `/api` and `/uploads` namespaces that does not match an app asset
+- **THEN** the server responds with the UI `index.html` document for client-side routing
 
-#### Scenario: API routes handled by API router
+#### Scenario: API namespace takes precedence
 
-- **WHEN** a GET request is made to a path starting with `/api`
-- **THEN** the request is handled by the nested API router
-- **AND** does not fall through to the SPA handler
+- **WHEN** a request is made to `/api` or a path under `/api/*`
+- **THEN** the request is handled as an API request
+- **AND** it does not fall back to the UI document
+
+#### Scenario: Managed-media namespace takes precedence
+
+- **WHEN** a request is made to `/uploads` or a path under `/uploads/*`
+- **THEN** the request is handled as a managed-media request
+- **AND** it does not fall back to the UI document
 
 ### Requirement: Structured Logging
 
-The application SHALL use `tracing` for structured logging, configured via `FLOWL_LOG_LEVEL` (default `info`).
+The application SHALL emit structured logs filtered according to `FLOWL_LOG_LEVEL` (default `info`).
 
 #### Scenario: Default log level
 
@@ -75,19 +81,14 @@ The application SHALL use `tracing` for structured logging, configured via `FLOW
 - **WHEN** the application starts with `FLOWL_LOG_LEVEL=debug`
 - **THEN** log output includes `debug` level messages
 
-### Requirement: Upload File Serving
+### Requirement: Managed media serving
 
-The server SHALL create the upload directory during startup if it does not exist and serve files from it at `/uploads/*` using `tower-http::ServeDir`.
+The server SHALL serve managed media originals and renditions at `/uploads/*`, as defined by `core-image-store`.
 
-#### Scenario: Upload directory created
-
-- **WHEN** the application starts and the upload directory does not exist
-- **THEN** the directory is created before the server begins accepting requests
-
-#### Scenario: Uploaded file served
+#### Scenario: Managed media served
 
 - **WHEN** a GET request is made to `/uploads/abc.jpg`
-- **AND** the file exists in the upload directory
+- **AND** the managed media exists
 - **THEN** the server responds with the file contents
 
 ### Requirement: Graceful Shutdown
@@ -102,7 +103,7 @@ The server SHALL shut down gracefully on SIGTERM or SIGINT, closing open connect
 
 ### Requirement: Authentication-aware SPA document access
 
-When authentication is enabled, the server SHALL keep `/login` and exact non-data resources required for login/PWA rendering public while requiring an authenticated session before serving `index.html` for root, normal application routes, or unknown SPA fallbacks. Authentication-disabled SPA and static-file behavior SHALL remain as defined by the canonical SPA Static File Serving requirement.
+When authentication is enabled, the server SHALL keep `/login` and exact non-data resources required for login/PWA rendering public while requiring an authenticated session before serving `index.html` for root, normal application routes, or unknown browser UI document fallbacks. Authentication-disabled browser UI document and asset behavior SHALL remain as defined by the canonical Browser UI document and asset serving requirement.
 
 #### Scenario: Public login document
 
@@ -113,9 +114,9 @@ When authentication is enabled, the server SHALL keep `/login` and exact non-dat
 #### Scenario: Public non-document resources
 
 - **WHEN** authentication is enabled
-- **AND** an unauthenticated client requests an exact immutable build asset, service worker, manifest, icon, favicon, or offline page required for login/PWA operation
+- **AND** an unauthenticated client requests an exact app asset, service worker, manifest, icon, favicon, or offline page required for login/PWA operation
 - **THEN** the server serves that exact resource without authentication
-- **AND** does not make `index.html` or an unknown document fallback public
+- **AND** does not make `index.html` or an unknown browser UI document fallback public
 
 #### Scenario: Protected SPA document
 
@@ -126,13 +127,13 @@ When authentication is enabled, the server SHALL keep `/login` and exact non-dat
 
 ### Requirement: Authentication-aware upload access
 
-When authentication is enabled, every `/uploads/*` request SHALL require a valid authenticated session. Authentication-disabled upload serving SHALL remain as defined by the canonical Upload File Serving requirement.
+When authentication is enabled, every request in the `/uploads` namespace, including the exact `/uploads` path and its descendants, SHALL require a valid authenticated session. Authentication-disabled media serving SHALL remain as defined by the canonical Managed media serving requirement.
 
 #### Scenario: Authenticated uploaded file served
 
 - **WHEN** authentication is enabled
 - **AND** a GET request with a valid session is made to `/uploads/abc.jpg`
-- **AND** the file exists in the upload directory
+- **AND** the managed media exists
 - **THEN** the server responds with the file contents
 
 #### Scenario: Unauthenticated upload is protected
