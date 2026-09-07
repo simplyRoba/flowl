@@ -1,6 +1,6 @@
 ## Purpose
 
-Plant detail view — full plant information display with photo hero, watering section, care info card, lightbox, Ask AI integration, and plant API client/store functions.
+Plant detail view — full plant information display with photo hero, watering section, care info card, lightbox, and Ask AI integration.
 
 ## Requirements
 
@@ -175,8 +175,9 @@ The plant detail view SHALL display watering status and a "Water now" action.
 
 - **WHEN** the user clicks the "Water now" button on the plant detail view
 - **THEN** a `POST /api/plants/:id/water` request is sent
-- **AND** the view refreshes to show updated watering status
-- **AND** the `last_watered` field updates to the current time
+- **AND** the successful response provides the updated plant data
+- **AND** the visible current-plant data and any already loaded plant-list representation update immediately with the new watering data
+- **AND** the displayed `last_watered` value updates to the current time
 
 #### Scenario: Water now when already ok
 
@@ -187,41 +188,13 @@ The plant detail view SHALL display watering status and a "Water now" action.
 #### Scenario: Water now success feedback
 
 - **WHEN** the user clicks the "Water now" button and the request succeeds
-- **THEN** the view refreshes to show updated watering status
+- **THEN** the visible current-plant data updates immediately to show the new watering status
 - **AND** no toast notification is required for success
 
 #### Scenario: Water now failure feedback
 
 - **WHEN** the user clicks the "Water now" button and the request fails
 - **THEN** a global toast notification is displayed describing the failure
-
-### Requirement: API Client
-
-A shared API client module SHALL provide typed functions for all plant and location API calls, handling JSON serialization and error responses.
-
-#### Scenario: API error
-
-- **WHEN** an API call returns an error status
-- **THEN** the client extracts the error message and surfaces it to the calling flow
-
-### Requirement: API Client — Water Plant
-
-The frontend API client SHALL provide a `waterPlant` function.
-
-#### Scenario: Water plant call
-
-- **WHEN** `waterPlant(1)` is called
-- **THEN** a `POST` request is made to `/api/plants/1/water`
-- **AND** the updated `Plant` object is returned
-
-### Requirement: Plant Store — Water Plant
-
-The plant store SHALL provide a `waterPlant` function that calls the API and updates the store.
-
-#### Scenario: Store updated after watering
-
-- **WHEN** `waterPlant(1)` is called on the store
-- **THEN** the plant list and current plant are updated with the new watering data
 
 ### Requirement: Care entry form on detail view
 
@@ -259,7 +232,7 @@ Care events with a `photo_url` SHALL display a clickable thumbnail in the plant 
 - **WHEN** a care event in the plant detail timeline has a `photo_url`
 - **THEN** a compact, clickable photo preview SHALL be displayed using the canonical 200-pixel image rendition URL
 - **AND** the preview SHALL remain clearly associated with the event while preserving readable event text; where room permits, both may appear alongside one another
-- **AND** clicking the preview SHALL open the PhotoLightbox with the original `photo_url` at full resolution
+- **AND** clicking the preview SHALL open the original `photo_url` at full resolution in the photo viewer
 
 #### Scenario: Event without photo
 

@@ -4,21 +4,21 @@ Client-side i18n system providing translations for English, German, and Spanish.
 
 ## Requirements
 
-### Requirement: Locale store
+### Requirement: Active locale
 
-A `locale` writable store SHALL hold the active locale (`'en' | 'de' | 'es'`), defaulting to `'en'`. The active locale SHALL have a durable browser-local fallback preference that persists across reloads and remains available when the backend cannot be reached.
+The application SHALL use an active locale of `'en'`, `'de'`, or `'es'`, defaulting to `'en'`. The active locale SHALL have a durable browser-local fallback preference that persists across reloads and remains available when the backend cannot be reached.
 
 #### Scenario: Default locale
 
 - **WHEN** the application loads with no stored locale preference and the backend returns the default
-- **THEN** the locale store is set to `'en'`
+- **THEN** the active locale is `'en'`
 
 #### Scenario: Persisted locale restored from backend
 
 - **WHEN** the application loads
 - **AND** `GET /api/settings` returns a supported locale
 - **AND** the user has not selected a locale since that request began
-- **THEN** the locale store is set to the backend value
+- **THEN** the active locale is set to the backend value
 - **AND** the durable browser-local fallback preference is synchronized to match
 
 #### Scenario: User selection wins over a pending startup response
@@ -33,14 +33,14 @@ A `locale` writable store SHALL hold the active locale (`'en' | 'de' | 'es'`), d
 - **WHEN** the application loads
 - **AND** `GET /api/settings` fails or the backend is unavailable
 - **AND** the durable browser-local fallback preference contains a supported locale (`'en'`, `'de'`, or `'es'`)
-- **THEN** the locale store is set to that browser-local value
+- **THEN** the active locale is set to that browser-local value
 
 #### Scenario: Backend and browser-local preference unavailable
 
 - **WHEN** the application loads
 - **AND** `GET /api/settings` fails or the backend is unavailable
 - **AND** the durable browser-local fallback preference is missing or unsupported
-- **THEN** the locale store falls back to `'en'`
+- **THEN** the active locale falls back to `'en'`
 
 #### Scenario: Unsupported persisted locale is rejected
 
@@ -54,27 +54,19 @@ A `locale` writable store SHALL hold the active locale (`'en' | 'de' | 'es'`), d
 - **THEN** the new value is sent to the backend via `PUT /api/settings`
 - **AND** the durable browser-local fallback preference is updated so the selection persists across reloads and remains usable offline
 
-### Requirement: Translation dictionaries
+### Requirement: Translation coverage
 
-Each supported locale SHALL have a TypeScript translation object with identical keys.
+The application SHALL provide complete user-facing translations in English, German, and Spanish for the same messages. The required message inventory consists of every heading, label, action, status, validation or error message, and help text explicitly required by canonical UI specifications, together with every error code in the `core-api` Error Code Catalog.
 
-#### Scenario: Dictionary structure
+#### Scenario: Matching locale coverage
 
-- **GIVEN** the English, German, and Spanish translation dictionaries
-- **THEN** all three dictionaries SHALL have identical key structures
-- **AND** keys are organized in shallow nested groups (e.g., `nav`, `dashboard`, `plant`, `status`, `settings`, `care`, `form`, `identify`, `dialog`, `chat`, `errorCode`)
-
-#### Scenario: English as canonical type
-
-- **GIVEN** the translation dictionaries
-- **THEN** the English dictionary SHALL serve as the canonical TypeScript type definition
-- **AND** the German and Spanish dictionaries SHALL satisfy the same type
+- **GIVEN** the user-facing messages required by canonical UI specifications
+- **THEN** English, German, and Spanish SHALL each provide a translation for every required message
 
 #### Scenario: Error code translations
 
-- **GIVEN** the `errorCode` group in each translation dictionary
-- **THEN** each dictionary SHALL contain a key for every error code defined in the backend error catalog
-- **AND** values SHALL be user-facing translated strings appropriate for the locale
+- **GIVEN** the translations for each supported locale
+- **THEN** each locale SHALL provide a user-facing localized message for every error code defined in the backend error catalog
 
 ### Requirement: Error Code Resolution
 
@@ -82,18 +74,18 @@ The UI SHALL resolve API error codes to localized strings instead of displaying 
 
 #### Scenario: Known error code displayed in active locale
 
-- **WHEN** an API call fails with an `ApiError` carrying a known `code`
-- **AND** the active locale has a translation for that code in `errorCode`
+- **WHEN** an API call fails with a known backend error code
+- **AND** the active locale provides a translation for that code
 - **THEN** the UI SHALL display the localized translation
 
 #### Scenario: Unknown error code uses fallback
 
-- **WHEN** an API call fails with an `ApiError` carrying a code not present in `errorCode`
-- **THEN** the UI SHALL display a generic localized fallback message from the store's context-specific error key
+- **WHEN** an API call fails with a backend error code that has no localized translation
+- **THEN** the UI SHALL display a generic localized fallback message appropriate to the current context
 
 #### Scenario: Non-API error uses fallback
 
-- **WHEN** an error occurs that is not an `ApiError` (e.g., network failure)
+- **WHEN** an error occurs without a recognized backend error code (e.g., network failure)
 - **THEN** the UI SHALL display a generic localized fallback message
 
 #### Scenario: No raw English strings displayed
@@ -102,54 +94,48 @@ The UI SHALL resolve API error codes to localized strings instead of displaying 
 - **AND** an API error occurs
 - **THEN** the displayed error message SHALL be in the active locale, not raw English from the backend
 
-### Requirement: Plural helper
+### Requirement: Pluralized results
 
-A `plural(forms: {one: string, other: string}, n: number)` function SHALL return the correct plural form with count substitution.
+The UI SHALL use the appropriate localized singular or plural form and substitute the displayed count.
 
 #### Scenario: Singular form
 
-- **WHEN** `plural({one: '{n} plant', other: '{n} plants'}, 1)` is called
+- **WHEN** a one-plant result is displayed in English
 - **THEN** the result is `'1 plant'`
 
 #### Scenario: Plural form
 
-- **WHEN** `plural({one: '{n} plant', other: '{n} plants'}, 5)` is called
+- **WHEN** a five-plant result is displayed in English
 - **THEN** the result is `'5 plants'`
 
 #### Scenario: Zero uses plural form
 
-- **WHEN** `plural({one: '{n} plant', other: '{n} plants'}, 0)` is called
+- **WHEN** a zero-plant result is displayed in English
 - **THEN** the result is `'0 plants'`
 
-### Requirement: Reactive translations
+### Requirement: Immediate language changes
 
-A derived store `translations` SHALL resolve to the translation object for the current locale.
+Visible translated content SHALL update immediately when the active locale changes.
 
 #### Scenario: Translations follow locale
 
-- **GIVEN** the locale store is set to `'de'`
-- **THEN** the `translations` store resolves to the German translation dictionary
+- **GIVEN** the active locale is `'de'`
+- **THEN** visible translated content uses German
 
 #### Scenario: Locale change updates translations
 
-- **WHEN** the locale store changes from `'en'` to `'es'`
-- **THEN** the `translations` store reactively updates to the Spanish translation dictionary
-
-#### Scenario: Component access pattern
-
-- **GIVEN** a Svelte component subscribes to the `translations` store
-- **THEN** translated strings are accessed via `$translations.group.key`
+- **WHEN** the active locale changes from `'en'` to `'es'`
+- **THEN** currently visible translated content updates to Spanish
 
 ### Requirement: Authentication translations
 
-Each supported locale dictionary SHALL contain matching keys for the login page, authentication-required message, continue-with-provider action, authentication-failed state, provider-unavailable state, logged-out state, Settings Authentication section, Sign out action, and `errorCode.AUTHENTICATION_REQUIRED`. Dynamic provider names SHALL be inserted as text into translated templates.
+Each supported locale SHALL provide user-facing translations for the login page, authentication-required message, continue-with-provider action, authentication-failed state, provider-unavailable state, logged-out state, Settings Authentication section, Sign out action, and the backend `AUTHENTICATION_REQUIRED` error code. Dynamic provider names SHALL be inserted as text into translated messages.
 
-#### Scenario: Matching locale keys
+#### Scenario: Matching locale coverage
 
-- **GIVEN** the English, German, and Spanish dictionaries
-- **THEN** all authentication keys have identical structures
-- **AND** each value is user-facing text in that locale
-- **AND** `errorCode.AUTHENTICATION_REQUIRED` exists in every dictionary and matches the backend catalog
+- **GIVEN** the English, German, and Spanish translations
+- **THEN** each locale provides all required authentication messages in user-facing text
+- **AND** each locale provides a localized message for the backend `AUTHENTICATION_REQUIRED` error code
 
 #### Scenario: Provider button translation
 

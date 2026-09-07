@@ -122,7 +122,7 @@ Each attention card SHALL include a "Water" button that waters the plant directl
 
 - **WHEN** the user clicks the "Water" button on an attention card
 - **THEN** a `POST /api/plants/:id/water` request SHALL be sent
-- **AND** the plants store SHALL be updated with the new watering data
+- **AND** every visible dashboard card for that plant SHALL immediately reflect the returned watering data without a page reload
 - **AND** if the plant's status becomes `ok`, it SHALL be removed from the "Needs Attention" section
 
 #### Scenario: Water button loading state

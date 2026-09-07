@@ -33,13 +33,13 @@ The settings page SHALL include a "Locations" section listing all locations with
 #### Scenario: Save renamed location on Enter
 
 - **WHEN** the user is editing a location name and presses Enter
-- **THEN** the system calls `updateLocation` with the trimmed new name
+- **THEN** the trimmed new name is submitted through the location update API
 - **AND** the row reverts to its default state showing the updated name and action buttons
 
 #### Scenario: Save renamed location on blur
 
 - **WHEN** the user is editing a location name and the input loses focus
-- **THEN** the system calls `updateLocation` with the trimmed new name
+- **THEN** the trimmed new name is submitted through the location update API
 - **AND** the row reverts to its default state showing the updated name and action buttons
 
 #### Scenario: Name unchanged on confirm
@@ -117,7 +117,7 @@ The settings page SHALL include an Appearance section that lets the user choose 
 - **WHEN** the application loads
 - **AND** `GET /api/settings` returns a supported theme
 - **AND** the user has not selected a theme since that request began
-- **THEN** the backend value seeds the theme store
+- **THEN** the backend value establishes the active theme preference
 - **AND** the durable browser-local fallback preference is synchronized to match
 
 #### Scenario: User selection wins over a pending startup response
@@ -130,7 +130,7 @@ The settings page SHALL include an Appearance section that lets the user choose 
 #### Scenario: Backend unavailable on init
 
 - **WHEN** the application loads and `GET /api/settings` fails or the backend is unavailable
-- **THEN** the theme store falls back to a supported durable browser-local preference
+- **THEN** the active theme preference falls back to a supported durable browser-local preference
 - **AND** if that preference is missing or unsupported, the default `'system'` is used
 
 #### Scenario: Unsupported persisted theme is rejected
@@ -317,7 +317,7 @@ The settings page SHALL provide a language selector after the theme controls in 
 - **GIVEN** the settings page is visible
 - **WHEN** the user selects a language option
 - **THEN** the selected option is visually indicated as active
-- **AND** the locale store is updated immediately
+- **AND** the active language changes immediately
 - **AND** the preference is retained in the durable browser-local fallback so it persists across reloads and remains usable offline or when the backend is unavailable
 
 #### Scenario: Reactive UI update

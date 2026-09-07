@@ -16,17 +16,17 @@ The system SHALL expose `POST /api/ai/summarize` accepting a JSON body with fiel
 #### Scenario: AI provider not configured
 
 - **WHEN** `POST /api/ai/summarize` is called and no AI provider is configured
-- **THEN** the endpoint SHALL return HTTP 503 with `{"message":"AI provider is not configured"}`
+- **THEN** the endpoint SHALL return HTTP 503 with code `AI_NOT_CONFIGURED` and a user-safe message according to `core-api`
 
 #### Scenario: Plant not found
 
 - **WHEN** `POST /api/ai/summarize` is called with a `plant_id` that does not exist
-- **THEN** the endpoint SHALL return HTTP 404
+- **THEN** the endpoint SHALL return HTTP 404 with code `PLANT_NOT_FOUND` and a user-safe message according to `core-api`
 
 #### Scenario: Empty history
 
 - **WHEN** `POST /api/ai/summarize` is called with an empty `history` array
-- **THEN** the endpoint SHALL return HTTP 422 with a validation error
+- **THEN** the endpoint SHALL return HTTP 422 with code `AI_HISTORY_EMPTY` and a user-safe message according to `core-api`
 
 ### Requirement: Summarize uses structured output
 

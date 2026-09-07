@@ -157,23 +157,23 @@ Each page SHALL present its main content as a cohesive, centered region whose wi
 
 ### Requirement: Translated navigation labels
 
-Sidebar nav labels SHALL use translated strings from the locale store instead of hardcoded English text.
+Sidebar navigation labels SHALL use the active language instead of hardcoded English text.
 
 #### Scenario: Default English labels
 
-- **GIVEN** the locale is `'en'`
+- **GIVEN** the active language is English
 - **WHEN** the sidebar renders
 - **THEN** the navigation labels are "Plants", "Care Journal", and "Settings"
 
 #### Scenario: German labels
 
-- **GIVEN** the locale is `'de'`
+- **GIVEN** the active language is German
 - **WHEN** the sidebar renders
 - **THEN** the navigation labels display the German translations
 
 #### Scenario: Spanish labels
 
-- **GIVEN** the locale is `'es'`
+- **GIVEN** the active language is Spanish
 - **WHEN** the sidebar renders
 - **THEN** the navigation labels display the Spanish translations
 

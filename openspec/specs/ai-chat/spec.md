@@ -42,12 +42,12 @@ The system SHALL expose `POST /api/ai/chat` accepting a JSON body with fields `p
 #### Scenario: AI provider not configured
 
 - **WHEN** `POST /api/ai/chat` is called and no AI provider is configured
-- **THEN** the endpoint SHALL return HTTP 503 with `{"message":"AI provider is not configured"}`
+- **THEN** the endpoint SHALL return HTTP 503 with code `AI_NOT_CONFIGURED` and a user-safe message according to `core-api`
 
 #### Scenario: Plant not found
 
 - **WHEN** `POST /api/ai/chat` is called with a `plant_id` that does not exist
-- **THEN** the endpoint SHALL return HTTP 404
+- **THEN** the endpoint SHALL return HTTP 404 with code `PLANT_NOT_FOUND` and a user-safe message according to `core-api`
 
 #### Scenario: Mid-stream error
 

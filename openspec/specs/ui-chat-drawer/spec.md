@@ -74,15 +74,15 @@ The chat drawer SHALL provide a photo attach button, text input, and send button
 
 - **WHEN** the user types text in the input and clicks the send button (or presses Enter)
 - **THEN** the message SHALL be added to the message list
-- **AND** if a photo is staged, it SHALL be converted to base64 and included in the request
-- **AND** if a photo is staged, the image data URL SHALL be stored on the message for display
+- **AND** if a photo is attached, it SHALL be included according to the request contract defined by `ai-chat`
+- **AND** if a photo is attached, the submitted user message SHALL visibly associate that image with the message for display
 - **AND** a streaming request SHALL be initiated to `POST /api/ai/chat`
 - **AND** the input SHALL be cleared
-- **AND** the staged photo SHALL be cleared
+- **AND** the selected attachment SHALL be cleared
 
 #### Scenario: Empty input
 
-- **WHEN** the input text is empty (regardless of whether a photo is staged)
+- **WHEN** the input text is empty (regardless of whether a photo is attached)
 - **THEN** the send button SHALL be visually disabled
 - **AND** clicking it or pressing Enter SHALL do nothing
 
@@ -102,20 +102,26 @@ The chat drawer SHALL consume the SSE stream from `POST /api/ai/chat` and render
 
 #### Scenario: Tokens rendered incrementally
 
-- **WHEN** `{"delta": "..."}` events arrive from the SSE stream
+- **WHEN** text-delta events defined by `ai-chat` arrive from the SSE stream
 - **THEN** the delta text SHALL be appended to the current AI message in real time
 - **AND** the typing indicator SHALL be replaced by the accumulating text after the first token
 
 #### Scenario: Stream completes
 
-- **WHEN** a `{"done": true}` event is received
+- **WHEN** the completion event defined by `ai-chat` is received
 - **THEN** the AI message SHALL be finalized
 - **AND** the input SHALL be re-enabled
 
-#### Scenario: Stream error
+#### Scenario: Structured stream error
 
-- **WHEN** the structured stream error event defined by the AI chat contract is received or the stream otherwise fails
-- **THEN** an error message SHALL be displayed in the chat
+- **WHEN** the structured stream error event defined by `ai-chat` is received
+- **THEN** the chat SHALL display the localized message for its error code or a localized fallback
+- **AND** the input SHALL be re-enabled
+
+#### Scenario: Other stream failure
+
+- **WHEN** the stream fails without a structured error code
+- **THEN** the chat SHALL display a generic localized error
 - **AND** the input SHALL be re-enabled
 
 #### Scenario: Streaming cancelled when interface is removed
@@ -131,8 +137,8 @@ The chat drawer SHALL maintain conversation history for the current session.
 #### Scenario: History sent with each request
 
 - **WHEN** the user sends a new message
-- **THEN** all previous messages (user + assistant, up to 20) SHALL be included in the `history` array of the request body
-- **AND** the `history` array SHALL contain only `role` and `content` fields (no image data)
+- **THEN** all previous messages (user and assistant, up to 20) SHALL be included as request history according to `ai-chat`
+- **AND** an image associated with a previous message SHALL remain associated with that history entry
 
 #### Scenario: History cap
 
@@ -195,22 +201,22 @@ The chat drawer SHALL only be available when the AI provider is enabled.
 - **WHEN** `GET /api/ai/status` returns `{ "enabled": true }`
 - **THEN** the "Ask AI" button SHALL be rendered in the Plant Detail hero section
 
-### Requirement: Chat API client function
+### Requirement: Chat HTTP integration
 
-The frontend API client SHALL provide a `chatPlant` async generator function.
+The frontend SHALL send and consume streaming chat requests using the HTTP and SSE contract defined by `ai-chat`, which is authoritative for the endpoint request and response schemas.
 
 #### Scenario: Streaming chat call
 
-- **WHEN** `chatPlant(plantId, message, history, signal, image)` is called
-- **THEN** a `POST` request SHALL be sent to `/api/ai/chat` with `{ plant_id, message, history, image }` as JSON
-- **AND** the `image` field SHALL be omitted from the JSON when no image is provided
-- **AND** the function SHALL yield string deltas as they arrive from the SSE stream
-- **AND** the function SHALL return when a `{"done": true}` event is received
+- **WHEN** the user sends a chat message
+- **THEN** the frontend SHALL send `POST /api/ai/chat` with the current `plant_id`, `message`, prior `history`, and any attached `image` according to `ai-chat`
+- **AND** the optional `image` field SHALL be omitted when no image is attached
+- **AND** text-delta events from the response SHALL appear incrementally in the current AI response
+- **AND** streaming SHALL stop when the completion event is received
 
 #### Scenario: Chat API error
 
-- **WHEN** the API returns a non-200 status
-- **THEN** the function SHALL throw an error with the message from the response
+- **WHEN** the API returns a non-success response
+- **THEN** the chat flow SHALL display the corresponding localized error or localized fallback
 
 ### Requirement: Save note button
 
@@ -233,21 +239,21 @@ The chat drawer SHALL display a "Save note" button in the header that allows sav
 - **WHEN** an AI response is being streamed
 - **THEN** the "Save note" button SHALL NOT be visible
 
-### Requirement: Summarize API client function
+### Requirement: Chat summarization HTTP integration
 
-The frontend API client SHALL provide a `summarizeChat` function.
+The frontend SHALL request chat summaries using the HTTP contract defined by `ai-summarize`, which is authoritative for the endpoint request and response schemas.
 
 #### Scenario: Summarize call
 
-- **WHEN** `summarizeChat(plantId, history)` is called
-- **THEN** a `POST` request SHALL be sent to `/api/ai/summarize` with `{ plant_id, history }` as JSON
-- **AND** each history entry SHALL contain only its role and text content, with attached image data omitted
-- **AND** the function SHALL return the `summary` string from the response
+- **WHEN** the user requests a conversation summary
+- **THEN** the frontend SHALL send `POST /api/ai/summarize` with the current `plant_id` and `history` according to `ai-summarize`
+- **AND** each history entry SHALL contain only `role` and text `content`, with image data omitted
+- **AND** the returned summary SHALL be used as the generated summary
 
 #### Scenario: Summarize API error
 
-- **WHEN** the API returns a non-200 status
-- **THEN** the function SHALL throw an error with the message from the response
+- **WHEN** the API returns a non-success response
+- **THEN** the summary flow SHALL display the corresponding localized error or localized fallback
 
 ### Requirement: Save note flow
 
@@ -322,14 +328,14 @@ The chat drawer SHALL display a photo-attachment control before the text input.
 #### Scenario: Photo selected via file picker
 
 - **WHEN** the user selects a file from the file picker
-- **THEN** the file SHALL be staged as the attached photo
+- **THEN** the photo SHALL become the active attachment
 - **AND** a preview strip SHALL appear above the input area
 
 #### Scenario: Only one photo at a time
 
-- **WHEN** a photo is already staged and the user selects another
-- **THEN** the previous photo SHALL be replaced by the new one
-- **AND** the temporary preview resources for the previous photo SHALL be released
+- **WHEN** a photo is already attached and the user selects another
+- **THEN** the new photo SHALL replace the previous attachment
+- **AND** the previous photo preview SHALL no longer be visible
 
 ### Requirement: Photo drag-and-drop
 
@@ -345,40 +351,39 @@ The chat drawer SHALL accept drag-and-drop photo attachment on the message list 
 - **WHEN** the user drags a file out of the chat message list area
 - **THEN** the drag indicator SHALL be removed
 
-#### Scenario: Drop stages photo
+#### Scenario: Drop attaches photo
 
 - **WHEN** the user drops an image file (`image/jpeg`, `image/png`, `image/webp`) on the message list area
-- **THEN** the file SHALL be staged as the attached photo
+- **THEN** the photo SHALL become the active attachment
 - **AND** the preview strip SHALL appear above the input area
 - **AND** the drag indicator SHALL be removed
 
 #### Scenario: Non-image drop ignored
 
 - **WHEN** the user drops a non-image file on the message list area
-- **THEN** the drop SHALL be ignored and no photo SHALL be staged
+- **THEN** the drop SHALL be ignored and no photo SHALL be attached
 
 ### Requirement: Photo preview strip
 
-The chat drawer SHALL display a preview strip above the input area when a photo is staged.
+The chat drawer SHALL display a preview strip above the input area when a photo is attached.
 
 #### Scenario: Preview shown
 
-- **WHEN** a photo is staged (via file picker or drag-and-drop)
+- **WHEN** a photo is attached (via file picker or drag-and-drop)
 - **THEN** a compact thumbnail of the photo SHALL be displayed in a strip between the message list and the input row
 - **AND** a clearly identifiable remove action SHALL be available with the thumbnail
 
-#### Scenario: Remove staged photo
+#### Scenario: Remove attached photo
 
 - **WHEN** the user clicks the remove button on the preview strip
-- **THEN** the staged photo SHALL be cleared
+- **THEN** the attachment SHALL be removed
 - **AND** the preview strip SHALL be hidden
-- **AND** the temporary preview resources for the removed photo SHALL be released
 
 #### Scenario: Preview cleared after send
 
-- **WHEN** the user sends a message with a staged photo
+- **WHEN** the user sends a message with an attached photo
 - **THEN** the preview strip SHALL be hidden
-- **AND** the staged photo state SHALL be cleared
+- **AND** that attachment SHALL not apply to a later message
 
 ### Requirement: Photo in message bubbles
 
@@ -394,24 +399,27 @@ The chat drawer SHALL display attached photos inline in user message bubbles.
 - **WHEN** a user message has no associated image
 - **THEN** the message bubble SHALL render text only (no change from existing behavior)
 
-### Requirement: Temporary photo preview resource cleanup
+### Requirement: Photo preview lifecycle
 
-The chat drawer SHALL release temporary resources for staged and save-note photo previews when those previews are no longer needed.
+The chat drawer SHALL keep photo previews consistent with the user's current attachment and save-note choices and SHALL release their temporary resources when no longer needed.
 
-#### Scenario: Cleanup on photo replace
+#### Scenario: Preview on photo replace
 
-- **WHEN** a new photo replaces a previously staged photo
-- **THEN** the temporary preview resources for the previous photo SHALL be released
+- **WHEN** a new photo replaces a previously attached photo
+- **THEN** only the new photo preview SHALL remain visible
+- **AND** temporary preview resources for the previous photo SHALL be released
 
-#### Scenario: Cleanup on photo removal
+#### Scenario: Preview on photo removal
 
-- **WHEN** the user removes a staged photo
-- **THEN** the temporary preview resources for that photo SHALL be released
+- **WHEN** the user removes an attached photo
+- **THEN** its preview SHALL no longer be visible
+- **AND** its temporary preview resources SHALL be released
 
-#### Scenario: Cleanup when interface is removed
+#### Scenario: Preview when interface is removed
 
 - **WHEN** the chat interface is closed or removed
-- **THEN** temporary resources for any staged or save-note photo previews SHALL be released
+- **THEN** no attachment or save-note photo preview SHALL remain visible
+- **AND** temporary resources for those previews SHALL be released
 
 ### Requirement: Save note photo attachment
 

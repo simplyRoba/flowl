@@ -271,11 +271,11 @@ The care event API response SHALL include: `id` (number), `plant_id` (number), `
 
 ### Requirement: Upload Care Event Photo
 
-The API SHALL accept a photo upload via `POST /api/plants/:id/care/:event_id/photo` as multipart form data.
+The API SHALL accept a photo upload via `POST /api/plants/:id/care/:event_id/photo` as multipart form data with the image in a field named `file`.
 
 #### Scenario: Valid upload
 
-- **WHEN** a POST multipart request is made to `/api/plants/1/care/5/photo` with a valid supported image under 5 MB
+- **WHEN** a POST multipart request is made to `/api/plants/1/care/5/photo` with a valid supported image under 5 MB in the `file` field
 - **AND** care event 5 belongs to plant 1
 - **THEN** the image is accepted as managed media and associated with the care event
 - **AND** the API responds with HTTP 200 and the updated care event JSON

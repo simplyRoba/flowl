@@ -1,6 +1,6 @@
 ## Purpose
 
-AI plant identification flow — identify section visibility, photo upload slots, loading/error/suggestion states, suggestion carousel with apply/undo, and identify API client.
+AI plant identification flow — identify section visibility, photo upload slots, loading/error/suggestion states, suggestion carousel with apply/undo, and identify HTTP integration.
 
 ## Requirements
 
@@ -185,7 +185,7 @@ The identify section SHALL display a localized error state with a recovery actio
 #### Scenario: Not-a-plant error displayed
 
 - **WHEN** the identification request returns code `AI_IDENTIFY_NOT_A_PLANT`
-- **THEN** the identify section SHALL display the localized "not a plant" message from the `errorCode` i18n map
+- **THEN** the identify section SHALL display the localized "not a plant" message for that code
 - **AND** a "Dismiss" button SHALL be displayed instead of immediately retrying the unchanged photos
 
 #### Scenario: Retry after retryable error
@@ -200,32 +200,31 @@ The identify section SHALL display a localized error state with a recovery actio
 - **THEN** the section SHALL return to its idle controls
 - **AND** the user SHALL be able to change the photos before identifying again
 
-### Requirement: Identify API client function
+### Requirement: Identify HTTP integration
 
-The frontend API client SHALL provide an `identifyPlant` function that sends photos to the identify endpoint.
+The frontend SHALL submit photos using the multipart HTTP contract defined by `ai-identify`, which is authoritative for the endpoint request and response schemas.
 
 #### Scenario: Successful identification
 
-- **WHEN** `identifyPlant(photos)` is called with an array of `File` objects
-- **THEN** a `POST` request SHALL be sent to `/api/ai/identify` with multipart form data
-- **AND** each file SHALL be appended under the field name `photos`
-- **AND** the response SHALL provide identification result data containing a `suggestions` array
+- **WHEN** the user requests plant identification
+- **THEN** the frontend SHALL send the selected photos in one multipart `POST` request to `/api/ai/identify` according to `ai-identify`
+- **AND** the returned ranked suggestions SHALL be displayed in the identification flow
 
 #### Scenario: API error
 
-- **WHEN** the API returns a non-200 status
-- **THEN** the function SHALL throw an error with the message from the response body
+- **WHEN** the API returns a non-success response
+- **THEN** the identification flow SHALL display the corresponding localized error
 
 ### Requirement: Identify existing photo on edit form
 
-When editing a plant with an existing `photo_url` and no new photo file selected, the identify function SHALL fetch the existing photo as a blob to include it in the identify request.
+When editing a plant with an existing `photo_url` and no newly selected photo, identification SHALL include the existing photo's image bytes in the multipart request.
 
 #### Scenario: Existing photo fetched for identification
 
 - **WHEN** the user clicks "Identify Plant" on the edit form
 - **AND** the plant has an existing `photo_url`
-- **AND** no new photo file has been selected
-- **THEN** the existing photo SHALL be fetched via its URL, converted to a `File`, and included in the identify request
+- **AND** no new photo has been selected
+- **THEN** the frontend SHALL obtain the existing photo's image bytes from its URL and include them according to the multipart contract in `ai-identify`
 
 ### Requirement: Identify section responsive layout
 
@@ -242,22 +241,3 @@ The identify section SHALL adapt to the viewport width.
 - **WHEN** the viewport width is ≤ 768px
 - **THEN** the extra-photo controls SHALL remain usable without crowding
 - **AND** suggestion card actions SHALL stack vertically, use the available width, and provide touch targets at least 44px in height
-
-### Requirement: Not-a-plant error code in i18n
-
-The `errorCode` map in all supported locales (en, de, es) SHALL include an `AI_IDENTIFY_NOT_A_PLANT` entry with a localized message indicating the photo does not appear to contain a plant.
-
-#### Scenario: English locale
-
-- **WHEN** the locale is `en`
-- **THEN** the `AI_IDENTIFY_NOT_A_PLANT` error code SHALL resolve to a message like "The photo does not appear to contain a plant"
-
-#### Scenario: German locale
-
-- **WHEN** the locale is `de`
-- **THEN** the `AI_IDENTIFY_NOT_A_PLANT` error code SHALL resolve to a German translation of the message
-
-#### Scenario: Spanish locale
-
-- **WHEN** the locale is `es`
-- **THEN** the `AI_IDENTIFY_NOT_A_PLANT` error code SHALL resolve to a Spanish translation of the message

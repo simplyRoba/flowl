@@ -1,6 +1,6 @@
 ## Purpose
 
-Care journal UI — timeline on plant detail view, inline log form, delete actions, global care log page with filtering and infinite scroll, API client and store.
+Care journal UI — timeline on plant detail view, inline log form, delete actions, global care log page with filtering and progressive loading, and frontend HTTP integration.
 
 ## Requirements
 
@@ -34,14 +34,14 @@ The plant detail view SHALL display a care journal section showing a chronologic
 - **THEN** all fetched care events are shown immediately
 - **AND** no "Show more" control is displayed
 
-### Requirement: Watering event grouping utility
+### Requirement: Watering event grouping in timelines
 
-A shared utility function SHALL group consecutive watering events per plant into collapsible summaries. The function takes care events sorted newest-first together with whether older history remains and returns individual care events or `WateringGroup` items whose identity remains stable as older events are appended.
+Care timelines SHALL present consecutive watering events for each plant as collapsible summaries. Grouping is evaluated from events ordered newest first and whether older history remains. As older entries are appended, a summary anchored by its newest event SHALL retain its visible expansion state while its displayed members and summary details update.
 
 #### Scenario: Consecutive waterings without notes or photos are grouped
 
 - **WHEN** a plant has 3+ consecutive watering events with no notes and no photos
-- **THEN** they SHALL be collapsed into a single `WateringGroup` item containing the count, the earliest loaded date, the latest date, and the loaded original events array
+- **THEN** they SHALL be collapsed into a single watering summary showing the count and the earliest and latest loaded dates, and revealing the loaded original events when expanded
 
 #### Scenario: Watering with notes breaks the streak
 
@@ -61,7 +61,7 @@ A shared utility function SHALL group consecutive watering events per plant into
 #### Scenario: Streak of two is grouped
 
 - **WHEN** a plant has exactly two consecutive watering events without notes or photos
-- **THEN** they SHALL be collapsed into a `WateringGroup`
+- **THEN** they SHALL be collapsed into a watering summary
 
 #### Scenario: Non-watering events do not break other plants
 
@@ -78,21 +78,21 @@ A shared utility function SHALL group consecutive watering events per plant into
 
 - **GIVEN** older care events remain available
 - **WHEN** a plant's oldest loaded streak has no observed breaker before the loaded-history boundary
-- **THEN** the streak SHALL be returned as a partial `WateringGroup`, including when only one member is currently loaded
+- **THEN** the timeline SHALL present the streak as a partial watering summary, including when only one member is currently loaded
 - **AND** its count and earliest date SHALL describe only loaded members
 
 #### Scenario: Partial group receives older members
 
 - **GIVEN** a partial watering group exists
 - **WHEN** an older page adds eligible members to that streak
-- **THEN** the group SHALL retain the same stable identity anchored to its newest event
-- **AND** its count, earliest loaded date, and members SHALL be recomputed
+- **THEN** the summary's expanded or collapsed presentation SHALL remain continuous, anchored by its newest event
+- **AND** its count, earliest loaded date, and revealed members SHALL update
 
 #### Scenario: Partial group becomes complete
 
 - **GIVEN** a partial watering group exists
 - **WHEN** loaded history reaches a breaker for that plant or reaches the end of all history
-- **THEN** the group SHALL no longer be marked partial
+- **THEN** the summary SHALL no longer indicate that it is partial
 - **AND** a completed one-member streak SHALL render as an individual event
 
 ### Requirement: Watering group summary display
@@ -101,13 +101,13 @@ Grouped watering events SHALL display as a summary row with an accessible chevro
 
 #### Scenario: Summary row content
 
-- **WHEN** a complete `WateringGroup` is rendered
+- **WHEN** a complete watering summary is rendered
 - **THEN** it SHALL display the plant name on the global page, a watering icon, the exact count, and the complete date range (e.g. "Watered 5 times, Feb 1 - Mar 14")
 - **AND** a chevron icon SHALL indicate the group can be expanded
 
 #### Scenario: Partial summary row content
 
-- **WHEN** a partial `WateringGroup` is rendered
+- **WHEN** a partial watering summary is rendered
 - **THEN** it SHALL display its loaded count as an inexact value such as `5+`
 - **AND** it SHALL indicate that the streak continues into older entries
 - **AND** its displayed date range SHALL cover only the currently loaded members
@@ -126,8 +126,8 @@ Grouped watering events SHALL display as a summary row with an accessible chevro
 #### Scenario: Expand state is transient
 
 - **WHEN** the user expands a group
-- **THEN** the expand/collapse state SHALL be local component state only
-- **AND** it SHALL NOT persist in the URL or any store
+- **THEN** its expanded or collapsed presentation SHALL be transient
+- **AND** it SHALL NOT be encoded in the URL or retained after the user leaves or reloads the care journal
 
 #### Scenario: Expanded partial group grows
 
@@ -169,7 +169,7 @@ The global care journal page SHALL apply watering event grouping to its event li
 #### Scenario: Group summary in global timeline
 
 - **WHEN** the global care journal is rendered
-- **THEN** the event list SHALL be processed through the grouping utility before display
+- **THEN** the event list SHALL apply the watering grouping behavior before display
 - **AND** group summaries SHALL appear inline within the day-grouped timeline
 
 #### Scenario: Plant name shown in global group summary
@@ -184,7 +184,7 @@ The plant detail care journal section SHALL apply the same watering event groupi
 #### Scenario: Group summary in plant timeline
 
 - **WHEN** the plant detail timeline is rendered
-- **THEN** the event list SHALL be processed through the grouping utility before display
+- **THEN** the event list SHALL apply the watering grouping behavior before display
 
 #### Scenario: Plant name omitted in plant detail group summary
 
@@ -397,51 +397,38 @@ The global care journal SHALL provide bounded access to all older matching event
 - **THEN** automatic continuation SHALL stop
 - **AND** the "Load older entries" control SHALL no longer be displayed
 
-### Requirement: Care Events API Client
+### Requirement: Care-event HTTP integration
 
-The frontend API client SHALL provide typed functions for care event operations.
+The frontend SHALL integrate care-event operations with the HTTP contract defined by `data-care-events` and make successful results and failures observable to the relevant timeline. `data-care-events` is authoritative for request and response schemas.
 
 #### Scenario: Fetch care events for plant
 
-- **WHEN** `fetchCareEvents(plantId)` is called
-- **THEN** a `GET` request is made to `/api/plants/{plantId}/care`
-- **AND** a `CareEvent[]` array is returned
+- **WHEN** the plant detail timeline loads care events for a plant
+- **THEN** it SHALL send `GET /api/plants/{plantId}/care`
+- **AND** the care events from a successful response SHALL be displayed in the timeline
 
 #### Scenario: Fetch global care events
 
-- **WHEN** `fetchAllCareEvents(limit?, before?, types?)` is called
-- **THEN** a `GET` request is made to `/api/care` with optional query parameters (`limit`, `before`, and a `type` param per entry in `types`)
-- **AND** a `{ events: CareEvent[], has_more: boolean }` object is returned
+- **WHEN** the global care journal requests a page of events
+- **THEN** it SHALL send `GET /api/care` using the pagination and filter contract defined by `data-care-events`
+- **AND** the returned events SHALL be displayed and the returned continuation state SHALL control whether older entries remain available
 
 #### Scenario: Create care event
 
-- **WHEN** `createCareEvent(plantId, data)` is called
-- **THEN** a `POST` request is made to `/api/plants/{plantId}/care`
-- **AND** the created `CareEvent` is returned
+- **WHEN** the user saves a care event
+- **THEN** the frontend SHALL send `POST /api/plants/{plantId}/care` using the create-event request contract defined by `data-care-events`
+- **AND** the created event from a successful response SHALL appear in the relevant timeline
 
 #### Scenario: Delete care event
 
-- **WHEN** `deleteCareEvent(plantId, eventId)` is called
-- **THEN** a `DELETE` request is made to `/api/plants/{plantId}/care/{eventId}`
+- **WHEN** the user deletes a care event
+- **THEN** the frontend SHALL send `DELETE /api/plants/{plantId}/care/{eventId}`
+- **AND** after a successful deletion the event SHALL no longer appear in the relevant timeline
 
-### Requirement: Care Events Store
+#### Scenario: HTTP integration error
 
-The frontend SHALL provide a care events store that manages care event state for the current plant.
-
-#### Scenario: Load care events
-
-- **WHEN** `loadCareEvents(plantId)` is called
-- **THEN** the store is populated with the plant's care events
-
-#### Scenario: Add care event
-
-- **WHEN** `addCareEvent(plantId, data)` is called
-- **THEN** the API is called and the new event is added to the store
-
-#### Scenario: Remove care event
-
-- **WHEN** `removeCareEvent(plantId, eventId)` is called
-- **THEN** the API is called and the event is removed from the store
+- **WHEN** any care-event HTTP request receives a non-success response
+- **THEN** the relevant flow SHALL display the corresponding localized error
 
 ### Requirement: AI consultation event styling
 
@@ -520,25 +507,21 @@ Care events with a `photo_url` SHALL display a clickable thumbnail in the global
 - **WHEN** a care event in the global journal has no `photo_url`
 - **THEN** no thumbnail space SHALL be rendered
 
-### Requirement: Care event photo API client functions
+### Requirement: Care-event photo HTTP integration
 
-The frontend API client SHALL include `photo_url` on the `CareEvent` type and provide functions for care event photo upload and delete.
-
-#### Scenario: CareEvent includes photo_url
-
-- **WHEN** the `CareEvent` TypeScript interface is defined
-- **THEN** it SHALL include `photo_url: string | null`
+The frontend SHALL integrate photo upload and deletion with the contract defined by `data-care-events`, which is authoritative for care-event photo endpoints and response nullability.
 
 #### Scenario: Upload care event photo
 
-- **WHEN** `uploadCareEventPhoto(plantId, eventId, file)` is called
-- **THEN** a `POST` multipart request SHALL be made to `/api/plants/{plantId}/care/{eventId}/photo` with the file in a FormData `"file"` field
-- **AND** the updated `CareEvent` SHALL be returned
+- **WHEN** the user attaches a photo to a care event
+- **THEN** the frontend SHALL send a multipart `POST` request to `/api/plants/{plantId}/care/{eventId}/photo` according to `data-care-events`
+- **AND** the updated event from a successful response SHALL be reflected in the relevant timeline
 
 #### Scenario: Delete care event photo
 
-- **WHEN** `deleteCareEventPhoto(plantId, eventId)` is called
-- **THEN** a `DELETE` request SHALL be made to `/api/plants/{plantId}/care/{eventId}/photo`
+- **WHEN** the user removes a care-event photo
+- **THEN** the frontend SHALL send `DELETE /api/plants/{plantId}/care/{eventId}/photo`
+- **AND** after a successful deletion the relevant timeline SHALL show the event without a photo
 
 ### Requirement: Care journal offline message
 
@@ -556,7 +539,7 @@ The global care journal page SHALL display an offline-specific message instead o
 - **WHEN** the care journal page attempts to load events
 - **AND** the fetch fails
 - **AND** the application has not detected an offline state
-- **THEN** the page SHALL display the existing generic error text from `resolveError()`
+- **THEN** the page SHALL display the existing generic localized load-error text
 
 #### Scenario: Skeleton shown before offline determination
 
@@ -604,13 +587,3 @@ The plant detail care journal SHALL allow an online user to edit each individual
 - **WHEN** the user views `/care-journal`
 - **THEN** no care-event edit control or edit form is displayed
 - **AND** the page sends no care-event update request
-
-### Requirement: Update Care Event API Client
-
-The frontend API client SHALL provide a typed function for updating a care event's editable data.
-
-#### Scenario: Update care event
-
-- **WHEN** `updateCareEvent(plantId, eventId, data)` is called
-- **THEN** a `PUT` request is made to `/api/plants/{plantId}/care/{eventId}` with the editable event data
-- **AND** the updated `CareEvent` is returned

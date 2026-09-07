@@ -71,7 +71,7 @@ Errors returned for application-defined API conditions SHALL use JSON with a con
 
 ### Requirement: Error Code Catalog
 
-The API SHALL define a fixed catalog of error codes. Each error code SHALL map to exactly one HTTP status code and one default message.
+The API SHALL define a fixed catalog of error codes and HTTP statuses. Each error code SHALL map to exactly one HTTP status. Error responses SHALL also include a user-safe English message derived from the code, but consumers SHALL use the stable code rather than message wording to identify the condition.
 
 #### Scenario: Generic errors
 
