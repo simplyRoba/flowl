@@ -9,5 +9,6 @@ rules:
     - "Favor simplicity and avoid unnecessary dependencies to preserve the single-binary deployment and small Docker image."
   specs:
     - "Keep capability specs flat at `specs/{domain}-{capability}/spec.md`, using the established `core`, `ui`, `ai`, and `data` domain prefixes; do not create domain subdirectories."
+    - "Write specs only in terms of observable behavior: describe inputs, actions, conditions, and required outcomes, including errors and state changes; do not include implementation details—put them in design instead."
   tasks:
     - "Include a final verification task to run `cargo fmt -- --check`, `cargo clippy -- -D warnings`, `npm run format:check --prefix ui`, `npm run lint --prefix ui`, `npm run check --prefix ui`, and `cargo test`."
