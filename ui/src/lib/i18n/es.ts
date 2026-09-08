@@ -218,6 +218,7 @@ export const es: Translations = {
     themeLight: "Claro",
     themeDark: "Oscuro",
     themeSystem: "Sistema",
+    themeUpdateFailed: "No se pudo guardar la preferencia de tema",
     language: "Idioma",
     locations: "Ubicaciones",
     noLocations: "Aún no hay ubicaciones. Crea ubicaciones al añadir plantas.",

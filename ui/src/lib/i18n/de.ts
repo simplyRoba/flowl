@@ -220,6 +220,7 @@ export const de: Translations = {
     themeLight: "Hell",
     themeDark: "Dunkel",
     themeSystem: "System",
+    themeUpdateFailed: "Theme-Einstellung konnte nicht gespeichert werden",
     language: "Sprache",
     locations: "Standorte",
     noLocations:

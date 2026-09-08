@@ -152,6 +152,16 @@
       });
   });
 
+  async function handleThemePreference(preference: ThemePreference) {
+    if (await setThemePreference(preference)) return;
+
+    pushNotification({
+      title: get(translations).settings.appearance,
+      variant: "error",
+      message: get(translations).settings.themeUpdateFailed,
+    });
+  }
+
   async function startEditing(id: number, name: string) {
     editingId = id;
     editValue = name;
@@ -380,7 +390,7 @@
             class="theme-option"
             class:active={$themePreference === option.value}
             aria-pressed={$themePreference === option.value}
-            onclick={() => setThemePreference(option.value)}
+            onclick={() => handleThemePreference(option.value)}
           >
             {$translations.settings[option.labelKey]}
           </button>

@@ -1,4 +1,4 @@
-import { derived, writable } from "svelte/store";
+import { derived, get, writable } from "svelte/store";
 
 export type ThemePreference = "light" | "dark" | "system";
 export type ThemeMode = "light" | "dark";
@@ -127,10 +127,20 @@ export function destroyTheme(): void {
   initialized = false;
 }
 
-export function setThemePreference(preference: ThemePreference): void {
+export async function setThemePreference(
+  preference: ThemePreference,
+): Promise<boolean> {
+  const previousPreference = get(themePreference);
   themePreference.set(preference);
   writeThemePreference(getStorage(), preference);
-  import("$lib/api")
-    .then(({ updateSettings }) => updateSettings({ theme: preference }))
-    .catch(() => {});
+
+  try {
+    const { updateSettings } = await import("$lib/api");
+    await updateSettings({ theme: preference });
+    return true;
+  } catch {
+    themePreference.set(previousPreference);
+    writeThemePreference(getStorage(), previousPreference);
+    return false;
+  }
 }

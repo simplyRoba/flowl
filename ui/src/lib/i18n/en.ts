@@ -214,6 +214,7 @@ const en = {
     themeLight: "Light",
     themeDark: "Dark",
     themeSystem: "System",
+    themeUpdateFailed: "Failed to save theme preference",
     language: "Language",
     locations: "Locations",
     noLocations: "No locations yet. Create locations when adding plants.",

@@ -112,6 +112,13 @@ The settings page SHALL include an Appearance section that lets the user choose 
 - **AND** the preference is persisted to the backend via `PUT /api/settings`
 - **AND** the durable browser-local fallback preference is updated so the selection persists across reloads and remains usable offline
 
+#### Scenario: Theme persistence fails
+
+- **GIVEN** the settings page is visible with a saved theme preference
+- **WHEN** the user selects another theme and the backend update fails
+- **THEN** the previous theme preference is restored in the UI and durable browser-local fallback
+- **AND** a user-facing error notification is displayed
+
 #### Scenario: Theme initialised from backend
 
 - **WHEN** the application loads

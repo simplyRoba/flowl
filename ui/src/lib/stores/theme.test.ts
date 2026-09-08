@@ -1,9 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { get } from "svelte/store";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const apiMocks = vi.hoisted(() => ({
+  updateSettings: vi.fn(),
+}));
+vi.mock("$lib/api", () => apiMocks);
+
 import {
   createSystemPreferenceListener,
   DEFAULT_THEME_PREFERENCE,
+  destroyTheme,
+  initTheme,
   readThemePreference,
   resolveTheme,
+  setThemePreference,
+  themePreference,
   THEME_STORAGE_KEY,
   writeThemePreference,
 } from "./theme";
@@ -57,6 +68,27 @@ describe("theme preference persistence", () => {
     const storage = createStorage();
     storage.setItem(THEME_STORAGE_KEY, "invalid");
     expect(readThemePreference(storage)).toBe(DEFAULT_THEME_PREFERENCE);
+  });
+});
+
+describe("theme preference save", () => {
+  beforeEach(() => {
+    destroyTheme();
+    localStorage.clear();
+    document.documentElement.removeAttribute("data-theme");
+    apiMocks.updateSettings.mockReset().mockResolvedValue({});
+  });
+
+  it("rolls back the visible and local preference when saving fails", async () => {
+    initTheme("light");
+    apiMocks.updateSettings.mockRejectedValue(new Error("Network"));
+
+    const result = await setThemePreference("dark");
+
+    expect(result).toBe(false);
+    expect(get(themePreference)).toBe("light");
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("light");
+    expect(document.documentElement.dataset.theme).toBe("light");
   });
 });
 

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../../routes/settings/+page.svelte";
 import { get } from "svelte/store";
-import { setThemePreference, THEME_STORAGE_KEY } from "$lib/stores/theme";
+import { themePreference, THEME_STORAGE_KEY } from "$lib/stores/theme";
 import {
   locale,
   setLocale,
@@ -65,7 +65,8 @@ vi.mock("$lib/auth", () => ({
 
 beforeEach(() => {
   localStorage.clear();
-  setThemePreference("system");
+  themePreference.set("system");
+  localStorage.setItem(THEME_STORAGE_KEY, "system");
   destroyLocale();
   setLocale("en");
   locations.set([]);
@@ -185,6 +186,13 @@ describe("settings authentication", () => {
 });
 
 describe("settings appearance theme selector", () => {
+  beforeEach(() => {
+    vi.spyOn(api, "updateSettings").mockResolvedValue({
+      theme: "system",
+      locale: "en",
+    });
+  });
+
   it("shows appearance section with light, dark, and system options", () => {
     render(Page);
 
@@ -204,6 +212,24 @@ describe("settings appearance theme selector", () => {
 
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
     expect(darkButton.classList.contains("active")).toBe(true);
+  });
+
+  it("rolls back and shows an error when persistence fails", async () => {
+    vi.mocked(api.updateSettings).mockRejectedValue(new Error("Network"));
+    const user = userEvent.setup();
+    render(Page);
+
+    await user.click(screen.getByRole("button", { name: "Dark" }));
+
+    await waitFor(() => {
+      expect(get(themePreference)).toBe("system");
+      expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("system");
+      expect(mockPushNotification).toHaveBeenCalledWith({
+        title: "Appearance",
+        variant: "error",
+        message: "Failed to save theme preference",
+      });
+    });
   });
 });
 
