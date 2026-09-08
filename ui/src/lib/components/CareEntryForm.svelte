@@ -10,7 +10,7 @@
     X as XIcon,
     Sparkles,
   } from "lucide-svelte";
-  import { addCareEvent } from "$lib/stores/care";
+  import { addCareEvent, careError } from "$lib/stores/care";
   import {
     deleteCareEventPhoto,
     updateCareEvent,
@@ -18,6 +18,7 @@
     type CareEvent,
     type EventType,
   } from "$lib/api";
+  import { resolveError } from "$lib/stores/errors";
   import { translations } from "$lib/stores/locale";
   import { isOffline } from "$lib/stores/network";
   import { pushNotification } from "$lib/stores/notifications";
@@ -171,11 +172,11 @@
           } else if (photoFile) {
             event = await uploadCareEventPhoto(plantId, event.id, photoFile);
           }
-        } catch {
+        } catch (error) {
           pushNotification({
             title: $translations.plant.careJournalSection,
             variant: "error",
-            message: $translations.error.updateCareEventPhoto,
+            message: resolveError(error, "updateCareEventPhoto"),
           });
           return;
         }
@@ -186,10 +187,12 @@
           occurred_at: occurredAtIso,
         });
         if (!createdEvent) {
+          const message = $careError ?? $translations.error.addCareEvent;
+          careError.set(null);
           pushNotification({
             title: $translations.plant.careJournalSection,
             variant: "error",
-            message: $translations.error.addCareEvent,
+            message,
           });
           return;
         }
@@ -202,13 +205,14 @@
 
       resetForm();
       await onsubmit(event);
-    } catch {
+    } catch (error) {
       pushNotification({
         title: $translations.plant.careJournalSection,
         variant: "error",
-        message: isEditing
-          ? $translations.error.updateCareEvent
-          : $translations.error.addCareEvent,
+        message: resolveError(
+          error,
+          isEditing ? "updateCareEvent" : "addCareEvent",
+        ),
       });
     } finally {
       submitting = false;

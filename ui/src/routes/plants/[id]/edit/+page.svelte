@@ -43,12 +43,13 @@
     saving = true;
     const updatedPlant = await updatePlant(plant.id, data);
     if (!updatedPlant) {
+      const message = $plantsError ?? $translations.error.updatePlant;
+      plantsError.set(null);
       pushNotification({
         title: $translations.plant.editPlant,
         variant: "error",
-        message: $translations.error.updatePlant,
+        message,
       });
-      plantsError.set(null);
       saving = false;
       return;
     }
@@ -58,12 +59,13 @@
     if (photo) {
       const uploaded = await uploadPhoto(updatedPlant.id, photo);
       if (!uploaded) {
+        const message = $plantsError ?? $translations.error.uploadPhoto;
+        plantsError.set(null);
         pushNotification({
           title: $translations.form.media,
           variant: "error",
-          message: $translations.error.uploadPhoto,
+          message,
         });
-        plantsError.set(null);
         saving = false;
         return;
       }

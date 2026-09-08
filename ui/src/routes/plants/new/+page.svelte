@@ -2,7 +2,12 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import type { CreatePlant } from "$lib/api";
-  import { createPlant, updatePlant, uploadPhoto } from "$lib/stores/plants";
+  import {
+    plantsError,
+    createPlant,
+    updatePlant,
+    uploadPhoto,
+  } from "$lib/stores/plants";
   import { translations } from "$lib/stores/locale";
   import { pushNotification } from "$lib/stores/notifications";
   import { isOffline } from "$lib/stores/network";
@@ -20,14 +25,18 @@
       : await createPlant(data);
 
     if (!plant) {
+      const message =
+        $plantsError ??
+        (draftPlantId
+          ? $translations.error.updatePlant
+          : $translations.error.createPlant);
+      plantsError.set(null);
       pushNotification({
         title: draftPlantId
           ? $translations.plant.editPlant
           : $translations.plant.addPlant,
         variant: "error",
-        message: draftPlantId
-          ? $translations.error.updatePlant
-          : $translations.error.createPlant,
+        message,
       });
       saving = false;
       return;
@@ -37,10 +46,12 @@
       const uploaded = await uploadPhoto(plant.id, photo);
       if (!uploaded) {
         draftPlantId = plant.id;
+        const message = $plantsError ?? $translations.error.uploadPhoto;
+        plantsError.set(null);
         pushNotification({
           title: $translations.form.media,
           variant: "error",
-          message: $translations.error.uploadPhoto,
+          message,
         });
         saving = false;
         return;

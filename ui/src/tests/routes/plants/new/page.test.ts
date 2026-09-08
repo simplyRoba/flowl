@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../../../routes/plants/new/+page.svelte";
 import type { Plant } from "$lib/api";
+import { plantsError } from "$lib/stores/plants";
 
 const mockCreatePlant = vi.fn();
 const mockUpdatePlant = vi.fn();
@@ -37,6 +38,7 @@ vi.mock("$lib/components/PlantForm.svelte", async () => {
 
 describe("new plant page", () => {
   beforeEach(() => {
+    plantsError.set(null);
     vi.clearAllMocks();
   });
 
@@ -60,6 +62,20 @@ describe("new plant page", () => {
       );
     });
     expect(mockGoto).not.toHaveBeenCalled();
+  });
+
+  it("shows a resolved API error when create fails", async () => {
+    plantsError.set("Plant name is required");
+    mockCreatePlant.mockResolvedValue(null);
+    render(Page);
+
+    await userEvent.setup().click(screen.getByText("Save without photo"));
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Plant name is required" }),
+      );
+    });
   });
 
   it("navigates after creating a plant without a photo", async () => {
@@ -104,11 +120,16 @@ describe("new plant page", () => {
 
   it("keeps the user on the form and reuses the created plant when photo upload fails", async () => {
     mockCreatePlant.mockResolvedValue({ id: 7, name: "Fern" });
-    mockUploadPhoto.mockResolvedValueOnce(null).mockResolvedValueOnce({
-      id: 7,
-      name: "Fern",
-      photo_url: "/uploads/fern.jpg",
-    });
+    mockUploadPhoto
+      .mockImplementationOnce(() => {
+        plantsError.set("File is too large");
+        return Promise.resolve(null);
+      })
+      .mockResolvedValueOnce({
+        id: 7,
+        name: "Fern",
+        photo_url: "/uploads/fern.jpg",
+      });
     mockUpdatePlant.mockResolvedValue({ id: 7, name: "Fern" });
     render(Page);
     const user = userEvent.setup();
@@ -120,7 +141,7 @@ describe("new plant page", () => {
         expect.objectContaining({
           title: "Media",
           variant: "error",
-          message: "Failed to upload photo",
+          message: "File is too large",
         }),
       );
     });

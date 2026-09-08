@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../../../../routes/plants/[id]/edit/+page.svelte";
 import type { Plant } from "$lib/api";
+import { plantsError } from "$lib/stores/plants";
 
 const mockUpdatePlant = vi.fn();
 const mockUploadPhoto = vi.fn();
@@ -74,6 +75,7 @@ function renderPage(overrides: Partial<Plant> = {}) {
 
 describe("edit plant page", () => {
   beforeEach(() => {
+    plantsError.set(null);
     vi.clearAllMocks();
   });
 
@@ -101,6 +103,21 @@ describe("edit plant page", () => {
       );
     });
     expect(mockGoto).not.toHaveBeenCalled();
+  });
+
+  it("shows a resolved API error when update fails", async () => {
+    plantsError.set("Plant name is required");
+    mockUpdatePlant.mockResolvedValue(null);
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByText("Save without photo"));
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Plant name is required" }),
+      );
+    });
   });
 
   it("navigates after updating without a new photo", async () => {
@@ -152,7 +169,10 @@ describe("edit plant page", () => {
 
   it("keeps the user on the form when photo upload fails", async () => {
     mockUpdatePlant.mockResolvedValue(plant());
-    mockUploadPhoto.mockResolvedValue(null);
+    mockUploadPhoto.mockImplementation(() => {
+      plantsError.set("File is too large");
+      return Promise.resolve(null);
+    });
     renderPage();
     const user = userEvent.setup();
 
@@ -166,7 +186,7 @@ describe("edit plant page", () => {
         expect.objectContaining({
           title: "Media",
           variant: "error",
-          message: "Failed to upload photo",
+          message: "File is too large",
         }),
       );
     });

@@ -13,27 +13,37 @@ const mockUploadCareEventPhoto = vi.fn();
 const mockDeleteCareEventPhoto = vi.fn();
 const mockPushNotification = vi.fn();
 
-vi.mock("$lib/stores/care", () => ({
-  addCareEvent: (...args: unknown[]) => mockAddCareEvent(...args),
-}));
+vi.mock("$lib/stores/care", async () => {
+  const { writable } = await import("svelte/store");
+  return {
+    careError: writable<string | null>(null),
+    addCareEvent: (...args: unknown[]) => mockAddCareEvent(...args),
+  };
+});
 
-vi.mock("$lib/api", () => ({
-  updateCareEvent: (...args: unknown[]) => mockUpdateCareEvent(...args),
-  uploadCareEventPhoto: (...args: unknown[]) =>
-    mockUploadCareEventPhoto(...args),
-  deleteCareEventPhoto: (...args: unknown[]) =>
-    mockDeleteCareEventPhoto(...args),
-}));
+vi.mock("$lib/api", async () => {
+  const actual = await vi.importActual<typeof import("$lib/api")>("$lib/api");
+  return {
+    ...actual,
+    updateCareEvent: (...args: unknown[]) => mockUpdateCareEvent(...args),
+    uploadCareEventPhoto: (...args: unknown[]) =>
+      mockUploadCareEventPhoto(...args),
+    deleteCareEventPhoto: (...args: unknown[]) =>
+      mockDeleteCareEventPhoto(...args),
+  };
+});
 
 vi.mock("$lib/stores/notifications", () => ({
   pushNotification: (...args: unknown[]) => mockPushNotification(...args),
 }));
 
 import CareEntryForm from "./CareEntryForm.svelte";
-import type { CareEvent } from "$lib/api";
+import { ApiError, type CareEvent } from "$lib/api";
+import { careError } from "$lib/stores/care";
 import { isOffline } from "$lib/stores/network";
 
 beforeEach(() => {
+  careError.set(null);
   vi.clearAllMocks();
   isOffline.set(false);
 });
@@ -138,6 +148,20 @@ describe("CareEntryForm", () => {
     });
   });
 
+  it("shows the resolved store error when adding an event fails", async () => {
+    careError.set("Invalid event type");
+    mockAddCareEvent.mockResolvedValue(null);
+    render(CareEntryForm, { props: defaultProps });
+    await fireEvent.click(screen.getByText("Fertilized"));
+    await fireEvent.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Invalid event type" }),
+      );
+    });
+  });
+
   it("initializes edit mode with the existing event values and photo", () => {
     const event = makeCareEvent({
       event_type: "pruned",
@@ -184,6 +208,22 @@ describe("CareEntryForm", () => {
       expect(screen.getByRole("button", { name: "Save" })).toHaveProperty(
         "disabled",
         false,
+      );
+    });
+  });
+
+  it("shows a localized API error when updating an event fails", async () => {
+    const event = makeCareEvent();
+    mockUpdateCareEvent.mockRejectedValue(
+      new ApiError(422, "CARE_EVENT_INVALID_TYPE", "Invalid event type"),
+    );
+    render(CareEntryForm, { props: { ...defaultProps, existingEvent: event } });
+
+    await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(mockPushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Invalid event type" }),
       );
     });
   });
@@ -277,13 +317,15 @@ describe("CareEntryForm", () => {
     });
   });
 
-  it("keeps edit input and selected replacement after a failed photo upload", async () => {
+  it("shows a localized API error and keeps edit input after a failed photo upload", async () => {
     const event = makeCareEvent({ photo_url: "/uploads/care/12.jpg" });
     const file = new File(["photo"], "replacement.jpg", {
       type: "image/jpeg",
     });
     mockUpdateCareEvent.mockResolvedValue(event);
-    mockUploadCareEventPhoto.mockRejectedValue(new Error("upload failed"));
+    mockUploadCareEventPhoto.mockRejectedValue(
+      new ApiError(422, "PHOTO_TOO_LARGE", "File is too large"),
+    );
     vi.stubGlobal("URL", {
       ...URL,
       createObjectURL: vi.fn(() => "blob:replacement"),
@@ -304,7 +346,7 @@ describe("CareEntryForm", () => {
     await waitFor(() => {
       expect(mockPushNotification).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: "Care entry was saved, but the photo change failed",
+          message: "File is too large",
         }),
       );
       expect(screen.getByDisplayValue("Keep this note")).toBeTruthy();
