@@ -73,13 +73,18 @@ async fn create_plant(app: &axum::Router) -> i64 {
     json["id"].as_i64().unwrap()
 }
 
-fn multipart_request(uri: &str, content_type: &str, data: &[u8]) -> Request<Body> {
+fn multipart_request(
+    uri: &str,
+    field_name: &str,
+    content_type: &str,
+    data: &[u8],
+) -> Request<Body> {
     let boundary = "----testboundary";
     let mut body_bytes = Vec::new();
     body_bytes.extend_from_slice(b"------testboundary\r\n");
     body_bytes.extend_from_slice(
         format!(
-            "Content-Disposition: form-data; name=\"file\"; filename=\"test.jpg\"\r\n\
+            "Content-Disposition: form-data; name=\"{field_name}\"; filename=\"test.jpg\"\r\n\
              Content-Type: {content_type}\r\n\r\n"
         )
         .as_bytes(),
@@ -378,6 +383,7 @@ async fn update_event_preserves_immutable_fields_photo_and_clears_notes() {
         .clone()
         .oneshot(multipart_request(
             &format!("/api/plants/{plant_id}/care/{event_id}/photo"),
+            "file",
             "image/jpeg",
             &[0xFF, 0xD8, 0xFF, 0xE0],
         ))
@@ -418,6 +424,36 @@ async fn update_event_preserves_immutable_fields_photo_and_clears_notes() {
     assert_eq!(response.status(), StatusCode::OK);
     let cleared = body_json(response).await;
     assert!(cleared["notes"].is_null());
+}
+
+#[tokio::test]
+async fn care_event_photo_rejects_non_file_field() {
+    let (app, _dir) = common::test_app_with_uploads().await;
+    let plant_id = create_plant(&app).await;
+
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"watered"}"#),
+        ))
+        .await
+        .unwrap();
+    let event_id = body_json(response).await["id"].as_i64().unwrap();
+
+    let response = app
+        .oneshot(multipart_request(
+            &format!("/api/plants/{plant_id}/care/{event_id}/photo"),
+            "photo",
+            "image/jpeg",
+            &[0xFF, 0xD8, 0xFF, 0xE0],
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(body_json(response).await["code"], "PHOTO_NO_FILE");
 }
 
 #[tokio::test]

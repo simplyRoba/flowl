@@ -428,11 +428,16 @@ pub async fn upload_care_event_photo(
     .map_err(db_error)?
     .ok_or(ApiError::NotFound("CARE_EVENT_NOT_FOUND"))?;
 
-    let field = multipart
-        .next_field()
-        .await
-        .map_err(|error| photo_multipart_error(&error))?
-        .ok_or(ApiError::Validation("PHOTO_NO_FILE"))?;
+    let field = loop {
+        let field = multipart
+            .next_field()
+            .await
+            .map_err(|error| photo_multipart_error(&error))?
+            .ok_or(ApiError::Validation("PHOTO_NO_FILE"))?;
+        if field.name() == Some("file") {
+            break field;
+        }
+    };
 
     let content_type = field.content_type().unwrap_or("").to_string();
     let data = field

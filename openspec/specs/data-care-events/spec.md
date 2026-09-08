@@ -280,6 +280,11 @@ The API SHALL accept a photo upload via `POST /api/plants/:id/care/:event_id/pho
 - **THEN** the image is accepted as managed media and associated with the care event
 - **AND** the API responds with HTTP 200 and the updated care event JSON
 
+#### Scenario: Incorrect multipart field
+
+- **WHEN** a multipart request contains image files only in fields other than `file`
+- **THEN** the API responds with HTTP 422 and error code `PHOTO_NO_FILE`
+
 #### Scenario: Replace existing photo
 
 - **WHEN** a photo is uploaded for a care event that already has a photo
