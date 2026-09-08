@@ -785,7 +785,11 @@ describe("care journal history loading", () => {
         has_more: true,
       })
       .mockRejectedValueOnce(
-        new ApiError(422, "CARE_EVENT_NOT_FOUND", "Care event not found"),
+        new ApiError(
+          422,
+          "CARE_EVENT_INVALID_CURSOR",
+          "Invalid care event cursor",
+        ),
       )
       .mockResolvedValueOnce({
         events: [

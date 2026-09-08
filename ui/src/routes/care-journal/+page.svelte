@@ -285,7 +285,7 @@
     } catch (e) {
       if (generation !== requestGeneration) return;
       continuationRequiresReset =
-        e instanceof ApiError && e.code === "CARE_EVENT_NOT_FOUND";
+        e instanceof ApiError && e.code === "CARE_EVENT_INVALID_CURSOR";
       continuationError = resolveError(e, "loadCareEvents");
     } finally {
       if (generation === requestGeneration) {
