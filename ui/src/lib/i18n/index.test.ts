@@ -34,6 +34,17 @@ describe("watering group date ranges", () => {
   );
 });
 
+describe("settings translations", () => {
+  it("localizes the AI-disabled hint", () => {
+    expect(de.settings.aiDisabledHint).toBe(
+      "FLOWL_AI_API_KEY setzen, um KI zu aktivieren.",
+    );
+    expect(es.settings.aiDisabledHint).toBe(
+      "Configura FLOWL_AI_API_KEY para activar la IA.",
+    );
+  });
+});
+
 describe("care-event error translations", () => {
   it.each([
     ["English", en],

@@ -248,7 +248,7 @@ export const es: Translations = {
     ai: "Asistente IA",
     aiEnabled: "Activado",
     aiDisabled: "Desactivado",
-    aiDisabledHint: "Set FLOWL_AI_API_KEY to enable.",
+    aiDisabledHint: "Configura FLOWL_AI_API_KEY para activar la IA.",
     provider: "Proveedor",
     model: "Modelo",
     data: "Datos",
