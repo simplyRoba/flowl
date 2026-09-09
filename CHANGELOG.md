@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.8.5](https://github.com/simplyRoba/flowl/compare/v1.8.4...v1.8.5) (2026-09-09)
+
+
+### Bug Fixes
+
+* **auth:** protect exact API root path ([4d7d1fa](https://github.com/simplyRoba/flowl/commit/4d7d1fa8a0410615af281f4d4f43052cec7fdf04))
+* enforce care photo multipart field ([9d9b0a6](https://github.com/simplyRoba/flowl/commit/9d9b0a6fe4d6f389fabadec3e88d3fdb3e4704f0))
+* handle invalid care journal cursors ([0bdbb8f](https://github.com/simplyRoba/flowl/commit/0bdbb8f2cb84e75b4b64ba3b6ff1e492219af2b8))
+* keep data controls when stats fail ([a2287b2](https://github.com/simplyRoba/flowl/commit/a2287b21bd4f1ea5d02e510b0730562a980a0f4f))
+* localize AI disabled hint ([1f716b8](https://github.com/simplyRoba/flowl/commit/1f716b85059332a7a4a23b1cefb6b1a8269c78d0))
+* preserve localized mutation errors ([65c86aa](https://github.com/simplyRoba/flowl/commit/65c86aa91262b0ae9eb4de653ca12f51a03ac7b1))
+* reconcile backend theme on startup ([41c92fe](https://github.com/simplyRoba/flowl/commit/41c92fe33b32060f5ea29152fc6ccb7fcba61a39))
+* release chat photo previews ([6237582](https://github.com/simplyRoba/flowl/commit/62375822fbf8320f6e0b6598fe18248c9f2b8cd6))
+* **settings:** focus location rename input ([70d2b56](https://github.com/simplyRoba/flowl/commit/70d2b5659c58b15dd8dc682baa4580105f6785ea))
+* **theme:** roll back failed preference saves ([dd992fd](https://github.com/simplyRoba/flowl/commit/dd992fdb19cce8dbf3f49202f85048ca77041370))
+
+
+### Documentation
+
+* specify frontend behavior over internals ([bc19a64](https://github.com/simplyRoba/flowl/commit/bc19a64c2cb009476847454288a998ef9893d2e0))
+* **specs:** require behavior-only requirements ([7ec2268](https://github.com/simplyRoba/flowl/commit/7ec226843c04c0aa213b991c13d5734651864a92))
+
+
+### Dependencies
+
+* bump @testing-library/user-event from 14.6.6 to 14.6.7 in /ui ([03188cd](https://github.com/simplyRoba/flowl/commit/03188cd290dd4a78c4ba3bb25f2705a25245dbc2))
+* bump globals from 17.11.0 to 17.12.0 in /ui ([4890ba4](https://github.com/simplyRoba/flowl/commit/4890ba4201cfa3dfd90a349635af746fbb87c609))
+* bump semver from 1.0.27 to 1.0.28 ([31cdfbe](https://github.com/simplyRoba/flowl/commit/31cdfbe88c9d7835e67d594ba6ad80f3f29e786b))
+* bump the eslint group in /ui with 2 updates ([f4b3c51](https://github.com/simplyRoba/flowl/commit/f4b3c51ac9bd88d4329dcc036184e3cc3fdc768c))
+* bump tower-http from 0.7.0 to 0.7.1 ([9e0bb6e](https://github.com/simplyRoba/flowl/commit/9e0bb6e57caea7d3912c032147b9ba764a9fc4d5))
+* bump vitest from 4.1.11 to 5.0.0 in /ui ([306ad7c](https://github.com/simplyRoba/flowl/commit/306ad7c032e841e6a07d2eca42e05931cb5fcff9))
+
 ## [1.8.4](https://github.com/simplyRoba/flowl/compare/v1.8.3...v1.8.4) (2026-09-06)
 
 
