@@ -168,6 +168,46 @@ describe("ChatDrawer", () => {
     expect(view.container.querySelector(".summary-photo-preview")).toBeNull();
   });
 
+  it("aborts an active stream before closing without applying later output", async () => {
+    let receivedSignal: AbortSignal | undefined;
+    vi.mocked(api.chatPlant).mockImplementation(
+      async function* (_plantId, _message, _history, signal) {
+        receivedSignal = signal;
+        yield "First response";
+        await new Promise<void>((_resolve, reject) => {
+          signal?.addEventListener(
+            "abort",
+            () => reject(new DOMException("Aborted", "AbortError")),
+            { once: true },
+          );
+        });
+        yield "Late response";
+      },
+    );
+    const onclose = vi.fn();
+    const view = render(ChatDrawer, {
+      props: { ...defaultProps, onclose },
+    });
+
+    await fireEvent.input(screen.getByPlaceholderText(/Ask about/), {
+      target: { value: "How is my plant?" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() =>
+      expect(screen.getByText("First response")).toBeTruthy(),
+    );
+
+    await fireEvent.click(screen.getByRole("button", { name: "Close chat" }));
+
+    expect(receivedSignal?.aborted).toBe(true);
+    expect(onclose).toHaveBeenCalledOnce();
+    expect(screen.queryByText("Late response")).toBeNull();
+
+    await view.rerender({ ...defaultProps, onclose, open: false });
+    await view.rerender({ ...defaultProps, onclose, open: true });
+    expect(screen.queryByText("Late response")).toBeNull();
+  });
+
   it("shows 'when to repot' chip when species is known", () => {
     render(ChatDrawer, { props: defaultProps });
     expect(screen.getByText("When to repot?")).toBeTruthy();
