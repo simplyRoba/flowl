@@ -168,6 +168,7 @@
     editError = "";
     await tick();
     const input = document.querySelector<HTMLInputElement>(".edit-input");
+    input?.focus();
     input?.select();
   }
 

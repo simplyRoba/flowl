@@ -312,6 +312,21 @@ describe("settings locations section", () => {
     expect(screen.getByText("Failed to load")).toBeTruthy();
   });
 
+  it("focuses and selects the location name when editing starts", async () => {
+    locations.set([{ id: 1, name: "Bedroom", plant_count: 0 }]);
+    render(Page);
+
+    const editButton = document.querySelector(
+      ".location-actions .btn-icon",
+    ) as HTMLButtonElement;
+    await userEvent.setup().click(editButton);
+
+    const input = document.querySelector(".edit-input") as HTMLInputElement;
+    expect(document.activeElement).toBe(input);
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe("Bedroom".length);
+  });
+
   it("keeps rename conflicts inline", async () => {
     locations.set([{ id: 1, name: "Bedroom", plant_count: 0 }]);
     mockUpdateLocation.mockResolvedValue({ error: "Location already exists" });
