@@ -73,6 +73,37 @@ async fn create_plant(app: &axum::Router) -> i64 {
     json["id"].as_i64().unwrap()
 }
 
+async fn create_care_event(app: &axum::Router, plant_id: i64) -> i64 {
+    let response = app
+        .clone()
+        .oneshot(json_request(
+            "POST",
+            &format!("/api/plants/{plant_id}/care"),
+            Some(r#"{"event_type":"watered"}"#),
+        ))
+        .await
+        .unwrap();
+    body_json(response).await["id"].as_i64().unwrap()
+}
+
+fn tiny_png() -> Vec<u8> {
+    let image = image::RgbImage::from_pixel(100, 80, image::Rgb([0, 0, 255]));
+    let mut bytes = io::Cursor::new(Vec::new());
+    image.write_to(&mut bytes, image::ImageFormat::Png).unwrap();
+    bytes.into_inner()
+}
+
+fn media_paths(directory: &std::path::Path, filename: &str) -> Vec<std::path::PathBuf> {
+    let stem = std::path::Path::new(filename)
+        .file_stem()
+        .unwrap()
+        .to_str()
+        .unwrap();
+    let mut paths = vec![directory.join(filename)];
+    paths.extend([200, 600, 1000].map(|size| directory.join(format!("{stem}_{size}.jpg"))));
+    paths
+}
+
 fn multipart_request(
     uri: &str,
     field_name: &str,
@@ -454,6 +485,183 @@ async fn care_event_photo_rejects_non_file_field() {
 
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(body_json(response).await["code"], "PHOTO_NO_FILE");
+}
+
+#[tokio::test]
+async fn care_event_photo_replacement_removes_prior_media() {
+    let (app, dir) = common::test_app_with_uploads().await;
+    let plant_id = create_plant(&app).await;
+    let event_id = create_care_event(&app, plant_id).await;
+    let data = tiny_png();
+    let uri = format!("/api/plants/{plant_id}/care/{event_id}/photo");
+
+    let response = app
+        .clone()
+        .oneshot(multipart_request(&uri, "file", "image/png", &data))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let first = body_json(response).await;
+    let first_filename = first["photo_url"]
+        .as_str()
+        .unwrap()
+        .strip_prefix("/uploads/")
+        .unwrap();
+    let first_paths = media_paths(dir.path(), first_filename);
+    assert!(first_paths.iter().all(|path| path.exists()));
+
+    let response = app
+        .oneshot(multipart_request(&uri, "file", "image/png", &data))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let replacement = body_json(response).await;
+    let replacement_filename = replacement["photo_url"]
+        .as_str()
+        .unwrap()
+        .strip_prefix("/uploads/")
+        .unwrap();
+
+    assert!(first_paths.iter().all(|path| !path.exists()));
+    assert!(
+        media_paths(dir.path(), replacement_filename)
+            .iter()
+            .all(|path| path.exists())
+    );
+}
+
+#[tokio::test]
+async fn care_event_photo_rejects_invalid_type_and_oversize() {
+    let (app, _dir) = common::test_app_with_uploads().await;
+    let plant_id = create_plant(&app).await;
+    let event_id = create_care_event(&app, plant_id).await;
+    let uri = format!("/api/plants/{plant_id}/care/{event_id}/photo");
+
+    let response = app
+        .clone()
+        .oneshot(multipart_request(
+            &uri,
+            "file",
+            "text/plain",
+            b"not an image",
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(body_json(response).await["code"], "PHOTO_INVALID_TYPE");
+
+    let mut oversized = vec![0_u8; 6 * 1024 * 1024];
+    oversized[..3].copy_from_slice(&[0xFF, 0xD8, 0xFF]);
+    let response = app
+        .oneshot(multipart_request(&uri, "file", "image/jpeg", &oversized))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(body_json(response).await["code"], "PHOTO_TOO_LARGE");
+}
+
+#[tokio::test]
+async fn care_event_photo_upload_rejects_missing_event() {
+    let (app, _dir) = common::test_app_with_uploads().await;
+    let plant_id = create_plant(&app).await;
+
+    let response = app
+        .oneshot(multipart_request(
+            &format!("/api/plants/{plant_id}/care/999/photo"),
+            "file",
+            "image/png",
+            &tiny_png(),
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    assert_eq!(body_json(response).await["code"], "CARE_EVENT_NOT_FOUND");
+}
+
+#[tokio::test]
+async fn care_event_photo_delete_removes_media_and_rejects_repeat() {
+    let (app, dir) = common::test_app_with_uploads().await;
+    let plant_id = create_plant(&app).await;
+    let event_id = create_care_event(&app, plant_id).await;
+    let uri = format!("/api/plants/{plant_id}/care/{event_id}/photo");
+
+    let response = app
+        .clone()
+        .oneshot(multipart_request(&uri, "file", "image/png", &tiny_png()))
+        .await
+        .unwrap();
+    let uploaded = body_json(response).await;
+    let filename = uploaded["photo_url"]
+        .as_str()
+        .unwrap()
+        .strip_prefix("/uploads/")
+        .unwrap();
+    let paths = media_paths(dir.path(), filename);
+    assert!(paths.iter().all(|path| path.exists()));
+
+    let response = app
+        .clone()
+        .oneshot(json_request("DELETE", &uri, None))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    assert!(paths.iter().all(|path| !path.exists()));
+
+    let response = app
+        .oneshot(json_request("DELETE", &uri, None))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    assert_eq!(body_json(response).await["code"], "PHOTO_NOT_FOUND");
+}
+
+#[tokio::test]
+async fn plant_deletion_makes_care_event_media_recoverable() {
+    let (app, pool, dir) = app_with_pool().await;
+    let plant_id = create_plant(&app).await;
+    let event_id = create_care_event(&app, plant_id).await;
+
+    let response = app
+        .clone()
+        .oneshot(multipart_request(
+            &format!("/api/plants/{plant_id}/care/{event_id}/photo"),
+            "file",
+            "image/png",
+            &tiny_png(),
+        ))
+        .await
+        .unwrap();
+    let uploaded = body_json(response).await;
+    let filename = uploaded["photo_url"]
+        .as_str()
+        .unwrap()
+        .strip_prefix("/uploads/")
+        .unwrap();
+    let paths = media_paths(dir.path(), filename);
+    assert!(paths.iter().all(|path| path.exists()));
+
+    let response = app
+        .oneshot(json_request(
+            "DELETE",
+            &format!("/api/plants/{plant_id}"),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    let remaining_events: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM care_events WHERE plant_id = ?")
+            .bind(plant_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(remaining_events, 0);
+
+    flowl::images::ImageStore::new(dir.path().to_path_buf())
+        .cleanup_orphans(&pool)
+        .await;
+    assert!(paths.iter().all(|path| !path.exists()));
 }
 
 #[tokio::test]
