@@ -636,7 +636,7 @@
     </section>
   {/if}
 
-  {#if !$isOffline && stats}
+  {#if !$isOffline}
     <section class="section settings-section">
       <h2 class="section-title">
         <Database size={14} />
@@ -678,21 +678,23 @@
           </button>
         </span>
       </div>
-      <div class="about-row">
-        <span class="setting-label">{$translations.settings.statsLabel}</span>
-        <span
-          >{plural($translations.settings.statsPlants, stats.plant_count)}, {plural(
-            $translations.settings.statsPhotos,
-            stats.photo_count,
-          )}, {plural(
-            $translations.settings.statsCareEvents,
-            stats.care_event_count,
-          )}, {plural(
-            $translations.settings.statsLocations,
-            stats.location_count,
-          )}</span
-        >
-      </div>
+      {#if stats}
+        <div class="about-row">
+          <span class="setting-label">{$translations.settings.statsLabel}</span>
+          <span
+            >{plural($translations.settings.statsPlants, stats.plant_count)}, {plural(
+              $translations.settings.statsPhotos,
+              stats.photo_count,
+            )}, {plural(
+              $translations.settings.statsCareEvents,
+              stats.care_event_count,
+            )}, {plural(
+              $translations.settings.statsLocations,
+              stats.location_count,
+            )}</span
+          >
+        </div>
+      {/if}
     </section>
   {/if}
 

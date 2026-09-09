@@ -384,6 +384,16 @@ describe("settings data section export/import", () => {
     expect(screen.getByRole("button", { name: /Import/ })).toBeTruthy();
   });
 
+  it("keeps Export and Import available when stats fail", async () => {
+    vi.mocked(api.fetchStats).mockRejectedValueOnce(new Error("stats failed"));
+
+    render(Page);
+
+    expect(await screen.findByRole("button", { name: /Export/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Import/ })).toBeTruthy();
+    expect(screen.queryByText("Statistics")).toBeNull();
+  });
+
   it("export button navigates to export URL", async () => {
     const exportSpy = vi.spyOn(api, "exportData").mockResolvedValue();
 
