@@ -1,6 +1,6 @@
 mod common;
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use axum::Router;
@@ -9,6 +9,7 @@ use axum::http::{Request, StatusCode};
 use flowl::ai::provider::AiProvider;
 use flowl::ai::types::{ChatMessage, ChatResponseStream, IdentifyResponse, IdentifyResult};
 use flowl::state::{AiRateLimiter, AppState};
+use sqlx::SqlitePool;
 use tower::ServiceExt;
 
 struct MockAiProvider;
@@ -37,6 +38,61 @@ impl AiProvider for MockAiProvider {
                     care_profile: None,
                 },
             ],
+            rejected: Some(false),
+            rejected_reason: None,
+        })
+    }
+
+    async fn chat(
+        &self,
+        _system_prompt: &str,
+        _messages: &[ChatMessage],
+        _image: Option<&[u8]>,
+        _locale: &str,
+    ) -> Result<ChatResponseStream, Box<dyn std::error::Error + Send + Sync>> {
+        unimplemented!()
+    }
+
+    async fn summarize(
+        &self,
+        _system_prompt: &str,
+        _messages: &[ChatMessage],
+        _locale: &str,
+    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+struct IdentifyCall {
+    images: Vec<Vec<u8>>,
+    locale: String,
+}
+
+#[derive(Default)]
+struct RecordingAiProvider {
+    calls: Mutex<Vec<IdentifyCall>>,
+}
+
+#[async_trait]
+impl AiProvider for RecordingAiProvider {
+    async fn identify(
+        &self,
+        images: &[&[u8]],
+        locale: &str,
+    ) -> Result<IdentifyResponse, Box<dyn std::error::Error + Send + Sync>> {
+        self.calls.lock().unwrap().push(IdentifyCall {
+            images: images.iter().map(|image| image.to_vec()).collect(),
+            locale: locale.to_string(),
+        });
+        Ok(IdentifyResponse {
+            suggestions: vec![IdentifyResult {
+                common_name: "Recorded plant".to_string(),
+                scientific_name: "Planta recordata".to_string(),
+                confidence: Some(0.9),
+                summary: None,
+                care_profile: None,
+            }],
             rejected: Some(false),
             rejected_reason: None,
         })
@@ -118,6 +174,33 @@ async fn test_app_with_provider(provider: Arc<dyn AiProvider>) -> (Router, tempf
 
 async fn test_app_mock() -> (Router, tempfile::TempDir) {
     test_app_with_provider(Arc::new(MockAiProvider)).await
+}
+
+async fn test_app_recording() -> (
+    Router,
+    SqlitePool,
+    Arc<RecordingAiProvider>,
+    tempfile::TempDir,
+) {
+    let pool = common::test_pool().await;
+    let tmp = tempfile::TempDir::new().expect("Failed to create temp dir");
+    let provider = Arc::new(RecordingAiProvider::default());
+    let state = AppState {
+        pool: pool.clone(),
+        image_store: flowl::images::ImageStore::new(tmp.path().to_path_buf()),
+        mqtt_client: None,
+        mqtt_prefix: "flowl".to_string(),
+        mqtt_connected: None,
+        mqtt_host: "localhost".to_string(),
+        mqtt_port: 1883,
+        mqtt_disabled: true,
+        ai_provider: Some(provider.clone()),
+        ai_base_url: "https://api.openai.com/v1".to_string(),
+        ai_model: "gpt-4.1-mini".to_string(),
+        ai_rate_limiter: None,
+        auth: None,
+    };
+    (flowl::server::router(state), pool, provider, tmp)
 }
 
 async fn test_app_rate_limited() -> (Router, tempfile::TempDir) {
@@ -285,6 +368,80 @@ async fn identify_returns_200_for_multiple_photos() {
     assert!(!suggestions.is_empty());
     assert_eq!(suggestions[0]["common_name"], "Monstera");
     assert_eq!(suggestions[0]["scientific_name"], "Monstera deliciosa");
+}
+
+#[tokio::test]
+async fn identify_forwards_each_photo_in_order_and_uses_saved_locale() {
+    const JPEG: &[u8] = &[0xFF, 0xD8, 0xFF, 1];
+    const PNG: &[u8] = &[0x89, 0x50, 0x4E, 0x47, 2];
+    const WEBP: &[u8] = &[0x52, 0x49, 0x46, 0x46, 3];
+
+    let (app, pool, provider, _dir) = test_app_recording().await;
+    sqlx::query("UPDATE user_settings SET locale = 'de' WHERE id = 1")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let requests: Vec<Vec<(&str, &str, &[u8])>> = vec![
+        vec![("photos", "image/jpeg", JPEG)],
+        vec![("photos", "image/jpeg", JPEG), ("photos", "image/png", PNG)],
+        vec![
+            ("photos", "image/jpeg", JPEG),
+            ("photos", "image/png", PNG),
+            ("photos", "image/webp", WEBP),
+        ],
+    ];
+
+    for parts in requests {
+        let (content_type, body) = multipart_body(&parts);
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/ai/identify")
+                    .header("content-type", content_type)
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    let calls = provider.calls.lock().unwrap();
+    assert_eq!(calls.len(), 3);
+    assert_eq!(calls[0].images, vec![JPEG]);
+    assert_eq!(calls[1].images, vec![JPEG, PNG]);
+    assert_eq!(calls[2].images, vec![JPEG, PNG, WEBP]);
+    assert!(calls.iter().all(|call| call.locale == "de"));
+}
+
+#[tokio::test]
+async fn identify_defaults_locale_to_english_when_settings_are_missing() {
+    let (app, pool, provider, _dir) = test_app_recording().await;
+    sqlx::query("DELETE FROM user_settings")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let jpeg: &[u8] = &[0xFF, 0xD8, 0xFF];
+    let (content_type, body) = multipart_body(&[("photos", "image/jpeg", jpeg)]);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/ai/identify")
+                .header("content-type", content_type)
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let calls = provider.calls.lock().unwrap();
+    assert_eq!(calls.len(), 1);
+    assert_eq!(calls[0].locale, "en");
 }
 
 #[tokio::test]
