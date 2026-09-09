@@ -7,7 +7,7 @@ use axum::extract::Request;
 use axum::http::{StatusCode, Uri};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Json, Redirect, Response};
-use axum::routing::{get, post};
+use axum::routing::{any, get, post};
 use serde_json::{Value, json};
 use sqlx::SqlitePool;
 use tokio::net::TcpListener;
@@ -78,6 +78,7 @@ fn enabled_router(state: &AppState) -> Router {
                 require_api_auth,
             )),
         )
+        .route("/api", any(authenticated_api_root))
         .nest(
             "/api",
             api::router(api_state).layer(middleware::from_fn_with_state(
@@ -118,6 +119,17 @@ async fn no_store_auth_responses(request: Request, next: Next) -> Response {
         );
     }
     response
+}
+
+async fn authenticated_api_root(
+    Extension(auth): Extension<Arc<auth::AuthState>>,
+    session: Session,
+) -> Response {
+    if has_session(auth.as_ref(), Some(session)).await {
+        StatusCode::NOT_FOUND.into_response()
+    } else {
+        ApiError::Unauthorized("AUTHENTICATION_REQUIRED").into_response()
+    }
 }
 
 async fn require_api_auth(

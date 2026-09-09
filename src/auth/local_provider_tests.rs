@@ -2066,7 +2066,7 @@ async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_co
             "{path}"
         );
     }
-    for path in ["/api/info", "/api/ai/status"] {
+    for path in ["/api", "/api/info", "/api/ai/status"] {
         let api = app
             .clone()
             .oneshot(request(path, None))
