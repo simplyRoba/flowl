@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Plant } from "$lib/api";
 import { isOffline } from "$lib/stores/network";
@@ -19,6 +25,7 @@ vi.mock("$lib/stores/notifications", () => ({
 }));
 
 import ChatDrawer from "./ChatDrawer.svelte";
+import * as api from "$lib/api";
 
 function makePlant(overrides: Partial<Plant> = {}): Plant {
   return {
@@ -75,6 +82,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 describe("ChatDrawer", () => {
@@ -94,6 +102,70 @@ describe("ChatDrawer", () => {
     expect(screen.getByText("Health check")).toBeTruthy();
     expect(screen.getByText("Watering advice")).toBeTruthy();
     expect(screen.getByText("Light requirements")).toBeTruthy();
+  });
+
+  it("releases a staged photo preview when closed", async () => {
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL: vi.fn(() => "blob:attached"),
+      revokeObjectURL,
+    });
+    const view = render(ChatDrawer, { props: defaultProps });
+    const fileInput = view.container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File(["photo"], "plant.jpg", { type: "image/jpeg" });
+    Object.defineProperty(fileInput, "files", { value: [file] });
+
+    await fireEvent.change(fileInput);
+    expect(view.container.querySelector(".photo-preview-strip")).not.toBeNull();
+
+    await fireEvent.click(screen.getByRole("button", { name: "Close chat" }));
+
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:attached");
+    expect(view.container.querySelector(".photo-preview-strip")).toBeNull();
+    expect(defaultProps.onclose).toHaveBeenCalled();
+  });
+
+  it("releases the save-note photo preview when removed", async () => {
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL: vi
+        .fn()
+        .mockReturnValueOnce("blob:attached")
+        .mockReturnValueOnce("blob:last-user-photo"),
+      revokeObjectURL,
+    });
+    vi.mocked(api.chatPlant).mockImplementation(async function* () {
+      yield "Advice";
+    });
+    vi.mocked(api.summarizeChat).mockResolvedValue("Summary");
+    const view = render(ChatDrawer, { props: defaultProps });
+    const fileInput = view.container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File(["photo"], "plant.jpg", { type: "image/jpeg" });
+    Object.defineProperty(fileInput, "files", { value: [file] });
+
+    await fireEvent.change(fileInput);
+    await fireEvent.input(screen.getByPlaceholderText(/Ask about/), {
+      target: { value: "What is wrong?" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(screen.getByText("Advice")).toBeTruthy());
+    await fireEvent.click(screen.getByText("Create note"));
+    await waitFor(() =>
+      expect(
+        view.container.querySelector(".summary-photo-preview"),
+      ).not.toBeNull(),
+    );
+
+    await fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
+
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:last-user-photo");
+    expect(view.container.querySelector(".summary-photo-preview")).toBeNull();
   });
 
   it("shows 'when to repot' chip when species is known", () => {

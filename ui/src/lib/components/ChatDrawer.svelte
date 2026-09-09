@@ -127,6 +127,13 @@
     attachedPreview = null;
   }
 
+  function clearLastUserPhoto() {
+    if (lastUserPhotoPreview) URL.revokeObjectURL(lastUserPhotoPreview);
+    lastUserPhoto = null;
+    lastUserPhotoPreview = null;
+    saveNotePhoto = false;
+  }
+
   function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -285,9 +292,7 @@
       }
       editingSummary = false;
       summaryText = "";
-      lastUserPhoto = null;
-      if (lastUserPhotoPreview) URL.revokeObjectURL(lastUserPhotoPreview);
-      lastUserPhotoPreview = null;
+      clearLastUserPhoto();
       onsave?.();
       pushNotification({
         title: $translations.care.title,
@@ -313,6 +318,8 @@
     if (abortController) {
       abortController.abort();
     }
+    clearPhoto();
+    clearLastUserPhoto();
     onclose();
   }
 
@@ -503,9 +510,7 @@
             <img src={lastUserPhotoPreview} alt="" />
             <button
               class="photo-preview-remove"
-              onclick={() => {
-                saveNotePhoto = false;
-              }}
+              onclick={clearLastUserPhoto}
               aria-label={$translations.chat.removePhoto}
             >
               <X size={12} />
