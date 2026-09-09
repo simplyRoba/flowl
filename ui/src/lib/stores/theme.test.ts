@@ -79,6 +79,28 @@ describe("theme preference save", () => {
     apiMocks.updateSettings.mockReset().mockResolvedValue({});
   });
 
+  it("applies a backend preference after local startup initialization", () => {
+    localStorage.setItem(THEME_STORAGE_KEY, "light");
+    initTheme();
+
+    initTheme("dark");
+
+    expect(get(themePreference)).toBe("dark");
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
+    expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
+  it("keeps a user selection made before the backend response", async () => {
+    initTheme();
+    await setThemePreference("dark");
+
+    initTheme("light");
+
+    expect(get(themePreference)).toBe("dark");
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
+    expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
   it("rolls back the visible and local preference when saving fails", async () => {
     initTheme("light");
     apiMocks.updateSettings.mockRejectedValue(new Error("Network"));

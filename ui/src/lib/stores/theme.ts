@@ -91,13 +91,21 @@ function applyTheme(theme: ThemeMode): void {
 }
 
 let initialized = false;
+let selectedByUser = false;
 let cleanup: (() => void) | null = null;
 
 export function initTheme(serverPreference?: ThemePreference): void {
-  if (typeof window === "undefined" || initialized) return;
-  initialized = true;
+  if (typeof window === "undefined") return;
 
   const storage = getStorage();
+  if (initialized) {
+    if (!serverPreference || selectedByUser) return;
+    themePreference.set(serverPreference);
+    writeThemePreference(storage, serverPreference);
+    return;
+  }
+  initialized = true;
+
   const preference = serverPreference ?? readThemePreference(storage);
   themePreference.set(preference);
   if (serverPreference) writeThemePreference(storage, serverPreference);
@@ -125,11 +133,13 @@ export function destroyTheme(): void {
   cleanup?.();
   cleanup = null;
   initialized = false;
+  selectedByUser = false;
 }
 
 export async function setThemePreference(
   preference: ThemePreference,
 ): Promise<boolean> {
+  selectedByUser = true;
   const previousPreference = get(themePreference);
   themePreference.set(preference);
   writeThemePreference(getStorage(), preference);
