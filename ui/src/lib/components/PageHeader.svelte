@@ -1,16 +1,12 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
+  import type { Path } from "$app/types";
   import { ArrowLeft } from "lucide-svelte";
   import type { Snippet } from "svelte";
-  import { translations } from "$lib/stores/locale";
+  import { translations } from "#lib/stores/locale.js";
 
-  type PageHeaderHref =
-    | "/"
-    | "/care-journal"
-    | "/plants"
-    | "/settings"
-    | `/plants/${string}`
-    | `/plants/${string}/edit`;
+  // Absolute app pathname; resolve() expects it without the leading slash.
+  type PageHeaderHref = `/${Path}`;
 
   let {
     backHref,
@@ -23,11 +19,12 @@
   } = $props();
 
   let resolvedLabel = $derived(backLabel || $translations.common.back);
+  let resolvedHref = $derived(resolve(backHref.slice(1) as Path));
 </script>
 
 <!-- Desktop: inline header row -->
 <div class="page-header-inline">
-  <a href={resolve(backHref)} class="back-link">
+  <a href={resolvedHref} class="back-link">
     <ArrowLeft size={16} />
     {resolvedLabel}
   </a>
@@ -40,7 +37,7 @@
 
 <!-- Mobile: fixed bottom action bar -->
 <div class="action-bar">
-  <a href={resolve(backHref)} class="action-bar-back">
+  <a href={resolvedHref} class="action-bar-back">
     <ArrowLeft size={16} />
     {resolvedLabel}
   </a>

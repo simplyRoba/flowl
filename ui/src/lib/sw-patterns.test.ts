@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isCacheableApi, isThumbnail } from "$lib/sw-patterns";
+import { isCacheableApi, isThumbnail } from "#lib/sw-patterns.js";
 
 describe("isCacheableApi", () => {
   it("matches /api/plants", () => {

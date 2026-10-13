@@ -2,7 +2,7 @@ import { cleanup, render, screen, fireEvent } from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import IconPicker from "./IconPicker.svelte";
 
-vi.mock("$lib/emoji", () => ({
+vi.mock("#lib/emoji.js", () => ({
   emojiToSvgPath: (emoji: string) => `/noto/${emoji}.svg`,
 }));
 

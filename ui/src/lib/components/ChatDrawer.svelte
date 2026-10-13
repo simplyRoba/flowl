@@ -2,7 +2,7 @@
   import { onMount, tick } from "svelte";
   import { fly } from "svelte/transition";
   import { Sparkles, X, Send, BookOpen, Camera } from "lucide-svelte";
-  import { translations } from "$lib/stores/locale";
+  import { translations } from "#lib/stores/locale.js";
   import {
     chatPlant,
     summarizeChat,
@@ -10,10 +10,10 @@
     uploadCareEventPhoto,
     type ChatMessage,
     type Plant,
-  } from "$lib/api";
-  import { resolveError } from "$lib/stores/errors";
-  import { pushNotification } from "$lib/stores/notifications";
-  import { isOffline } from "$lib/stores/network";
+  } from "#lib/api.js";
+  import { resolveError } from "#lib/stores/errors.js";
+  import { pushNotification } from "#lib/stores/notifications.js";
+  import { isOffline } from "#lib/stores/network.js";
 
   let {
     plant,

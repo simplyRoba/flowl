@@ -2,7 +2,8 @@ import { cleanup, render, screen } from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("$app/paths", () => ({
-  resolve: (value: string) => value,
+  // Mirrors Kit 3: route IDs start with "/", plain paths get a "/" prefix.
+  resolve: (value: string) => (value.startsWith("/") ? value : `/${value}`),
 }));
 
 import PageHeader from "./PageHeader.svelte";

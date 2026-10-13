@@ -1,22 +1,23 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError, type Plant } from "$lib/api";
+import { ApiError, type Plant } from "#lib/api.js";
 
 const mockIdentifyPlant = vi.fn();
 const mockLoadAiStatus = vi.fn();
 const mockLoadLocations = vi.fn();
 const mockFetch = vi.fn();
 
-vi.mock("$lib/api", async () => {
-  const actual = await vi.importActual<typeof import("$lib/api")>("$lib/api");
+vi.mock("#lib/api.js", async () => {
+  const actual =
+    await vi.importActual<typeof import("#lib/api.js")>("#lib/api.js");
   return {
     ...actual,
     identifyPlant: (...args: unknown[]) => mockIdentifyPlant(...args),
   };
 });
 
-vi.mock("$lib/stores/ai", async () => {
+vi.mock("#lib/stores/ai.js", async () => {
   const { writable } = await import("svelte/store");
   const aiStatus = writable({ enabled: true, base_url: null, model: null });
   return {
@@ -25,7 +26,7 @@ vi.mock("$lib/stores/ai", async () => {
   };
 });
 
-vi.mock("$lib/stores/locations", async () => {
+vi.mock("#lib/stores/locations.js", async () => {
   const { writable } = await import("svelte/store");
   return {
     locations: writable([]),
@@ -35,7 +36,7 @@ vi.mock("$lib/stores/locations", async () => {
 });
 
 import PlantForm from "./PlantForm.svelte";
-import { aiStatus } from "$lib/stores/ai";
+import { aiStatus } from "#lib/stores/ai.js";
 
 function makePlant(overrides: Partial<Plant> = {}): Plant {
   return {

@@ -11,7 +11,7 @@ import {
   clearNotifications,
   dismissNotification,
   pushNotification,
-} from "$lib/stores/notifications";
+} from "#lib/stores/notifications.js";
 
 describe("ToastHost", () => {
   function setViewportWidth(width: number) {

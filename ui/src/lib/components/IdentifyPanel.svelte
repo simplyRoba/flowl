@@ -8,10 +8,10 @@
     ChevronLeft,
     ChevronRight,
   } from "lucide-svelte";
-  import type { IdentifyResult } from "$lib/api";
-  import { ApiError, fetchBlob, identifyPlant } from "$lib/api";
-  import { resolveError } from "$lib/stores/errors";
-  import { translations } from "$lib/stores/locale";
+  import type { IdentifyResult } from "#lib/api.js";
+  import { ApiError, fetchBlob, identifyPlant } from "#lib/api.js";
+  import { resolveError } from "#lib/stores/errors.js";
+  import { translations } from "#lib/stores/locale.js";
 
   let {
     photoFile = null,

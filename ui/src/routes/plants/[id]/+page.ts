@@ -1,4 +1,4 @@
-import { fetchJson, type Plant } from "$lib/api";
+import { fetchJson, type Plant } from "#lib/api.js";
 import type { PageLoad } from "./$types";
 
 interface PlantDetailPageData {

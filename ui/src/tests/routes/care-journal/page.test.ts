@@ -2,8 +2,8 @@ import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { SvelteURL } from "svelte/reactivity";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../../routes/care-journal/+page.svelte";
-import { ApiError, type CareEvent } from "$lib/api";
-import { isOffline } from "$lib/stores/network";
+import { ApiError, type CareEvent } from "#lib/api.js";
+import { isOffline } from "#lib/stores/network.js";
 
 // jsdom doesn't implement HTMLDialogElement.showModal/close
 HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -19,8 +19,9 @@ const mockFetchAllCareEvents = vi.fn();
 const mockUpdateCareEvent = vi.fn();
 const mockGoto = vi.fn();
 
-vi.mock("$lib/api", async () => {
-  const actual = await vi.importActual<typeof import("$lib/api")>("$lib/api");
+vi.mock("#lib/api.js", async () => {
+  const actual =
+    await vi.importActual<typeof import("#lib/api.js")>("#lib/api.js");
   return {
     ...actual,
     fetchAllCareEvents: (...args: unknown[]) => mockFetchAllCareEvents(...args),
@@ -320,7 +321,7 @@ describe("care journal filters", () => {
     const gotoUrl = mockGoto.mock.calls[0][0] as string;
     expect(gotoUrl).toContain("type=watered");
     expect(mockGoto.mock.calls[0][1]).toEqual(
-      expect.objectContaining({ replaceState: true }),
+      expect.objectContaining({ replace: true, reset: false }),
     );
   });
 

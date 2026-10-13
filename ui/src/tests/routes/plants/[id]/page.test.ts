@@ -9,7 +9,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../../../routes/plants/[id]/+page.svelte";
-import type { AiStatus, CareEvent, Plant } from "$lib/api";
+import type { AiStatus, CareEvent, Plant } from "#lib/api.js";
 
 // jsdom doesn't implement window.matchMedia
 Object.defineProperty(window, "matchMedia", {
@@ -40,21 +40,18 @@ const mockAddCareEvent = vi.fn();
 const mockPushNotification = vi.fn();
 const mockGoto = vi.fn();
 
-vi.mock("$app/stores", async () => {
-  const { readable } = await import("svelte/store");
-  return {
-    page: readable({
-      params: { id: "1" },
-      url: new URL("http://localhost/plants/1"),
-    }),
-  };
-});
+vi.mock("$app/state", () => ({
+  page: {
+    params: { id: "1" },
+    url: new URL("http://localhost/plants/1"),
+  },
+}));
 
 vi.mock("$app/navigation", () => ({
   goto: (...args: unknown[]) => mockGoto(...args),
 }));
 
-vi.mock("$lib/stores/plants", async () => {
+vi.mock("#lib/stores/plants.js", async () => {
   const { writable } = await import("svelte/store");
   const plantsError = writable<string | null>(null);
   return {
@@ -64,7 +61,7 @@ vi.mock("$lib/stores/plants", async () => {
   };
 });
 
-vi.mock("$lib/stores/care", async () => {
+vi.mock("#lib/stores/care.js", async () => {
   const { writable } = await import("svelte/store");
   const careError = writable<string | null>(null);
   return {
@@ -73,15 +70,15 @@ vi.mock("$lib/stores/care", async () => {
   };
 });
 
-vi.mock("$lib/emoji", () => ({
+vi.mock("#lib/emoji.js", () => ({
   emojiToSvgPath: (emoji: string) => `/emoji/${emoji}.svg`,
 }));
 
-vi.mock("$lib/stores/notifications", () => ({
+vi.mock("#lib/stores/notifications.js", () => ({
   pushNotification: (...args: unknown[]) => mockPushNotification(...args),
 }));
 
-import * as api from "$lib/api";
+import * as api from "#lib/api.js";
 const mockChatPlant = vi.spyOn(api, "chatPlant");
 const mockCreateCareEventApi = vi.spyOn(api, "createCareEvent");
 const mockDeleteCareEventApi = vi.spyOn(api, "deleteCareEvent");
@@ -93,7 +90,7 @@ const mockUploadCareEventPhoto = vi.spyOn(api, "uploadCareEventPhoto");
 
 const mockLoadAiStatus = vi.fn();
 
-vi.mock("$lib/stores/ai", async () => {
+vi.mock("#lib/stores/ai.js", async () => {
   const { writable } = await import("svelte/store");
   const aiStatus = writable<AiStatus | null>(null);
   return {
@@ -102,10 +99,10 @@ vi.mock("$lib/stores/ai", async () => {
   };
 });
 
-import { aiStatus } from "$lib/stores/ai";
-import { plantsError } from "$lib/stores/plants";
-import { careError } from "$lib/stores/care";
-import { isOffline } from "$lib/stores/network";
+import { aiStatus } from "#lib/stores/ai.js";
+import { plantsError } from "#lib/stores/plants.js";
+import { careError } from "#lib/stores/care.js";
+import { isOffline } from "#lib/stores/network.js";
 
 function makePlant(overrides: Partial<Plant> = {}): Plant {
   return {

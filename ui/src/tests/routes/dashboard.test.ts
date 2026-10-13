@@ -1,13 +1,13 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../routes/+page.svelte";
-import type { Plant } from "$lib/api";
+import type { Plant } from "#lib/api.js";
 
 const mockLoadPlants = vi.fn().mockResolvedValue(undefined);
 const mockWaterPlant = vi.fn();
 const mockPushNotification = vi.fn();
 
-vi.mock("$lib/stores/plants", async () => {
+vi.mock("#lib/stores/plants.js", async () => {
   const { writable } = await import("svelte/store");
   const plants = writable<Plant[]>([]);
   const plantsError = writable<string | null>(null);
@@ -19,16 +19,16 @@ vi.mock("$lib/stores/plants", async () => {
   };
 });
 
-vi.mock("$lib/emoji", () => ({
+vi.mock("#lib/emoji.js", () => ({
   emojiToSvgPath: (emoji: string) => `/emoji/${emoji}.svg`,
 }));
 
-vi.mock("$lib/stores/notifications", () => ({
+vi.mock("#lib/stores/notifications.js", () => ({
   pushNotification: (...args: unknown[]) => mockPushNotification(...args),
 }));
 
-import { plants, plantsError } from "$lib/stores/plants";
-import { isOffline } from "$lib/stores/network";
+import { plants, plantsError } from "#lib/stores/plants.js";
+import { isOffline } from "#lib/stores/network.js";
 
 function makePlant(overrides: Partial<Plant> = {}): Plant {
   return {

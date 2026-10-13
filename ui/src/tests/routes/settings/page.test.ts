@@ -3,16 +3,16 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../../routes/settings/+page.svelte";
 import { get } from "svelte/store";
-import { themePreference, THEME_STORAGE_KEY } from "$lib/stores/theme";
+import { themePreference, THEME_STORAGE_KEY } from "#lib/stores/theme.js";
 import {
   locale,
   setLocale,
   destroyLocale,
   LOCALE_STORAGE_KEY,
-} from "$lib/stores/locale";
-import { locations, locationsError } from "$lib/stores/locations";
-import { isOffline } from "$lib/stores/network";
-import * as api from "$lib/api";
+} from "#lib/stores/locale.js";
+import { locations, locationsError } from "#lib/stores/locations.js";
+import { isOffline } from "#lib/stores/network.js";
+import * as api from "#lib/api.js";
 
 // jsdom doesn't implement HTMLDialogElement.showModal/close
 HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -32,7 +32,7 @@ const mockFetchAuthConfig = vi.fn();
 const mockPurgeProtectedCaches = vi.fn();
 const mockPostLogout = vi.fn();
 
-vi.mock("$lib/stores/network", async () => {
+vi.mock("#lib/stores/network.js", async () => {
   const { writable } = await import("svelte/store");
   return {
     isOffline: writable(false),
@@ -41,7 +41,7 @@ vi.mock("$lib/stores/network", async () => {
   };
 });
 
-vi.mock("$lib/stores/locations", async () => {
+vi.mock("#lib/stores/locations.js", async () => {
   const { writable } = await import("svelte/store");
   return {
     locations: writable([]),
@@ -52,11 +52,11 @@ vi.mock("$lib/stores/locations", async () => {
   };
 });
 
-vi.mock("$lib/stores/notifications", () => ({
+vi.mock("#lib/stores/notifications.js", () => ({
   pushNotification: (...args: unknown[]) => mockPushNotification(...args),
 }));
 
-vi.mock("$lib/auth", () => ({
+vi.mock("#lib/auth.js", () => ({
   fetchAuthConfig: (...args: unknown[]) => mockFetchAuthConfig(...args),
   purgeProtectedCaches: (...args: unknown[]) =>
     mockPurgeProtectedCaches(...args),

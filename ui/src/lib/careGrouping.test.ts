@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CareEvent } from "$lib/api";
+import type { CareEvent } from "#lib/api.js";
 import { groupCareEvents, isGroup } from "./careGrouping";
 import type { WateringGroup } from "./careGrouping";
 

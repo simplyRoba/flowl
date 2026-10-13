@@ -1,19 +1,19 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import type { CreatePlant } from "$lib/api";
+  import type { CreatePlant } from "#lib/api.js";
   import {
     plantsError,
     createPlant,
     updatePlant,
     uploadPhoto,
-  } from "$lib/stores/plants";
-  import { translations } from "$lib/stores/locale";
-  import { pushNotification } from "$lib/stores/notifications";
-  import { isOffline } from "$lib/stores/network";
-  import PlantForm from "$lib/components/PlantForm.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
+  } from "#lib/stores/plants.js";
+  import { translations } from "#lib/stores/locale.js";
+  import { pushNotification } from "#lib/stores/notifications.js";
+  import { isOffline } from "#lib/stores/network.js";
+  import PlantForm from "#lib/components/PlantForm.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import OfflineMessage from "#lib/components/OfflineMessage.svelte";
 
   let saving = $state(false);
   let draftPlantId: number | null = $state(null);
@@ -59,7 +59,7 @@
     }
 
     draftPlantId = null;
-    goto(resolve(`/plants/${plant.id}`));
+    goto(resolve(`plants/${plant.id}`));
     saving = false;
   }
 </script>

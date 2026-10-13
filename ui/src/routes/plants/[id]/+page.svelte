@@ -2,7 +2,7 @@
   import { onMount, untrack } from "svelte";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import {
     ArrowLeft,
     Pencil,
@@ -29,34 +29,34 @@
     Sparkles,
     ChevronRight,
   } from "lucide-svelte";
-  import { plantsError, deletePlant, waterPlant } from "$lib/stores/plants";
-  import { careError } from "$lib/stores/care";
-  import { resolveError } from "$lib/stores/errors";
-  import { translations } from "$lib/stores/locale";
-  import { isOffline } from "$lib/stores/network";
-  import { pushNotification } from "$lib/stores/notifications";
+  import { plantsError, deletePlant, waterPlant } from "#lib/stores/plants.js";
+  import { careError } from "#lib/stores/care.js";
+  import { resolveError } from "#lib/stores/errors.js";
+  import { translations } from "#lib/stores/locale.js";
+  import { isOffline } from "#lib/stores/network.js";
+  import { pushNotification } from "#lib/stores/notifications.js";
   import {
     deleteCareEvent,
     fetchCareEvents,
     fetchPlant,
     type CareEvent,
     type Plant,
-  } from "$lib/api";
-  import { emojiToSvgPath } from "$lib/emoji";
-  import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
-  import StatusBadge from "$lib/components/StatusBadge.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import PhotoLightbox from "$lib/components/PhotoLightbox.svelte";
-  import ModalDialog from "$lib/components/ModalDialog.svelte";
-  import ChatDrawer from "$lib/components/ChatDrawer.svelte";
-  import CareEntryForm from "$lib/components/CareEntryForm.svelte";
-  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
-  import { aiStatus, loadAiStatus } from "$lib/stores/ai";
+  } from "#lib/api.js";
+  import { emojiToSvgPath } from "#lib/emoji.js";
+  import { thumbUrl, thumbSrcset } from "#lib/thumbUrl.js";
+  import StatusBadge from "#lib/components/StatusBadge.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import PhotoLightbox from "#lib/components/PhotoLightbox.svelte";
+  import ModalDialog from "#lib/components/ModalDialog.svelte";
+  import ChatDrawer from "#lib/components/ChatDrawer.svelte";
+  import CareEntryForm from "#lib/components/CareEntryForm.svelte";
+  import OfflineMessage from "#lib/components/OfflineMessage.svelte";
+  import { aiStatus, loadAiStatus } from "#lib/stores/ai.js";
   import {
     groupCareEvents,
     isGroup,
     type WateringGroup,
-  } from "$lib/careGrouping";
+  } from "#lib/careGrouping.js";
   import { SvelteSet } from "svelte/reactivity";
 
   interface Props {
@@ -70,7 +70,7 @@
   const props = $props();
   let data = $derived((props as Props).data);
 
-  type BackPath = "/" | "/care-journal" | "/plants" | "/settings";
+  type BackPath = "/" | "/care-journal" | "/settings";
 
   let plant = $state<Plant | null>(null);
   let plantLoadErrorCode = $state<string | null>(null);
@@ -91,12 +91,7 @@
   let aiEnabled = $derived($aiStatus?.enabled ?? false);
   let chatOpen = $state(false);
   let lightboxSrc = $state("");
-  const BACK_PATHS = new Set<BackPath>([
-    "/",
-    "/care-journal",
-    "/plants",
-    "/settings",
-  ]);
+  const BACK_PATHS = new Set<BackPath>(["/", "/care-journal", "/settings"]);
 
   onMount(() => {
     loadAiStatus();
@@ -146,7 +141,7 @@
   });
 
   $effect(() => {
-    const from = $page.url.searchParams.get("from") as BackPath | null;
+    const from = page.url.searchParams.get("from") as BackPath | null;
     backHref = from && BACK_PATHS.has(from) ? from : "/";
   });
 
@@ -382,7 +377,7 @@
         backLabel={$translations.common.back}
       >
         <a
-          href={resolve(`/plants/${plant.id}/edit`)}
+          href={resolve(`plants/${plant.id}/edit`)}
           class="btn btn-icon"
           class:disabled={$isOffline}
           aria-label={$translations.plant.editPlant}

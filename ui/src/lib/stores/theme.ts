@@ -145,7 +145,7 @@ export async function setThemePreference(
   writeThemePreference(getStorage(), preference);
 
   try {
-    const { updateSettings } = await import("$lib/api");
+    const { updateSettings } = await import("#lib/api.js");
     await updateSettings({ theme: preference });
     return true;
   } catch {

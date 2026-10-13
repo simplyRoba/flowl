@@ -2,8 +2,8 @@ import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../../../../routes/plants/[id]/edit/+page.svelte";
-import type { Plant } from "$lib/api";
-import { plantsError } from "$lib/stores/plants";
+import type { Plant } from "#lib/api.js";
+import { plantsError } from "#lib/stores/plants.js";
 
 const mockUpdatePlant = vi.fn();
 const mockUploadPhoto = vi.fn();
@@ -15,7 +15,7 @@ vi.mock("$app/navigation", () => ({
   goto: (...args: unknown[]) => mockGoto(...args),
 }));
 
-vi.mock("$lib/stores/plants", async () => {
+vi.mock("#lib/stores/plants.js", async () => {
   const { writable } = await import("svelte/store");
   const plantsError = writable<string | null>(null);
   return {
@@ -26,11 +26,11 @@ vi.mock("$lib/stores/plants", async () => {
   };
 });
 
-vi.mock("$lib/stores/notifications", () => ({
+vi.mock("#lib/stores/notifications.js", () => ({
   pushNotification: (...args: unknown[]) => mockPushNotification(...args),
 }));
 
-vi.mock("$lib/components/PlantForm.svelte", async () => {
+vi.mock("#lib/components/PlantForm.svelte", async () => {
   const component = await import("../../../../stubs/PlantFormStub.svelte");
   return { default: component.default };
 });

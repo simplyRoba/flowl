@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
-import type { AiStatus } from "$lib/api";
-import * as api from "$lib/api";
+import type { AiStatus } from "#lib/api.js";
+import * as api from "#lib/api.js";
 
 export const aiStatus = writable<AiStatus | null>(null);
 

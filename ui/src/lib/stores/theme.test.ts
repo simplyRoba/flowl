@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const apiMocks = vi.hoisted(() => ({
   updateSettings: vi.fn(),
 }));
-vi.mock("$lib/api", () => apiMocks);
+vi.mock("#lib/api.js", () => apiMocks);
 
 import {
   createSystemPreferenceListener,

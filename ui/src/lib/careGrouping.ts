@@ -1,4 +1,4 @@
-import type { CareEvent } from "$lib/api";
+import type { CareEvent } from "#lib/api.js";
 
 export interface WateringGroup {
   kind: "group";

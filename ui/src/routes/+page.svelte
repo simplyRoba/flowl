@@ -7,15 +7,15 @@
     plantsError,
     loadPlants,
     waterPlant,
-  } from "$lib/stores/plants";
-  import { pushNotification } from "$lib/stores/notifications";
-  import { translations } from "$lib/stores/locale";
-  import { isOffline } from "$lib/stores/network";
-  import { emojiToSvgPath } from "$lib/emoji";
-  import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
-  import StatusBadge from "$lib/components/StatusBadge.svelte";
-  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
-  import Logo from "$lib/components/Logo.svelte";
+  } from "#lib/stores/plants.js";
+  import { pushNotification } from "#lib/stores/notifications.js";
+  import { translations } from "#lib/stores/locale.js";
+  import { isOffline } from "#lib/stores/network.js";
+  import { emojiToSvgPath } from "#lib/emoji.js";
+  import { thumbUrl, thumbSrcset } from "#lib/thumbUrl.js";
+  import StatusBadge from "#lib/components/StatusBadge.svelte";
+  import OfflineMessage from "#lib/components/OfflineMessage.svelte";
+  import Logo from "#lib/components/Logo.svelte";
 
   function getTimeOfDay(): string {
     const hour = new Date().getHours();
@@ -173,7 +173,7 @@
             {/if}
             <div class="attention-card-body">
               <a
-                href={resolve(`/plants/${plant.id}?from=/`)}
+                href={resolve(`plants/${plant.id}?from=/`)}
                 class="attention-card-name">{plant.name}</a
               >
               {#if plant.location_name}
@@ -210,7 +210,7 @@
     <h1>{$translations.dashboard.myPlants}</h1>
     {#if $plants.length > 0}
       <a
-        href={resolve("/plants/new")}
+        href={resolve("plants/new")}
         class="btn btn-primary btn-sm"
         class:disabled={$isOffline}
         aria-disabled={$isOffline}
@@ -240,7 +240,7 @@
       <h2>{$translations.dashboard.noPlants}</h2>
       <p>{$translations.dashboard.noPlantsHint}</p>
       <a
-        href={resolve("/plants/new")}
+        href={resolve("plants/new")}
         class="btn btn-primary btn-sm"
         class:disabled={$isOffline}
         aria-disabled={$isOffline}
@@ -255,7 +255,7 @@
   {:else}
     <div class="plant-grid">
       {#each sortedPlants as plant (plant.id)}
-        <a href={resolve(`/plants/${plant.id}?from=/`)} class="plant-card">
+        <a href={resolve(`plants/${plant.id}?from=/`)} class="plant-card">
           {#if plant.photo_url}
             <div class="plant-card-photo">
               <img

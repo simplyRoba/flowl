@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Location } from "$lib/api";
+import type { Location } from "#lib/api.js";
 import {
   locations,
   locationsError,
@@ -10,8 +10,8 @@ import {
   deleteLocation,
 } from "./locations";
 
-vi.mock("$lib/api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("$lib/api")>();
+vi.mock("#lib/api.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("#lib/api.js")>();
   return {
     ...actual,
     fetchLocations: vi.fn(),
@@ -21,7 +21,7 @@ vi.mock("$lib/api", async (importOriginal) => {
   };
 });
 
-import * as api from "$lib/api";
+import * as api from "#lib/api.js";
 
 const mockLocation: Location = { id: 1, name: "Bedroom", plant_count: 2 };
 const mockLocation2: Location = { id: 2, name: "Kitchen", plant_count: 1 };
@@ -45,7 +45,7 @@ describe("loadLocations", () => {
   });
 
   it("resolves ApiError code to i18n message", async () => {
-    const { ApiError } = await import("$lib/api");
+    const { ApiError } = await import("#lib/api.js");
     vi.mocked(api.fetchLocations).mockRejectedValue(
       new ApiError(500, "INTERNAL_ERROR", "An internal error occurred"),
     );
@@ -73,7 +73,7 @@ describe("createLocation", () => {
   });
 
   it("resolves ApiError code to i18n message", async () => {
-    const { ApiError } = await import("$lib/api");
+    const { ApiError } = await import("#lib/api.js");
     vi.mocked(api.createLocation).mockRejectedValue(
       new ApiError(
         409,
@@ -111,7 +111,7 @@ describe("updateLocation", () => {
   });
 
   it("resolves ApiError code to i18n message", async () => {
-    const { ApiError } = await import("$lib/api");
+    const { ApiError } = await import("#lib/api.js");
     vi.mocked(api.updateLocation).mockRejectedValue(
       new ApiError(
         409,

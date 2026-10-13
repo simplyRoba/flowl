@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
-import type { Plant, CreatePlant, UpdatePlant } from "$lib/api";
-import * as api from "$lib/api";
+import type { Plant, CreatePlant, UpdatePlant } from "#lib/api.js";
+import * as api from "#lib/api.js";
 import { resolveError } from "./errors";
 
 export const plants = writable<Plant[]>([]);

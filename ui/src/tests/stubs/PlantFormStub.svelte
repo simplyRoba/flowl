@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { CreatePlant, Plant } from "$lib/api";
+  import type { CreatePlant, Plant } from "#lib/api.js";
 
   let {
     initial = null,

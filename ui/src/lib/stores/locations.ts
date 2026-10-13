@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
-import type { Location } from "$lib/api";
-import * as api from "$lib/api";
+import type { Location } from "#lib/api.js";
+import * as api from "#lib/api.js";
 import { resolveError } from "./errors";
 
 export const locations = writable<Location[]>([]);

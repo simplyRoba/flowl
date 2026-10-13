@@ -11,6 +11,7 @@ import {
   installPublicAssets,
   isProtectedCacheName,
   networkOnly,
+  precacheAssetPaths,
   protectedNavigationNetworkFirst,
   protectedNetworkFirst,
   shouldCacheProtectedThumbnailResponse,
@@ -446,6 +447,62 @@ describe("authentication service-worker policy", () => {
 
     expect(storage.cache.put).not.toHaveBeenCalled();
     expect(storage.delete).not.toHaveBeenCalled();
+  });
+
+  it("builds absolute precache pathnames from the build and static manifests", () => {
+    const rootResolvers = {
+      resolve: (path: string) => `/${path}`,
+      asset: (path: string) => `/${path}`,
+    };
+
+    expect(
+      precacheAssetPaths(
+        {
+          immutable: [
+            { path: "_app/immutable/entry/app.js" },
+            { path: "_app/immutable/assets/0.css" },
+          ],
+          assets: [{ path: "offline.html" }, { path: "manifest.json" }],
+        },
+        rootResolvers,
+      ),
+    ).toEqual([
+      "/_app/immutable/entry/app.js",
+      "/_app/immutable/assets/0.css",
+      "/offline.html",
+      "/manifest.json",
+    ]);
+  });
+
+  it("routes build paths through resolve and static paths through asset", () => {
+    const resolve = vi.fn((path: string) => `/flowl/${path}`);
+    const asset = vi.fn((path: string) => `/cdn/${path}`);
+
+    expect(
+      precacheAssetPaths(
+        {
+          immutable: [{ path: "_app/immutable/entry/app.js" }],
+          assets: [{ path: "offline.html" }],
+        },
+        { resolve, asset },
+      ),
+    ).toEqual(["/flowl/_app/immutable/entry/app.js", "/cdn/offline.html"]);
+    expect(resolve).toHaveBeenCalledExactlyOnceWith(
+      "_app/immutable/entry/app.js",
+    );
+    expect(asset).toHaveBeenCalledExactlyOnceWith("offline.html");
+  });
+
+  it("precaches only static assets when the build manifest is empty in development", () => {
+    expect(
+      precacheAssetPaths(
+        { immutable: [], assets: [{ path: "offline.html" }] },
+        {
+          resolve: (path: string) => `/${path}`,
+          asset: (path: string) => `/${path}`,
+        },
+      ),
+    ).toEqual(["/offline.html"]);
   });
 
   it("installs public resources and retains every current cache on activation", async () => {

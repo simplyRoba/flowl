@@ -13,7 +13,7 @@ const mockUploadCareEventPhoto = vi.fn();
 const mockDeleteCareEventPhoto = vi.fn();
 const mockPushNotification = vi.fn();
 
-vi.mock("$lib/stores/care", async () => {
+vi.mock("#lib/stores/care.js", async () => {
   const { writable } = await import("svelte/store");
   return {
     careError: writable<string | null>(null),
@@ -21,8 +21,9 @@ vi.mock("$lib/stores/care", async () => {
   };
 });
 
-vi.mock("$lib/api", async () => {
-  const actual = await vi.importActual<typeof import("$lib/api")>("$lib/api");
+vi.mock("#lib/api.js", async () => {
+  const actual =
+    await vi.importActual<typeof import("#lib/api.js")>("#lib/api.js");
   return {
     ...actual,
     updateCareEvent: (...args: unknown[]) => mockUpdateCareEvent(...args),
@@ -33,14 +34,14 @@ vi.mock("$lib/api", async () => {
   };
 });
 
-vi.mock("$lib/stores/notifications", () => ({
+vi.mock("#lib/stores/notifications.js", () => ({
   pushNotification: (...args: unknown[]) => mockPushNotification(...args),
 }));
 
 import CareEntryForm from "./CareEntryForm.svelte";
-import { ApiError, type CareEvent } from "$lib/api";
-import { careError } from "$lib/stores/care";
-import { isOffline } from "$lib/stores/network";
+import { ApiError, type CareEvent } from "#lib/api.js";
+import { careError } from "#lib/stores/care.js";
+import { isOffline } from "#lib/stores/network.js";
 
 beforeEach(() => {
   careError.set(null);

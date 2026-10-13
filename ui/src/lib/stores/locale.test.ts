@@ -1,8 +1,8 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { de } from "$lib/i18n/de";
-import { en } from "$lib/i18n/en";
-import { es } from "$lib/i18n/es";
+import { de } from "#lib/i18n/de.js";
+import { en } from "#lib/i18n/en.js";
+import { es } from "#lib/i18n/es.js";
 import {
   DEFAULT_LOCALE,
   LOCALE_STORAGE_KEY,

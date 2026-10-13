@@ -1,24 +1,24 @@
 <script lang="ts">
-  import { dev } from "$app/environment";
+  import { dev } from "$app/env";
   import { resolve } from "$app/paths";
   import { onMount, untrack } from "svelte";
   import { Leaf, BookOpen, Settings, Check } from "lucide-svelte";
-  import Logo from "$lib/components/Logo.svelte";
-  import ToastHost from "$lib/components/ToastHost.svelte";
+  import Logo from "#lib/components/Logo.svelte";
+  import ToastHost from "#lib/components/ToastHost.svelte";
   import { page } from "$app/state";
-  import { initTheme, isThemePreference } from "$lib/stores/theme";
-  import { initLocale, isLocale, translations } from "$lib/stores/locale";
-  import { fetchSettings } from "$lib/api";
+  import { initTheme, isThemePreference } from "#lib/stores/theme.js";
+  import { initLocale, isLocale, translations } from "#lib/stores/locale.js";
+  import { fetchSettings } from "#lib/api.js";
   import {
     fetchAuthConfig,
     setServiceWorkerAuthMode,
     setWorkerAuthMode,
-  } from "$lib/auth";
-  import { pushNotification } from "$lib/stores/notifications";
+  } from "#lib/auth.js";
+  import { pushNotification } from "#lib/stores/notifications.js";
   import {
     isOffline as isOfflineStore,
     startNetworkMonitor,
-  } from "$lib/stores/network";
+  } from "#lib/stores/network.js";
   import {
     calculateContentOffset,
     calculatePullOffset,
@@ -34,12 +34,12 @@
     readTouchCapability,
     shouldTriggerPullToRefresh,
     type PullIndicatorState,
-  } from "$lib/pull-to-refresh";
-  import "$lib/styles/buttons.css";
-  import "$lib/styles/chips.css";
-  import "$lib/styles/inputs.css";
-  import "$lib/styles/sections.css";
-  import "$lib/styles/skeletons.css";
+  } from "#lib/pull-to-refresh.js";
+  import "#lib/styles/buttons.css";
+  import "#lib/styles/chips.css";
+  import "#lib/styles/inputs.css";
+  import "#lib/styles/sections.css";
+  import "#lib/styles/skeletons.css";
 
   let { children } = $props();
   let isLoginRoute = $derived(page.url.pathname === "/login");

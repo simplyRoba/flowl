@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Location } from "$lib/api";
+import type { Location } from "#lib/api.js";
 import LocationChips from "./LocationChips.svelte";
 
 afterEach(() => {
