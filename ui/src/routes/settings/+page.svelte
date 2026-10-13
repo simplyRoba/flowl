@@ -22,20 +22,24 @@
     loadLocations,
     deleteLocation,
     updateLocation,
-  } from "$lib/stores/locations";
+  } from "#lib/stores/locations.js";
   import {
     themePreference,
     setThemePreference,
     type ThemePreference,
-  } from "$lib/stores/theme";
+  } from "#lib/stores/theme.js";
   import {
     translations,
     locale,
     setLocale,
     type Locale,
-  } from "$lib/stores/locale";
-  import { plural } from "$lib/i18n/plural";
-  import { fetchAuthConfig, postLogout, purgeProtectedCaches } from "$lib/auth";
+  } from "#lib/stores/locale.js";
+  import { plural } from "#lib/i18n/plural.js";
+  import {
+    fetchAuthConfig,
+    postLogout,
+    purgeProtectedCaches,
+  } from "#lib/auth.js";
   import {
     fetchAppInfo,
     fetchStats,
@@ -46,13 +50,13 @@
     type AppInfo,
     type Stats,
     type MqttStatus,
-  } from "$lib/api";
-  import { aiStatus as aiStatusStore, loadAiStatus } from "$lib/stores/ai";
-  import { isOffline } from "$lib/stores/network";
-  import { resolveError } from "$lib/stores/errors";
-  import { pushNotification } from "$lib/stores/notifications";
-  import ModalDialog from "$lib/components/ModalDialog.svelte";
-  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
+  } from "#lib/api.js";
+  import { aiStatus as aiStatusStore, loadAiStatus } from "#lib/stores/ai.js";
+  import { isOffline } from "#lib/stores/network.js";
+  import { resolveError } from "#lib/stores/errors.js";
+  import { pushNotification } from "#lib/stores/notifications.js";
+  import ModalDialog from "#lib/components/ModalDialog.svelte";
+  import OfflineMessage from "#lib/components/OfflineMessage.svelte";
 
   const themeOptions: {
     value: ThemePreference;

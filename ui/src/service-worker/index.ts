@@ -1,10 +1,9 @@
-/// <reference types="@sveltejs/kit" />
-/// <reference no-default-lib="true"/>
-/// <reference lib="esnext" />
-/// <reference lib="webworker" />
-
-import { build, files, version } from "$service-worker";
-import { isCacheableApi, isThumbnail } from "$lib/sw-patterns";
+import { version } from "$app/env";
+import { assets, immutable } from "$app/manifest";
+import { asset, resolve } from "$app/paths";
+import type { AssetPath, Path } from "$app/types";
+import { self } from "$app/service-worker";
+import { isCacheableApi, isThumbnail } from "#lib/sw-patterns.js";
 import {
   activationKeepCaches,
   cachedShellOrOffline,
@@ -15,19 +14,26 @@ import {
   isAuthPath,
   installPublicAssets,
   networkOnly,
+  precacheAssetPaths,
   protectedNavigationNetworkFirst,
   protectedNetworkFirst,
   shouldCacheProtectedThumbnailResponse,
   purgeProtectedCaches,
   removeObsoleteCaches,
-} from "$lib/sw-policy";
+} from "#lib/sw-policy.js";
 
-const sw = self as unknown as ServiceWorkerGlobalScope;
+const sw = self;
 const CACHE_NAME = `flowl-cache-${version}`;
 const API_CACHE_NAME = `flowl-api-${version}`;
 const PHOTO_CACHE_NAME = `flowl-photo-${version}`;
 const OFFLINE_PAGE = "/offline.html";
-const ASSETS = [...build, ...files];
+const ASSETS = precacheAssetPaths(
+  { immutable, assets },
+  {
+    resolve: (path) => resolve(path as Path),
+    asset: (path) => asset(path as AssetPath),
+  },
+);
 
 // A worker starts unknown and therefore protected. Disabled mode is established
 // only by a fresh network-only backend config response, never by client state.

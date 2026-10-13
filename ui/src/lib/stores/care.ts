@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
-import type { CareEvent, CreateCareEvent } from "$lib/api";
-import * as api from "$lib/api";
+import type { CareEvent, CreateCareEvent } from "#lib/api.js";
+import * as api from "#lib/api.js";
 import { resolveError } from "./errors";
 
 export const careEvents = writable<CareEvent[]>([]);

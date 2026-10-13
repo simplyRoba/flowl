@@ -2,9 +2,13 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import Logo from "$lib/components/Logo.svelte";
-  import { fetchAuthConfig, safeLocalTarget, type AuthConfig } from "$lib/auth";
-  import { translations } from "$lib/stores/locale";
+  import Logo from "#lib/components/Logo.svelte";
+  import {
+    fetchAuthConfig,
+    safeLocalTarget,
+    type AuthConfig,
+  } from "#lib/auth.js";
+  import { translations } from "#lib/stores/locale.js";
 
   let config: AuthConfig | null = $state(null);
   let configUnavailable = $state(false);
@@ -34,7 +38,7 @@
     void (async () => {
       try {
         config = await fetchAuthConfig();
-        if (!config.enabled) await goto(resolve("/"), { replaceState: true });
+        if (!config.enabled) await goto(resolve("/"), { replace: true });
       } catch {
         configUnavailable = true;
       }

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import Page from "../../../routes/login/+page.svelte";
 import loginSource from "../../../routes/login/+page.svelte?raw";
-import { setLocale } from "$lib/stores/locale";
+import { setLocale } from "#lib/stores/locale.js";
 
 const { goto, fetchAuthConfig } = vi.hoisted(() => ({
   goto: vi.fn(),
@@ -13,7 +13,9 @@ const { goto, fetchAuthConfig } = vi.hoisted(() => ({
 let pageUrl = new URL("http://localhost/login");
 
 vi.mock("$app/navigation", () => ({ goto }));
-vi.mock("$app/paths", () => ({ resolve: (path: string) => path }));
+vi.mock("$app/paths", () => ({
+  resolve: (path: string) => (path.startsWith("/") ? path : `/${path}`),
+}));
 vi.mock("$app/state", () => ({
   page: {
     get url() {
@@ -21,7 +23,7 @@ vi.mock("$app/state", () => ({
     },
   },
 }));
-vi.mock("$lib/auth", () => ({
+vi.mock("#lib/auth.js", () => ({
   fetchAuthConfig,
   safeLocalTarget: (target: string | null) =>
     target?.startsWith("/") && !target.startsWith("//") ? target : "/",
@@ -133,7 +135,7 @@ describe("login page", () => {
     render(Page);
 
     await waitFor(() => {
-      expect(goto).toHaveBeenCalledWith("/", { replaceState: true });
+      expect(goto).toHaveBeenCalledWith("/", { replace: true });
     });
   });
 

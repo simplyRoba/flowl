@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Minus, Plus, Droplet } from "lucide-svelte";
-  import { translations } from "$lib/stores/locale";
+  import { translations } from "#lib/stores/locale.js";
 
   const PRESET_KEYS = [
     {

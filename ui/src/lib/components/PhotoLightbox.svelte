@@ -1,6 +1,6 @@
 <script lang="ts">
   import { X } from "lucide-svelte";
-  import { translations } from "$lib/stores/locale";
+  import { translations } from "#lib/stores/locale.js";
 
   let {
     open = false,

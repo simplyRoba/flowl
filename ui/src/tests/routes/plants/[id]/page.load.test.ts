@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { goto } = vi.hoisted(() => ({ goto: vi.fn() }));
 vi.mock("$app/navigation", () => ({ goto }));
 
-import { resetAuthNavigationForTests } from "$lib/auth";
+import { resetAuthNavigationForTests } from "#lib/auth.js";
 import { load } from "../../../../routes/plants/[id]/+page";
 
 beforeEach(() => {
@@ -74,7 +74,7 @@ describe("plant detail page load", () => {
       loadErrorCode: "AUTHENTICATION_REQUIRED",
     });
     expect(goto).toHaveBeenCalledWith("/login?return_to=%2Fplants%2F1", {
-      replaceState: true,
+      replace: true,
     });
   });
 

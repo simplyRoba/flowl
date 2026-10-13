@@ -1,23 +1,23 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import type { CreatePlant } from "$lib/api";
+  import type { CreatePlant } from "#lib/api.js";
   import {
     plantsError,
     updatePlant,
     uploadPhoto,
     deletePhoto,
-  } from "$lib/stores/plants";
-  import { translations } from "$lib/stores/locale";
-  import { pushNotification } from "$lib/stores/notifications";
-  import { isOffline } from "$lib/stores/network";
-  import PlantForm from "$lib/components/PlantForm.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
+  } from "#lib/stores/plants.js";
+  import { translations } from "#lib/stores/locale.js";
+  import { pushNotification } from "#lib/stores/notifications.js";
+  import { isOffline } from "#lib/stores/network.js";
+  import PlantForm from "#lib/components/PlantForm.svelte";
+  import PageHeader from "#lib/components/PageHeader.svelte";
+  import OfflineMessage from "#lib/components/OfflineMessage.svelte";
 
   interface Props {
     data: {
-      plant: import("$lib/api").Plant | null;
+      plant: import("#lib/api.js").Plant | null;
       notFound: boolean;
       loadErrorCode: string | null;
     };
@@ -26,7 +26,7 @@
   const props = $props();
   let data = $derived((props as Props).data);
 
-  let plant = $state<import("$lib/api").Plant | null>(null);
+  let plant = $state<import("#lib/api.js").Plant | null>(null);
   let loadErrorCode = $state<string | null>(null);
   let notFound = $state(false);
   let saving = $state(false);
@@ -73,7 +73,7 @@
       plant = uploaded;
     }
 
-    goto(resolve(`/plants/${updatedPlant.id}`));
+    goto(resolve(`plants/${updatedPlant.id}`));
     saving = false;
   }
 

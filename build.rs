@@ -21,7 +21,7 @@ fn copy_directory(source: &Path, destination: &Path) {
 fn main() {
     println!("cargo:rerun-if-changed=ui/src");
     println!("cargo:rerun-if-changed=ui/static");
-    println!("cargo:rerun-if-changed=ui/svelte.config.js");
+    println!("cargo:rerun-if-changed=ui/vite.config.ts");
     println!("cargo:rerun-if-changed=ui/package.json");
     println!("cargo:rerun-if-env-changed=SKIP_UI_BUILD");
 

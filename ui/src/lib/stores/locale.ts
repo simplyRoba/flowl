@@ -1,6 +1,6 @@
 import { get, writable } from "svelte/store";
-import { en } from "$lib/i18n/en";
-import type { Translations } from "$lib/i18n/en";
+import { en } from "#lib/i18n/en.js";
+import type { Translations } from "#lib/i18n/en.js";
 
 export type Locale = "en" | "de" | "es";
 
@@ -45,10 +45,10 @@ export function writeLocale(storage: Storage | null, locale: Locale): void {
 async function loadDictionary(target: Locale): Promise<Translations> {
   if (target === "en") return en;
   if (target === "de") {
-    const module = await import("$lib/i18n/de");
+    const module = await import("#lib/i18n/de.js");
     return module.de;
   }
-  const module = await import("$lib/i18n/es");
+  const module = await import("#lib/i18n/es.js");
   return module.es;
 }
 
@@ -128,7 +128,7 @@ export function setLocale(l: Locale): void {
   selectedByUser = true;
   locale.set(l);
   writeLocale(getStorage(), l);
-  import("$lib/api")
+  import("#lib/api.js")
     .then(({ updateSettings }) => updateSettings({ locale: l }))
     .catch(() => {});
 }

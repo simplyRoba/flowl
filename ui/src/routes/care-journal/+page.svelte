@@ -17,20 +17,20 @@
     Sparkles,
     ChevronRight,
   } from "lucide-svelte";
-  import type { CareEvent, EventType } from "$lib/api";
-  import { ApiError, fetchAllCareEvents } from "$lib/api";
-  import { resolveError } from "$lib/stores/errors";
-  import { translations } from "$lib/stores/locale";
-  import { isOffline } from "$lib/stores/network";
-  import { thumbUrl, thumbSrcset } from "$lib/thumbUrl";
+  import type { CareEvent, EventType } from "#lib/api.js";
+  import { ApiError, fetchAllCareEvents } from "#lib/api.js";
+  import { resolveError } from "#lib/stores/errors.js";
+  import { translations } from "#lib/stores/locale.js";
+  import { isOffline } from "#lib/stores/network.js";
+  import { thumbUrl, thumbSrcset } from "#lib/thumbUrl.js";
   import {
     groupCareEvents,
     isGroup,
     type TimelineItem,
     type WateringGroup,
-  } from "$lib/careGrouping";
-  import PhotoLightbox from "$lib/components/PhotoLightbox.svelte";
-  import OfflineMessage from "$lib/components/OfflineMessage.svelte";
+  } from "#lib/careGrouping.js";
+  import PhotoLightbox from "#lib/components/PhotoLightbox.svelte";
+  import OfflineMessage from "#lib/components/OfflineMessage.svelte";
 
   let lightboxOpen = $state(false);
   let lightboxSrc = $state("");
@@ -77,8 +77,8 @@
     const href =
       search.size > 0 ? `/care-journal?${search.toString()}` : "/care-journal";
     goto(resolve(href as "/care-journal"), {
-      replaceState: true,
-      noScroll: true,
+      replace: true,
+      reset: false,
     });
   }
 
@@ -486,7 +486,7 @@
                 </div>
                 <div class="log-entry-content">
                   <a
-                    href={resolve(`/plants/${item.plantId}?from=/care-journal`)}
+                    href={resolve(`plants/${item.plantId}?from=/care-journal`)}
                     class="log-entry-plant">{item.plantName}</a
                   >
                   <div class="log-entry-action">
@@ -561,9 +561,7 @@
                 </div>
                 <div class="log-entry-content">
                   <a
-                    href={resolve(
-                      `/plants/${item.plant_id}?from=/care-journal`,
-                    )}
+                    href={resolve(`plants/${item.plant_id}?from=/care-journal`)}
                     class="log-entry-plant">{item.plant_name}</a
                   >
                   {#if item.photo_url}

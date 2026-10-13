@@ -50,7 +50,7 @@ describe("authentication response classification", () => {
     ).rejects.toBeInstanceOf(ApiError);
     expect(goto).toHaveBeenCalledWith(
       "/login?return_to=%2Fplants%2F7%3Ftab%3Dcare%23log",
-      { replaceState: true },
+      { replace: true },
     );
   });
 

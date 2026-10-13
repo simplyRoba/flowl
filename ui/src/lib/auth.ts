@@ -1,6 +1,6 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
-import { isProtectedCacheName } from "$lib/sw-policy";
+import { isProtectedCacheName } from "#lib/sw-policy.js";
 
 export const MAX_RETURN_TO_BYTES = 2048;
 
@@ -130,9 +130,8 @@ export function navigateToLogin(
   location: Pick<Location, "pathname" | "search" | "hash"> = window.location,
   navigate: (url: string) => void = (url) => {
     // The query comes from safeLocalTarget; /auth routes are backend-only.
-    // eslint-disable-next-line svelte/no-navigation-without-resolve
-    void goto(`${resolve("/login")}${url.slice("/login".length)}`, {
-      replaceState: true,
+    void goto(`${resolve("login")}${url.slice("/login".length)}`, {
+      replace: true,
     });
   },
 ): boolean {

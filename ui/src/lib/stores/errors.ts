@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
-import { ApiError } from "$lib/api";
-import type { Translations } from "$lib/i18n/en";
+import { ApiError } from "#lib/api.js";
+import type { Translations } from "#lib/i18n/en.js";
 import { translations } from "./locale";
 
 export function resolveError(

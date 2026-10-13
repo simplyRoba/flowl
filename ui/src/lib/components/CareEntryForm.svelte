@@ -10,18 +10,18 @@
     X as XIcon,
     Sparkles,
   } from "lucide-svelte";
-  import { addCareEvent, careError } from "$lib/stores/care";
+  import { addCareEvent, careError } from "#lib/stores/care.js";
   import {
     deleteCareEventPhoto,
     updateCareEvent,
     uploadCareEventPhoto,
     type CareEvent,
     type EventType,
-  } from "$lib/api";
-  import { resolveError } from "$lib/stores/errors";
-  import { translations } from "$lib/stores/locale";
-  import { isOffline } from "$lib/stores/network";
-  import { pushNotification } from "$lib/stores/notifications";
+  } from "#lib/api.js";
+  import { resolveError } from "#lib/stores/errors.js";
+  import { translations } from "#lib/stores/locale.js";
+  import { isOffline } from "#lib/stores/network.js";
+  import { pushNotification } from "#lib/stores/notifications.js";
 
   let {
     plantId,

@@ -2,12 +2,12 @@
   import { X } from "lucide-svelte";
   import { onDestroy, onMount } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
-  import { translations } from "$lib/stores/locale";
+  import { translations } from "#lib/stores/locale.js";
   import {
     dismissNotification,
     visibleNotifications,
     type Notification,
-  } from "$lib/stores/notifications";
+  } from "#lib/stores/notifications.js";
 
   const AUTO_DISMISS_MS = 3500;
   const MOBILE_BREAKPOINT = 768;

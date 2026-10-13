@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CareEvent, CreateCareEvent } from "$lib/api";
+import type { CareEvent, CreateCareEvent } from "#lib/api.js";
 import {
   careEvents,
   careError,
@@ -9,8 +9,8 @@ import {
   deleteCareEvent,
 } from "./care";
 
-vi.mock("$lib/api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("$lib/api")>();
+vi.mock("#lib/api.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("#lib/api.js")>();
   return {
     ...actual,
     fetchCareEvents: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock("$lib/api", async (importOriginal) => {
   };
 });
 
-import * as api from "$lib/api";
+import * as api from "#lib/api.js";
 
 const mockEvent: CareEvent = {
   id: 1,
@@ -54,7 +54,7 @@ describe("loadCareEvents", () => {
   });
 
   it("resolves ApiError code to i18n message", async () => {
-    const { ApiError } = await import("$lib/api");
+    const { ApiError } = await import("#lib/api.js");
     vi.mocked(api.fetchCareEvents).mockRejectedValue(
       new ApiError(500, "INTERNAL_ERROR", "An internal error occurred"),
     );

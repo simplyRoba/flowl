@@ -255,6 +255,33 @@ export async function cachedShellOrOffline(
   );
 }
 
+export interface PrecacheManifest {
+  immutable: ReadonlyArray<{ path: string }>;
+  assets: ReadonlyArray<{ path: string }>;
+}
+
+export interface PrecachePathResolvers {
+  /** Turns a base-relative build path into an absolute pathname. */
+  resolve: (path: string) => string;
+  /** Turns a base-relative static asset path into an absolute pathname. */
+  asset: (path: string) => string;
+}
+
+/**
+ * Builds the absolute pathnames precached on install. Manifest paths are
+ * relative to the base path, so they are resolved before being matched
+ * against `url.pathname`.
+ */
+export function precacheAssetPaths(
+  manifest: PrecacheManifest,
+  resolvers: PrecachePathResolvers,
+): string[] {
+  return [
+    ...manifest.immutable.map((entry) => resolvers.resolve(entry.path)),
+    ...manifest.assets.map((entry) => resolvers.asset(entry.path)),
+  ];
+}
+
 /** Installs only the immutable public assets required before authentication. */
 export async function installPublicAssets(
   cacheStorage: PublicAssetCacheStorage,

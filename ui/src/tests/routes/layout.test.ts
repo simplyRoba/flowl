@@ -8,9 +8,9 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SvelteURL } from "svelte/reactivity";
-import * as pullToRefresh from "$lib/pull-to-refresh";
-import * as notifications from "$lib/stores/notifications";
-import { isOffline } from "$lib/stores/network";
+import * as pullToRefresh from "#lib/pull-to-refresh.js";
+import * as notifications from "#lib/stores/notifications.js";
+import { isOffline } from "#lib/stores/network.js";
 
 import LayoutHarness from "./LayoutHarness.svelte";
 
@@ -36,14 +36,15 @@ let mockUrl: URL = new SvelteURL("http://localhost/");
 let serviceWorkerRegister = vi.fn();
 let serviceWorkerRemoveEventListener = vi.fn();
 
-vi.mock("$app/environment", () => ({
+vi.mock("$app/env", () => ({
   get dev() {
     return mockEnvironment.dev;
   },
 }));
 
 vi.mock("$app/paths", () => ({
-  resolve: (value: string) => value,
+  // Mirrors Kit 3: route IDs start with "/", plain paths get a "/" prefix.
+  resolve: (value: string) => (value.startsWith("/") ? value : `/${value}`),
 }));
 
 vi.mock("$app/state", () => ({
@@ -54,11 +55,11 @@ vi.mock("$app/state", () => ({
   },
 }));
 
-vi.mock("$lib/api", () => ({
+vi.mock("#lib/api.js", () => ({
   fetchSettings: (...args: unknown[]) => mockFetchSettings(...args),
 }));
 
-vi.mock("$lib/stores/network", async () => {
+vi.mock("#lib/stores/network.js", async () => {
   const { writable } = await import("svelte/store");
   return {
     isOffline: writable(false),
@@ -70,7 +71,7 @@ vi.mock("$lib/stores/network", async () => {
   };
 });
 
-vi.mock("$lib/auth", () => ({
+vi.mock("#lib/auth.js", () => ({
   fetchAuthConfig: (...args: unknown[]) => mockFetchAuthConfig(...args),
   setServiceWorkerAuthMode: (...args: unknown[]) =>
     mockSetServiceWorkerAuthMode(...args),

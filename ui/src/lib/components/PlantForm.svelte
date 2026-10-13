@@ -22,14 +22,14 @@
     GrowthSpeed,
     SoilType,
     SoilMoisture,
-  } from "$lib/api";
-  import { aiStatus, loadAiStatus } from "$lib/stores/ai";
+  } from "#lib/api.js";
+  import { aiStatus, loadAiStatus } from "#lib/stores/ai.js";
   import {
     locations,
     loadLocations,
     createLocation,
-  } from "$lib/stores/locations";
-  import { translations } from "$lib/stores/locale";
+  } from "#lib/stores/locations.js";
+  import { translations } from "#lib/stores/locale.js";
   import IconPicker from "./IconPicker.svelte";
   import IdentifyPanel from "./IdentifyPanel.svelte";
   import LocationChips from "./LocationChips.svelte";
@@ -214,7 +214,7 @@
   const VALID_SOIL_MOISTURE = ["dry", "moderate", "moist"];
 
   function handleIdentifyApply(
-    suggestion: import("$lib/api").IdentifyResult,
+    suggestion: import("#lib/api.js").IdentifyResult,
   ): number {
     previousValues = {
       name,

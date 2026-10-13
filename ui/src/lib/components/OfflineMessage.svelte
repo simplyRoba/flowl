@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { translations } from "$lib/stores/locale";
+  import { translations } from "#lib/stores/locale.js";
   import Logo from "./Logo.svelte";
 </script>
 

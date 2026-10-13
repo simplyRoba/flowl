@@ -6,11 +6,12 @@ import {
   waitFor,
 } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Plant } from "$lib/api";
-import { isOffline } from "$lib/stores/network";
+import type { Plant } from "#lib/api.js";
+import { isOffline } from "#lib/stores/network.js";
 
-vi.mock("$lib/api", async () => {
-  const actual = await vi.importActual<typeof import("$lib/api")>("$lib/api");
+vi.mock("#lib/api.js", async () => {
+  const actual =
+    await vi.importActual<typeof import("#lib/api.js")>("#lib/api.js");
   return {
     ...actual,
     chatPlant: vi.fn(),
@@ -20,12 +21,12 @@ vi.mock("$lib/api", async () => {
   };
 });
 
-vi.mock("$lib/stores/notifications", () => ({
+vi.mock("#lib/stores/notifications.js", () => ({
   pushNotification: vi.fn(),
 }));
 
 import ChatDrawer from "./ChatDrawer.svelte";
-import * as api from "$lib/api";
+import * as api from "#lib/api.js";
 
 function makePlant(overrides: Partial<Plant> = {}): Plant {
   return {

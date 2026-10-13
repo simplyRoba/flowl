@@ -2,16 +2,17 @@ import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import IdentifyPanel from "../../lib/components/IdentifyPanel.svelte";
-import { ApiError } from "$lib/api";
-import type { IdentifyResult } from "$lib/api";
+import { ApiError } from "#lib/api.js";
+import type { IdentifyResult } from "#lib/api.js";
 
 const { mockGoto } = vi.hoisted(() => ({ mockGoto: vi.fn() }));
 const mockIdentifyPlant = vi.fn();
 
 vi.mock("$app/navigation", () => ({ goto: mockGoto }));
 
-vi.mock("$lib/api", async () => {
-  const actual = await vi.importActual<typeof import("$lib/api")>("$lib/api");
+vi.mock("#lib/api.js", async () => {
+  const actual =
+    await vi.importActual<typeof import("#lib/api.js")>("#lib/api.js");
   return {
     ...actual,
     identifyPlant: (...args: unknown[]) => mockIdentifyPlant(...args),

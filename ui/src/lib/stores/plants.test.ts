@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Plant, CreatePlant, UpdatePlant } from "$lib/api";
-import { ApiError } from "$lib/api";
+import type { Plant, CreatePlant, UpdatePlant } from "#lib/api.js";
+import { ApiError } from "#lib/api.js";
 import {
   plants,
   currentPlant,
@@ -16,8 +16,8 @@ import {
   deletePhoto,
 } from "./plants";
 
-vi.mock("$lib/api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("$lib/api")>();
+vi.mock("#lib/api.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("#lib/api.js")>();
   return {
     ...actual,
     fetchPlants: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock("$lib/api", async (importOriginal) => {
   };
 });
 
-import * as api from "$lib/api";
+import * as api from "#lib/api.js";
 
 const mockPlant: Plant = {
   id: 1,

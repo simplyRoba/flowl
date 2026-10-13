@@ -1,7 +1,7 @@
 <script lang="ts">
   import { MapPin } from "lucide-svelte";
-  import type { Location } from "$lib/api";
-  import { translations } from "$lib/stores/locale";
+  import type { Location } from "#lib/api.js";
+  import { translations } from "#lib/stores/locale.js";
 
   let {
     locations,

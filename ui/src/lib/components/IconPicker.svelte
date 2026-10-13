@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { emojiToSvgPath } from "$lib/emoji";
+  import { emojiToSvgPath } from "#lib/emoji.js";
 
   const ICONS = ["🪴", "🌿", "🌵", "🌸", "🪻", "🌱", "🌷", "🌻", "🍀"];
 
