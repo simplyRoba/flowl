@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.9.0](https://github.com/simplyRoba/flowl/compare/v1.8.5...v1.9.0) (2026-10-15)
+
+
+### Features
+
+* **ui:** add care-event timeline background ([752f4b0](https://github.com/simplyRoba/flowl/commit/752f4b08f355a7f77429d49a21e0650d7b926727))
+
+
+### Bug Fixes
+
+* handle ZIP 9 filename decoding during restore ([d882303](https://github.com/simplyRoba/flowl/commit/d882303b79733a65b1e4c1a6bfda6d8afb6f7807))
+* **ui:** resolve complete navigation targets ([a42706a](https://github.com/simplyRoba/flowl/commit/a42706abdaba4b40a27e17f98a87125b42513d9e))
+
+
+### Dependencies
+
+* bump brace-expansion from 5.0.8 to 5.0.12 in /ui ([b6dbb8a](https://github.com/simplyRoba/flowl/commit/b6dbb8a9a756bc00bce74a669d78851b6e56f0e7))
+* bump devalue from 5.8.1 to 5.9.4 in /ui ([5c0f0d6](https://github.com/simplyRoba/flowl/commit/5c0f0d6f0d36aea9ad0485f2308f7bdb084b7613))
+* bump globals from 17.12.0 to 17.13.0 in /ui ([2567e81](https://github.com/simplyRoba/flowl/commit/2567e8123fdd2bce3f10c4d576aca50b0440f8c3))
+* bump jsonwebtoken from 11.0.0 to 11.1.0 ([60da067](https://github.com/simplyRoba/flowl/commit/60da0671f0dd9167579c41770fff492affac35a2))
+* bump postcss-selector-parser from 7.1.5 to 7.1.6 in /ui ([e663603](https://github.com/simplyRoba/flowl/commit/e66360393d1cc41875335d79005fcbaf78bf5e95))
+* bump prettier in /ui in the prettier group across 1 directory ([410ae8f](https://github.com/simplyRoba/flowl/commit/410ae8f36181a8cf3a8b8ca308e36b88b94e8e4d))
+* bump rust-embed from 8.12.0 to 8.13.0 ([97b1cc3](https://github.com/simplyRoba/flowl/commit/97b1cc347b5ec2d5b9005b13703ad44d07f169df))
+* bump rustls from 0.23.37 to 0.23.45 ([2c9ba9b](https://github.com/simplyRoba/flowl/commit/2c9ba9b85bfa321c738ad9f57e1d81d60e3172a9))
+* bump serde_json from 1.0.151 to 1.0.154 in the serde group ([dd260a5](https://github.com/simplyRoba/flowl/commit/dd260a59e494d10e872aa919ef437fa539a12fc0))
+* bump the eslint group across 1 directory with 2 updates ([4fecec2](https://github.com/simplyRoba/flowl/commit/4fecec21a27e3fc4d2a33f3e0cd7d8d8c21a0a73))
+* bump the eslint group across 1 directory with 3 updates ([156af20](https://github.com/simplyRoba/flowl/commit/156af20bf2768a469d1bdb01edafd0338eb60cbb))
+* bump the svelte group across 1 directory with 5 updates ([854bab5](https://github.com/simplyRoba/flowl/commit/854bab56d926984bd842526caf100e8db12f8719))
+* bump tokio from 1.53.1 to 1.53.2 in the tokio group ([4fd2f9f](https://github.com/simplyRoba/flowl/commit/4fd2f9feb81496acfa33908f8db51638da21dd6e))
+* bump undici from 8.10.0 to 8.11.2 in /ui ([c5b85a5](https://github.com/simplyRoba/flowl/commit/c5b85a56faba8e7728f86ca2b14c94841ae4af42))
+* bump uuid from 1.26.0 to 1.27.0 ([6ac505c](https://github.com/simplyRoba/flowl/commit/6ac505c72536ebd1dfda953d40521e976a5376db))
+* bump uuid from 1.27.0 to 1.28.0 ([7886026](https://github.com/simplyRoba/flowl/commit/7886026a3ac0a9f4db60fa05173342515425a390))
+* bump vite from 8.2.2 to 8.3.4 in /ui ([3264fa4](https://github.com/simplyRoba/flowl/commit/3264fa49630fae70f7e98775fcc644d511d8d8d7))
+* bump vitest from 5.0.0 to 5.0.3 in /ui ([90899f3](https://github.com/simplyRoba/flowl/commit/90899f365e9c6d84cbbdafd51eae77ee003dbd85))
+* bump zip from 8.6.0 to 9.0.0 ([1080ad4](https://github.com/simplyRoba/flowl/commit/1080ad4dd9aa101c7c8e51805841bc3bd5e24a59))
+* migrate UI to SvelteKit 3 ([31ac2db](https://github.com/simplyRoba/flowl/commit/31ac2db577ce80cd565468744fe4681b35011c07))
+
 ## [1.8.5](https://github.com/simplyRoba/flowl/compare/v1.8.4...v1.8.5) (2026-09-09)
 
 
