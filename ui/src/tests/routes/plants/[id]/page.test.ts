@@ -248,7 +248,7 @@ function expectedTimeline(events: CareEvent[], plant = makePlant()) {
       id,
       eventType,
       x: Number(
-        (((occurredAt - (now - 28 * DAY)) / (28 * DAY)) * 320).toFixed(6),
+        (((occurredAt - (now - 42 * DAY)) / (42 * DAY)) * 320).toFixed(6),
       ),
     })),
   );
@@ -488,6 +488,26 @@ describe("care timeline integration", () => {
     clock = vi.spyOn(Date, "now").mockReturnValue(TIMELINE_NOW);
   });
   afterEach(() => clock.mockRestore());
+
+  it("shows three biweekly waterings across six weeks while keeping older entries in the journal", async () => {
+    const events = [
+      recentEvent(1, 49, { notes: "Older journal entry" }),
+      recentEvent(2, 35),
+      recentEvent(3, 21),
+      recentEvent(4, 7),
+    ];
+    await renderWithPlant({ watering_interval_days: 14 }, events);
+
+    await waitFor(() =>
+      expect(timelineMarkers()).toEqual([
+        { id: 2, eventType: "watered", x: 53.333333 },
+        { id: 3, eventType: "watered", x: 160 },
+        { id: 4, eventType: "watered", x: 266.666667 },
+      ]),
+    );
+    expect(screen.getByText("Older journal entry")).toBeTruthy();
+    expect(mockFetchCareEventsApi).toHaveBeenCalledTimes(1);
+  });
 
   it.each([false, true])(
     "keeps graph behind heading and controls outside it (AI: %s)",
@@ -823,7 +843,7 @@ describe("care timeline integration", () => {
         event_type: "ai-consultation",
         notes: "Saved advice",
       }),
-      recentEvent(9, 29),
+      recentEvent(9, 43),
       recentEvent(10, -1),
       recentEvent(11, 0, { occurred_at: "invalid" }),
       recentEvent(99, 0, { plant_id: 2 }),

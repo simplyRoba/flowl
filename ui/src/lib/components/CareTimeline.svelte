@@ -10,6 +10,7 @@
   } from "lucide-svelte";
   import type { CareEvent, EventType } from "#lib/api.js";
   import {
+    CARE_TIMELINE_WINDOW_DAYS,
     createCareTimelineGround,
     layoutCareTimelinePlan,
     planCareTimelineEvents,
@@ -115,7 +116,7 @@
     }),
   );
   const description = $derived(
-    `${periodFormat.format(now - 28 * 86_400_000)} – ${periodFormat.format(now)}` +
+    `${periodFormat.format(now - CARE_TIMELINE_WINDOW_DAYS * 86_400_000)} – ${periodFormat.format(now)}` +
       (historyError
         ? ` · ${$translations.error.loadCareEvents}`
         : loading

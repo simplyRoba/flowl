@@ -1,5 +1,7 @@
 import type { CareEvent, EventType } from "#lib/api.js";
 
+export const CARE_TIMELINE_WINDOW_DAYS = 42;
+
 const DAY_MS = 86_400_000;
 const GROUND_DEPTH_CAP = 36;
 const GROUND_DEPTH_RATIO = 0.18;
@@ -121,7 +123,7 @@ function windowStart(now: number, windowDays: number): number {
 export function selectCareTimelineEvents(
   history: readonly NormalizedCareEvent[],
   now: number,
-  windowDays = 28,
+  windowDays = CARE_TIMELINE_WINDOW_DAYS,
 ): NormalizedCareEvent[] {
   const start = windowStart(now, windowDays);
   return history.filter(
@@ -224,7 +226,7 @@ export function planCareTimelineEvents(
   events: readonly NormalizedCareEvent[],
   now: number,
   width: number,
-  windowDays = 28,
+  windowDays = CARE_TIMELINE_WINDOW_DAYS,
 ): CareTimelinePlan {
   const start = windowStart(now, windowDays);
   if (!Number.isFinite(width) || width <= 0)
@@ -306,7 +308,7 @@ export function layoutCareTimelineEvents(
   events: readonly NormalizedCareEvent[],
   now: number,
   ground: CareTimelineGround,
-  windowDays = 28,
+  windowDays = CARE_TIMELINE_WINDOW_DAYS,
 ): CareTimelinePoint[] {
   return layoutCareTimelinePlan(
     planCareTimelineEvents(events, now, ground.width, windowDays),

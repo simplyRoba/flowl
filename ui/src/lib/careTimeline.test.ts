@@ -191,19 +191,19 @@ describe("normalizeCareTimelineEvents", () => {
 });
 
 describe("selectCareTimelineEvents", () => {
-  it("uses exactly the trailing 28 days, including boundaries but no old seed or future record", () => {
-    const normalized = history(29, 28 + 1 / DAY, 28, 14, 0, -1 / DAY, -1);
+  it("uses exactly the trailing 42 days, including boundaries but no old seed or future record", () => {
+    const normalized = history(43, 42 + 1 / DAY, 42, 35, 21, 0, -1 / DAY, -1);
     expect(
       selectCareTimelineEvents(normalized, NOW).map(({ id }) => id),
-    ).toEqual([3, 4, 5]);
+    ).toEqual([3, 4, 5, 6]);
     expect(
       selectCareTimelineEvents(normalized, NOW, 7).map(({ id }) => id),
-    ).toEqual([5]);
+    ).toEqual([6]);
   });
 
   it("rechecks future and aging eligibility without changing or reparsing the normalized history", () => {
     const normalized = Object.freeze(
-      history(28, 1, -1).map((record) => Object.freeze(record)),
+      history(42, 1, -1).map((record) => Object.freeze(record)),
     );
     const snapshot = JSON.stringify(normalized);
     expect(selectCareTimelineEvents(normalized, NOW)).toEqual(
@@ -212,7 +212,10 @@ describe("selectCareTimelineEvents", () => {
     expect(selectCareTimelineEvents(normalized, NOW + DAY)).toEqual(
       normalized.slice(1),
     );
-    expect(selectCareTimelineEvents(normalized, NOW + 30 * DAY)).toEqual([]);
+    expect(selectCareTimelineEvents(normalized, NOW + 43 * DAY)).toEqual(
+      normalized.slice(-1),
+    );
+    expect(selectCareTimelineEvents(normalized, NOW + 44 * DAY)).toEqual([]);
     expect(JSON.stringify(normalized)).toBe(snapshot);
   });
 
@@ -230,7 +233,7 @@ describe("selectCareTimelineEvents", () => {
 describe("care timeline layout", () => {
   it("projects precise true-time spacing, preserving equal instants and identities", () => {
     const ground = createCareTimelineGround(1, 320, 140);
-    const data = history(28, 21, 14, 14, 7, 0);
+    const data = history(42, 31.5, 21, 21, 10.5, 0);
     const points = layoutCareTimelineEvents(data, NOW, ground);
     expect(points.map(({ x }) => x)).toEqual([0, 80, 160, 160, 240, 320]);
     expect(points.map(({ event }) => event.id)).toEqual([1, 2, 3, 4, 5, 6]);
@@ -239,7 +242,7 @@ describe("care timeline layout", () => {
       NOW,
       ground,
     )[0];
-    expect(precise.x).toBeCloseTo((1 - 13.123456 / 28) * 320, 6);
+    expect(precise.x).toBeCloseTo((1 - 13.123456 / 42) * 320, 6);
   });
 
   it("keeps four fixed cubic segments with five plant/size-only anchors and no legend allowance", () => {
@@ -273,7 +276,7 @@ describe("care timeline layout", () => {
   });
 
   it("adds stems, never bends, and deterministically reflows only conflicting neighborhoods", () => {
-    const ground = createCareTimelineGround(1, 640, 240);
+    const ground = createCareTimelineGround(1, 640, 300);
     const sparse = history(21, 14, 7);
     const original = layoutCareTimelineEvents(sparse, NOW, ground);
     const dense = [
@@ -287,7 +290,7 @@ describe("care timeline layout", () => {
       more,
     );
     expect(more).toHaveLength(dense.length);
-    expectClearance(more, 240);
+    expectClearance(more, 300);
     // An isolated addition does not displace existing nonconflicting events.
     const isolated = [
       ...sparse,
@@ -298,14 +301,14 @@ describe("care timeline layout", () => {
     );
     expect(layoutCareTimelineEvents(sparse, NOW, ground)).toEqual(original);
     expect(new Set(original.map(({ y }) => y)).size).toBeGreaterThan(1);
-    expect(ground).toEqual(createCareTimelineGround(1, 640, 240));
+    expect(ground).toEqual(createCareTimelineGround(1, 640, 300));
   });
 
   it("lands every stem on the actual rendered cubic between anchors, with at least 18px clearance", () => {
     const ground = createCareTimelineGround(3, 517, 213);
     const commands = ground.path.match(/[MC][^MC]*/g)!;
     const data = history(
-      ...Array.from({ length: 101 }, (_, index) => index * 0.28),
+      ...Array.from({ length: 101 }, (_, index) => index * 0.42),
     );
     for (const point of layoutCareTimelineEvents(data, NOW, ground)) {
       const index = Math.min(3, Math.floor((point.x / ground.width) * 4));
@@ -414,7 +417,7 @@ describe("care timeline layout", () => {
             expectClearance(points, height);
             for (const point of points) {
               expect(point.x).toBe(
-                ((point.event.occurredAt - (NOW - 28 * DAY)) / (28 * DAY)) *
+                ((point.event.occurredAt - (NOW - 42 * DAY)) / (42 * DAY)) *
                   width,
               );
               expect(point.groundY).toBe(

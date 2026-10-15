@@ -8,7 +8,7 @@ Show recorded care as a quiet, decorative plant-detail background without implyi
 
 ### Requirement: Recorded care-event background
 
-The plant-detail hero SHALL display eligible raw care events from the current plant's last 28 days using existing event-type icons. All supported types and events with notes/photos SHALL participate independently of journal grouping. Invalid, foreign, out-of-window, and future records SHALL NOT create markers.
+The plant-detail hero SHALL display eligible raw care events from the current plant's last 42 days (6 weeks) using existing event-type icons. All supported types and events with notes/photos SHALL participate independently of journal grouping. Invalid, foreign, out-of-window, and future records SHALL NOT create markers.
 
 #### Scenario: Mixed care history
 
@@ -24,7 +24,7 @@ The plant-detail hero SHALL display eligible raw care events from the current pl
 
 ### Requirement: True horizontal time
 
-Event x-coordinates SHALL represent proportional elapsed time within the trailing 28-day period ending at the actual current time. Supported timestamp representations SHALL normalize to actual instants, with timezone-less timestamps interpreted as UTC. Equal-instant records SHALL retain separate identities. The timeline SHALL NOT draw a forecast.
+Event x-coordinates SHALL represent proportional elapsed time within the trailing 42-day period ending at the actual current time. Supported timestamp representations SHALL normalize to actual instants, with timezone-less timestamps interpreted as UTC. Equal-instant records SHALL retain separate identities. The timeline SHALL NOT draw a forecast.
 
 #### Scenario: Equivalent timestamps
 

@@ -193,7 +193,11 @@ describe("CareTimeline presentation", () => {
   it("renders the approved floating icons, dotted stems, fixed ground and contact shadows", () => {
     const { container } = render(CareTimeline, { props });
     const ground = createCareTimelineGround(1, 320, 140);
-    expect(positions(container).map(({ xy }) => xy[0])).toEqual([80, 160, 240]);
+    expect(positions(container).map(({ xy }) => xy[0])).toEqual([
+      160,
+      (28 / 42) * 320,
+      (35 / 42) * 320,
+    ]);
     expect(groundPath(container)).toBe(ground.path);
     expect(ground.path.match(/C/g)).toHaveLength(4);
     expect(container.querySelector(".ground-shadow")?.getAttribute("d")).toBe(
@@ -270,7 +274,7 @@ describe("CareTimeline presentation", () => {
         "ai-consultation",
       ];
       const data = Array.from({ length: count }, (_, index) =>
-        event(index + 1, 14, { event_type: types[index % types.length] }),
+        event(index + 1, 21, { event_type: types[index % types.length] }),
       );
       const view = render(CareTimeline, {
         props: { ...props, events: data, onMinimumHeight: report },
@@ -448,7 +452,7 @@ describe("CareTimeline presentation", () => {
           event(2, 14, { occurred_at: "2026-03-18T14:00:00+02:00" }),
           event(3, 14, { occurred_at: "2026-03-18T12:00:00.000000" }),
           event(4, 14, { plant_id: 2 }),
-          event(5, 29),
+          event(5, 43),
           event(6, -1),
           event(7, 0, { occurred_at: "invalid" }),
           event(8, 0, { occurred_at: "2026-02-30T12:00:00Z" }),
@@ -457,10 +461,31 @@ describe("CareTimeline presentation", () => {
       },
     });
     expect(positions(container).map(({ id, xy }) => [id, xy[0]])).toEqual([
-      [1, 160],
-      [2, 160],
-      [3, 160],
+      [1, (28 / 42) * 320],
+      [2, (28 / 42) * 320],
+      [3, (28 / 42) * 320],
     ]);
+  });
+
+  it("renders the inclusive 42-day boundary and day-35 history at true positions without requests", () => {
+    const { container } = render(CareTimeline, {
+      props: {
+        ...props,
+        events: [
+          event(1, 42),
+          event(2, 35),
+          event(3, 42, {
+            occurred_at: new Date(NOW - 42 * DAY - 1).toISOString(),
+          }),
+          event(4, -1 / DAY),
+        ],
+      },
+    });
+    expect(positions(container).map(({ id, xy }) => [id, xy[0]])).toEqual([
+      [1, 0],
+      [2, (7 / 42) * 320],
+    ]);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("is noninteractive and transparent with soft outer edges and achromatic paint confined to masks", () => {
@@ -545,7 +570,7 @@ describe("CareTimeline presentation", () => {
         day: "numeric",
       });
       expect(container.querySelector("desc")?.textContent).toBe(
-        `${format.format(NOW - 28 * DAY)} – ${format.format(NOW)} · ${dictionary.error.loadCareEvents}`,
+        `${format.format(NOW - 42 * DAY)} – ${format.format(NOW)} · ${dictionary.error.loadCareEvents}`,
       );
       expect(positions(container)).toEqual(original);
       expect(
@@ -617,7 +642,7 @@ describe("CareTimeline progressive entrance", () => {
   });
 
   it("uses x-ordered stagger, opacity-only event fades and bounded icon-only scaling", async () => {
-    const data = [event(1, 28), event(2, 21), event(3, 14), event(4, 0)];
+    const data = [event(1, 42), event(2, 31.5), event(3, 21), event(4, 0)];
     const view = render(CareTimeline, { props: { ...props, events: data } });
     expect(
       [...view.container.querySelectorAll<SVGElement>(".event")].map((node) =>
@@ -659,7 +684,7 @@ describe("CareTimeline progressive entrance", () => {
   });
 
   it("keeps simultaneous icons collision-free at their maximum entrance scale without moving time positions", async () => {
-    const data = Array.from({ length: 12 }, (_, index) => event(index + 1, 14));
+    const data = Array.from({ length: 12 }, (_, index) => event(index + 1, 21));
     const view = render(CareTimeline, { props: { ...props, events: data } });
     const original = positions(view.container);
     expect(original.every(({ xy }) => xy[0] === 160)).toBe(true);
@@ -870,7 +895,7 @@ describe("CareTimeline history and clock lifecycle", () => {
     ["initial failure", [], false, true],
     ["malformed", [event(1, 0, { occurred_at: "bad" })], false, false],
     ["other plant", [event(1, 1, { plant_id: 2 })], false, false],
-    ["old", [event(1, 29)], false, false],
+    ["old", [event(1, 43)], false, false],
     ["future", [event(1, -1)], false, false],
   ] as const)(
     "omits the SVG and all placeholder UI for %s history",
@@ -921,7 +946,7 @@ describe("CareTimeline history and clock lifecycle", () => {
         {
           ...next[0],
           event_type: "custom",
-          occurred_at: new Date(NOW - 14 * DAY).toISOString(),
+          occurred_at: new Date(NOW - 21 * DAY).toISOString(),
         },
       ],
     });
@@ -943,7 +968,7 @@ describe("CareTimeline history and clock lifecycle", () => {
     await advance(1);
     const minute = positions(view.container);
     expect(minute[0].xy[0]).toBeCloseTo(
-      ((7 * DAY - 60_000) / (28 * DAY)) * 320,
+      ((21 * DAY - 60_000) / (42 * DAY)) * 320,
     );
     expect(minute).not.toEqual(original);
     await visibility(true);
@@ -952,7 +977,7 @@ describe("CareTimeline history and clock lifecycle", () => {
     expect(positions(view.container)).toEqual(minute);
     await visibility(false);
     expect(positions(view.container)[0].xy[0]).toBeCloseTo(
-      ((7 * DAY - 7 * 60_000) / (28 * DAY)) * 320,
+      ((21 * DAY - 7 * 60_000) / (42 * DAY)) * 320,
     );
     expect(vi.getTimerCount()).toBe(1);
     expect(normalizeCareTimelineEvents).toHaveBeenCalledTimes(1);
@@ -974,7 +999,7 @@ describe("CareTimeline history and clock lifecycle", () => {
   });
 
   it("updates future and aged-out eligibility on minute ticks without reparsing on size/locale/status changes", async () => {
-    const future = [event(1, 28), event(2, -60_000 / DAY)];
+    const future = [event(1, 42), event(2, -60_000 / DAY)];
     const view = render(CareTimeline, { props: { ...props, events: future } });
     expect(positions(view.container).map(({ id }) => id)).toEqual([1]);
     await advance(60_000);
@@ -1007,7 +1032,7 @@ describe("CareTimeline history and clock lifecycle", () => {
 
   it("clears and regrows the reported minimum as dense clusters age out/arrive on the real source/visibility clock", async () => {
     const report = vi.fn();
-    const old = Array.from({ length: 30 }, (_, index) => event(index + 1, 28));
+    const old = Array.from({ length: 30 }, (_, index) => event(index + 1, 42));
     const future = Array.from({ length: 30 }, (_, index) =>
       event(index + 101, -120_000 / DAY),
     );
