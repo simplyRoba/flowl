@@ -88,7 +88,7 @@ export function currentReturnTarget(
   );
 }
 
-export function loginUrl(target: string): string {
+export function loginUrl(target: string): `/login?return_to=${string}` {
   return `/login?return_to=${encodeURIComponent(safeLocalTarget(target))}`;
 }
 
@@ -128,11 +128,9 @@ export function resetAuthNavigationForTests(): void {
 
 export function navigateToLogin(
   location: Pick<Location, "pathname" | "search" | "hash"> = window.location,
-  navigate: (url: string) => void = (url) => {
+  navigate: (url: ReturnType<typeof loginUrl>) => void = (url) => {
     // The query comes from safeLocalTarget; /auth routes are backend-only.
-    void goto(`${resolve("login")}${url.slice("/login".length)}`, {
-      replace: true,
-    });
+    void goto(resolve(url), { replace: true });
   },
 ): boolean {
   if (

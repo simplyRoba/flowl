@@ -19,12 +19,11 @@
   } = $props();
 
   let resolvedLabel = $derived(backLabel || $translations.common.back);
-  let resolvedHref = $derived(resolve(backHref.slice(1) as Path));
 </script>
 
 <!-- Desktop: inline header row -->
 <div class="page-header-inline">
-  <a href={resolvedHref} class="back-link">
+  <a href={resolve(backHref.slice(1) as Path)} class="back-link">
     <ArrowLeft size={16} />
     {resolvedLabel}
   </a>
@@ -37,7 +36,7 @@
 
 <!-- Mobile: fixed bottom action bar -->
 <div class="action-bar">
-  <a href={resolvedHref} class="action-bar-back">
+  <a href={resolve(backHref.slice(1) as Path)} class="action-bar-back">
     <ArrowLeft size={16} />
     {resolvedLabel}
   </a>
