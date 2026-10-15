@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/simplyRoba/flowl/compare/v1.9.0...v1.9.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **ui:** show six weeks of care history ([27f9eb6](https://github.com/simplyRoba/flowl/commit/27f9eb601ba9afdd9f6b5cad0db2c08ec439c3f2))
+
 ## [1.9.0](https://github.com/simplyRoba/flowl/compare/v1.8.5...v1.9.0) (2026-10-15)
 
 
