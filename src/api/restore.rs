@@ -142,7 +142,10 @@ fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError
         let file = archive
             .by_index(i)
             .map_err(|_| ApiError::BadRequest("IMPORT_INVALID_ARCHIVE"))?;
-        validate_filename(file.name())?;
+        let name = file
+            .name()
+            .map_err(|_| ApiError::BadRequest("IMPORT_INVALID_ARCHIVE"))?;
+        validate_filename(&name)?;
     }
 
     // Read and parse data.json
@@ -174,7 +177,10 @@ fn parse_archive(bytes: &[u8]) -> Result<(ImportData, Vec<PhotoEntry>), ApiError
             .by_index(i)
             .map_err(|_| ApiError::BadRequest("IMPORT_INVALID_ARCHIVE"))?;
 
-        let name = file.name().to_string();
+        let name = file
+            .name()
+            .map_err(|_| ApiError::BadRequest("IMPORT_INVALID_ARCHIVE"))?
+            .into_owned();
         if let Some(filename) = name.strip_prefix("photos/") {
             if filename.is_empty() {
                 continue;
