@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { goto } from "$app/navigation";
 
 vi.mock("$app/navigation", () => ({ goto: vi.fn() }));
 
@@ -227,7 +228,44 @@ describe("protected cache purge", () => {
 });
 
 describe("navigateToLogin", () => {
-  beforeEach(resetAuthNavigationForTests);
+  beforeEach(() => {
+    resetAuthNavigationForTests();
+    vi.mocked(goto).mockClear();
+  });
+
+  it("resolves the default login navigation with the complete encoded return target", () => {
+    expect(
+      navigateToLogin({
+        pathname: "/plants/42",
+        search: "?tab=care&filter=%2F%23%25&name=Monstera%20deliciosa",
+        hash: "#entry-7",
+      }),
+    ).toBe(true);
+    expect(goto).toHaveBeenCalledExactlyOnceWith(
+      `/login?return_to=${encodeURIComponent("/plants/42?tab=care&filter=%2F%23%25&name=Monstera%20deliciosa#entry-7")}`,
+      { replace: true },
+    );
+  });
+
+  it("uses the safe fallback with the default navigator for an unsafe current path", () => {
+    expect(
+      navigateToLogin({
+        pathname: "/plants/%2fsecret",
+        search: "",
+        hash: "",
+      }),
+    ).toBe(true);
+    expect(goto).toHaveBeenCalledExactlyOnceWith("/login?return_to=%2F", {
+      replace: true,
+    });
+  });
+
+  it("does not invoke the default navigator from a public auth route", () => {
+    expect(navigateToLogin({ pathname: "/login", search: "", hash: "" })).toBe(
+      false,
+    );
+    expect(goto).not.toHaveBeenCalled();
+  });
 
   it("uses a validated current local URL once", () => {
     const navigate = vi.fn();
