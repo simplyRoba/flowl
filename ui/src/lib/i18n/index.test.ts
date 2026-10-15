@@ -34,6 +34,23 @@ describe("watering group date ranges", () => {
   );
 });
 
+describe("care timeline reused translations", () => {
+  it.each([
+    ["English", en],
+    ["German", de],
+    ["Spanish", es],
+  ])("reuses existing labels without new keys in %s", (_locale, dictionary) => {
+    expect(
+      Object.keys(dictionary.plant).filter((key) =>
+        key.startsWith("careTimeline"),
+      ),
+    ).toEqual([]);
+    expect(dictionary.plant.careJournalSection).toBeTruthy();
+    expect(dictionary.error.loadCareEvents).toBeTruthy();
+    expect(dictionary.common.loading).toBeTruthy();
+  });
+});
+
 describe("settings translations", () => {
   it("localizes the AI-disabled hint", () => {
     expect(de.settings.aiDisabledHint).toBe(

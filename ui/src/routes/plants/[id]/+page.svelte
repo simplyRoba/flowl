@@ -45,6 +45,7 @@
   import { emojiToSvgPath } from "#lib/emoji.js";
   import { thumbUrl, thumbSrcset } from "#lib/thumbUrl.js";
   import StatusBadge from "#lib/components/StatusBadge.svelte";
+  import CareTimeline from "#lib/components/CareTimeline.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import PhotoLightbox from "#lib/components/PhotoLightbox.svelte";
   import ModalDialog from "#lib/components/ModalDialog.svelte";
@@ -82,6 +83,7 @@
   let deleting = $state(false);
   let watering = $state(false);
   let showLogForm = $state(false);
+  let formSession = $state(0);
   let editingEvent = $state<CareEvent | null>(null);
   let deletingEventId = $state<number | null>(null);
   let deleteEventDialogTarget = $state<CareEvent | null>(null);
@@ -91,13 +93,68 @@
   let aiEnabled = $derived($aiStatus?.enabled ?? false);
   let chatOpen = $state(false);
   let lightboxSrc = $state("");
+  let timelineMinimum = $state({ plantId: 0, height: 0 });
+  let nameElement = $state<HTMLElement | null>();
+  let speciesElement = $state<HTMLElement | null>();
+  let locationElement = $state<HTMLElement | null>();
+  let statusElement = $state<HTMLElement | null>();
+  let waterButton = $state<HTMLButtonElement | null>();
+  let aiButton = $state<HTMLButtonElement | null>();
+  const timelineForeground = $derived(
+    [
+      nameElement,
+      speciesElement,
+      locationElement,
+      statusElement,
+      waterButton,
+      aiButton,
+    ].filter(
+      (element): element is HTMLElement =>
+        element !== undefined && element !== null,
+    ),
+  );
   const BACK_PATHS = new Set<BackPath>(["/", "/care-journal", "/settings"]);
+
+  interface ViewTicket {
+    plantId: number;
+    generation: number;
+  }
+  interface CareTicket extends ViewTicket {
+    request: number;
+  }
+  let viewGeneration = 0;
+  let careRequestGeneration = 0;
+  let viewTicket = $state<ViewTicket | null>(null);
+
+  function ownsView(ticket: ViewTicket): boolean {
+    return (
+      !data.notFound &&
+      data.plant?.id === ticket.plantId &&
+      viewGeneration === ticket.generation
+    );
+  }
+
+  function ownsCare(ticket: CareTicket): boolean {
+    return ownsView(ticket) && careRequestGeneration === ticket.request;
+  }
+
+  // Reject foreign visits before they can invalidate the active request.
+  function beginCareRequest(visit: ViewTicket): CareTicket | null {
+    if (!ownsView(visit)) return null;
+    return { ...visit, request: ++careRequestGeneration };
+  }
 
   onMount(() => {
     loadAiStatus();
+    return () => {
+      viewGeneration++;
+      careRequestGeneration++;
+    };
   });
 
-  async function loadCareEvents(plantId: number): Promise<boolean> {
+  async function loadCareEvents(ticket: CareTicket): Promise<boolean> {
+    if (!ownsCare(ticket)) return false;
+    const plantId = ticket.plantId;
     const previousCareEvents = untrack(() =>
       careEventsPlantId === plantId ? careEvents : [],
     );
@@ -106,23 +163,35 @@
     careEvents = previousCareEvents;
     careEventsPlantId = plantId;
     try {
-      careEvents = await fetchCareEvents(plantId);
+      const events = await fetchCareEvents(plantId);
+      if (!ownsCare(ticket)) return false;
+      careEvents = events;
       return true;
     } catch (error) {
+      if (!ownsCare(ticket)) return false;
       careEvents = previousCareEvents;
       careLoadError = resolveError(error, "loadCareEvents");
       return false;
     } finally {
-      careLoading = false;
+      if (ownsCare(ticket)) careLoading = false;
     }
   }
 
   $effect(() => {
+    viewGeneration++;
+    careRequestGeneration++;
+    const visit: ViewTicket | null =
+      data.plant && !data.notFound
+        ? { plantId: data.plant.id, generation: viewGeneration }
+        : null;
+    viewTicket = visit;
     plant = data.plant;
     plantLoadErrorCode = data.loadErrorCode;
     notFound = data.notFound;
     showLogForm = false;
     editingEvent = null;
+    deleting = false;
+    watering = false;
     deletingEventId = null;
     deleteEventDialogTarget = null;
     deleteDialogOpen = false;
@@ -130,8 +199,11 @@
     lightboxSrc = "";
     chatOpen = false;
     expandedGroups.clear();
-    if (data.plant) {
-      loadCareEvents(data.plant.id);
+    if (visit) {
+      untrack(() => {
+        const ticket = beginCareRequest(visit);
+        if (ticket) void loadCareEvents(ticket);
+      });
     } else {
       careEvents = [];
       careEventsPlantId = null;
@@ -145,15 +217,24 @@
     backHref = from && BACK_PATHS.has(from) ? from : "/";
   });
 
-  async function refreshPlantDetails(plantId: number) {
-    const [nextPlant, careEventsLoaded] = await Promise.all([
-      fetchPlant(plantId),
-      loadCareEvents(plantId),
-    ]);
-    if (!careEventsLoaded) throw new Error("Failed to load care events");
-
-    plant = nextPlant;
-    plantLoadErrorCode = null;
+  async function refreshPlantDetails(visit: ViewTicket): Promise<boolean> {
+    const ticket = beginCareRequest(visit);
+    if (!ticket) return false;
+    try {
+      const [nextPlant, careEventsLoaded] = await Promise.all([
+        fetchPlant(ticket.plantId),
+        loadCareEvents(ticket),
+      ]);
+      if (!ownsCare(ticket)) return false;
+      plant = nextPlant;
+      plantLoadErrorCode = null;
+      if (!careEventsLoaded) throw new Error("Failed to load care events");
+      return true;
+    } catch (error) {
+      // A superseded refresh is cancellation, not a mutation/load failure.
+      if (!ownsCare(ticket)) return false;
+      throw error;
+    }
   }
 
   function handleDelete() {
@@ -162,12 +243,13 @@
 
   async function handleDeleteConfirm() {
     deleteDialogOpen = false;
-    if (!plant) return;
+    if (!plant || !viewTicket) return;
+    const visit = viewTicket;
+    const plantName = plant.name;
     deleting = true;
     try {
-      const plantName = plant.name;
-      const success = await deletePlant(plant.id);
-      if (success) {
+      const success = await deletePlant(visit.plantId);
+      if (success && ownsView(visit)) {
         pushNotification({
           title: $translations.plant.deletePlant,
           variant: "success",
@@ -179,7 +261,7 @@
         goto(resolve("/"));
       }
     } finally {
-      deleting = false;
+      if (ownsView(visit)) deleting = false;
     }
   }
 
@@ -196,10 +278,13 @@
   }
 
   async function handleWater() {
-    if (!plant || watering) return;
+    if (!plant || !viewTicket || watering) return;
+    const visit = viewTicket;
+    const careGeneration = careRequestGeneration;
     watering = true;
     try {
-      const wateredPlant = await waterPlant(plant.id);
+      const wateredPlant = await waterPlant(visit.plantId);
+      if (!ownsView(visit)) return;
       if (!wateredPlant) {
         pushNotification({
           title: $translations.plant.wateringSection,
@@ -209,10 +294,27 @@
         plantsError.set(null);
         return;
       }
-      plant = wateredPlant;
-      loadCareEvents(wateredPlant.id);
+      if (careRequestGeneration !== careGeneration) {
+        // A newer care refresh may have changed metadata or missed this water.
+        // Keep its visible plant until a post-mutation refetch reconciles both.
+        try {
+          await refreshPlantDetails(visit);
+        } catch {
+          if (!ownsView(visit)) return;
+          pushNotification({
+            title: $translations.plant.careJournalSection,
+            variant: "error",
+            message: $translations.error.loadCareEvents,
+          });
+        }
+      } else {
+        const ticket = beginCareRequest(visit);
+        if (!ticket) return;
+        plant = wateredPlant;
+        void loadCareEvents(ticket);
+      }
     } finally {
-      watering = false;
+      if (ownsView(visit)) watering = false;
     }
   }
 
@@ -253,18 +355,21 @@
 
   function handleEventEdit(event: CareEvent) {
     if ($isOffline) return;
+    formSession++;
     showLogForm = false;
     editingEvent = event;
   }
 
-  async function handleEventEditSubmit() {
-    const plantId = plant?.id;
-    editingEvent = null;
-    if (!plantId) return;
-    expandedGroups.clear();
+  async function handleEventEditSubmit(visit: ViewTicket, session: number) {
+    if (!ownsView(visit)) return;
+    if (formSession === session && editingEvent) {
+      editingEvent = null;
+      expandedGroups.clear();
+    }
     try {
-      await refreshPlantDetails(plantId);
+      await refreshPlantDetails(visit);
     } catch {
+      if (!ownsView(visit)) return;
       pushNotification({
         title: $translations.plant.careJournalSection,
         variant: "error",
@@ -273,15 +378,53 @@
     }
   }
 
+  async function handleEventAddSubmit(visit: ViewTicket, session: number) {
+    if (!ownsView(visit)) return;
+    if (formSession === session) showLogForm = false;
+    await refreshPlantDetails(visit);
+  }
+
+  // Capture values, not reactive bindings: removed forms can finish later.
+  function careEntrySubmit(
+    visit: ViewTicket,
+    session: number,
+    editing: boolean,
+  ) {
+    return () =>
+      editing
+        ? handleEventEditSubmit(visit, session)
+        : handleEventAddSubmit(visit, session);
+  }
+
+  function careEntryCancel(
+    visit: ViewTicket,
+    session: number,
+    editing: boolean,
+  ) {
+    return () => {
+      if (!ownsView(visit) || formSession !== session) return;
+      if (editing) editingEvent = null;
+      else showLogForm = false;
+    };
+  }
+
+  function chatSave(visit: ViewTicket) {
+    return async () => {
+      await refreshPlantDetails(visit);
+    };
+  }
+
   async function handleEventDeleteConfirm() {
     const event = deleteEventDialogTarget;
     deleteEventDialogTarget = null;
-    if (!plant || !event || deletingEventId === event.id) return;
+    if (!viewTicket || !event || deletingEventId === event.id) return;
+    const visit = viewTicket;
     deletingEventId = event.id;
     try {
-      await deleteCareEvent(plant.id, event.id);
-      await refreshPlantDetails(plant.id);
+      await deleteCareEvent(visit.plantId, event.id);
+      await refreshPlantDetails(visit);
     } catch (error) {
+      if (!ownsView(visit)) return;
       careError.set(resolveError(error, "deleteCareEvent"));
       pushNotification({
         title: $translations.plant.careJournalSection,
@@ -289,8 +432,10 @@
         message: $careError || $translations.error.deleteCareEvent,
       });
       careError.set(null);
+    } finally {
+      if (ownsView(visit) && deletingEventId === event.id)
+        deletingEventId = null;
     }
-    deletingEventId = null;
   }
 
   let expandedGroups: Set<string> = new SvelteSet();
@@ -369,7 +514,8 @@
       ><ArrowLeft size={16} /> {$translations.plant.backToPlants}</a
     >
   </div>
-{:else if plant}
+{:else if plant && viewTicket}
+  {@const visit = viewTicket}
   <div class="detail">
     <div class="detail-content">
       <PageHeader
@@ -428,28 +574,53 @@
             />
           {/if}
         </div>
-        <div class="detail-info">
-          <div class="detail-name">
-            <h2>{plant.name}</h2>
-            {#if plant.species}
-              <span class="detail-species">{plant.species}</span>
-            {/if}
-          </div>
-          {#if plant.location_name}
-            <p class="detail-location">
-              <MapPin size={14} />
-              {plant.location_name}
-            </p>
-          {/if}
-          <div class="detail-status">
-            <StatusBadge
-              status={plant.watering_status}
-              nextDue={plant.next_due ?? null}
+        <div
+          class="detail-info"
+          style:--care-timeline-min-height={`${timelineMinimum.plantId === plant.id ? timelineMinimum.height : 0}px`}
+        >
+          <div class="detail-heading">
+            <CareTimeline
+              plantId={plant.id}
+              events={careEvents}
+              loading={careLoading}
+              historyError={Boolean(careLoadError)}
+              foregroundElements={timelineForeground}
+              onMinimumHeight={(height) => {
+                timelineMinimum = { plantId: plant!.id, height };
+              }}
             />
+            <div class="detail-heading-content">
+              <div class="detail-name">
+                <h2 bind:this={nameElement}>{plant.name}</h2>
+                {#if plant.species}
+                  <span class="detail-species" bind:this={speciesElement}
+                    >{plant.species}</span
+                  >
+                {/if}
+              </div>
+              {#if plant.location_name}
+                <p class="detail-location" bind:this={locationElement}>
+                  <MapPin size={14} />
+                  <span>{plant.location_name}</span>
+                </p>
+              {/if}
+              <div class="detail-status">
+                <span
+                  class="detail-status-foreground"
+                  bind:this={statusElement}
+                >
+                  <StatusBadge
+                    status={plant.watering_status}
+                    nextDue={plant.next_due ?? null}
+                  />
+                </span>
+              </div>
+            </div>
           </div>
           <div class="hero-actions">
             <button
               class="btn btn-water btn-lg"
+              bind:this={waterButton}
               onclick={handleWater}
               disabled={$isOffline || watering}
             >
@@ -461,6 +632,7 @@
             {#if aiEnabled}
               <button
                 class="btn btn-ai btn-lg"
+                bind:this={aiButton}
                 onclick={() => (chatOpen = true)}
                 disabled={$isOffline}
               >
@@ -763,39 +935,37 @@
             </ul>
           {/if}
 
-          {#if editingEvent}
-            <CareEntryForm
-              plantId={plant.id}
-              existingEvent={editingEvent}
-              onsubmit={handleEventEditSubmit}
-              oncancel={() => {
-                editingEvent = null;
-              }}
-            />
-          {:else if showLogForm}
-            <CareEntryForm
-              plantId={plant.id}
-              onsubmit={async () => {
-                const plantId = plant!.id;
-                await refreshPlantDetails(plantId);
-                showLogForm = false;
-              }}
-              oncancel={() => {
-                showLogForm = false;
-              }}
-            />
-          {:else}
-            <button
-              class="btn btn-ghost"
-              onclick={() => {
-                editingEvent = null;
-                showLogForm = true;
-              }}
-              disabled={$isOffline}
-            >
-              {$translations.plant.addLogEntry}
-            </button>
-          {/if}
+          <!-- Retain the owning visit/session even if a removed form finishes later. -->
+          {#each [visit] as formVisit (formVisit.generation)}
+            {#each [formSession] as session (session)}
+              {#if editingEvent}
+                <CareEntryForm
+                  plantId={formVisit.plantId}
+                  existingEvent={editingEvent}
+                  onsubmit={careEntrySubmit(formVisit, session, true)}
+                  oncancel={careEntryCancel(formVisit, session, true)}
+                />
+              {:else if showLogForm}
+                <CareEntryForm
+                  plantId={formVisit.plantId}
+                  onsubmit={careEntrySubmit(formVisit, session, false)}
+                  oncancel={careEntryCancel(formVisit, session, false)}
+                />
+              {:else}
+                <button
+                  class="btn btn-ghost"
+                  onclick={() => {
+                    formSession++;
+                    editingEvent = null;
+                    showLogForm = true;
+                  }}
+                  disabled={$isOffline}
+                >
+                  {$translations.plant.addLogEntry}
+                </button>
+              {/if}
+            {/each}
+          {/each}
         </div>
       </div>
 
@@ -807,14 +977,16 @@
       />
     </div>
 
-    <ChatDrawer
-      {plant}
-      open={chatOpen}
-      onclose={() => {
-        chatOpen = false;
-      }}
-      onsave={() => refreshPlantDetails(plant!.id)}
-    />
+    {#each [visit] as chatVisit (chatVisit.generation)}
+      <ChatDrawer
+        {plant}
+        open={chatOpen}
+        onclose={() => {
+          if (ownsView(chatVisit)) chatOpen = false;
+        }}
+        onsave={chatSave(chatVisit)}
+      />
+    {/each}
   </div>
 {:else if (plantLoadErrorCode || $plantsError) && $isOffline}
   <OfflineMessage />
@@ -869,9 +1041,25 @@
   }
 
   .hero-actions {
+    position: relative;
+    z-index: 1;
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 8px;
     margin-top: 4px;
+  }
+
+  .detail-heading {
+    position: static;
+    min-width: 0;
+  }
+
+  .detail-heading-content {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .detail-hero {
@@ -934,7 +1122,14 @@
   }
 
   .detail-info {
+    position: relative;
     flex: 1;
+    min-width: 0;
+    min-height: max(260px, var(--care-timeline-min-height, 0px));
+  }
+
+  .detail-name > * {
+    min-width: 0;
   }
 
   .detail-location {
@@ -946,8 +1141,21 @@
     margin: 0 0 10px;
   }
 
+  .detail-location :global(svg) {
+    flex-shrink: 0;
+  }
+
+  .detail-location span {
+    min-width: 0;
+  }
+
   .detail-status {
     margin-bottom: 14px;
+  }
+
+  .detail-status-foreground {
+    display: inline-flex;
+    max-width: 100%;
   }
 
   .detail-sections {
@@ -1208,6 +1416,10 @@
   }
 
   @media (min-width: 1280px) {
+    .detail-info {
+      min-height: max(300px, var(--care-timeline-min-height, 0px));
+    }
+
     .detail-photo {
       width: 300px;
       height: 300px;
@@ -1235,6 +1447,18 @@
 
     .detail-info {
       width: 100%;
+      min-height: 0;
+    }
+
+    .detail-heading {
+      position: relative;
+      min-height: max(140px, var(--care-timeline-min-height, 0px));
+      box-sizing: border-box;
+    }
+
+    .hero-actions {
+      flex-direction: row;
+      align-items: stretch;
     }
 
     .hero-actions :global(.btn) {

@@ -83,7 +83,9 @@ The route `/plants/[id]` SHALL display full plant information with edit, delete,
 
 - **WHEN** the plant detail view is rendered
 - **AND** `GET /api/ai/status` returns `{ "enabled": true }`
-- **THEN** an "Ask AI" button SHALL be displayed in the hero section next to the "Water now" button
+- **THEN** an "Ask AI" button SHALL be displayed in the hero action area with the "Water now" button
+- **AND** the buttons SHALL be stacked vertically when the viewport is wider than 768px
+- **AND** the buttons SHALL be side-by-side when the viewport is 768px wide or narrower
 - **AND** the button SHALL be visually distinct as an AI-related action
 
 #### Scenario: Ask AI button hidden when AI disabled
