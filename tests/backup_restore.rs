@@ -80,6 +80,21 @@ fn valid_export_json() -> String {
     )
 }
 
+fn export_json_with_photo(photo_name: &str) -> String {
+    let mut data: serde_json::Value = serde_json::from_str(&valid_export_json()).unwrap();
+    data["plants"][0]["photo_path"] = serde_json::json!(photo_name);
+    data.to_string()
+}
+
+fn zip_entry_header_offsets(zip_bytes: &[u8], index: usize) -> (usize, usize) {
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(zip_bytes)).unwrap();
+    let file = archive.by_index(index).unwrap();
+    (
+        usize::try_from(file.header_start()).unwrap(),
+        usize::try_from(file.central_header_start()).unwrap(),
+    )
+}
+
 // --- Export tests ---
 
 #[tokio::test]
@@ -249,6 +264,127 @@ async fn import_with_photo() {
     assert!(photo_path.exists());
     let contents = std::fs::read(&photo_path).unwrap();
     assert_eq!(contents, photo_data);
+}
+
+#[tokio::test]
+async fn import_unicode_photo_filename() {
+    let (app, dir) = common::test_app_with_uploads().await;
+    let photo_name = "café.jpg";
+    let photo_data = b"unicode photo bytes";
+    let zip_bytes =
+        build_export_zip_with_photo(&export_json_with_photo(photo_name), photo_name, photo_data);
+
+    let response = app
+        .oneshot(multipart_import_request(&zip_bytes))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = common::body_json(response).await;
+    assert_eq!(body["photos"], 1);
+    assert_eq!(
+        std::fs::read(dir.path().join(photo_name)).unwrap(),
+        photo_data
+    );
+}
+
+#[tokio::test]
+async fn import_cp437_photo_filename() {
+    let (app, dir) = common::test_app_with_uploads().await;
+    let photo_data = b"legacy photo bytes";
+    let mut zip_bytes =
+        build_export_zip_with_photo(&export_json_with_photo("café.jpg"), "cafe.jpg", photo_data);
+    let (local_header, central_header) = zip_entry_header_offsets(&zip_bytes, 1);
+
+    // The ASCII name has no UTF-8 flag. Replace 'e' with CP437's 'é' in both headers.
+    for filename_start in [local_header + 30, central_header + 46] {
+        assert_eq!(
+            &zip_bytes[filename_start..filename_start + b"photos/cafe.jpg".len()],
+            b"photos/cafe.jpg"
+        );
+        zip_bytes[filename_start + b"photos/caf".len()] = 0x82;
+    }
+    {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&zip_bytes)).unwrap();
+        let photo = archive.by_index(1).unwrap();
+        assert_eq!(photo.name_raw(), b"photos/caf\x82.jpg");
+        assert_eq!(photo.name().unwrap(), "photos/café.jpg");
+    }
+
+    let response = app
+        .oneshot(multipart_import_request(&zip_bytes))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = common::body_json(response).await;
+    assert_eq!(body["photos"], 1);
+    assert_eq!(
+        std::fs::read(dir.path().join("café.jpg")).unwrap(),
+        photo_data
+    );
+}
+
+#[tokio::test]
+async fn import_invalid_filename_header_preserves_data_and_photos() {
+    let (app, dir) = common::test_app_with_uploads().await;
+    let photo_data = b"existing original";
+    let thumbnail_data = b"existing rendition";
+    let seed_zip = build_export_zip_with_photo(
+        &export_json_with_photo("existing.jpg"),
+        "existing.jpg",
+        photo_data,
+    );
+    let response = app
+        .clone()
+        .oneshot(multipart_import_request(&seed_zip))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    std::fs::write(dir.path().join("existing_200.jpg"), thumbnail_data).unwrap();
+
+    let response = app
+        .clone()
+        .oneshot(common::json_request("GET", "/api/plants/1", None))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let plant_before = common::body_json(response).await;
+
+    let mut bad_zip = build_export_zip_with_photo(
+        &export_json_with_photo("replacement.jpg"),
+        "replacement.jpg",
+        b"replacement photo",
+    );
+    let (_, central_header) = zip_entry_header_offsets(&bad_zip, 1);
+    // Declare a filename longer than the remaining archive, leaving JSON and payloads intact.
+    bad_zip[central_header + 28..central_header + 30].copy_from_slice(&u16::MAX.to_le_bytes());
+    assert!(zip::ZipArchive::new(std::io::Cursor::new(&bad_zip)).is_err());
+
+    let response = app
+        .clone()
+        .oneshot(multipart_import_request(&bad_zip))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let body = common::body_json(response).await;
+    assert_eq!(body["code"], "IMPORT_INVALID_ARCHIVE");
+
+    let response = app
+        .oneshot(common::json_request("GET", "/api/plants/1", None))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(common::body_json(response).await, plant_before);
+    assert_eq!(
+        std::fs::read(dir.path().join("existing.jpg")).unwrap(),
+        photo_data
+    );
+    assert_eq!(
+        std::fs::read(dir.path().join("existing_200.jpg")).unwrap(),
+        thumbnail_data
+    );
+    assert!(!dir.path().join("replacement.jpg").exists());
 }
 
 #[tokio::test]
