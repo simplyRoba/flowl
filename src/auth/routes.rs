@@ -233,6 +233,37 @@ fn parse_callback_parameters(query: &str) -> Result<CallbackParameters, ()> {
     }
 }
 
+// Temporary local metadata, deliberately outside the byte-identical peer fixtures.
+// (parser shape, redirect outcome, consumed, token requests). Promote final contract
+// expectations only when the corresponding behavior change is implemented.
+#[cfg(test)]
+pub(super) fn stage1_callback_baseline(id: &str) -> (&'static str, &'static str, bool, usize) {
+    match id {
+        "success" | "unknown-duplicate" | "malformed-unknown" => ("success", "success", true, 1),
+        "bad-percent" | "short-percent" | "invalid-utf8" => ("success", "bound_failure", true, 1),
+        "provider-error" | "empty-error" => ("error", "bound_failure", true, 0),
+        "distinct-error-details"
+        | "absent"
+        | "empty-query"
+        | "missing-state"
+        | "missing-code"
+        | "empty-code"
+        | "empty-state"
+        | "mixed-success-error"
+        | "success-with-error_description"
+        | "error_description-without-error"
+        | "success-with-error_uri"
+        | "error_uri-without-error"
+        | "duplicate-state"
+        | "duplicate-code"
+        | "duplicate-error"
+        | "encoded-duplicate-state"
+        | "duplicate-error_description"
+        | "duplicate-error_uri" => ("invalid", "fallback_failure", false, 0),
+        other => panic!("unmeasured Stage 1 callback vector: {other}"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, Mutex};
@@ -278,6 +309,42 @@ mod tests {
         fn now(&self) -> SystemTime {
             self.0
         }
+    }
+
+    #[test]
+    fn shared_callback_vectors_characterize_stage1_parser_baseline() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/auth/callbacks.json"))
+                .expect("callback fixture should parse");
+        let mut gaps = Vec::new();
+        for vector in fixture["vectors"].as_array().unwrap() {
+            let id = vector["id"].as_str().unwrap();
+            let (baseline, _, _, _) = stage1_callback_baseline(id);
+            let shape = match parse_callback_parameters(vector["query"].as_str().unwrap_or("")) {
+                Ok(CallbackParameters::Success { .. }) => "success",
+                Ok(CallbackParameters::ProviderError { .. }) => "error",
+                Err(()) => "invalid",
+            };
+            assert_eq!(
+                shape, baseline,
+                "{id} (target: {})",
+                vector["target"]["flowl"]
+            );
+            if baseline != vector["target"]["flowl"].as_str().unwrap() {
+                gaps.push(id);
+            }
+        }
+        assert_eq!(
+            gaps,
+            [
+                "distinct-error-details",
+                "empty-error",
+                "bad-percent",
+                "short-percent",
+                "invalid-utf8",
+                "malformed-unknown"
+            ]
+        );
     }
 
     #[test]

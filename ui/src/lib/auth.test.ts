@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { goto } from "$app/navigation";
+import returnVectors from "../../../tests/fixtures/auth/return-targets.json";
 
 vi.mock("$app/navigation", () => ({ goto: vi.fn() }));
 
@@ -14,6 +15,44 @@ import {
 } from "./auth";
 
 describe("safeLocalTarget", () => {
+  // Current differences from the common contract: reserved namespaces and C1 controls.
+  const stage1Gaps = [
+    "raw-c1",
+    "encoded-c1",
+    "api-root",
+    "api-child",
+    "api-query",
+    "health-root",
+    "health-child",
+    "health-query",
+    "encoded-reserved",
+    "uploads-root",
+    "uploads-child",
+  ];
+  it.each(returnVectors.vectors)("Stage 1 return fixture: $id", (vector) => {
+    const input = vector.input;
+    const value =
+      input === null
+        ? null
+        : typeof input === "string"
+          ? input
+          : input.prefix + input.repeat.repeat(input.count) + input.suffix;
+    const baseline = vector.target.flowl || stage1Gaps.includes(vector.id);
+    const expected = baseline ? (value ?? "/") : "/";
+    expect(safeLocalTarget(value)).toBe(expected);
+    // Match the peer harness's query round trip; accepted serialization is unchanged.
+    const wire =
+      value === null
+        ? ""
+        : new URLSearchParams({ return_to: value }).toString();
+    expect(safeLocalTarget(new URLSearchParams(wire).get("return_to"))).toBe(
+      expected,
+    );
+    expect(baseline !== vector.target.flowl).toBe(
+      stage1Gaps.includes(vector.id),
+    );
+  });
+
   it("preserves a SPA path, query, and fragment", () => {
     expect(safeLocalTarget("/plants/42?tab=care#entry-7")).toBe(
       "/plants/42?tab=care#entry-7",

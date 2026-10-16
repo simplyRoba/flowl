@@ -6,8 +6,8 @@ Commit the planning artifacts separately before implementation. For each coheren
 
 ## 1. Establish coordinated baselines
 
-- [ ] 1.1 Verify `git branch --show-current` is `refactor/unify-oidc-authentication`, inspect `git status --short`, and record the separate Gazel change branch/revision before implementation; keep both changes independently reviewable with no merge or push.
-- [ ] 1.2 Coordinate common JSON vectors under `tests/fixtures/auth/` with Gazel before behavior changes; characterize existing return-target, callback, capacity, persistence, claim, and cache guarantees using `src/auth/local_provider_tests.rs`, `ui/src/lib/auth.test.ts`, `ui/src/lib/api-auth.test.ts`, login route tests, and `ui/src/lib/sw-policy.test.ts`. Verify baseline Rust and UI results and record expected conformance gaps without treating them as passing behavior.
+- [x] 1.1 Verify `git branch --show-current` is `refactor/unify-oidc-authentication`, inspect `git status --short`, and record the separate Gazel change branch/revision before implementation; keep both changes independently reviewable with no merge or push.
+- [x] 1.2 Coordinate common JSON vectors under `tests/fixtures/auth/` with Gazel before behavior changes; characterize existing return-target, callback, capacity, persistence, claim, and cache guarantees using `src/auth/local_provider_tests.rs`, `ui/src/lib/auth.test.ts`, `ui/src/lib/api-auth.test.ts`, login route tests, and `ui/src/lib/sw-policy.test.ts`. Verify baseline Rust and UI results and record expected conformance gaps without treating them as passing behavior.
 
 ## 2. Align configuration and ship its consumers atomically
 

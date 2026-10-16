@@ -63,6 +63,7 @@ struct Provider {
     token_protocol_error_description: Mutex<Option<String>>,
     token_unparseable_response: AtomicBool,
     token_requests: AtomicUsize,
+    error_uri_requests: AtomicUsize,
     observed_basic: Mutex<Option<bool>>,
     discovery_issuer: Mutex<Option<String>>,
     expected_nonce: Mutex<Option<String>>,
@@ -112,6 +113,7 @@ impl RunningProvider {
             token_protocol_error_description: Mutex::new(None),
             token_unparseable_response: AtomicBool::new(false),
             token_requests: AtomicUsize::new(0),
+            error_uri_requests: AtomicUsize::new(0),
             observed_basic: Mutex::new(None),
             discovery_issuer: Mutex::new(None),
             expected_nonce: Mutex::new(None),
@@ -128,6 +130,7 @@ impl RunningProvider {
             .route("/authorize", get(authorize))
             .route("/jwks", get(jwks))
             .route("/token", post(token))
+            .route("/error-uri-sentinel", get(error_uri_sentinel))
             .with_state(provider.clone());
         let task = tokio::spawn(async move {
             axum::serve(listener, app)
@@ -405,6 +408,11 @@ async fn jwks(State(provider): State<Arc<Provider>>) -> Response {
         None => provider.signing_key.lock().await.jwks.clone(),
     };
     Json(jwks).into_response()
+}
+
+async fn error_uri_sentinel(State(provider): State<Arc<Provider>>) -> StatusCode {
+    provider.error_uri_requests.fetch_add(1, Ordering::SeqCst);
+    StatusCode::OK
 }
 
 async fn token(
@@ -1413,6 +1421,173 @@ async fn pending_registry_accepts_1024_rejects_full_and_prunes_at_the_expiry_bou
     let transactions = auth.transactions.lock().await;
     assert!(!transactions.contains_key("expired-at-boundary"));
     assert!(transactions.contains_key(&after_expiry));
+}
+
+// Adapted from Gazel's bound-attempt vector harness, not its baseline expectations.
+// Retrying the original callback distinguishes rejection from consumption.
+#[tokio::test]
+async fn shared_callback_vectors_characterize_stage1_bound_attempts() {
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/auth/callbacks.json"))
+            .expect("callback fixture should parse");
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = Arc::new(
+        AuthState::with_dependencies(
+            EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
+            Arc::new(super::SystemClock),
+            Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
+        )
+        .await
+        .expect("local discovery succeeds"),
+    );
+    let (state, _directory) = test_state(auth.clone());
+    let app = server::router(state);
+    let error_uri = url::form_urlencoded::byte_serialize(
+        format!("{}/error-uri-sentinel", provider.provider.base).as_bytes(),
+    )
+    .collect::<String>();
+    for vector in fixture["vectors"].as_array().unwrap() {
+        let id = vector["id"].as_str().unwrap();
+        let (_, outcome, consumed, token_requests) = super::routes::stage1_callback_baseline(id);
+        let (browser_cookie, state) = begin_login(&app, &provider).await;
+        let query = vector["query"].as_str().map(|query| {
+            query
+                .replace("{state}", &state)
+                .replace("{code}", "accepted-code")
+                .replace("{error_uri}", &error_uri)
+        });
+        let uri = query.map_or_else(
+            || "/auth/callback".to_string(),
+            |query| format!("/auth/callback?{query}"),
+        );
+        let before = provider.provider.token_requests.load(Ordering::SeqCst);
+        let response = app
+            .clone()
+            .oneshot(request(&uri, Some(&browser_cookie)))
+            .await
+            .expect("callback response");
+        assert_eq!(response.status(), StatusCode::SEE_OTHER, "{id}");
+        let expected = match outcome {
+            "success" => "/plants?tab=care",
+            "bound_failure" => {
+                "/login?error=authentication_failed&return_to=%2Fplants%3Ftab%3Dcare"
+            }
+            "fallback_failure" => "/login?error=authentication_failed&return_to=%2F",
+            other => panic!("unknown baseline outcome {other}"),
+        };
+        assert_eq!(
+            response.headers().get(header::LOCATION).unwrap(),
+            expected,
+            "{id}"
+        );
+        assert_eq!(
+            response.headers().get(header::CACHE_CONTROL).unwrap(),
+            "no-store",
+            "{id}"
+        );
+        let after = provider.provider.token_requests.load(Ordering::SeqCst);
+        assert_eq!(after - before, token_requests, "{id}");
+        assert_eq!(
+            auth.transactions.lock().await.contains_key(&state),
+            !consumed,
+            "{id}"
+        );
+        let retry = app
+            .clone()
+            .oneshot(request(
+                &format!("/auth/callback?state={state}&code=accepted-code"),
+                Some(&browser_cookie),
+            ))
+            .await
+            .expect("retry original binding");
+        assert_eq!(retry.status(), StatusCode::SEE_OTHER, "{id}");
+        assert_eq!(
+            retry.headers().get(header::LOCATION).unwrap(),
+            if consumed {
+                "/login?error=authentication_failed&return_to=%2F"
+            } else {
+                "/plants?tab=care"
+            },
+            "{id} (retry original binding)"
+        );
+        assert_eq!(
+            provider.provider.token_requests.load(Ordering::SeqCst) - after,
+            usize::from(!consumed),
+            "{id}"
+        );
+        assert_eq!(
+            provider.provider.error_uri_requests.load(Ordering::SeqCst),
+            0,
+            "{id}"
+        );
+    }
+}
+
+// Flowl currently accepts one error detail but rejects both distinct details together.
+// Exercise the accepted URI shape too, so zero sentinel traffic is not just parser rejection.
+#[tokio::test]
+async fn stage1_single_error_uri_consumes_once_without_following_or_reflecting_it() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = Arc::new(
+        AuthState::with_dependencies(
+            EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
+            Arc::new(super::SystemClock),
+            Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
+        )
+        .await
+        .expect("local discovery succeeds"),
+    );
+    let (state, _directory) = test_state(auth.clone());
+    let app = server::router(state);
+    let (browser_cookie, state) = begin_login(&app, &provider).await;
+    let error_uri = url::form_urlencoded::byte_serialize(
+        format!(
+            "{}/error-uri-sentinel?private-sentinel",
+            provider.provider.base
+        )
+        .as_bytes(),
+    )
+    .collect::<String>();
+    let uri = format!("/auth/callback?state={state}&error=access_denied&error_uri={error_uri}");
+    // A wrong browser must not consume even a provider-error attempt.
+    let wrong_browser = app
+        .clone()
+        .oneshot(request(&uri, None))
+        .await
+        .expect("wrong browser");
+    assert_eq!(wrong_browser.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        wrong_browser.headers().get(header::LOCATION).unwrap(),
+        "/login?error=authentication_failed&return_to=%2F"
+    );
+    assert!(auth.transactions.lock().await.contains_key(&state));
+    let response = app
+        .clone()
+        .oneshot(request(&uri, Some(&browser_cookie)))
+        .await
+        .expect("provider error");
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        response.headers().get(header::LOCATION).unwrap(),
+        "/login?error=authentication_failed&return_to=%2Fplants%3Ftab%3Dcare"
+    );
+    assert!(!auth.transactions.lock().await.contains_key(&state));
+    let retry = app
+        .oneshot(request(
+            &format!("/auth/callback?state={state}&code=accepted-code"),
+            Some(&browser_cookie),
+        ))
+        .await
+        .expect("replay");
+    assert_eq!(
+        retry.headers().get(header::LOCATION).unwrap(),
+        "/login?error=authentication_failed&return_to=%2F"
+    );
+    assert_eq!(provider.provider.token_requests.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        provider.provider.error_uri_requests.load(Ordering::SeqCst),
+        0
+    );
 }
 
 #[tokio::test]

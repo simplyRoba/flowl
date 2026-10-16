@@ -164,6 +164,94 @@ fn is_auth_path(path: &str) -> bool {
 mod tests {
     use super::*;
 
+    // Characterize current namespace handling until the common policy is applied.
+    #[test]
+    fn shared_return_vectors_characterize_stage1_baseline() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../tests/fixtures/auth/return-targets.json"
+        ))
+        .expect("return fixture should parse");
+        let mut gaps = Vec::new();
+        for vector in fixture["vectors"].as_array().unwrap() {
+            let id = vector["id"].as_str().unwrap();
+            let input = &vector["input"];
+            let value = if input.is_null() {
+                None
+            } else if let Some(value) = input.as_str() {
+                Some(value.to_owned())
+            } else {
+                Some(format!(
+                    "{}{}{}",
+                    input["prefix"].as_str().unwrap(),
+                    input["repeat"]
+                        .as_str()
+                        .unwrap()
+                        .repeat(input["count"].as_u64().unwrap().try_into().unwrap()),
+                    input["suffix"].as_str().unwrap()
+                ))
+            };
+            let target = vector["target"]["flowl"].as_bool().unwrap();
+            let baseline = target
+                || matches!(
+                    id,
+                    "api-root"
+                        | "api-child"
+                        | "api-query"
+                        | "health-root"
+                        | "health-child"
+                        | "health-query"
+                        | "encoded-reserved"
+                        | "uploads-root"
+                        | "uploads-child"
+                );
+            let expected = if baseline {
+                value.as_deref().unwrap_or("/")
+            } else {
+                "/"
+            };
+            assert_eq!(
+                SafeReturnTo::fallback(value.as_deref().unwrap_or("/")).as_str(),
+                expected,
+                "{id} (temporary baseline, final acceptance: {target})"
+            );
+            if let Some(value) = value.as_deref() {
+                assert_eq!(SafeReturnTo::parse(value).is_ok(), baseline, "{id}");
+            }
+            // As in the peer harness, form-encode once and decode once before validation.
+            let wire = value.as_ref().map(|value| {
+                url::form_urlencoded::Serializer::new(String::new())
+                    .append_pair("return_to", value)
+                    .finish()
+            });
+            let decoded = wire.as_ref().and_then(|wire| {
+                url::form_urlencoded::parse(wire.as_bytes())
+                    .find_map(|(key, value)| (key == "return_to").then(|| value.into_owned()))
+            });
+            assert_eq!(
+                SafeReturnTo::fallback(decoded.as_deref().unwrap_or("/")).as_str(),
+                expected,
+                "{id} (one form decode)"
+            );
+            if baseline != target {
+                gaps.push(id);
+            }
+        }
+        assert_eq!(
+            gaps,
+            [
+                "api-root",
+                "api-child",
+                "api-query",
+                "health-root",
+                "health-child",
+                "health-query",
+                "encoded-reserved",
+                "uploads-root",
+                "uploads-child"
+            ]
+        );
+    }
+
     #[test]
     fn accepts_local_paths_queries_and_fragments() {
         for target in [
