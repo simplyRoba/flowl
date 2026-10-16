@@ -28,8 +28,8 @@ use tracing::Level;
 use tracing_subscriber::fmt::MakeWriter;
 
 use super::{
-    AuthHttpClient, AuthState, CallbackError, Clock, MonotonicClock, PendingLogin,
-    ReqwestAuthHttpClient, TokenAuthMethod,
+    AuthState, CallbackError, Clock, MonotonicClock, PendingLogin, ReqwestAuthHttpClient,
+    TokenAuthMethod,
 };
 use crate::auth::return_to::SafeReturnTo;
 use crate::config::EnabledAuthConfig;
@@ -74,6 +74,9 @@ struct Provider {
     token_signing_key_override: Mutex<Option<SigningKey>>,
     token_algorithm: Mutex<Algorithm>,
     discovery_redirect: AtomicBool,
+    jwks_redirect: AtomicBool,
+    token_response_override: Mutex<Option<(StatusCode, String)>>,
+    unsigned_token: AtomicBool,
 }
 
 struct RunningProvider {
@@ -124,6 +127,9 @@ impl RunningProvider {
             token_signing_key_override: Mutex::new(None),
             token_algorithm: Mutex::new(Algorithm::RS256),
             discovery_redirect: AtomicBool::new(false),
+            jwks_redirect: AtomicBool::new(false),
+            token_response_override: Mutex::new(None),
+            unsigned_token: AtomicBool::new(false),
         });
         let app = Router::new()
             .route("/.well-known/openid-configuration", get(discovery))
@@ -131,6 +137,10 @@ impl RunningProvider {
             .route("/jwks", get(jwks))
             .route("/token", post(token))
             .route("/error-uri-sentinel", get(error_uri_sentinel))
+            .route(
+                "/redirected",
+                get(error_uri_sentinel).post(error_uri_sentinel),
+            )
             .with_state(provider.clone());
         let task = tokio::spawn(async move {
             axum::serve(listener, app)
@@ -397,6 +407,9 @@ async fn authorize(
 
 async fn jwks(State(provider): State<Arc<Provider>>) -> Response {
     provider.jwks_requests.fetch_add(1, Ordering::SeqCst);
+    if provider.jwks_redirect.load(Ordering::SeqCst) {
+        return (StatusCode::FOUND, [(header::LOCATION, "/redirected")]).into_response();
+    }
     if provider.jwks_failing.load(Ordering::SeqCst) {
         return StatusCode::SERVICE_UNAVAILABLE.into_response();
     }
@@ -421,6 +434,17 @@ async fn token(
     Form(form): Form<HashMap<String, String>>,
 ) -> impl IntoResponse {
     provider.token_requests.fetch_add(1, Ordering::SeqCst);
+    if let Some((status, body)) = provider.token_response_override.lock().await.clone() {
+        return (
+            status,
+            [
+                (header::CONTENT_TYPE, "application/json"),
+                (header::LOCATION, "/redirected"),
+            ],
+            body,
+        )
+            .into_response();
+    }
     if provider.token_protocol_error.load(Ordering::SeqCst) {
         let mut error = serde_json::json!({ "error": "invalid_grant" });
         if let Some(description) = provider
@@ -508,12 +532,17 @@ async fn token(
     };
     let mut header = Header::new(*provider.token_algorithm.lock().await);
     header.kid = Some(signing_key.kid);
-    let id_token = jsonwebtoken::encode(
+    let mut id_token = jsonwebtoken::encode(
         &header,
         &claims,
         &EncodingKey::from_rsa_pem(signing_key.pem.as_bytes()).expect("read test signing key"),
     )
     .expect("sign ID token");
+    if provider.unsigned_token.load(Ordering::SeqCst) {
+        let payload = id_token.split('.').nth(1).expect("JWT payload");
+        let header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(br#"{"alg":"none"}"#);
+        id_token = format!("{header}.{payload}.");
+    }
     let mut response = serde_json::json!({
         "access_token": "local-access-token",
         "token_type": "Bearer",
@@ -527,6 +556,338 @@ async fn token(
             .remove("id_token");
     }
     Json(response).into_response()
+}
+
+async fn discover_provider(
+    provider: &RunningProvider,
+) -> Result<AuthState, super::AuthStartupError> {
+    AuthState::with_dependencies(
+        EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
+        Arc::new(super::SystemClock),
+        Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn unsafe_discovered_destinations_are_never_contacted() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    for field in ["jwks_uri", "token_endpoint", "authorization_endpoint"] {
+        for destination in [
+            format!(
+                "{}/error-uri-sentinel#private-sentinel",
+                provider.provider.base
+            ),
+            provider
+                .provider
+                .base
+                .replace("http://", "http://user:private-sentinel@")
+                + "/error-uri-sentinel",
+            provider.provider.base.replace("http://", "ftp://") + "/error-uri-sentinel",
+            String::from("http://example.invalid/error-uri-sentinel"),
+        ] {
+            let mut document = discovery_document(
+                &provider.provider.base,
+                &serde_json::json!(["client_secret_basic"]),
+            );
+            document[field] = serde_json::json!(destination);
+            provider.set_discovery_override(document).await;
+            let previous_jwks = provider.provider.jwks_requests.load(Ordering::SeqCst);
+            assert!(
+                matches!(
+                    discover_provider(&provider).await,
+                    Err(super::AuthStartupError::UnsafeMetadata)
+                ),
+                "{field}"
+            );
+            assert_eq!(
+                provider.provider.error_uri_requests.load(Ordering::SeqCst),
+                0
+            );
+            assert_eq!(provider.provider.token_requests.load(Ordering::SeqCst), 0);
+            if field == "jwks_uri" {
+                assert_eq!(
+                    provider.provider.jwks_requests.load(Ordering::SeqCst),
+                    previous_jwks
+                );
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn runtime_raw_destinations_are_checked_before_uri_fragment_truncation() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = discover_provider(&provider).await.unwrap();
+    let original = auth.clients.read().await.metadata.clone();
+    for destination in [
+        format!("{}/redirected#private-sentinel", provider.provider.base),
+        provider
+            .provider
+            .base
+            .replace("http://", "http://user:private-sentinel@")
+            + "/redirected",
+        provider.provider.base.replace("http://", "ftp://") + "/redirected",
+    ] {
+        let mut document = serde_json::to_value(&original).unwrap();
+        document["token_endpoint"] = serde_json::json!(destination);
+        document["jwks_uri"] = serde_json::json!(destination);
+        let metadata =
+            serde_json::from_value::<openidconnect::core::CoreProviderMetadata>(document)
+                .unwrap()
+                .set_jwks(original.jwks().clone());
+        {
+            let mut cache = auth.clients.write().await;
+            cache.client =
+                super::build_client(auth.config(), TokenAuthMethod::Basic, metadata.clone())
+                    .unwrap();
+            cache.metadata = metadata;
+            cache.refresh_retry_at = None;
+        }
+        assert_eq!(
+            auth.exchange_and_verify(
+                "accepted-code".into(),
+                pending_login(&auth, &provider).await
+            )
+            .await,
+            Err(CallbackError::Unavailable)
+        );
+        assert_eq!(
+            auth.refresh_jwks_for_generation(0).await,
+            Err(CallbackError::Unavailable)
+        );
+        assert_eq!(
+            provider.provider.error_uri_requests.load(Ordering::SeqCst),
+            0
+        );
+        assert_eq!(provider.provider.token_requests.load(Ordering::SeqCst), 0);
+        assert_eq!(provider.provider.jwks_requests.load(Ordering::SeqCst), 1);
+    }
+}
+
+#[tokio::test]
+async fn discovery_jwks_extension_is_not_revalidated_as_metadata() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let mut keys = provider.provider.signing_key.lock().await.jwks.clone();
+    keys["jwks_uri"] = serde_json::json!("http://unsafe.invalid/#private-sentinel");
+    provider.set_jwks_override(keys).await;
+    assert!(discover_provider(&provider).await.is_ok());
+    assert_eq!(provider.provider.jwks_requests.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn standalone_code_and_advertised_grants_are_required() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    for (responses, grants, accepted) in [
+        (serde_json::json!(["code id_token"]), None, false),
+        (
+            serde_json::json!(["code"]),
+            Some(serde_json::json!([])),
+            false,
+        ),
+        (
+            serde_json::json!(["code"]),
+            Some(serde_json::json!(["refresh_token"])),
+            false,
+        ),
+        (
+            serde_json::json!(["code"]),
+            Some(serde_json::json!(["authorization_code"])),
+            true,
+        ),
+        (serde_json::json!(["code", "code id_token"]), None, true),
+    ] {
+        let mut document = discovery_document(
+            &provider.provider.base,
+            &serde_json::json!(["client_secret_basic"]),
+        );
+        document["response_types_supported"] = responses;
+        if let Some(grants) = grants {
+            document["grant_types_supported"] = grants;
+        }
+        provider.set_discovery_override(document).await;
+        assert_eq!(discover_provider(&provider).await.is_ok(), accepted);
+    }
+    for (field, value) in [("use", "enc"), ("alg", "RS512")] {
+        let mut keys = provider.provider.signing_key.lock().await.jwks.clone();
+        keys["keys"][0][field] = serde_json::json!(value);
+        provider.set_jwks_override(keys).await;
+        let document = discovery_document(
+            &provider.provider.base,
+            &serde_json::json!(["client_secret_basic"]),
+        );
+        provider.set_discovery_override(document).await;
+        assert!(matches!(
+            discover_provider(&provider).await,
+            Err(super::AuthStartupError::UnsafeMetadata)
+        ));
+    }
+}
+
+#[tokio::test]
+async fn provider_redirects_never_contact_targets_and_failed_refresh_retains_keys() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    provider.redirect_discovery(true);
+    assert!(matches!(
+        discover_provider(&provider).await,
+        Err(super::AuthStartupError::HttpStatus)
+    ));
+    provider.redirect_discovery(false);
+    provider
+        .provider
+        .jwks_redirect
+        .store(true, Ordering::SeqCst);
+    assert!(matches!(
+        discover_provider(&provider).await,
+        Err(super::AuthStartupError::HttpStatus)
+    ));
+    provider
+        .provider
+        .jwks_redirect
+        .store(false, Ordering::SeqCst);
+    let auth = discover_provider(&provider).await.unwrap();
+    *provider.provider.token_response_override.lock().await =
+        Some((StatusCode::FOUND, "private-sentinel".into()));
+    assert_eq!(
+        auth.exchange_and_verify(
+            "accepted-code".into(),
+            pending_login(&auth, &provider).await
+        )
+        .await,
+        Err(CallbackError::Unavailable)
+    );
+    *provider.provider.token_response_override.lock().await = None;
+    let original = provider.provider.signing_key.lock().await.clone();
+    provider.rotate_signing_key().await;
+    provider
+        .provider
+        .jwks_redirect
+        .store(true, Ordering::SeqCst);
+    assert_eq!(
+        auth.exchange_and_verify(
+            "accepted-code".into(),
+            pending_login(&auth, &provider).await
+        )
+        .await,
+        Err(CallbackError::Unavailable)
+    );
+    *provider.provider.signing_key.lock().await = original;
+    assert_eq!(
+        auth.exchange_and_verify(
+            "accepted-code".into(),
+            pending_login(&auth, &provider).await
+        )
+        .await,
+        Ok(())
+    );
+    assert_eq!(
+        provider.provider.error_uri_requests.load(Ordering::SeqCst),
+        0
+    );
+}
+
+#[tokio::test]
+async fn token_response_categories_and_logs_are_safe() {
+    use tracing::instrument::WithSubscriber;
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = discover_provider(&provider).await.unwrap();
+    let captured = Arc::new(StdMutex::new(Vec::new()));
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(CapturedWriter(captured.clone()))
+        .with_ansi(false)
+        .without_time()
+        .with_max_level(Level::DEBUG)
+        .finish();
+    async {
+        for (status, body, expected) in [
+            (StatusCode::SERVICE_UNAVAILABLE, r#"{"error":"invalid_grant","error_description":"private-sentinel"}"#, CallbackError::Unavailable),
+            (StatusCode::BAD_REQUEST, r#"{"error":"invalid_grant","error_description":"private-sentinel"}"#, CallbackError::Invalid),
+            (StatusCode::OK, "{private-sentinel", CallbackError::Unavailable),
+            (StatusCode::CREATED, "private-sentinel", CallbackError::Unavailable),
+            (StatusCode::OK, r#"{"id_token":"private-sentinel"}"#, CallbackError::Unavailable),
+            (StatusCode::OK, r#"{"access_token":"private-sentinel","token_type":"Bearer","id_token":"private-sentinel"}"#, CallbackError::Invalid),
+            (StatusCode::OK, r#"{"access_token":"private-sentinel","token_type":"Bearer","id_token":42}"#, CallbackError::Invalid),
+            (StatusCode::FOUND, "private-sentinel", CallbackError::Unavailable),
+        ] {
+            *provider.provider.token_response_override.lock().await = Some((status, body.to_owned()));
+            assert_eq!(auth.exchange_and_verify("private-sentinel".into(), pending_login(&auth, &provider).await).await, Err(expected));
+        }
+        provider.set_discovery_issuer("https://private-sentinel.invalid/?private-sentinel".into()).await;
+        let error = discover_provider(&provider).await.err().unwrap();
+        assert!(!format!("{error:?} {error}").contains("private-sentinel"));
+    }.with_subscriber(subscriber).await;
+    let logs = String::from_utf8(captured.lock().unwrap().clone()).unwrap();
+    assert!(logs.contains("OIDC"));
+    assert!(logs.contains("503"));
+    assert!(logs.contains("Invalid"));
+    assert!(logs.contains("Unavailable"));
+    for sensitive in [
+        "private-sentinel",
+        CLIENT_SECRET,
+        "http://",
+        "https://",
+        "id_token",
+        "code=",
+        "state=",
+    ] {
+        assert!(!logs.contains(sensitive), "logs leaked {sensitive}");
+    }
+    assert_eq!(
+        provider.provider.error_uri_requests.load(Ordering::SeqCst),
+        0
+    );
+    assert_eq!(provider.provider.jwks_requests.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn positive_old_and_future_iat_and_matching_azp_remain_valid() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = discover_provider(&provider).await.unwrap();
+    provider
+        .set_token_claim("azp", serde_json::json!(CLIENT_ID))
+        .await;
+    for iat in [1, 4_000_000_000_i64] {
+        provider
+            .set_token_claim("iat", serde_json::json!(iat))
+            .await;
+        assert_eq!(
+            auth.exchange_and_verify(
+                "accepted-code".into(),
+                pending_login(&auth, &provider).await
+            )
+            .await,
+            Ok(())
+        );
+    }
+    assert_eq!(provider.provider.jwks_requests.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn basic_and_post_authentication_survive_same_kid_refresh() {
+    for method in [TokenAuthMethod::Basic, TokenAuthMethod::RequestBody] {
+        let provider = RunningProvider::start(method).await;
+        let auth = discover_provider(&provider).await.unwrap();
+        provider.rotate_signing_key_with_same_kid().await;
+        for _ in 0..2 {
+            assert_eq!(
+                auth.exchange_and_verify(
+                    "accepted-code".into(),
+                    pending_login(&auth, &provider).await
+                )
+                .await,
+                Ok(())
+            );
+            assert_eq!(
+                *provider.provider.observed_basic.lock().await,
+                Some(method == TokenAuthMethod::Basic)
+            );
+        }
+        assert_eq!(
+            provider.provider.discovery_requests.load(Ordering::SeqCst),
+            1
+        );
+        assert_eq!(provider.provider.jwks_requests.load(Ordering::SeqCst), 2);
+    }
 }
 
 fn test_state(auth: Arc<AuthState>) -> (AppState, tempfile::TempDir) {
@@ -952,9 +1313,7 @@ async fn loopback_provider_covers_discovery_pkce_callback_rotation_and_route_pol
         Some(&"S256".to_string())
     );
     assert_eq!(
-        ReqwestAuthHttpClient::new()
-            .expect("HTTP client")
-            .client()
+        reqwest::Client::new()
             .get(authorization_url)
             .send()
             .await
@@ -1899,6 +2258,11 @@ async fn token_claim_failures_are_invalid_without_jwks_refresh() {
         ),
         ("invalid authorized party", "azp"),
         ("missing issued at", "iat"),
+        ("zero issued at", "iat_zero"),
+        ("negative issued at", "iat_negative"),
+        ("malformed issued at", "iat_malformed"),
+        ("extra audience with matching azp", "aud_azp"),
+        ("actually unsigned ID token", "unsigned"),
         ("expired", "exp"),
         ("missing nonce", "nonce"),
         ("mismatched nonce", "nonce_mismatch"),
@@ -1940,6 +2304,25 @@ async fn token_claim_failures_are_invalid_without_jwks_refresh() {
                     .await
             }
             "iat" | "nonce" => provider.remove_token_claim(claim).await,
+            "iat_zero" => provider.set_token_claim("iat", serde_json::json!(0)).await,
+            "iat_negative" => provider.set_token_claim("iat", serde_json::json!(-1)).await,
+            "iat_malformed" => {
+                provider
+                    .set_token_claim("iat", serde_json::json!("private-sentinel"))
+                    .await
+            }
+            "aud_azp" => {
+                provider
+                    .set_token_claim("aud", serde_json::json!([CLIENT_ID, "other-client"]))
+                    .await;
+                provider
+                    .set_token_claim("azp", serde_json::json!(CLIENT_ID))
+                    .await;
+            }
+            "unsigned" => provider
+                .provider
+                .unsigned_token
+                .store(true, Ordering::SeqCst),
             "exp" => provider.set_token_claim("exp", serde_json::json!(1)).await,
             "nonce_mismatch" => {
                 provider
@@ -1954,13 +2337,13 @@ async fn token_claim_failures_are_invalid_without_jwks_refresh() {
             "alg" => provider.set_token_algorithm(Algorithm::RS512).await,
             _ => unreachable!("covered claim case"),
         }
-        assert!(
+        assert_eq!(
             auth.exchange_and_verify(
                 "accepted-code".to_string(),
                 pending_login(&auth, &provider).await
             )
-            .await
-            .is_err(),
+            .await,
+            Err(CallbackError::Invalid),
             "{description}"
         );
         assert_eq!(

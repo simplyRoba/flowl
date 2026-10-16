@@ -1,5 +1,9 @@
 //! Optional OIDC authentication primitives and routes.
 
+mod provider_http;
+pub use provider_http::{AuthHttpClient, GuardedHttpError, ReqwestAuthHttpClient, TransportFuture};
+use provider_http::{DiscoveryHttpClient, GuardedHttpClient};
+
 pub mod return_to;
 pub mod routes;
 
@@ -15,8 +19,8 @@ use openidconnect::core::{
     CoreRequestTokenError, CoreResponseType,
 };
 use openidconnect::{
-    AuthType, ClientId, ClientSecret, HttpClientError, JsonWebKey, JsonWebKeyAlgorithm,
-    JsonWebKeyUse, JwsSigningAlgorithm, OAuth2TokenResponse, RedirectUrl, TokenResponse,
+    AuthType, ClientId, ClientSecret, JsonWebKey, JsonWebKeyAlgorithm, JsonWebKeyUse,
+    JwsSigningAlgorithm, OAuth2TokenResponse, RedirectUrl, TokenResponse,
 };
 #[cfg(test)]
 use tokio::sync::{Barrier, Notify};
@@ -55,34 +59,6 @@ pub struct SystemMonotonicClock;
 impl MonotonicClock for SystemMonotonicClock {
     fn now(&self) -> Instant {
         Instant::now()
-    }
-}
-
-/// HTTP-client seam used by startup discovery, token exchange, and JWKS refresh.
-pub trait AuthHttpClient: Send + Sync {
-    fn client(&self) -> &reqwest::Client;
-}
-
-pub struct ReqwestAuthHttpClient {
-    client: reqwest::Client,
-}
-
-impl ReqwestAuthHttpClient {
-    /// # Errors
-    ///
-    /// Returns an error if the redirect-disabled Rustls HTTP client cannot be built.
-    pub fn new() -> Result<Self, reqwest::Error> {
-        let client = reqwest::Client::builder()
-            .redirect(reqwest::redirect::Policy::none())
-            .use_rustls_tls()
-            .build()?;
-        Ok(Self { client })
-    }
-}
-
-impl AuthHttpClient for ReqwestAuthHttpClient {
-    fn client(&self) -> &reqwest::Client {
-        &self.client
     }
 }
 
@@ -163,7 +139,7 @@ struct ClientCache {
 pub struct AuthState {
     config: EnabledAuthConfig,
     clock: Arc<dyn Clock>,
-    http_client: Arc<dyn AuthHttpClient>,
+    guard: GuardedHttpClient,
     monotonic_clock: Arc<dyn MonotonicClock>,
     token_auth_method: TokenAuthMethod,
     clients: RwLock<ClientCache>,
@@ -216,12 +192,30 @@ impl AuthState {
         monotonic_clock: Arc<dyn MonotonicClock>,
         http_client: Arc<dyn AuthHttpClient>,
     ) -> Result<Self, AuthStartupError> {
+        let guard = GuardedHttpClient::new(config.clone(), http_client.clone());
+        guard
+            .validate_raw_url(config.issuer().raw())
+            .map_err(|_| AuthStartupError::UnsafeMetadata)?;
         let metadata = CoreProviderMetadata::discover_async(
             config.issuer().issuer_url().clone(),
-            http_client.client(),
+            &DiscoveryHttpClient::new(&guard),
         )
         .await
-        .map_err(|error| discovery_error_category(&error, config.issuer().raw()))?;
+        .map_err(|error| {
+            let category = discovery_error_category(&error, config.issuer().raw());
+            let status = match &error {
+                openidconnect::DiscoveryError::Request(GuardedHttpError::ServerStatus(status))
+                | openidconnect::DiscoveryError::Response(status, _, _) => Some(status.as_u16()),
+                _ => None,
+            };
+            tracing::warn!(
+                operation = "discovery",
+                ?category,
+                status,
+                "OIDC provider failure"
+            );
+            category
+        })?;
 
         validate_metadata(&config, &metadata)?;
         let token_auth_method = select_token_auth_method(&metadata)?;
@@ -230,7 +224,7 @@ impl AuthState {
         Ok(Self {
             config,
             clock,
-            http_client,
+            guard,
             monotonic_clock,
             token_auth_method,
             clients: RwLock::new(ClientCache {
@@ -255,10 +249,6 @@ impl AuthState {
 
     pub const fn clock(&self) -> &Arc<dyn Clock> {
         &self.clock
-    }
-
-    pub const fn http_client(&self) -> &Arc<dyn AuthHttpClient> {
-        &self.http_client
     }
 
     pub const fn token_auth_method(&self) -> TokenAuthMethod {
@@ -409,11 +399,19 @@ impl AuthState {
         let generation = cache.generation;
         let client = cache.client.clone();
         drop(cache);
+        self.guard
+            .validate_raw_url(
+                client
+                    .token_uri()
+                    .ok_or(CallbackError::Unavailable)?
+                    .as_str(),
+            )
+            .map_err(|_| CallbackError::Unavailable)?;
         let token_response = client
             .exchange_code(openidconnect::AuthorizationCode::new(code))
             .map_err(|_| CallbackError::Invalid)?
             .set_pkce_verifier(pending.verifier)
-            .request_async(self.http_client.client())
+            .request_async(&self.guard)
             .await
             .map_err(|error| callback_token_error(&error))?;
         let id_token = token_response.id_token().ok_or(CallbackError::Invalid)?;
@@ -497,14 +495,16 @@ impl AuthState {
             return Err(CallbackError::Unavailable);
         }
         let metadata = cache.metadata.clone();
-        let jwks_url = metadata.jwks_uri().url().clone();
         drop(cache);
 
-        let response = match self.http_client.client().get(jwks_url).send().await {
-            Ok(response) if response.status().is_success() => response,
-            _ => return self.set_jwks_cooldown().await,
-        };
-        let jwks = match response.json::<CoreJsonWebKeySet>().await {
+        if self
+            .guard
+            .validate_raw_url(metadata.jwks_uri().as_str())
+            .is_err()
+        {
+            return self.set_jwks_cooldown().await;
+        }
+        let jwks = match CoreJsonWebKeySet::fetch_async(metadata.jwks_uri(), &self.guard).await {
             Ok(jwks) if has_usable_signing_key(&jwks, &metadata) => jwks,
             _ => return self.set_jwks_cooldown().await,
         };
@@ -534,16 +534,19 @@ pub enum CallbackError {
     Unavailable,
 }
 
-fn discovery_error_category<E>(
-    error: &openidconnect::DiscoveryError<E>,
+fn discovery_error_category(
+    error: &openidconnect::DiscoveryError<GuardedHttpError>,
     expected_issuer: &str,
-) -> AuthStartupError
-where
-    E: std::error::Error + 'static,
-{
+) -> AuthStartupError {
     // Do not format this error: `Response` contains an untrusted response body. Only retain the
     // library's safe category in the startup diagnostic.
     match error {
+        openidconnect::DiscoveryError::Request(GuardedHttpError::UnsafeUrl) => {
+            AuthStartupError::UnsafeMetadata
+        }
+        openidconnect::DiscoveryError::Request(GuardedHttpError::ServerStatus(_)) => {
+            AuthStartupError::HttpStatus
+        }
         openidconnect::DiscoveryError::Request(_) => AuthStartupError::Transport,
         openidconnect::DiscoveryError::Response(_, _, _) => AuthStartupError::HttpStatus,
         openidconnect::DiscoveryError::Parse(_) | openidconnect::DiscoveryError::UrlParse(_) => {
@@ -586,9 +589,13 @@ fn validate_metadata(
             .response_types_supported()
             .iter()
             .any(|response_types| {
-                response_types
-                    .iter()
-                    .any(|response_type| response_type == &CoreResponseType::Code)
+                response_types.len() == 1 && response_types[0] == CoreResponseType::Code
+            })
+        || !metadata
+            .grant_types_supported()
+            .as_ref()
+            .is_none_or(|grants| {
+                grants.contains(&openidconnect::core::CoreGrantType::AuthorizationCode)
             })
     {
         return Err(AuthStartupError::UnsafeMetadata);
@@ -606,7 +613,11 @@ fn is_safe_endpoint(config: &EnabledAuthConfig, value: &str) -> bool {
     is_https_endpoint(value)
         || config.permits_loopback_http()
             && value.parse::<url::Url>().is_ok_and(|url| {
-                url.scheme() == "http" && url.host().is_some_and(|host| is_loopback_host(&host))
+                url.scheme() == "http"
+                    && url.host().is_some_and(|host| is_loopback_host(&host))
+                    && url.username().is_empty()
+                    && url.password().is_none()
+                    && url.fragment().is_none()
             })
 }
 
@@ -616,6 +627,7 @@ fn is_https_endpoint(value: &str) -> bool {
             && url.host().is_some()
             && url.username().is_empty()
             && url.password().is_none()
+            && url.fragment().is_none()
     })
 }
 
@@ -652,19 +664,49 @@ fn has_usable_signing_key(jwks: &CoreJsonWebKeySet, metadata: &CoreProviderMetad
     })
 }
 
-fn callback_token_error(
-    error: &CoreRequestTokenError<HttpClientError<reqwest::Error>>,
-) -> CallbackError {
+fn callback_token_error(error: &CoreRequestTokenError<GuardedHttpError>) -> CallbackError {
     // A parsed OAuth error is a completed provider protocol exchange (for example invalid_grant
     // after a PKCE failure), not an availability outage. Do not format it: response details can
     // contain provider-controlled data. Transport, response parsing, and unexpected HTTP/status
     // responses cannot establish a protocol outcome and remain recoverable availability failures.
-    match error {
+    let category = match error {
         CoreRequestTokenError::ServerResponse(_) => CallbackError::Invalid,
+        CoreRequestTokenError::Parse(_, body)
+            if invalid_id_token_in_recognizable_response(body) =>
+        {
+            CallbackError::Invalid
+        }
         CoreRequestTokenError::Request(_)
         | CoreRequestTokenError::Parse(_, _)
         | CoreRequestTokenError::Other(_) => CallbackError::Unavailable,
+    };
+    let status = match error {
+        CoreRequestTokenError::Request(GuardedHttpError::ServerStatus(status)) => {
+            Some(status.as_u16())
+        }
+        _ => None,
+    };
+    tracing::warn!(
+        operation = "token",
+        ?category,
+        status,
+        "OIDC provider failure"
+    );
+    category
+}
+
+// This reparses only the envelope to categorize deserialization failures, never to verify tokens.
+fn invalid_id_token_in_recognizable_response(body: &[u8]) -> bool {
+    let Ok(mut value) = serde_json::from_slice::<serde_json::Value>(body) else {
+        return false;
+    };
+    let Some(object) = value.as_object_mut() else {
+        return false;
+    };
+    if object.remove("id_token").is_none() {
+        return false;
     }
+    serde_json::from_value::<openidconnect::core::CoreTokenResponse>(value).is_ok()
 }
 
 fn build_client(
@@ -715,6 +757,8 @@ pub fn select_token_auth_method(
 
 #[cfg(test)]
 mod local_provider_tests;
+#[cfg(test)]
+mod provider_http_tests;
 
 #[cfg(test)]
 mod tests {
@@ -729,7 +773,7 @@ mod tests {
 
     #[test]
     fn unrelated_discovery_validation_remains_generic() {
-        let error = openidconnect::DiscoveryError::<std::io::Error>::Validation(
+        let error = openidconnect::DiscoveryError::<GuardedHttpError>::Validation(
             "provider-controlled validation detail".to_string(),
         );
         assert_eq!(
