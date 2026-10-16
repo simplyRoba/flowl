@@ -10,6 +10,7 @@ import {
   fetchAuthConfig,
   loginUrl,
   navigateToLogin,
+  postLogout,
   purgeProtectedCaches,
   resetAuthNavigationForTests,
   safeLocalTarget,
@@ -93,7 +94,7 @@ describe("safeLocalTarget", () => {
 });
 
 describe("auth configuration", () => {
-  it("accepts the disabled backend payload with a null provider", async () => {
+  it("accepts the disabled backend payload without a provider", async () => {
     await expect(
       fetchAuthConfig(
         vi
@@ -127,6 +128,118 @@ describe("auth configuration", () => {
           ),
       ),
     ).rejects.toThrow("invalid");
+  });
+});
+
+describe("postLogout", () => {
+  beforeEach(() => vi.mocked(goto).mockClear());
+
+  function opaqueResponse(type: "opaqueredirect" | "opaque"): Response {
+    return Object.defineProperty(Response.error(), "type", { value: type });
+  }
+
+  it.each([
+    [
+      "visible 303",
+      () =>
+        new Response(null, {
+          status: 303,
+          headers: { Location: "/login?logged_out=1" },
+        }),
+    ],
+    ["browser manual redirect", () => opaqueResponse("opaqueredirect")],
+  ] as const)(
+    "POSTs logout and hard-navigates only after %s",
+    async (_kind, response) => {
+      let finish!: (response: Response) => void;
+      const fetchFn = vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            finish = resolve;
+          }),
+      );
+      const navigate = vi.fn();
+      const logout = postLogout(fetchFn, navigate);
+
+      expect(fetchFn).toHaveBeenCalledExactlyOnceWith("/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        redirect: "manual",
+      });
+      expect(navigate).not.toHaveBeenCalled();
+      finish(response());
+      await logout;
+      expect(navigate).toHaveBeenCalledExactlyOnceWith("/login?logged_out=1");
+    },
+  );
+
+  it.each([
+    [
+      "HTTP 500",
+      () => new Response("provider-secret-sentinel", { status: 500 }),
+    ],
+    [
+      "HTTP 401",
+      () =>
+        new Response(JSON.stringify({ code: "AUTHENTICATION_REQUIRED" }), {
+          status: 401,
+        }),
+    ],
+    ["HTTP 200", () => new Response("provider-secret-sentinel")],
+    ["opaque non-redirect", () => opaqueResponse("opaque")],
+    [
+      "external redirect",
+      () =>
+        new Response(null, {
+          status: 303,
+          headers: {
+            Location: "https://provider.invalid/provider-secret-sentinel",
+          },
+        }),
+    ],
+    [
+      "unexpected local redirect",
+      () =>
+        new Response(null, {
+          status: 303,
+          headers: { Location: "/auth/login" },
+        }),
+    ],
+    ["missing redirect target", () => new Response(null, { status: 303 })],
+    [
+      "wrong redirect status",
+      () =>
+        new Response(null, {
+          status: 302,
+          headers: { Location: "/login?logged_out=1" },
+        }),
+    ],
+  ] as const)(
+    "fails closed with a fixed error for %s",
+    async (_kind, response) => {
+      const received = response();
+      const readBody = vi.spyOn(received, "text");
+      const navigate = vi.fn();
+      await expect(
+        postLogout(vi.fn().mockResolvedValue(received), navigate),
+      ).rejects.toEqual(new Error("Sign out failed. Please try again."));
+      expect(readBody).not.toHaveBeenCalled();
+      expect(received.bodyUsed).toBe(false);
+      expect(navigate).not.toHaveBeenCalled();
+      expect(goto).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not reflect network errors or navigate after transport failure", async () => {
+    const navigate = vi.fn();
+    await expect(
+      postLogout(
+        vi.fn().mockRejectedValue(new Error("provider-secret-sentinel")),
+        navigate,
+      ),
+    ).rejects.toEqual(new Error("Sign out failed. Please try again."));
+    expect(navigate).not.toHaveBeenCalled();
   });
 });
 

@@ -46,9 +46,9 @@ Commit the planning artifacts separately before implementation. For each coheren
 
 ## 7. Preserve frontend and offline behavior
 
-- [ ] 7.1 Keep Flowl replace-navigation and exact `401` plus `AUTHENTICATION_REQUIRED` deduplication/recursion suppression in app adapters. Verify `npm run test --prefix ui -- src/lib/auth.test.ts src/lib/api-auth.test.ts src/tests/routes/login` covers path/query/hash preservation, loading/config failure, no protected login hydration, untrusted label text, one manual provider action, and no immediate or delayed auto-login in default/error/logout states.
-- [ ] 7.2 Preserve acknowledged protected-cache purge before a real logout POST and surface generic failure on HTTP 500 without signed-out navigation or provider retry. Extend existing frontend logout tests to verify purge acknowledgement ordering, actual POST method/target, and failure behavior rather than substituting Gazel's plain form.
-- [ ] 7.3 Retain network-only auth handling, received-401 behavior, genuine-outage stale fallback, and protected-cache purge scope. Verify `npm run test --prefix ui -- src/lib/sw-policy.test.ts src/lib/api-auth.test.ts` and relevant existing worker/logout tests preserve these distinctions; document only any changed integration contract, not a new offline policy.
+- [x] 7.1 Keep Flowl replace-navigation and exact `401` plus `AUTHENTICATION_REQUIRED` deduplication/recursion suppression in app adapters. Verify `npm run test --prefix ui -- src/lib/auth.test.ts src/lib/api-auth.test.ts src/tests/routes/login` covers path/query/hash preservation, loading/config failure, no protected login hydration, untrusted label text, one manual provider action, and no immediate or delayed auto-login in default/error/logout states.
+- [x] 7.2 Preserve acknowledged protected-cache purge before a real logout POST and surface generic failure on HTTP 500 without signed-out navigation or provider retry. Extend existing frontend logout tests to verify purge acknowledgement ordering, actual POST method/target, and failure behavior rather than substituting Gazel's plain form.
+- [x] 7.3 Retain network-only auth handling, received-401 behavior, genuine-outage stale fallback, and protected-cache purge scope. Verify `npm run test --prefix ui -- src/lib/sw-policy.test.ts src/lib/api-auth.test.ts` and relevant existing worker/logout tests preserve these distinctions; document only any changed integration contract, not a new offline policy.
 
 ## 8. Mirror the behavior-tested common core
 

@@ -54,6 +54,37 @@ describe("authentication response classification", () => {
     );
   });
 
+  it("deduplicates concurrent exact expiry responses without rechecking health", async () => {
+    const received = () =>
+      response(401, {
+        code: "AUTHENTICATION_REQUIRED",
+        message: "Authentication is required",
+      });
+    const results = await Promise.allSettled([
+      classifyResponse(received()),
+      classifyResponse(received()),
+      classifyResponse(received()),
+    ]);
+    expect(results.every((result) => result.status === "rejected")).toBe(true);
+    expect(goto).toHaveBeenCalledExactlyOnceWith(
+      "/login?return_to=%2Fplants%2F7%3Ftab%3Dcare%23log",
+      { replace: true },
+    );
+    expect(recheckHealth).not.toHaveBeenCalled();
+  });
+
+  it.each(["/login", "/auth", "/auth/callback"])(
+    "suppresses expiry recursion from %s",
+    async (path) => {
+      window.history.replaceState({}, "", path);
+      await expect(
+        classifyResponse(response(401, { code: "AUTHENTICATION_REQUIRED" })),
+      ).rejects.toBeInstanceOf(ApiError);
+      expect(goto).not.toHaveBeenCalled();
+      expect(recheckHealth).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([
     [
       "/plants/7?ratio=100%25#entry%20one",

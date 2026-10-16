@@ -1,4 +1,10 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Page from "../../../routes/settings/+page.svelte";
@@ -23,6 +29,9 @@ HTMLDialogElement.prototype.showModal = vi.fn(function (
 HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
   this.removeAttribute("open");
 });
+
+const { goto } = vi.hoisted(() => ({ goto: vi.fn() }));
+vi.mock("$app/navigation", () => ({ goto }));
 
 const mockDeleteLocation = vi.fn();
 const mockLoadLocations = vi.fn();
@@ -74,10 +83,11 @@ beforeEach(() => {
   isOffline.set(false);
   vi.clearAllMocks();
   mockLoadLocations.mockResolvedValue(undefined);
-  mockFetchAuthConfig.mockResolvedValue({
+  mockFetchAuthConfig.mockReset().mockResolvedValue({
     enabled: false,
   });
-  mockPurgeProtectedCaches.mockResolvedValue(undefined);
+  mockPurgeProtectedCaches.mockReset().mockResolvedValue(undefined);
+  mockPostLogout.mockReset().mockResolvedValue(undefined);
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -133,24 +143,189 @@ describe("settings authentication", () => {
     },
   );
 
-  it("purges protected caches before submitting logout", async () => {
-    const order: string[] = [];
+  it("awaits purge acknowledgement, then keeps sign-out disabled until the POST completes", async () => {
+    let acknowledge!: () => void;
+    let finishPost!: () => void;
     mockFetchAuthConfig.mockResolvedValue({
       enabled: true,
       provider_name: "Example SSO",
     });
-    mockPurgeProtectedCaches.mockImplementation(async () => {
-      order.push("purge");
-    });
-    mockPostLogout.mockImplementation(() => {
-      order.push("post");
-    });
+    mockPurgeProtectedCaches.mockReturnValue(
+      new Promise<void>((resolve) => {
+        acknowledge = resolve;
+      }),
+    );
+    mockPostLogout.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishPost = resolve;
+      }),
+    );
     render(Page);
 
-    const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Sign out" }));
+    const button = await screen.findByRole<HTMLButtonElement>("button", {
+      name: "Sign out",
+    });
+    await fireEvent.click(button);
+    expect(button.disabled).toBe(true);
+    expect(mockPurgeProtectedCaches).toHaveBeenCalledTimes(1);
+    expect(mockPostLogout).not.toHaveBeenCalled();
+    await fireEvent.click(button);
+    expect(mockPurgeProtectedCaches).toHaveBeenCalledTimes(1);
 
-    await waitFor(() => expect(order).toEqual(["purge", "post"]));
+    acknowledge();
+    await waitFor(() => expect(mockPostLogout).toHaveBeenCalledTimes(1));
+    expect(button.disabled).toBe(true);
+    finishPost();
+    await waitFor(() => expect(button.disabled).toBe(false));
+    expect(mockPushNotification).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["POST", false],
+    ["purge", true],
+  ])(
+    "shows only a generic notice after rejected %s",
+    async (_stage, purgeFails) => {
+      mockFetchAuthConfig.mockResolvedValue({
+        enabled: true,
+        provider_name: "Example SSO",
+      });
+      const failure = new Error("provider-secret-sentinel");
+      if (purgeFails) mockPurgeProtectedCaches.mockRejectedValue(failure);
+      else mockPostLogout.mockRejectedValue(failure);
+      render(Page);
+
+      const button = await screen.findByRole<HTMLButtonElement>("button", {
+        name: "Sign out",
+      });
+      await fireEvent.click(button);
+      await waitFor(() =>
+        expect(mockPushNotification).toHaveBeenCalledExactlyOnceWith({
+          title: "Sign out",
+          variant: "error",
+          message: "Sign out failed. Please try again.",
+        }),
+      );
+      expect(button.disabled).toBe(false);
+      expect(mockPostLogout).toHaveBeenCalledTimes(purgeFails ? 0 : 1);
+      expect(screen.queryByText("You have been signed out.")).toBeNull();
+      expect(document.body.textContent).not.toContain(
+        "provider-secret-sentinel",
+      );
+      expect(goto).not.toHaveBeenCalled();
+      expect(screen.queryByRole("link", { name: /Continue with/ })).toBeNull();
+    },
+  );
+
+  it("uses the real adapters to POST only after the worker ACK and reports HTTP 500 without navigation", async () => {
+    const auth =
+      await vi.importActual<typeof import("#lib/auth.js")>("#lib/auth.js");
+    const navigate = vi.fn();
+    const originalWorker = Object.getOwnPropertyDescriptor(
+      navigator,
+      "serviceWorker",
+    );
+    let ackPort: MessagePort | undefined;
+    const postMessage = vi.fn((_message: unknown, ports: MessagePort[]) => {
+      ackPort = ports[0];
+    });
+    let respond!: (response: Response) => void;
+    const logoutResponse = new Promise<Response>((resolve) => {
+      respond = resolve;
+    });
+    const payloads: Record<string, unknown> = {
+      "/auth/config": { enabled: true, provider_name: "Example SSO" },
+      "/api/info": {
+        version: "test",
+        repository: "https://example.invalid",
+        license: "MIT",
+      },
+      "/api/stats": {
+        plant_count: 0,
+        care_event_count: 0,
+        location_count: 0,
+        photo_count: 0,
+      },
+      "/api/mqtt/status": {
+        status: "disabled",
+        broker: null,
+        topic_prefix: null,
+      },
+      "/api/ai/status": { enabled: false, base_url: null, model: null },
+    };
+    const fetchFn = vi.fn((url: RequestInfo | URL) => {
+      if (url === "/auth/logout") return logoutResponse;
+      if (typeof url === "string" && url in payloads)
+        return Promise.resolve(new Response(JSON.stringify(payloads[url])));
+      throw new Error(`Unexpected request: ${String(url)}`);
+    });
+    vi.stubGlobal("fetch", fetchFn);
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: { controller: { postMessage } },
+    });
+    mockFetchAuthConfig.mockImplementation(() => auth.fetchAuthConfig());
+    mockPurgeProtectedCaches.mockImplementation(() =>
+      auth.purgeProtectedCaches(),
+    );
+    mockPostLogout.mockImplementation(() => auth.postLogout(fetchFn, navigate));
+    try {
+      render(Page);
+      const button = await screen.findByRole<HTMLButtonElement>("button", {
+        name: "Sign out",
+      });
+      await fireEvent.click(button);
+      expect(postMessage).toHaveBeenCalledWith(
+        { type: "PURGE_PROTECTED_CACHES" },
+        [expect.anything()],
+      );
+      expect(fetchFn.mock.calls.some(([url]) => url === "/auth/logout")).toBe(
+        false,
+      );
+      expect(button.disabled).toBe(true);
+
+      ackPort!.postMessage({ type: "PROTECTED_CACHES_PURGED" });
+      await waitFor(() =>
+        expect(fetchFn).toHaveBeenCalledWith("/auth/logout", {
+          method: "POST",
+          credentials: "same-origin",
+          cache: "no-store",
+          redirect: "manual",
+        }),
+      );
+      expect(button.disabled).toBe(true);
+      vi.useFakeTimers();
+      respond(new Response("provider-secret-sentinel", { status: 500 }));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(mockPushNotification).toHaveBeenCalledExactlyOnceWith({
+        title: "Sign out",
+        variant: "error",
+        message: "Sign out failed. Please try again.",
+      });
+      expect(button.disabled).toBe(false);
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(navigate).not.toHaveBeenCalled();
+      expect(goto).not.toHaveBeenCalled();
+      expect(
+        fetchFn.mock.calls.filter(([url]) => url === "/auth/logout"),
+      ).toHaveLength(1);
+      expect(
+        fetchFn.mock.calls.some(([url]) =>
+          String(url).startsWith("/auth/login"),
+        ),
+      ).toBe(false);
+      expect(screen.queryByText("You have been signed out.")).toBeNull();
+      expect(document.body.textContent).not.toContain(
+        "provider-secret-sentinel",
+      );
+    } finally {
+      vi.useRealTimers();
+      ackPort?.close();
+      if (originalWorker)
+        Object.defineProperty(navigator, "serviceWorker", originalWorker);
+      else Reflect.deleteProperty(navigator, "serviceWorker");
+      vi.unstubAllGlobals();
+    }
   });
 
   it.each([

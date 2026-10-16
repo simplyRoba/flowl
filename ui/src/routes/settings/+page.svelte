@@ -266,7 +266,13 @@
     logoutLoading = true;
     try {
       await purgeProtectedCaches();
-      postLogout();
+      await postLogout();
+    } catch {
+      pushNotification({
+        title: get(translations).settings.signOut,
+        variant: "error",
+        message: get(translations).settings.signOutFailed,
+      });
     } finally {
       logoutLoading = false;
     }

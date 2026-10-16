@@ -142,7 +142,7 @@ flowl works as an installable PWA and remains usable when your device can't reac
 
 An orange dot on the Settings icon indicates the app is offline. Pages that can't load any cached data show an offline message. When the server becomes reachable again, all controls re-enable automatically.
 
-With OIDC enabled, session expiry does not erase offline data. **Sign out** purges protected caches while retaining login resources and theme/language preferences.
+With OIDC enabled, session expiry does not erase offline data. **Sign out** purges protected caches while retaining login resources and theme/language preferences. If logout returns HTTP 500, Settings shows a generic failure notice without a signed-out confirmation or automatic sign-in retry.
 
 ## Security
 

@@ -1,4 +1,10 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import Page from "../../../routes/login/+page.svelte";
@@ -39,6 +45,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   setLocale("en");
 });
@@ -77,6 +84,60 @@ describe("login page", () => {
     expect(document.querySelector(".login-page")).toBeTruthy();
     expect(document.querySelector(".login-card")).toBeTruthy();
   });
+
+  it("renders an untrusted provider label as text, not markup", async () => {
+    const provider = '<img src=x onerror="alert(1)">';
+    fetchAuthConfig.mockResolvedValue({
+      enabled: true,
+      provider_name: provider,
+    });
+    render(Page);
+    const action = await screen.findByRole("link", {
+      name: `Continue with ${provider}`,
+    });
+    expect(action.textContent).toContain(provider);
+    expect(action.querySelector("img")).toBeNull();
+  });
+
+  it.each([
+    "",
+    "?error=authentication_failed",
+    "?error=provider_unavailable",
+    "?logged_out=1",
+  ])(
+    "waits for one manual provider activation without immediate or delayed login in state %j",
+    async (query) => {
+      pageUrl = new URL(`http://localhost/login${query}`);
+      pageUrl.searchParams.set("error_description", "provider-secret-sentinel");
+      const activations = vi.fn((event: MouseEvent) => {
+        event.preventDefault();
+      });
+      document.addEventListener("click", activations);
+      vi.useFakeTimers();
+      try {
+        render(Page);
+        await vi.advanceTimersByTimeAsync(0);
+        const action = screen.getByRole("link", {
+          name: "Continue with Garden SSO",
+        });
+        expect(activations).not.toHaveBeenCalled();
+        expect(goto).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(30_000);
+        expect(activations).not.toHaveBeenCalled();
+        expect(goto).not.toHaveBeenCalled();
+        expect(fetchAuthConfig).toHaveBeenCalledTimes(1);
+        expect(document.querySelectorAll(".provider-action")).toHaveLength(1);
+        expect(document.body.textContent).not.toContain(
+          "provider-secret-sentinel",
+        );
+        expect(action.getAttribute("href")).toBe("/auth/login?return_to=%2F");
+        await fireEvent.click(action);
+        expect(activations).toHaveBeenCalledTimes(1);
+      } finally {
+        document.removeEventListener("click", activations);
+      }
+    },
+  );
 
   it.each([
     ["/plants/42?label=a%20b&ratio=100%25#entry%20one", true],
@@ -169,13 +230,17 @@ describe("login page", () => {
 
   it("uses a generic provider-unavailable state if config cannot be read", async () => {
     fetchAuthConfig.mockRejectedValue(new Error("offline"));
+    vi.useFakeTimers();
     render(Page);
+    await vi.advanceTimersByTimeAsync(0);
 
     expect(
-      await screen.findByText(
-        "The sign-in provider is temporarily unavailable.",
-      ),
+      screen.getByText("The sign-in provider is temporarily unavailable."),
     ).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(goto).not.toHaveBeenCalled();
+    expect(fetchAuthConfig).toHaveBeenCalledTimes(1);
   });
 });

@@ -120,12 +120,31 @@ export function setServiceWorkerAuthMode(enabled: boolean): void {
   setWorkerAuthMode(navigator.serviceWorker?.controller, enabled);
 }
 
-/** Submits a real same-origin form so the backend owns logout navigation. */
-export function postLogout(): void {
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = "/auth/logout";
-  form.style.display = "none";
-  document.body.append(form);
-  form.submit();
+export async function postLogout(
+  fetchFn: FetchLike = fetch,
+  navigate: (url: "/login?logged_out=1") => void = (url) =>
+    window.location.assign(url),
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetchFn("/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+      redirect: "manual",
+    });
+  } catch {
+    throw new Error("Sign out failed. Please try again.");
+  }
+
+  // Browsers hide manual redirects as opaqueredirect (status 0), including same-origin 303s.
+  if (
+    (response.type === "opaqueredirect" && response.status === 0) ||
+    (response.status === 303 &&
+      response.headers.get("Location") === "/login?logged_out=1")
+  ) {
+    navigate("/login?logged_out=1");
+    return;
+  }
+  throw new Error("Sign out failed. Please try again.");
 }
