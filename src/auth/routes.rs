@@ -79,13 +79,10 @@ pub async fn callback(
         Ok(CallbackParameters::ProviderError {
             state: provider_state,
         }) => {
-            let target = if let Some(state) = provider_state.as_deref() {
-                auth.consume_bound_transaction(&session, state)
-                    .await
-                    .map_or_else(|| SafeReturnTo::fallback("/"), |pending| pending.return_to)
-            } else {
-                SafeReturnTo::fallback("/")
-            };
+            let target = auth
+                .consume_bound_transaction(&session, &provider_state)
+                .await
+                .map_or_else(|| SafeReturnTo::fallback("/"), |pending| pending.return_to);
             return generic_redirect("authentication_failed", &target);
         }
         Err(()) => return generic_redirect("authentication_failed", &SafeReturnTo::fallback("/")),
@@ -187,83 +184,69 @@ fn no_store(mut response: Response) -> Response {
 
 enum CallbackParameters {
     Success { state: String, code: String },
-    ProviderError { state: Option<String> },
+    ProviderError { state: String },
 }
 
 fn parse_callback_parameters(query: &str) -> Result<CallbackParameters, ()> {
     let mut state = None;
     let mut code = None;
-    let mut provider_error = None;
-    let mut has_error_details = false;
-    for (key, value) in url::form_urlencoded::parse(query.as_bytes()) {
-        match key.as_ref() {
-            "state" => {
-                if state.replace(value.into_owned()).is_some() {
-                    return Err(());
-                }
-            }
-            "code" => {
-                if code.replace(value.into_owned()).is_some() {
-                    return Err(());
-                }
-            }
-            "error" => {
-                if provider_error.replace(value.into_owned()).is_some() {
-                    return Err(());
-                }
-            }
-            "error_description" | "error_uri" => {
-                if has_error_details {
-                    return Err(());
-                }
-                has_error_details = true;
-            }
-            _ => {}
+    let mut error = None;
+    let mut error_description = None;
+    let mut error_uri = None;
+    for pair in query.split('&') {
+        let (key, value) = pair.split_once('=').unwrap_or((pair, ""));
+        let key = decode_query_component(key).ok_or(())?;
+        let value = decode_query_component(value).ok_or(())?;
+        let target = match key.as_str() {
+            "code" => &mut code,
+            "state" => &mut state,
+            "error" => &mut error,
+            "error_description" => &mut error_description,
+            "error_uri" => &mut error_uri,
+            _ => continue,
+        };
+        if target.replace(value).is_some() {
+            return Err(());
         }
     }
-    if provider_error.is_some() || has_error_details {
-        return if code.is_some() || provider_error.is_none() {
-            Err(())
-        } else {
-            Ok(CallbackParameters::ProviderError { state })
-        };
-    }
-    match (state, code) {
-        (Some(state), Some(code)) if !state.is_empty() && !code.is_empty() => {
+    let state = state.filter(|state| !state.is_empty()).ok_or(())?;
+    match (code, error, error_description, error_uri) {
+        (Some(code), None, None, None) if !code.is_empty() => {
             Ok(CallbackParameters::Success { state, code })
+        }
+        (None, Some(error), _, _) if !error.is_empty() => {
+            Ok(CallbackParameters::ProviderError { state })
         }
         _ => Err(()),
     }
 }
 
-// Temporary local metadata, deliberately outside the byte-identical peer fixtures.
-// (parser shape, redirect outcome, consumed, token requests). Promote final contract
-// expectations only when the corresponding behavior change is implemented.
-#[cfg(test)]
-pub(super) fn stage1_callback_baseline(id: &str) -> (&'static str, &'static str, bool, usize) {
-    match id {
-        "success" | "unknown-duplicate" | "malformed-unknown" => ("success", "success", true, 1),
-        "bad-percent" | "short-percent" | "invalid-utf8" => ("success", "bound_failure", true, 1),
-        "provider-error" | "empty-error" => ("error", "bound_failure", true, 0),
-        "distinct-error-details"
-        | "absent"
-        | "empty-query"
-        | "missing-state"
-        | "missing-code"
-        | "empty-code"
-        | "empty-state"
-        | "mixed-success-error"
-        | "success-with-error_description"
-        | "error_description-without-error"
-        | "success-with-error_uri"
-        | "error_uri-without-error"
-        | "duplicate-state"
-        | "duplicate-code"
-        | "duplicate-error"
-        | "encoded-duplicate-state"
-        | "duplicate-error_description"
-        | "duplicate-error_uri" => ("invalid", "fallback_failure", false, 0),
-        other => panic!("unmeasured Stage 1 callback vector: {other}"),
+fn decode_query_component(value: &str) -> Option<String> {
+    let bytes = value.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        match bytes[index] {
+            b'+' => decoded.push(b' '),
+            b'%' => {
+                let high = *bytes.get(index + 1)?;
+                let low = *bytes.get(index + 2)?;
+                decoded.push(hex(high)? << 4 | hex(low)?);
+                index += 2;
+            }
+            byte => decoded.push(byte),
+        }
+        index += 1;
+    }
+    String::from_utf8(decoded).ok()
+}
+
+fn hex(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
     }
 }
 
@@ -315,39 +298,45 @@ mod tests {
     }
 
     #[test]
-    fn shared_callback_vectors_characterize_stage1_parser_baseline() {
+    fn shared_callback_vectors_follow_the_common_contract() {
         let fixture: serde_json::Value =
             serde_json::from_str(include_str!("../../tests/fixtures/auth/callbacks.json"))
                 .expect("callback fixture should parse");
-        let mut gaps = Vec::new();
         for vector in fixture["vectors"].as_array().unwrap() {
             let id = vector["id"].as_str().unwrap();
-            let (baseline, _, _, _) = stage1_callback_baseline(id);
             let shape = match parse_callback_parameters(vector["query"].as_str().unwrap_or("")) {
                 Ok(CallbackParameters::Success { .. }) => "success",
                 Ok(CallbackParameters::ProviderError { .. }) => "error",
                 Err(()) => "invalid",
             };
-            assert_eq!(
-                shape, baseline,
-                "{id} (target: {})",
-                vector["target"]["flowl"]
-            );
-            if baseline != vector["target"]["flowl"].as_str().unwrap() {
-                gaps.push(id);
-            }
+            assert_eq!(shape, vector["target"]["flowl"], "{id}");
         }
-        assert_eq!(
-            gaps,
-            [
-                "distinct-error-details",
-                "empty-error",
-                "bad-percent",
-                "short-percent",
-                "invalid-utf8",
-                "malformed-unknown"
-            ]
-        );
+    }
+
+    #[test]
+    fn callback_shapes_decode_names_and_values_before_validation() {
+        for query in [
+            "error=denied",
+            "error=denied&state=",
+            "state=s&code",
+            "error=&state=s&error_uri=detail",
+            "error=denied&state=s&error_description=&%65rror_description=detail",
+            "error=denied&state=s&error_uri=&%65rror_uri=detail",
+            "code=c&state=s&%63ode=",
+            "error=denied&state=s&%65rror=",
+            "code=c&state=s&%GG=ignored",
+            "code=c&state=s&extra=ok&extra=%FF",
+        ] {
+            assert!(parse_callback_parameters(query).is_err(), "{query}");
+        }
+        assert!(matches!(
+            parse_callback_parameters("error=denied&state=s&error_description=&error_uri="),
+            Ok(CallbackParameters::ProviderError { state }) if state == "s"
+        ));
+        assert!(matches!(
+            parse_callback_parameters("%63ode=a%2Bb+c&%73tate=s%2Bt+u&extra=1&extra=2"),
+            Ok(CallbackParameters::Success { state, code }) if state == "s+t u" && code == "a+b c"
+        ));
     }
 
     #[test]

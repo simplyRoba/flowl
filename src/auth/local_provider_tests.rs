@@ -1487,10 +1487,10 @@ async fn pending_registry_accepts_1024_rejects_full_and_prunes_at_the_expiry_bou
     assert!(transactions.contains_key(&after_expiry));
 }
 
-// Adapted from Gazel's bound-attempt vector harness, not its baseline expectations.
+// Only complete success/provider-error shapes consume a browser-bound attempt.
 // Retrying the original callback distinguishes rejection from consumption.
 #[tokio::test]
-async fn shared_callback_vectors_characterize_stage1_bound_attempts() {
+async fn shared_callback_vectors_validate_bound_attempts() {
     let fixture: serde_json::Value =
         serde_json::from_str(include_str!("../../tests/fixtures/auth/callbacks.json"))
             .expect("callback fixture should parse");
@@ -1512,7 +1512,8 @@ async fn shared_callback_vectors_characterize_stage1_bound_attempts() {
     .collect::<String>();
     for vector in fixture["vectors"].as_array().unwrap() {
         let id = vector["id"].as_str().unwrap();
-        let (_, outcome, consumed, token_requests) = super::routes::stage1_callback_baseline(id);
+        let target = vector["target"]["flowl"].as_str().unwrap();
+        let consumed = target != "invalid";
         let (browser_cookie, state) = begin_login(&app, &provider).await;
         let query = vector["query"].as_str().map(|query| {
             query
@@ -1531,13 +1532,11 @@ async fn shared_callback_vectors_characterize_stage1_bound_attempts() {
             .await
             .expect("callback response");
         assert_eq!(response.status(), StatusCode::SEE_OTHER, "{id}");
-        let expected = match outcome {
+        let expected = match target {
             "success" => "/plants?tab=care",
-            "bound_failure" => {
-                "/login?error=authentication_failed&return_to=%2Fplants%3Ftab%3Dcare"
-            }
-            "fallback_failure" => "/login?error=authentication_failed&return_to=%2F",
-            other => panic!("unknown baseline outcome {other}"),
+            "error" => "/login?error=authentication_failed&return_to=%2Fplants%3Ftab%3Dcare",
+            "invalid" => "/login?error=authentication_failed&return_to=%2F",
+            other => panic!("unknown target shape {other}"),
         };
         assert_eq!(
             response.headers().get(header::LOCATION).unwrap(),
@@ -1550,7 +1549,15 @@ async fn shared_callback_vectors_characterize_stage1_bound_attempts() {
             "{id}"
         );
         let after = provider.provider.token_requests.load(Ordering::SeqCst);
-        assert_eq!(after - before, token_requests, "{id}");
+        assert_eq!(after - before, usize::from(target == "success"), "{id}");
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(!location.contains("private-sentinel"), "{id}");
+        assert!(!location.contains(&provider.provider.base), "{id}");
         assert_eq!(
             auth.transactions.lock().await.contains_key(&state),
             !consumed,
@@ -1587,10 +1594,8 @@ async fn shared_callback_vectors_characterize_stage1_bound_attempts() {
     }
 }
 
-// Flowl currently accepts one error detail but rejects both distinct details together.
-// Exercise the accepted URI shape too, so zero sentinel traffic is not just parser rejection.
 #[tokio::test]
-async fn stage1_single_error_uri_consumes_once_without_following_or_reflecting_it() {
+async fn provider_error_uri_consumes_once_without_following_or_reflecting_it() {
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
     let auth = Arc::new(
         AuthState::with_dependencies(
