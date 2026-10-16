@@ -87,7 +87,7 @@ async fn with_faults() -> (RunningProvider, Router, SessionFaults) {
         Arc::new(TestClock {
             time: StdMutex::new(SystemTime::now()),
         }),
-        Arc::new(crate::auth::SystemMonotonicClock),
+        Arc::new(crate::auth::app::SystemMonotonicClock),
         Arc::new(ReqwestAuthHttpClient::new().unwrap()),
         faults.clone(),
     )
@@ -117,7 +117,7 @@ async fn preloaded_request(
     if phase.is_some() {
         // Every HTTP request has its own Session::new cache, not a cloned Session.
         session
-            .get::<String>(crate::auth::routes::PREAUTH_STATE_KEY)
+            .get::<String>(crate::auth::app::PREAUTH_STATE_KEY)
             .await
             .unwrap();
     }
@@ -163,7 +163,7 @@ async fn preloaded_app_with_clock(
         AuthState::with_session_faults(
             EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
             clock,
-            Arc::new(crate::auth::SystemMonotonicClock),
+            Arc::new(crate::auth::app::SystemMonotonicClock),
             Arc::new(ReqwestAuthHttpClient::new().unwrap()),
             faults,
         )
@@ -411,7 +411,7 @@ async fn callback_expiry_during_completion_reload_is_fail_closed_not_a_panic() {
     let auth = AuthState::with_session_faults(
         EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
         clock.clone(),
-        Arc::new(crate::auth::SystemMonotonicClock),
+        Arc::new(crate::auth::app::SystemMonotonicClock),
         Arc::new(ReqwestAuthHttpClient::new().unwrap()),
         faults.clone(),
     )
@@ -653,7 +653,7 @@ async fn replacement_exchange_waits_for_the_binding_to_be_persisted() {
         AuthState::with_session_faults(
             EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
             Arc::new(crate::auth::SystemClock),
-            Arc::new(crate::auth::SystemMonotonicClock),
+            Arc::new(crate::auth::app::SystemMonotonicClock),
             Arc::new(ReqwestAuthHttpClient::new().unwrap()),
             faults.clone(),
         )
@@ -679,7 +679,7 @@ async fn replacement_exchange_waits_for_the_binding_to_be_persisted() {
     };
     bounded(pause.wait_entered()).await;
     let next = {
-        let transactions = auth.transactions.lock().await;
+        let transactions = auth.transactions.entries.lock().await;
         assert_eq!(transactions.len(), 2);
         let (state, pending) = transactions
             .iter()
@@ -690,7 +690,7 @@ async fn replacement_exchange_waits_for_the_binding_to_be_persisted() {
             state: state.clone(),
             nonce: pending.nonce.secret().clone(),
             challenge: openidconnect::PkceCodeChallenge::from_code_verifier_sha256(
-                &pending.verifier,
+                &pending.pkce_verifier,
             )
             .as_str()
             .to_owned(),
@@ -706,7 +706,7 @@ async fn replacement_exchange_waits_for_the_binding_to_be_persisted() {
     );
     assert_eq!(
         snapshot
-            .get::<String>(crate::auth::routes::PREAUTH_STATE_KEY)
+            .get::<String>(crate::auth::app::PREAUTH_STATE_KEY)
             .await
             .unwrap(),
         Some(original.state.clone())
@@ -942,7 +942,7 @@ async fn mutate_after_callback(
     let mut response = next.run(request).await;
     if callback
         && session
-            .get::<serde_json::Value>(crate::auth::routes::AUTHENTICATED_KEY)
+            .get::<serde_json::Value>(crate::auth::session::AUTHENTICATED_SESSION_KEY)
             .await
             .unwrap()
             .is_some()
@@ -1017,7 +1017,7 @@ async fn assert_middleware_failure_with_provider(
             Arc::new(TestClock {
                 time: StdMutex::new(SystemTime::now()),
             }),
-            Arc::new(crate::auth::SystemMonotonicClock),
+            Arc::new(crate::auth::app::SystemMonotonicClock),
             Arc::new(ReqwestAuthHttpClient::new().unwrap()),
             failure.faults.clone(),
         )
@@ -1063,7 +1063,7 @@ async fn assert_middleware_failure_with_provider(
     provisional.load().await.unwrap();
     assert!(
         provisional
-            .get::<serde_json::Value>(crate::auth::routes::AUTHENTICATED_KEY)
+            .get::<serde_json::Value>(crate::auth::session::AUTHENTICATED_SESSION_KEY)
             .await
             .unwrap()
             .is_none()
@@ -1102,7 +1102,7 @@ async fn logout_500_response_replacement_still_expires_cookie_and_revokes_authen
                 Arc::new(TestClock {
                     time: StdMutex::new(SystemTime::now()),
                 }),
-                Arc::new(crate::auth::SystemMonotonicClock),
+                Arc::new(crate::auth::app::SystemMonotonicClock),
                 Arc::new(ReqwestAuthHttpClient::new().unwrap()),
                 SessionFaults::default(),
             )
@@ -1164,8 +1164,8 @@ async fn middleware_duplicate_save_is_not_a_second_backing_write() {
 
 #[tokio::test]
 async fn successful_session_retains_only_local_authentication_timestamps() {
-    use crate::auth::routes::AUTHENTICATED_KEY;
-    use crate::auth::session_store::OWNER_KEY;
+    use crate::auth::session::AUTHENTICATED_SESSION_KEY;
+    use crate::auth::session::OWNER_KEY;
     use tower_sessions::{Session, SessionStore};
 
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
@@ -1177,7 +1177,7 @@ async fn successful_session_retains_only_local_authentication_timestamps() {
         AuthState::with_session_faults(
             EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
             clock,
-            Arc::new(crate::auth::SystemMonotonicClock),
+            Arc::new(crate::auth::app::SystemMonotonicClock),
             Arc::new(ReqwestAuthHttpClient::new().unwrap()),
             SessionFaults::default(),
         )
@@ -1224,7 +1224,7 @@ async fn successful_session_retains_only_local_authentication_timestamps() {
     assert!(record.data.contains_key(OWNER_KEY));
     let timestamp = time::OffsetDateTime::from(now).unix_timestamp();
     assert_eq!(
-        record.data[AUTHENTICATED_KEY],
+        record.data[AUTHENTICATED_SESSION_KEY],
         serde_json::json!({
             "authenticated_at": timestamp,
             "expires_at": timestamp + 43_200,
@@ -1232,7 +1232,7 @@ async fn successful_session_retains_only_local_authentication_timestamps() {
     );
     assert_eq!(
         record.expiry_date,
-        time::OffsetDateTime::from(now + crate::auth::SESSION_TTL)
+        time::OffsetDateTime::from(now + crate::auth::app::SESSION_TTL)
     );
     let data = serde_json::to_string(&record.data).unwrap();
     for secret in [
@@ -1260,11 +1260,7 @@ struct LoginAttempt {
 }
 
 fn protocol_routes(auth: &Arc<AuthState>) -> Router {
-    Router::new()
-        .route("/auth/login", get(crate::auth::routes::login))
-        .route("/auth/callback", get(crate::auth::routes::callback))
-        .route("/auth/logout", post(crate::auth::routes::logout))
-        .layer(axum::Extension(Arc::clone(auth)))
+    auth.protocol_routes()
 }
 
 fn server_app(auth: Arc<AuthState>) -> Router {

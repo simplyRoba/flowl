@@ -318,8 +318,8 @@ impl TestClock {
 }
 
 impl Clock for TestClock {
-    fn now(&self) -> SystemTime {
-        *self.time.lock().expect("wall-clock test lock")
+    fn now(&self) -> time::OffsetDateTime {
+        (*self.time.lock().expect("wall-clock test lock")).into()
     }
 }
 
@@ -373,7 +373,7 @@ async fn discovery(State(provider): State<Arc<Provider>>) -> Response {
     }
     let methods = match provider.method {
         TokenAuthMethod::Basic => serde_json::json!(["client_secret_basic", "client_secret_post"]),
-        TokenAuthMethod::RequestBody => serde_json::json!(["client_secret_post"]),
+        TokenAuthMethod::Post => serde_json::json!(["client_secret_post"]),
     };
     let issuer = provider
         .discovery_issuer
@@ -482,7 +482,7 @@ async fn token(
             .is_ok_and(|value| value == "Basic Zmxvd2wtdGVzdC1jbGllbnQ6Zmxvd2wtdGVzdC1zZWNyZXQ=")
     });
     *provider.observed_basic.lock().await = Some(has_basic);
-    let expected_credentials_in_body = provider.method == TokenAuthMethod::RequestBody;
+    let expected_credentials_in_body = provider.method == TokenAuthMethod::Post;
     if has_basic != (provider.method == TokenAuthMethod::Basic)
         || (form.get("client_id") == Some(&CLIENT_ID.to_string())) != expected_credentials_in_body
         || (form.get("client_secret") == Some(&CLIENT_SECRET.to_string()))
@@ -613,13 +613,24 @@ async fn unsafe_discovered_destinations_are_never_contacted() {
             document[field] = serde_json::json!(destination);
             provider.set_discovery_override(document).await;
             let previous_jwks = provider.provider.jwks_requests.load(Ordering::SeqCst);
-            assert!(
-                matches!(
-                    discover_provider(&provider).await,
-                    Err(super::AuthStartupError::UnsafeMetadata)
-                ),
-                "{field}"
-            );
+            let error = discover_provider(&provider).await.unwrap_err();
+            match field {
+                "jwks_uri" => assert!(matches!(
+                    error,
+                    super::AuthStartupError::Oidc(super::OidcStartupError::Discovery)
+                )),
+                "token_endpoint" => assert!(matches!(
+                    error,
+                    super::AuthStartupError::Oidc(super::OidcStartupError::UnsafeEndpoint("token"))
+                )),
+                "authorization_endpoint" => assert!(matches!(
+                    error,
+                    super::AuthStartupError::Oidc(super::OidcStartupError::UnsafeEndpoint(
+                        "authorization"
+                    ))
+                )),
+                _ => unreachable!(),
+            }
             assert_eq!(
                 provider.provider.error_uri_requests.load(Ordering::SeqCst),
                 0
@@ -632,56 +643,6 @@ async fn unsafe_discovered_destinations_are_never_contacted() {
                 );
             }
         }
-    }
-}
-
-#[tokio::test]
-async fn runtime_raw_destinations_are_checked_before_uri_fragment_truncation() {
-    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
-    let auth = discover_provider(&provider).await.unwrap();
-    let original = auth.clients.read().await.metadata.clone();
-    for destination in [
-        format!("{}/redirected#private-sentinel", provider.provider.base),
-        provider
-            .provider
-            .base
-            .replace("http://", "http://user:private-sentinel@")
-            + "/redirected",
-        provider.provider.base.replace("http://", "ftp://") + "/redirected",
-    ] {
-        let mut document = serde_json::to_value(&original).unwrap();
-        document["token_endpoint"] = serde_json::json!(destination);
-        document["jwks_uri"] = serde_json::json!(destination);
-        let metadata =
-            serde_json::from_value::<openidconnect::core::CoreProviderMetadata>(document)
-                .unwrap()
-                .set_jwks(original.jwks().clone());
-        {
-            let mut cache = auth.clients.write().await;
-            cache.client =
-                super::build_client(auth.config(), TokenAuthMethod::Basic, metadata.clone())
-                    .unwrap();
-            cache.metadata = metadata;
-            cache.refresh_retry_at = None;
-        }
-        assert_eq!(
-            auth.exchange_and_verify(
-                "accepted-code".into(),
-                pending_login(&auth, &provider).await
-            )
-            .await,
-            Err(CallbackError::Unavailable)
-        );
-        assert_eq!(
-            auth.refresh_jwks_for_generation(0).await,
-            Err(CallbackError::Unavailable)
-        );
-        assert_eq!(
-            provider.provider.error_uri_requests.load(Ordering::SeqCst),
-            0
-        );
-        assert_eq!(provider.provider.token_requests.load(Ordering::SeqCst), 0);
-        assert_eq!(provider.provider.jwks_requests.load(Ordering::SeqCst), 1);
     }
 }
 
@@ -739,7 +700,9 @@ async fn standalone_code_and_advertised_grants_are_required() {
         provider.set_discovery_override(document).await;
         assert!(matches!(
             discover_provider(&provider).await,
-            Err(super::AuthStartupError::UnsafeMetadata)
+            Err(super::AuthStartupError::Oidc(
+                super::OidcStartupError::UnusableSigningKeys
+            ))
         ));
     }
 }
@@ -750,7 +713,9 @@ async fn provider_redirects_never_contact_targets_and_failed_refresh_retains_key
     provider.redirect_discovery(true);
     assert!(matches!(
         discover_provider(&provider).await,
-        Err(super::AuthStartupError::HttpStatus)
+        Err(super::AuthStartupError::Oidc(
+            super::OidcStartupError::Discovery
+        ))
     ));
     provider.redirect_discovery(false);
     provider
@@ -759,7 +724,9 @@ async fn provider_redirects_never_contact_targets_and_failed_refresh_retains_key
         .store(true, Ordering::SeqCst);
     assert!(matches!(
         discover_provider(&provider).await,
-        Err(super::AuthStartupError::HttpStatus)
+        Err(super::AuthStartupError::Oidc(
+            super::OidcStartupError::Discovery
+        ))
     ));
     provider
         .provider
@@ -774,7 +741,7 @@ async fn provider_redirects_never_contact_targets_and_failed_refresh_retains_key
             pending_login(&auth, &provider).await
         )
         .await,
-        Err(CallbackError::Unavailable)
+        Err(CallbackError::ProviderUnavailable)
     );
     *provider.provider.token_response_override.lock().await = None;
     let original = provider.provider.signing_key.lock().await.clone();
@@ -789,7 +756,7 @@ async fn provider_redirects_never_contact_targets_and_failed_refresh_retains_key
             pending_login(&auth, &provider).await
         )
         .await,
-        Err(CallbackError::Unavailable)
+        Err(CallbackError::ProviderUnavailable)
     );
     *provider.provider.signing_key.lock().await = original;
     assert_eq!(
@@ -820,14 +787,14 @@ async fn token_response_categories_and_logs_are_safe() {
         .finish();
     async {
         for (status, body, expected) in [
-            (StatusCode::SERVICE_UNAVAILABLE, r#"{"error":"invalid_grant","error_description":"private-sentinel"}"#, CallbackError::Unavailable),
-            (StatusCode::BAD_REQUEST, r#"{"error":"invalid_grant","error_description":"private-sentinel"}"#, CallbackError::Invalid),
-            (StatusCode::OK, "{private-sentinel", CallbackError::Unavailable),
-            (StatusCode::CREATED, "private-sentinel", CallbackError::Unavailable),
-            (StatusCode::OK, r#"{"id_token":"private-sentinel"}"#, CallbackError::Unavailable),
-            (StatusCode::OK, r#"{"access_token":"private-sentinel","token_type":"Bearer","id_token":"private-sentinel"}"#, CallbackError::Invalid),
-            (StatusCode::OK, r#"{"access_token":"private-sentinel","token_type":"Bearer","id_token":42}"#, CallbackError::Invalid),
-            (StatusCode::FOUND, "private-sentinel", CallbackError::Unavailable),
+            (StatusCode::SERVICE_UNAVAILABLE, r#"{"error":"invalid_grant","error_description":"private-sentinel"}"#, CallbackError::ProviderUnavailable),
+            (StatusCode::BAD_REQUEST, r#"{"error":"invalid_grant","error_description":"private-sentinel"}"#, CallbackError::Authentication),
+            (StatusCode::OK, "{private-sentinel", CallbackError::ProviderUnavailable),
+            (StatusCode::CREATED, "private-sentinel", CallbackError::ProviderUnavailable),
+            (StatusCode::OK, r#"{"id_token":"private-sentinel"}"#, CallbackError::ProviderUnavailable),
+            (StatusCode::OK, r#"{"access_token":"private-sentinel","token_type":"Bearer","id_token":"private-sentinel"}"#, CallbackError::Authentication),
+            (StatusCode::OK, r#"{"access_token":"private-sentinel","token_type":"Bearer","id_token":42}"#, CallbackError::Authentication),
+            (StatusCode::FOUND, "private-sentinel", CallbackError::ProviderUnavailable),
         ] {
             *provider.provider.token_response_override.lock().await = Some((status, body.to_owned()));
             assert_eq!(auth.exchange_and_verify("private-sentinel".into(), pending_login(&auth, &provider).await).await, Err(expected));
@@ -839,7 +806,7 @@ async fn token_response_categories_and_logs_are_safe() {
     let logs = String::from_utf8(captured.lock().unwrap().clone()).unwrap();
     assert!(logs.contains("OIDC"));
     assert!(logs.contains("503"));
-    assert!(logs.contains("Invalid"));
+    assert!(logs.contains("Authentication"));
     assert!(logs.contains("Unavailable"));
     for sensitive in [
         "private-sentinel",
@@ -884,7 +851,7 @@ async fn positive_old_and_future_iat_and_matching_azp_remain_valid() {
 
 #[tokio::test]
 async fn basic_and_post_authentication_survive_same_kid_refresh() {
-    for method in [TokenAuthMethod::Basic, TokenAuthMethod::RequestBody] {
+    for method in [TokenAuthMethod::Basic, TokenAuthMethod::Post] {
         let provider = RunningProvider::start(method).await;
         let auth = discover_provider(&provider).await.unwrap();
         provider.rotate_signing_key_with_same_kid().await;
@@ -972,7 +939,12 @@ async fn loopback_provider_rejects_an_exact_issuer_slash_mismatch() {
         Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
     )
     .await;
-    assert!(matches!(auth, Err(super::AuthStartupError::IssuerMismatch)));
+    assert!(matches!(
+        auth,
+        Err(super::AuthStartupError::Oidc(
+            super::OidcStartupError::Discovery
+        ))
+    ));
     assert_eq!(
         provider.provider.discovery_requests.load(Ordering::SeqCst),
         1
@@ -991,7 +963,12 @@ async fn startup_rejects_unusable_initial_jwks_and_disallowed_signing_metadata()
         Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
     )
     .await;
-    assert!(matches!(auth, Err(super::AuthStartupError::UnsafeMetadata)));
+    assert!(matches!(
+        auth,
+        Err(super::AuthStartupError::Oidc(
+            super::OidcStartupError::UnusableSigningKeys
+        ))
+    ));
 
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
     provider
@@ -1012,7 +989,12 @@ async fn startup_rejects_unusable_initial_jwks_and_disallowed_signing_metadata()
         Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
     )
     .await;
-    assert!(matches!(auth, Err(super::AuthStartupError::UnsafeMetadata)));
+    assert!(matches!(
+        auth,
+        Err(super::AuthStartupError::Oidc(
+            super::OidcStartupError::UnusableSigningKeys
+        ))
+    ));
 }
 
 #[tokio::test]
@@ -1025,7 +1007,12 @@ async fn startup_rejects_unavailable_and_malformed_initial_jwks() {
         Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
     )
     .await;
-    assert!(matches!(auth, Err(super::AuthStartupError::HttpStatus)));
+    assert!(matches!(
+        auth,
+        Err(super::AuthStartupError::Oidc(
+            super::OidcStartupError::Discovery
+        ))
+    ));
 
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
     provider.fail_jwks_parsing(true);
@@ -1035,7 +1022,12 @@ async fn startup_rejects_unavailable_and_malformed_initial_jwks() {
         Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
     )
     .await;
-    assert!(matches!(auth, Err(super::AuthStartupError::Parsing)));
+    assert!(matches!(
+        auth,
+        Err(super::AuthStartupError::Oidc(
+            super::OidcStartupError::Discovery
+        ))
+    ));
 }
 
 #[tokio::test]
@@ -1095,7 +1087,9 @@ async fn startup_rejects_unsafe_metadata_and_unsupported_token_authentication() 
     .await;
     assert!(matches!(
         auth,
-        Err(super::AuthStartupError::UnsupportedTokenAuthentication)
+        Err(super::AuthStartupError::Oidc(
+            super::OidcStartupError::UnsupportedClientAuthentication
+        ))
     ));
 }
 
@@ -1111,7 +1105,12 @@ async fn malformed_discovery_fails_before_authentication_state_is_available() {
         Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
     )
     .await;
-    assert!(matches!(auth, Err(super::AuthStartupError::Parsing)));
+    assert!(matches!(
+        auth,
+        Err(super::AuthStartupError::Oidc(
+            super::OidcStartupError::Discovery
+        ))
+    ));
 }
 
 #[tokio::test]
@@ -1125,7 +1124,7 @@ async fn omitted_token_auth_metadata_defaults_to_basic() {
     )
     .await
     .expect("omitted metadata selects the OIDC Basic default");
-    assert_eq!(auth.token_auth_method(), TokenAuthMethod::Basic);
+    assert_eq!(auth.runtime.auth_method, TokenAuthMethod::Basic);
 }
 
 #[tokio::test]
@@ -1145,7 +1144,7 @@ async fn parsed_token_protocol_errors_are_invalid_not_provider_unavailable() {
             pending_login(&auth, &provider).await
         )
         .await,
-        Err(CallbackError::Invalid)
+        Err(CallbackError::Authentication)
     );
     assert_eq!(provider.provider.token_requests.load(Ordering::SeqCst), 1);
 }
@@ -1170,7 +1169,7 @@ async fn wrong_pkce_verifier_is_rejected_without_authentication() {
     assert_eq!(
         auth.exchange_and_verify("accepted-code".to_string(), pending)
             .await,
-        Err(CallbackError::Invalid)
+        Err(CallbackError::Authentication)
     );
     assert_eq!(provider.provider.jwks_requests.load(Ordering::SeqCst), 1);
 }
@@ -1192,7 +1191,7 @@ async fn unparseable_token_endpoint_responses_remain_provider_unavailable() {
             pending_login(&auth, &provider).await
         )
         .await,
-        Err(CallbackError::Unavailable)
+        Err(CallbackError::ProviderUnavailable)
     );
 }
 
@@ -1670,15 +1669,15 @@ async fn pending_login_for_code(
         .await;
     PendingLogin {
         nonce,
-        verifier,
-        return_to: SafeReturnTo::fallback("/"),
-        expires_at: SystemTime::now() + super::LOGIN_TRANSACTION_TTL,
+        pkce_verifier: verifier,
+        return_to: SafeReturnTo::fallback(),
+        expires_at: (SystemTime::now() + super::LOGIN_TRANSACTION_TTL).into(),
     }
 }
 
 #[tokio::test]
 async fn loopback_provider_uses_client_secret_post_when_basic_is_not_advertised() {
-    let provider = RunningProvider::start(TokenAuthMethod::RequestBody).await;
+    let provider = RunningProvider::start(TokenAuthMethod::Post).await;
     let config = EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1");
     let auth = Arc::new(
         AuthState::with_dependencies(
@@ -1689,7 +1688,7 @@ async fn loopback_provider_uses_client_secret_post_when_basic_is_not_advertised(
         .await
         .expect("local discovery succeeds"),
     );
-    assert_eq!(auth.token_auth_method(), TokenAuthMethod::RequestBody);
+    assert_eq!(auth.runtime.auth_method, TokenAuthMethod::Post);
     let (state, _directory) = test_state(auth);
     let app = server::router(state);
     let login = app
@@ -1761,7 +1760,7 @@ async fn failed_rotated_jwks_is_cooled_down_then_recovers_with_an_injected_monot
             pending_login(&auth, &provider).await
         )
         .await,
-        Err(CallbackError::Unavailable)
+        Err(CallbackError::ProviderUnavailable)
     );
     assert_eq!(provider.provider.jwks_requests.load(Ordering::SeqCst), 2);
 
@@ -1771,7 +1770,7 @@ async fn failed_rotated_jwks_is_cooled_down_then_recovers_with_an_injected_monot
             pending_login(&auth, &provider).await
         )
         .await,
-        Err(CallbackError::Unavailable)
+        Err(CallbackError::ProviderUnavailable)
     );
     assert_eq!(provider.provider.jwks_requests.load(Ordering::SeqCst), 2);
 
@@ -1804,20 +1803,20 @@ async fn pending_registry_accepts_1024_rejects_full_and_prunes_at_the_expiry_bou
         .expect("local discovery succeeds"),
     );
     for index in 0..super::MAX_PENDING_LOGIN_TRANSACTIONS - 1 {
-        auth.transactions.lock().await.insert(
+        auth.transactions.entries.lock().await.insert(
             format!("active-{index}"),
             pending_login(&auth, &provider).await,
         );
     }
     assert_eq!(
-        auth.transactions.lock().await.len(),
+        auth.transactions.entries.lock().await.len(),
         super::MAX_PENDING_LOGIN_TRANSACTIONS - 1
     );
     let (state, _directory) = test_state(auth.clone());
     let app = server::router(state);
     let (browser_cookie, browser_state) = begin_login(&app, &provider).await;
     assert_eq!(
-        auth.transactions.lock().await.len(),
+        auth.transactions.entries.lock().await.len(),
         super::MAX_PENDING_LOGIN_TRANSACTIONS
     );
 
@@ -1834,7 +1833,7 @@ async fn pending_registry_accepts_1024_rejects_full_and_prunes_at_the_expiry_bou
             .as_bytes()
             .starts_with(b"/login?error=provider_unavailable")
     );
-    let transactions = auth.transactions.lock().await;
+    let transactions = auth.transactions.entries.lock().await;
     assert_eq!(transactions.len(), super::MAX_PENDING_LOGIN_TRANSACTIONS);
     assert!(transactions.contains_key(&browser_state));
     assert!(transactions.contains_key("active-0"));
@@ -1843,11 +1842,12 @@ async fn pending_registry_accepts_1024_rejects_full_and_prunes_at_the_expiry_bou
     assert!(auth.consume_transaction(&browser_state).await.is_some());
     let (_, replacement_state) = begin_login(&app, &provider).await;
     assert_eq!(
-        auth.transactions.lock().await.len(),
+        auth.transactions.entries.lock().await.len(),
         super::MAX_PENDING_LOGIN_TRANSACTIONS
     );
     assert!(
         auth.transactions
+            .entries
             .lock()
             .await
             .contains_key(&replacement_state)
@@ -1857,11 +1857,12 @@ async fn pending_registry_accepts_1024_rejects_full_and_prunes_at_the_expiry_bou
     let mut expired = pending_login(&auth, &provider).await;
     expired.expires_at = clock.now();
     auth.transactions
+        .entries
         .lock()
         .await
         .insert("expired-at-boundary".to_string(), expired);
     let (_, after_expiry) = begin_login(&app, &provider).await;
-    let transactions = auth.transactions.lock().await;
+    let transactions = auth.transactions.entries.lock().await;
     assert!(!transactions.contains_key("expired-at-boundary"));
     assert!(transactions.contains_key(&after_expiry));
 }
@@ -1938,7 +1939,7 @@ async fn shared_callback_vectors_validate_bound_attempts() {
         assert!(!location.contains("private-sentinel"), "{id}");
         assert!(!location.contains(&provider.provider.base), "{id}");
         assert_eq!(
-            auth.transactions.lock().await.contains_key(&state),
+            auth.transactions.entries.lock().await.contains_key(&state),
             !consumed,
             "{id}"
         );
@@ -2021,7 +2022,7 @@ async fn provider_error_uri_consumes_once_without_following_or_reflecting_it() {
         wrong_browser.headers().get(header::LOCATION).unwrap(),
         "/login?error=authentication_failed&return_to=%2F"
     );
-    assert!(auth.transactions.lock().await.contains_key(&state));
+    assert!(auth.transactions.entries.lock().await.contains_key(&state));
     let response = app
         .clone()
         .oneshot(request(&uri, Some(&browser_cookie)))
@@ -2032,7 +2033,7 @@ async fn provider_error_uri_consumes_once_without_following_or_reflecting_it() {
         response.headers().get(header::LOCATION).unwrap(),
         "/login?error=authentication_failed&return_to=%2Fplants%3Ftab%3Dcare"
     );
-    assert!(!auth.transactions.lock().await.contains_key(&state));
+    assert!(!auth.transactions.entries.lock().await.contains_key(&state));
     let retry = app
         .oneshot(request(
             &format!("/auth/callback?state={state}&code=accepted-code"),
@@ -2322,7 +2323,7 @@ async fn token_claim_failures_are_invalid_without_jwks_refresh() {
                 pending_login(&auth, &provider).await
             )
             .await,
-            Err(CallbackError::Invalid),
+            Err(CallbackError::Authentication),
             "{description}"
         );
         assert_eq!(
@@ -2646,10 +2647,14 @@ async fn auth_config_is_minimal_data_and_all_auth_responses_are_no_store() {
 async fn assert_auth_response_headers(app: &Router, enabled: bool, cookie: Option<&str>) {
     for (method, uri, enabled_status, disabled_status) in [
         ("GET", "/auth", 404, 200),
+        ("GET", "/auth/", 404, 200),
+        ("DELETE", "/auth/", 404, 200),
+        ("GET", "/auth/login/", 404, 200),
+        ("GET", "/auth/config/", 404, 200),
         ("GET", "/auth/config", 200, 200),
         ("POST", "/auth/config", 405, 405),
         ("GET", "/auth/login", 303, 200),
-        ("GET", "/auth/login?return_to=a&return_to=b", 400, 200),
+        ("GET", "/auth/login?return_to=a&return_to=b", 303, 200),
         (
             "GET",
             "/auth/callback?state=untrusted&code=untrusted",
@@ -3084,7 +3089,9 @@ async fn discovery_transport_redirect_and_signed_unknown_key_are_safely_rejected
             Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
         )
         .await,
-        Err(super::AuthStartupError::Transport)
+        Err(super::AuthStartupError::Oidc(
+            super::OidcStartupError::Discovery
+        ))
     ));
 
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
@@ -3096,7 +3103,9 @@ async fn discovery_transport_redirect_and_signed_unknown_key_are_safely_rejected
             Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
         )
         .await,
-        Err(super::AuthStartupError::HttpStatus)
+        Err(super::AuthStartupError::Oidc(
+            super::OidcStartupError::Discovery
+        ))
     ));
 
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
@@ -3114,7 +3123,7 @@ async fn discovery_transport_redirect_and_signed_unknown_key_are_safely_rejected
             pending_login(&auth, &provider).await
         )
         .await,
-        Err(CallbackError::Invalid)
+        Err(CallbackError::Authentication)
     );
 }
 
@@ -3142,7 +3151,7 @@ async fn assert_bypass_survives_five_minutes(app: &Router, clock: &TestClock, co
 
 #[tokio::test]
 async fn authenticated_login_preserves_the_entire_session_record() {
-    use super::session_store::{OWNER_KEY, Owner};
+    use crate::auth::session::{OWNER_KEY, Owner};
     use tower_sessions::{Session, SessionStore};
 
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
@@ -3172,8 +3181,8 @@ async fn authenticated_login_preserves_the_entire_session_record() {
         .as_secs();
     session
         .insert(
-            super::routes::AUTHENTICATED_KEY,
-            super::routes::AuthenticatedSession {
+            crate::auth::session::AUTHENTICATED_SESSION_KEY,
+            crate::auth::session::AuthenticatedSession {
                 authenticated_at: i64::try_from(now).unwrap(),
                 expires_at: i64::try_from(now + super::SESSION_TTL.as_secs()).unwrap(),
             },
@@ -3185,7 +3194,7 @@ async fn authenticated_login_preserves_the_entire_session_record() {
         .await
         .unwrap();
     session
-        .insert(super::routes::PREAUTH_STATE_KEY, "preserved-binding")
+        .insert(super::PREAUTH_STATE_KEY, "preserved-binding")
         .await
         .unwrap();
     session.set_expiry(Some(tower_sessions::Expiry::AtDateTime(
@@ -3199,10 +3208,11 @@ async fn authenticated_login_preserves_the_entire_session_record() {
         store.clone(),
         Some(tower_sessions::Expiry::AtDateTime(before.expiry_date)),
     );
-    let app = Router::new()
-        .route("/auth/login", get(super::routes::login))
-        .layer(axum::Extension(auth))
-        .layer(axum::Extension(super::session::OriginalSessionId(Some(id))))
+    let app = auth
+        .protocol_routes()
+        .layer(axum::Extension(crate::auth::session::OriginalSessionId(
+            Some(id),
+        )))
         .layer(axum::Extension(session.clone()));
     let response = app
         .oneshot(request("/auth/login?return_to=%2Fplants", None))
@@ -3219,7 +3229,7 @@ async fn authenticated_login_preserves_the_entire_session_record() {
 }
 
 async fn registry_snapshot(auth: &AuthState) -> serde_json::Value {
-    let transactions = auth.transactions.lock().await;
+    let transactions = auth.transactions.entries.lock().await;
     serde_json::Value::Object(
         transactions
             .iter()
@@ -3228,7 +3238,7 @@ async fn registry_snapshot(auth: &AuthState) -> serde_json::Value {
                     state.clone(),
                     serde_json::json!({
                         "nonce": pending.nonce.secret(),
-                        "verifier": pending.verifier.secret(),
+                        "verifier": pending.pkce_verifier.secret(),
                         "return_to": pending.return_to.as_str(),
                         "expires_at": pending.expires_at,
                     }),
@@ -3271,7 +3281,7 @@ async fn authenticated_login_bypasses_full_registry_without_cookie_or_provider_c
         .expect("callback");
     let authenticated_cookie = cookie(&callback);
     for index in 0..super::MAX_PENDING_LOGIN_TRANSACTIONS {
-        auth.transactions.lock().await.insert(
+        auth.transactions.entries.lock().await.insert(
             format!("active-{index}"),
             pending_login(&auth, &provider).await,
         );

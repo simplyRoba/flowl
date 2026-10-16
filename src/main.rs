@@ -10,22 +10,28 @@ use tokio::sync::Notify;
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
-#[tokio::main]
-async fn main() {
-    let config = config::Config::load();
-    let auth_config = config::AuthConfig::load().unwrap_or_else(|error| {
+async fn bootstrap_authentication() -> Option<Arc<auth::Authentication>> {
+    let config = config::AuthConfig::load().unwrap_or_else(|error| {
         eprintln!("Invalid authentication configuration: {error}");
         std::process::exit(1);
     });
-    let auth_state = match auth_config {
+    match config {
         config::AuthConfig::Disabled => None,
         config::AuthConfig::Enabled(config) => Some(Arc::new(
-            auth::AuthState::new(*config).await.unwrap_or_else(|error| {
-                eprintln!("Unable to initialize authentication: {error}");
-                std::process::exit(1);
-            }),
+            auth::Authentication::bootstrap(*config)
+                .await
+                .unwrap_or_else(|error| {
+                    eprintln!("Unable to initialize authentication: {error}");
+                    std::process::exit(1);
+                }),
         )),
-    };
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let config = config::Config::load();
+    let auth_state = bootstrap_authentication().await;
 
     tracing_subscriber::fmt()
         .with_env_filter(

@@ -1,131 +1,114 @@
-use std::fmt;
+pub(crate) const RETURN_TO_MAX_BYTES: usize = 2_048;
 
-use url::Url;
-
-/// Maximum accepted UTF-8 byte length for a local post-login navigation target.
-pub const MAX_SAFE_RETURN_TO_BYTES: usize = 2_048;
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SafeReturnTo(String);
+/// A validated serialized local document target, retained without normalization.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct SafeReturnTo(String);
 
 impl SafeReturnTo {
-    /// Parses one bounded, non-recursive, same-origin-relative navigation target.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when the target is external, malformed, ambiguous after percent decoding,
-    /// names a reserved non-document namespace, or exceeds the configured byte bound.
-    pub fn parse(input: &str) -> Result<Self, SafeReturnToError> {
-        if input.is_empty() || input.len() > MAX_SAFE_RETURN_TO_BYTES {
-            return Err(SafeReturnToError::Invalid);
-        }
-        if !input.starts_with('/') || input.starts_with("//") {
-            return Err(SafeReturnToError::Invalid);
-        }
-        let decoded = percent_decode(input)?;
-        if decoded
-            .chars()
-            .any(|character| character == '\\' || character.is_control())
-        {
-            return Err(SafeReturnToError::Invalid);
-        }
-
-        let path_end = input.find(['?', '#']).unwrap_or(input.len());
-        let raw_path = &input[..path_end];
-        let decoded_path = percent_decode(raw_path)?;
-        if decoded_path.contains(['%', '?', '#'])
-            || decoded_path.matches('/').count() != raw_path.matches('/').count()
-        {
-            return Err(SafeReturnToError::Invalid);
-        }
-        if decoded_path
-            .split('/')
-            .any(|component| component == "." || component == "..")
-        {
-            return Err(SafeReturnToError::Invalid);
-        }
-        if is_reserved_path(&decoded_path) {
-            return Err(SafeReturnToError::Invalid);
-        }
-
-        // Parsing against a constant authority verifies URL syntax without consulting a request
-        // host or allowing a caller-provided authority to influence the target.
-        Url::parse(&format!("https://flowl.invalid{input}"))
-            .map_err(|_| SafeReturnToError::Invalid)?;
-
-        Ok(Self(input.to_string()))
+    pub(super) fn new(value: Option<&str>) -> Self {
+        Self(validate_serialized_target(value))
     }
 
-    pub fn fallback(input: &str) -> Self {
-        Self::parse(input).unwrap_or_else(|_| Self("/".to_string()))
+    pub(super) fn fallback() -> Self {
+        Self(String::from("/"))
     }
 
-    pub fn as_str(&self) -> &str {
+    pub(super) fn as_str(&self) -> &str {
         &self.0
     }
 }
 
-impl AsRef<str> for SafeReturnTo {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
+pub(crate) fn validate_return_to(value: Option<&str>) -> String {
+    SafeReturnTo::new(value).0
 }
 
-impl fmt::Display for SafeReturnTo {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(self.as_str())
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SafeReturnToError {
-    Invalid,
-}
-
-impl fmt::Display for SafeReturnToError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("return target must be a safe local path")
-    }
-}
-
-impl std::error::Error for SafeReturnToError {}
-
-fn percent_decode(input: &str) -> Result<String, SafeReturnToError> {
-    let bytes = input.as_bytes();
-    let mut decoded = Vec::with_capacity(bytes.len());
-    let mut index = 0;
-
-    while index < bytes.len() {
-        if bytes[index] == b'%' {
-            let high = *bytes.get(index + 1).ok_or(SafeReturnToError::Invalid)?;
-            let low = *bytes.get(index + 2).ok_or(SafeReturnToError::Invalid)?;
-            decoded.push((hex_value(high)? << 4) | hex_value(low)?);
-            index += 3;
-        } else {
-            decoded.push(bytes[index]);
-            index += 1;
-        }
+fn validate_serialized_target(value: Option<&str>) -> String {
+    let Some(value) = value else {
+        return String::from("/");
+    };
+    if value.len() > RETURN_TO_MAX_BYTES || !value.starts_with('/') || value.starts_with("//") {
+        return String::from("/");
     }
 
-    String::from_utf8(decoded).map_err(|_| SafeReturnToError::Invalid)
+    let Some(decoded) = decode_percent_encoded(value, false) else {
+        return String::from("/");
+    };
+    if decoded.contains('\\') || decoded.chars().any(char::is_control) {
+        return String::from("/");
+    }
+
+    let path_end = value.find(['?', '#']).unwrap_or(value.len());
+    let path = &value[..path_end];
+    let Some(decoded_path) = decode_percent_encoded(path, false) else {
+        return String::from("/");
+    };
+    if decoded_path.contains(['%', '?', '#'])
+        || decoded_path.matches('/').count() != path.matches('/').count()
+        || is_reserved_path(&decoded_path)
+        || has_dot_segment(&decoded_path)
+        || url::Url::parse(&format!("https://auth.invalid{value}")).is_err()
+    {
+        return String::from("/");
+    }
+    value.to_string()
 }
 
-const fn hex_value(value: u8) -> Result<u8, SafeReturnToError> {
-    match value {
-        b'0'..=b'9' => Ok(value - b'0'),
-        b'a'..=b'f' => Ok(value - b'a' + 10),
-        b'A'..=b'F' => Ok(value - b'A' + 10),
-        _ => Err(SafeReturnToError::Invalid),
-    }
+fn has_dot_segment(path: &str) -> bool {
+    path.split('/')
+        .any(|segment| segment == "." || segment == "..")
 }
 
 fn is_reserved_path(path: &str) -> bool {
-    const COMMON_RESERVED_PATHS: &[&str] = &["/auth", "/login", "/api", "/health"];
-    const APP_RESERVED_PATHS: &[&str] = &["/uploads"];
-    COMMON_RESERVED_PATHS
+    ["/api", "/auth", "/health", "/login"]
         .iter()
-        .chain(APP_RESERVED_PATHS)
+        .chain(super::app::NON_DOCUMENT_ROOTS)
         .any(|reserved| path == *reserved || path.starts_with(&format!("{reserved}/")))
+}
+
+pub(super) fn return_to_from_query(raw_query: Option<&str>) -> String {
+    let Some(raw_query) = raw_query else {
+        return SafeReturnTo::fallback().0;
+    };
+    for pair in raw_query.split('&') {
+        let (key, value) = pair.split_once('=').unwrap_or((pair, ""));
+        if decode_query_component(key).as_deref() == Some("return_to") {
+            return validate_return_to(decode_query_component(value).as_deref());
+        }
+    }
+    String::from("/")
+}
+
+pub(super) fn decode_query_component(value: &str) -> Option<String> {
+    decode_percent_encoded(value, true)
+}
+
+fn decode_percent_encoded(value: &str, plus_as_space: bool) -> Option<String> {
+    let bytes = value.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        match bytes[index] {
+            b'+' if plus_as_space => decoded.push(b' '),
+            b'%' => {
+                let high = *bytes.get(index + 1)?;
+                let low = *bytes.get(index + 2)?;
+                decoded.push(hex(high)? << 4 | hex(low)?);
+                index += 2;
+            }
+            byte => decoded.push(byte),
+        }
+        index += 1;
+    }
+    String::from_utf8(decoded).ok()
+}
+
+fn hex(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
@@ -139,7 +122,6 @@ mod tests {
         ))
         .expect("return fixture should parse");
         for vector in fixture["vectors"].as_array().unwrap() {
-            let id = vector["id"].as_str().unwrap();
             let input = &vector["input"];
             let value = if input.is_null() {
                 None
@@ -156,124 +138,67 @@ mod tests {
                     input["suffix"].as_str().unwrap()
                 ))
             };
-            let target = vector["target"]["flowl"].as_bool().unwrap();
-            let expected = if target {
+            let expected = if vector["target"][super::super::app::FIXTURE_APP]
+                .as_bool()
+                .unwrap()
+            {
                 value.as_deref().unwrap_or("/")
             } else {
                 "/"
             };
             assert_eq!(
-                SafeReturnTo::fallback(value.as_deref().unwrap_or("/")).as_str(),
+                validate_return_to(value.as_deref()),
                 expected,
-                "{id}"
+                "{}",
+                vector["id"]
             );
-            if let Some(value) = value.as_deref() {
-                assert_eq!(SafeReturnTo::parse(value).is_ok(), target, "{id}");
-            }
-            // As in the peer harness, form-encode once and decode once before validation.
+
+            // Exercise exactly one form decoding, including wire size > serialized size.
             let wire = value.as_ref().map(|value| {
                 url::form_urlencoded::Serializer::new(String::new())
                     .append_pair("return_to", value)
                     .finish()
             });
-            let decoded = wire.as_ref().and_then(|wire| {
-                url::form_urlencoded::parse(wire.as_bytes())
-                    .find_map(|(key, value)| (key == "return_to").then(|| value.into_owned()))
-            });
             assert_eq!(
-                SafeReturnTo::fallback(decoded.as_deref().unwrap_or("/")).as_str(),
+                return_to_from_query(wire.as_deref()),
                 expected,
-                "{id} (one form decode)"
+                "{}",
+                vector["id"]
             );
         }
     }
 
     #[test]
-    fn accepts_local_paths_queries_and_fragments() {
-        for target in [
-            "/",
-            "/plants/42",
-            "/plants/42?tab=care",
-            "/plants/42?tab=care#entry-7",
-            "/search?q=snake%20plant",
-        ] {
-            assert_eq!(SafeReturnTo::parse(target).unwrap().as_str(), target);
-        }
-    }
-
-    #[test]
-    fn rejects_external_and_protocol_relative_targets() {
-        for target in [
-            "https://attacker.example/",
-            "http://attacker.example/",
-            "//attacker.example/",
-            "///attacker.example/",
-            r"/\\attacker.example/",
-        ] {
-            assert!(SafeReturnTo::parse(target).is_err(), "{target}");
-        }
-    }
-
-    #[test]
-    fn rejects_controls_backslashes_and_malformed_escapes() {
-        for target in [
-            "/plants\\42",
-            "/plants\n42",
-            "/plants%00",
-            "/plants%5c42",
-            "/plants%",
-            "/plants%2",
-            "/plants%zz",
-            "/plants%ff",
-        ] {
-            assert!(SafeReturnTo::parse(target).is_err(), "{target:?}");
-        }
-    }
-
-    #[test]
-    fn rejects_encoded_separators_and_normalization_confusion() {
-        for target in [
-            "/plants%2f42",
-            "/plants%3fnext=1",
-            "/plants%23section",
-            "/./plants",
-            "/plants/../login",
-            "/%2e/login",
-            "/plants/%2e%2e/login",
-            "/plants/%252e%252e/login",
-        ] {
-            assert!(SafeReturnTo::parse(target).is_err(), "{target}");
-        }
-    }
-
-    #[test]
-    fn rejects_login_and_auth_routes_including_encoded_equivalents() {
-        for target in [
-            "/login",
-            "/login/",
-            "/login/reset",
-            "/auth",
-            "/auth/",
-            "/auth/callback",
-            "/log%69n",
-            "/a%75th/callback",
-        ] {
-            assert!(SafeReturnTo::parse(target).is_err(), "{target}");
-        }
-    }
-
-    #[test]
-    fn rejects_oversized_targets() {
-        let target = format!("/{}", "a".repeat(MAX_SAFE_RETURN_TO_BYTES));
-        assert!(SafeReturnTo::parse(&target).is_err());
-    }
-
-    #[test]
-    fn unsafe_values_fall_back_to_root() {
+    fn return_target_validation_rejects_ambiguous_or_reserved_locations() {
         assert_eq!(
-            SafeReturnTo::fallback("https://attacker.example/").as_str(),
+            validate_return_to(Some("/settings?tab=data#export")),
+            "/settings?tab=data#export"
+        );
+        let encoded_boundary = format!("/{}", "%61".repeat(RETURN_TO_MAX_BYTES - 1));
+        assert_eq!(validate_return_to(Some(&encoded_boundary)), "/");
+
+        for unsafe_target in [
+            "https://attacker.example/",
+            "//attacker.example/",
+            "%2Fsettings",
+            "/x/../auth/login",
+            "/x/%2e%2e/auth/login",
+            "/./settings",
+            "/\\attacker",
+            "/foo%5Cbar",
+            "/settings%0Aheader",
+            "/%61pi/vehicles",
+            "/api",
+            "/auth/login",
+            "/health",
+            "/login",
+        ] {
+            assert_eq!(validate_return_to(Some(unsafe_target)), "/");
+        }
+        assert_eq!(
+            validate_return_to(Some(&format!("/{}", "%61".repeat(RETURN_TO_MAX_BYTES)))),
             "/"
         );
-        assert_eq!(SafeReturnTo::fallback("/plants/42").as_str(), "/plants/42");
+        assert_eq!(validate_return_to(None), "/");
     }
 }

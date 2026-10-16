@@ -1,750 +1,170 @@
-//! Optional OIDC authentication primitives and routes.
-
-mod provider_http;
-pub use provider_http::{AuthHttpClient, GuardedHttpError, ReqwestAuthHttpClient, TransportFuture};
-use provider_http::{DiscoveryHttpClient, GuardedHttpClient};
-
-pub mod return_to;
-pub mod routes;
+pub(crate) mod app;
+pub mod config;
+mod return_to;
+mod routes;
+mod runtime;
 mod session;
-mod session_store;
+mod transaction;
 
-use session::SessionBackend;
-pub use session::{AuthSessionLayer, CookieKeyError, SESSION_COOKIE_NAME};
-#[doc(hidden)]
-pub use session_store::{SessionBarrier, SessionFaults, StoreOperation};
-
-use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime};
 
-use openidconnect::core::{
-    CoreClientAuthMethod, CoreJsonWebKeySet, CoreJwsSigningAlgorithm, CoreProviderMetadata,
-    CoreRequestTokenError, CoreResponseType,
+use config::OidcConfig;
+
+pub use app::SESSION_COOKIE_NAME;
+pub(crate) use return_to::validate_return_to;
+pub(crate) use routes::{login_redirect, redirect};
+#[doc(hidden)]
+pub use runtime::{
+    GuardedHttpError, ProviderTransport, ReqwestTransport, TransportFuture, UrlPolicy,
 };
-use openidconnect::{
-    AuthType, ClientId, ClientSecret, JsonWebKey, JsonWebKeyAlgorithm, JsonWebKeyUse,
-    JwsSigningAlgorithm, OAuth2TokenResponse, RedirectUrl, TokenResponse,
-};
-use tokio::sync::{Mutex, RwLock};
+use runtime::{OidcRuntime, OidcStartupError};
+use session::SessionBackend;
+pub use session::{AuthSessionLayer, CookieKeyError};
+#[doc(hidden)]
+pub use session::{SessionBarrier, SessionFaults, StoreOperation};
+pub use transaction::Clock;
+use transaction::{SystemClock, TransactionRegistry};
 
-use crate::auth::return_to::SafeReturnTo;
-use crate::config::EnabledAuthConfig;
-
-pub const LOGIN_TRANSACTION_TTL: Duration = Duration::from_mins(5);
-pub const SESSION_TTL: Duration = Duration::from_hours(12);
-pub const JWKS_REFRESH_COOLDOWN: Duration = Duration::from_secs(30);
-pub const MAX_PENDING_LOGIN_TRANSACTIONS: usize = 1_024;
-
-/// Wall-clock seam for session and login-transaction expiry checks.
-pub trait Clock: Send + Sync {
-    fn now(&self) -> SystemTime;
+/// Error encountered while preparing enabled authentication before serving traffic.
+#[derive(Debug)]
+pub enum AuthenticationStartupError {
+    CookieKey(CookieKeyError),
+    Oidc(OidcStartupError),
 }
 
-#[derive(Default)]
-pub struct SystemClock;
-
-impl Clock for SystemClock {
-    fn now(&self) -> SystemTime {
-        SystemTime::now()
-    }
-}
-
-/// Process-monotonic seam used only for the JWKS refresh cooldown.
-pub trait MonotonicClock: Send + Sync {
-    fn now(&self) -> Instant;
-}
-
-#[derive(Default)]
-pub struct SystemMonotonicClock;
-
-impl MonotonicClock for SystemMonotonicClock {
-    fn now(&self) -> Instant {
-        Instant::now()
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum TokenAuthMethod {
-    Basic,
-    RequestBody,
-}
-
-impl TokenAuthMethod {
-    const fn oidc(self) -> AuthType {
+impl fmt::Display for AuthenticationStartupError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Basic => AuthType::BasicAuth,
-            Self::RequestBody => AuthType::RequestBody,
+            Self::CookieKey(error) => error.fmt(formatter),
+            Self::Oidc(error) => error.fmt(formatter),
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AuthStartupError {
-    Transport,
-    HttpStatus,
-    Parsing,
-    IssuerMismatch,
-    UnsafeMetadata,
-    UnsupportedTokenAuthentication,
-    CookieKey,
-}
-
-impl fmt::Display for AuthStartupError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let category = match self {
-            Self::Transport => "transport failure",
-            Self::HttpStatus => "HTTP status failure",
-            Self::Parsing => "metadata parsing failure",
-            Self::IssuerMismatch => "issuer mismatch",
-            Self::UnsafeMetadata => "unsafe or incompatible metadata",
-            Self::UnsupportedTokenAuthentication => "unsupported token endpoint authentication",
-            Self::CookieKey => "cookie key generation failure",
-        };
-        write!(formatter, "OIDC discovery failed: {category}")
+impl std::error::Error for AuthenticationStartupError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::CookieKey(error) => Some(error),
+            Self::Oidc(error) => Some(error),
+        }
     }
 }
 
-impl std::error::Error for AuthStartupError {}
-
-pub struct PendingLogin {
-    pub nonce: openidconnect::Nonce,
-    pub verifier: openidconnect::PkceCodeVerifier,
-    pub return_to: SafeReturnTo,
-    pub expires_at: SystemTime,
-}
-
-type CachedCoreClient = openidconnect::core::CoreClient<
-    openidconnect::EndpointSet,
-    openidconnect::EndpointNotSet,
-    openidconnect::EndpointNotSet,
-    openidconnect::EndpointNotSet,
-    openidconnect::EndpointMaybeSet,
-    openidconnect::EndpointMaybeSet,
->;
-
-struct ClientCache {
-    metadata: CoreProviderMetadata,
-    client: CachedCoreClient,
-    generation: u64,
-    refresh_retry_at: Option<Instant>,
-}
-
-/// Shared enabled-authentication boundary.
-///
-/// Discovery is completed before this state is returned, so enabled startup never accepts a
-/// request with unknown endpoints or key material. Provider responses are deliberately reduced
-/// to typed, body-free diagnostics.
-pub struct AuthState {
-    config: EnabledAuthConfig,
-    clock: Arc<dyn Clock>,
-    guard: GuardedHttpClient,
-    monotonic_clock: Arc<dyn MonotonicClock>,
-    token_auth_method: TokenAuthMethod,
-    clients: RwLock<ClientCache>,
-    refresh_lock: Mutex<()>,
+/// Process-local state required whenever built-in authentication is enabled.
+#[derive(Clone)]
+pub struct Authentication {
+    config: OidcConfig,
     sessions: SessionBackend,
-    transactions: Mutex<HashMap<String, PendingLogin>>,
+    runtime: Arc<OidcRuntime>,
+    transactions: Arc<TransactionRegistry>,
+    clock: Arc<dyn Clock>,
 }
 
-impl AuthState {
+impl fmt::Debug for Authentication {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("Authentication")
+            .field("config", &self.config)
+            .field("sessions", &self.sessions)
+            .field("runtime", &self.runtime)
+            .field("transactions", &self.transactions)
+            .field("clock", &"Clock")
+            .finish()
+    }
+}
+
+impl Authentication {
+    /// Prepare process-local authentication state before the server starts.
+    ///
+    /// Discovery, endpoint validation, JWKS retrieval, and token authentication
+    /// selection all complete before this function returns successfully.
+    ///
     /// # Errors
     ///
-    /// Returns a safe startup diagnostic when discovery or provider metadata validation fails.
-    pub async fn new(config: EnabledAuthConfig) -> Result<Self, AuthStartupError> {
-        Self::with_all_dependencies(
-            config,
-            Arc::new(SystemClock),
-            Arc::new(SystemMonotonicClock),
-            Arc::new(ReqwestAuthHttpClient::new().map_err(|_| AuthStartupError::Transport)?),
-        )
-        .await
+    /// Returns an error when a secure private-cookie key cannot be generated or
+    /// the configured OIDC provider cannot be safely initialized.
+    pub async fn bootstrap(config: OidcConfig) -> Result<Self, AuthenticationStartupError> {
+        Self::bootstrap_with_clock(config, Arc::new(SystemClock)).await
     }
 
-    /// Builds initialized authentication state using injectable clock and HTTP seams.
+    /// Prepare authentication state with an explicit time source.
     ///
     /// # Errors
     ///
-    /// Returns a safe startup diagnostic when discovery or provider metadata validation fails.
-    pub async fn with_dependencies(
-        config: EnabledAuthConfig,
-        clock: Arc<dyn Clock>,
-        http_client: Arc<dyn AuthHttpClient>,
-    ) -> Result<Self, AuthStartupError> {
-        Self::with_all_dependencies(config, clock, Arc::new(SystemMonotonicClock), http_client)
-            .await
-    }
-
-    /// Builds initialized authentication state with all testable time and HTTP seams.
-    ///
-    /// # Errors
-    ///
-    /// Returns a safe startup diagnostic when discovery or provider metadata validation fails.
-    pub async fn with_all_dependencies(
-        config: EnabledAuthConfig,
-        clock: Arc<dyn Clock>,
-        monotonic_clock: Arc<dyn MonotonicClock>,
-        http_client: Arc<dyn AuthHttpClient>,
-    ) -> Result<Self, AuthStartupError> {
-        Self::with_session_faults(
-            config,
-            clock,
-            monotonic_clock,
-            http_client,
-            SessionFaults::default(),
-        )
-        .await
-    }
-
-    /// Initializes authentication with per-instance deterministic storage faults.
-    ///
-    /// # Errors
-    /// Returns the same safe startup errors as ordinary initialization.
+    /// Returns an error when a secure private-cookie key cannot be generated or
+    /// the configured OIDC provider cannot be safely initialized.
     #[doc(hidden)]
-    pub async fn with_session_faults(
-        config: EnabledAuthConfig,
+    pub async fn bootstrap_with_clock(
+        config: OidcConfig,
         clock: Arc<dyn Clock>,
-        monotonic_clock: Arc<dyn MonotonicClock>,
-        http_client: Arc<dyn AuthHttpClient>,
+    ) -> Result<Self, AuthenticationStartupError> {
+        Self::bootstrap_with_session_faults(config, clock, SessionFaults::default()).await
+    }
+
+    /// Prepare authentication with per-instance storage fault injection.
+    ///
+    /// # Errors
+    /// Returns the same startup errors as ordinary bootstrap.
+    #[doc(hidden)]
+    pub async fn bootstrap_with_session_faults(
+        config: OidcConfig,
+        clock: Arc<dyn Clock>,
         faults: SessionFaults,
-    ) -> Result<Self, AuthStartupError> {
-        let sessions = SessionBackend::new(true, Arc::clone(&clock), faults)
-            .map_err(|_| AuthStartupError::CookieKey)?;
-        let guard = GuardedHttpClient::new(config.clone(), http_client.clone());
-        guard
-            .validate_raw_url(config.issuer().raw())
-            .map_err(|_| AuthStartupError::UnsafeMetadata)?;
-        let metadata = CoreProviderMetadata::discover_async(
-            config.issuer().issuer_url().clone(),
-            &DiscoveryHttpClient::new(&guard),
-        )
-        .await
-        .map_err(|error| {
-            let category = discovery_error_category(&error, config.issuer().raw());
-            let status = match &error {
-                openidconnect::DiscoveryError::Request(GuardedHttpError::ServerStatus(status))
-                | openidconnect::DiscoveryError::Response(status, _, _) => Some(status.as_u16()),
-                _ => None,
-            };
-            tracing::warn!(
-                operation = "discovery",
-                ?category,
-                status,
-                "OIDC provider failure"
-            );
-            category
-        })?;
+    ) -> Result<Self, AuthenticationStartupError> {
+        let transport = ReqwestTransport::new()
+            .map_err(|_| AuthenticationStartupError::Oidc(OidcStartupError::HttpClient))?;
+        Self::bootstrap_with_dependencies(config, clock, faults, Arc::new(transport)).await
+    }
 
-        validate_metadata(&config, &metadata)?;
-        let token_auth_method = select_token_auth_method(&metadata)?;
-
-        let client = build_client(&config, token_auth_method, metadata.clone())?;
+    /// Prepare authentication with instance-scoped storage and provider dependencies.
+    /// Injected provider I/O remains behind the common destination guard.
+    ///
+    /// # Errors
+    /// Returns the same startup errors as ordinary bootstrap.
+    #[doc(hidden)]
+    pub async fn bootstrap_with_dependencies(
+        config: OidcConfig,
+        clock: Arc<dyn Clock>,
+        faults: SessionFaults,
+        transport: Arc<dyn ProviderTransport>,
+    ) -> Result<Self, AuthenticationStartupError> {
+        let sessions = SessionBackend::new(config.secure_cookie(), Arc::clone(&clock), faults)
+            .map_err(AuthenticationStartupError::CookieKey)?;
+        let runtime = OidcRuntime::discover(&config, Arc::clone(&clock), transport)
+            .await
+            .map_err(AuthenticationStartupError::Oidc)?;
         Ok(Self {
             config,
-            clock,
-            guard,
-            monotonic_clock,
-            token_auth_method,
-            clients: RwLock::new(ClientCache {
-                metadata,
-                client,
-                generation: 0,
-                refresh_retry_at: None,
-            }),
-            refresh_lock: Mutex::new(()),
             sessions,
-            transactions: Mutex::new(HashMap::new()),
+            runtime: Arc::new(runtime),
+            transactions: Arc::new(TransactionRegistry::default()),
+            clock,
         })
     }
 
-    /// Build the private process-local session layer owned by this authentication instance.
+    /// Validated OIDC configuration retained for startup and request handling.
+    pub fn config(&self) -> &OidcConfig {
+        &self.config
+    }
+
+    /// Build the private, process-local session layer.
     pub fn session_layer(&self) -> AuthSessionLayer {
         self.sessions.layer()
     }
 
-    pub const fn config(&self) -> &EnabledAuthConfig {
-        &self.config
-    }
-
-    pub const fn clock(&self) -> &Arc<dyn Clock> {
-        &self.clock
-    }
-
-    pub const fn token_auth_method(&self) -> TokenAuthMethod {
-        self.token_auth_method
-    }
-
-    /// Creates an authorization URL using the currently cached, validated provider metadata.
+    /// Build the public OIDC protocol routes with their private session layer.
     ///
-    /// # Errors
-    ///
-    /// Returns a safe error if the cached client cannot construct an authorization request.
-    pub async fn authorization_url(
-        &self,
-    ) -> Result<
-        (
-            url::Url,
-            openidconnect::CsrfToken,
-            openidconnect::Nonce,
-            openidconnect::PkceCodeVerifier,
-        ),
-        AuthStartupError,
-    > {
-        let client = self.clients.read().await.client.clone();
-        let (challenge, verifier) = openidconnect::PkceCodeChallenge::new_random_sha256();
-        let (url, state, nonce) = client
-            .authorize_url(
-                openidconnect::core::CoreAuthenticationFlow::AuthorizationCode,
-                openidconnect::CsrfToken::new_random,
-                openidconnect::Nonce::new_random,
-            )
-            .set_pkce_challenge(challenge)
-            .url();
-        Ok((url, state, nonce, verifier))
+    /// This is primarily useful for focused protocol tests. The application
+    /// server uses one outer session layer around all public and protected
+    /// routes instead.
+    pub fn protocol_router(self: &Arc<Self>) -> axum::Router {
+        routes::routes(self).layer(self.session_layer())
     }
 
-    /// Insert exchange permission without evicting the current attempt. The caller holds its
-    /// lineage gate and removes the prior entry only after the replacement binding persists.
-    pub(crate) async fn insert_transaction(
-        &self,
-        state: String,
-        transaction: PendingLogin,
-    ) -> Result<(), ()> {
-        let now = self.clock.now();
-        let mut transactions = self.transactions.lock().await;
-        transactions.retain(|_, pending| pending.expires_at > now);
-        if transactions.len() >= MAX_PENDING_LOGIN_TRANSACTIONS {
-            return Err(());
-        }
-        transactions.insert(state, transaction);
-        Ok(())
-    }
-
-    /// Consumes exchange permission exactly once; completion ownership lives in the store.
-    pub async fn consume_transaction(&self, state: &str) -> Option<PendingLogin> {
-        let now = self.clock.now();
-        let mut transactions = self.transactions.lock().await;
-        transactions.retain(|_, pending| pending.expires_at > now);
-        transactions.remove(state)
-    }
-
-    /// Exchanges a code and verifies the ID token using the cached metadata. The returned claims
-    /// are never retained by this method or its caller.
-    ///
-    /// # Errors
-    ///
-    /// Returns a generic callback category without retaining or exposing provider values.
-    pub async fn exchange_and_verify(
-        &self,
-        code: String,
-        pending: PendingLogin,
-    ) -> Result<(), CallbackError> {
-        let cache = self.clients.read().await;
-        let generation = cache.generation;
-        let client = cache.client.clone();
-        drop(cache);
-        self.guard
-            .validate_raw_url(
-                client
-                    .token_uri()
-                    .ok_or(CallbackError::Unavailable)?
-                    .as_str(),
-            )
-            .map_err(|_| CallbackError::Unavailable)?;
-        let token_response = client
-            .exchange_code(openidconnect::AuthorizationCode::new(code))
-            .map_err(|_| CallbackError::Invalid)?
-            .set_pkce_verifier(pending.verifier)
-            .request_async(&self.guard)
-            .await
-            .map_err(|error| callback_token_error(&error))?;
-        let id_token = token_response.id_token().ok_or(CallbackError::Invalid)?;
-        let verifier = client.id_token_verifier();
-        match id_token.claims(&verifier, &pending.nonce) {
-            Ok(claims) => self.validate_verified_token(
-                claims,
-                id_token,
-                &verifier,
-                token_response.access_token(),
-            ),
-            Err(error) if rotation_may_resolve(&error) => {
-                self.refresh_jwks_for_generation(generation).await?;
-                let refreshed_client = self.clients.read().await.client.clone();
-                let refreshed_verifier = refreshed_client.id_token_verifier();
-                let refreshed_claims = id_token
-                    .claims(&refreshed_verifier, &pending.nonce)
-                    .map_err(|_| CallbackError::Invalid)?;
-                self.validate_verified_token(
-                    refreshed_claims,
-                    id_token,
-                    &refreshed_verifier,
-                    token_response.access_token(),
-                )
-            }
-            Err(_) => Err(CallbackError::Invalid),
-        }
-    }
-
-    fn validate_verified_token(
-        &self,
-        claims: &openidconnect::core::CoreIdTokenClaims,
-        id_token: &openidconnect::core::CoreIdToken,
-        verifier: &openidconnect::core::CoreIdTokenVerifier,
-        access_token: &openidconnect::AccessToken,
-    ) -> Result<(), CallbackError> {
-        if !self.config.issuer().matches_raw(claims.issuer().as_str())
-            || claims.issue_time().timestamp() <= 0
-        {
-            return Err(CallbackError::Invalid);
-        }
-        if claims.audiences().len() > 1 && claims.authorized_party().is_none() {
-            return Err(CallbackError::Invalid);
-        }
-        if let Some(authorized_party) = claims.authorized_party()
-            && authorized_party.as_str() != self.config.client_id()
-        {
-            return Err(CallbackError::Invalid);
-        }
-        if let Some(expected_hash) = claims.access_token_hash() {
-            let actual_hash = openidconnect::AccessTokenHash::from_token(
-                access_token,
-                id_token.signing_alg().map_err(|_| CallbackError::Invalid)?,
-                id_token
-                    .signing_key(verifier)
-                    .map_err(|_| CallbackError::Invalid)?,
-            )
-            .map_err(|_| CallbackError::Invalid)?;
-            if actual_hash != *expected_hash {
-                return Err(CallbackError::Invalid);
-            }
-        }
-        Ok(())
-    }
-
-    /// Refreshes only the already discovered JWKS endpoint. The separate refresh mutex deduplicates
-    /// callbacks, and the cache lock is never held during provider I/O.
-    async fn refresh_jwks_for_generation(
-        &self,
-        failed_generation: u64,
-    ) -> Result<(), CallbackError> {
-        let _refresh = self.refresh_lock.lock().await;
-        let cache = self.clients.read().await;
-        if cache.generation != failed_generation {
-            return Ok(());
-        }
-        if cache
-            .refresh_retry_at
-            .is_some_and(|retry_at| retry_at > self.monotonic_clock.now())
-        {
-            return Err(CallbackError::Unavailable);
-        }
-        let metadata = cache.metadata.clone();
-        drop(cache);
-
-        if self
-            .guard
-            .validate_raw_url(metadata.jwks_uri().as_str())
-            .is_err()
-        {
-            return self.set_jwks_cooldown().await;
-        }
-        let jwks = match CoreJsonWebKeySet::fetch_async(metadata.jwks_uri(), &self.guard).await {
-            Ok(jwks) if has_usable_signing_key(&jwks, &metadata) => jwks,
-            _ => return self.set_jwks_cooldown().await,
-        };
-        let mut cache = self.clients.write().await;
-        if cache.generation == failed_generation {
-            let metadata = cache.metadata.clone().set_jwks(jwks);
-            let client = build_client(&self.config, self.token_auth_method, metadata.clone())
-                .map_err(|_| CallbackError::Unavailable)?;
-            cache.metadata = metadata;
-            cache.client = client;
-            cache.generation += 1;
-            cache.refresh_retry_at = None;
-        }
-        Ok(())
-    }
-
-    async fn set_jwks_cooldown(&self) -> Result<(), CallbackError> {
-        self.clients.write().await.refresh_retry_at =
-            Some(self.monotonic_clock.now() + JWKS_REFRESH_COOLDOWN);
-        Err(CallbackError::Unavailable)
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CallbackError {
-    Invalid,
-    Unavailable,
-}
-
-fn discovery_error_category(
-    error: &openidconnect::DiscoveryError<GuardedHttpError>,
-    expected_issuer: &str,
-) -> AuthStartupError {
-    // Do not format this error: `Response` contains an untrusted response body. Only retain the
-    // library's safe category in the startup diagnostic.
-    match error {
-        openidconnect::DiscoveryError::Request(GuardedHttpError::UnsafeUrl) => {
-            AuthStartupError::UnsafeMetadata
-        }
-        openidconnect::DiscoveryError::Request(GuardedHttpError::ServerStatus(_)) => {
-            AuthStartupError::HttpStatus
-        }
-        openidconnect::DiscoveryError::Request(_) => AuthStartupError::Transport,
-        openidconnect::DiscoveryError::Response(_, _, _) => AuthStartupError::HttpStatus,
-        openidconnect::DiscoveryError::Parse(_) | openidconnect::DiscoveryError::UrlParse(_) => {
-            AuthStartupError::Parsing
-        }
-        openidconnect::DiscoveryError::Validation(message)
-            if is_discovery_issuer_mismatch(message, expected_issuer) =>
-        {
-            AuthStartupError::IssuerMismatch
-        }
-        openidconnect::DiscoveryError::Validation(_) => AuthStartupError::UnsafeMetadata,
-        openidconnect::DiscoveryError::Other(_) | _ => AuthStartupError::Parsing,
-    }
-}
-
-fn is_discovery_issuer_mismatch(message: &str, expected_issuer: &str) -> bool {
-    let expected_suffix = format!("` (expected `{expected_issuer}`)");
-    message
-        .strip_prefix("unexpected issuer URI `")
-        .and_then(|remainder| remainder.strip_suffix(&expected_suffix))
-        .is_some_and(|actual_issuer| !actual_issuer.is_empty() && actual_issuer != expected_issuer)
-}
-
-fn validate_metadata(
-    config: &EnabledAuthConfig,
-    metadata: &CoreProviderMetadata,
-) -> Result<(), AuthStartupError> {
-    if !config.issuer().matches_raw(metadata.issuer().as_str()) {
-        return Err(AuthStartupError::IssuerMismatch);
-    }
-    let has_safe_endpoint = |value: &str| is_safe_endpoint(config, value);
-    if !has_safe_endpoint(metadata.authorization_endpoint().as_str())
-        || !has_safe_endpoint(metadata.jwks_uri().as_str())
-        || !metadata
-            .token_endpoint()
-            .is_some_and(|endpoint| has_safe_endpoint(endpoint.as_str()))
-        || !has_permitted_signing_algorithms(metadata)
-        || !has_usable_signing_key(metadata.jwks(), metadata)
-        || !metadata
-            .response_types_supported()
-            .iter()
-            .any(|response_types| {
-                response_types.len() == 1 && response_types[0] == CoreResponseType::Code
-            })
-        || !metadata
-            .grant_types_supported()
-            .as_ref()
-            .is_none_or(|grants| {
-                grants.contains(&openidconnect::core::CoreGrantType::AuthorizationCode)
-            })
-    {
-        return Err(AuthStartupError::UnsafeMetadata);
-    }
-    Ok(())
-}
-
-#[cfg(not(test))]
-fn is_safe_endpoint(_: &EnabledAuthConfig, value: &str) -> bool {
-    is_https_endpoint(value)
-}
-
-#[cfg(test)]
-fn is_safe_endpoint(config: &EnabledAuthConfig, value: &str) -> bool {
-    is_https_endpoint(value)
-        || config.permits_loopback_http()
-            && value.parse::<url::Url>().is_ok_and(|url| {
-                url.scheme() == "http"
-                    && url.host().is_some_and(|host| is_loopback_host(&host))
-                    && url.username().is_empty()
-                    && url.password().is_none()
-                    && url.fragment().is_none()
-            })
-}
-
-fn is_https_endpoint(value: &str) -> bool {
-    value.parse::<url::Url>().is_ok_and(|url| {
-        url.scheme() == "https"
-            && url.host().is_some()
-            && url.username().is_empty()
-            && url.password().is_none()
-            && url.fragment().is_none()
-    })
-}
-
-#[cfg(test)]
-fn is_loopback_host(host: &url::Host<&str>) -> bool {
-    matches!(host, url::Host::Domain("localhost"))
-        || host
-            .to_string()
-            .parse::<std::net::IpAddr>()
-            .is_ok_and(|address| address.is_loopback())
-}
-
-fn has_permitted_signing_algorithms(metadata: &CoreProviderMetadata) -> bool {
-    let algorithms = metadata.id_token_signing_alg_values_supported();
-    !algorithms.is_empty()
-        && algorithms
-            .iter()
-            .all(|algorithm| !matches!(algorithm, CoreJwsSigningAlgorithm::None))
-}
-
-fn has_usable_signing_key(jwks: &CoreJsonWebKeySet, metadata: &CoreProviderMetadata) -> bool {
-    let permitted_algorithms = metadata.id_token_signing_alg_values_supported();
-    jwks.keys().iter().any(|key| {
-        key.key_use().is_none_or(JsonWebKeyUse::allows_signature)
-            && permitted_algorithms.iter().any(|algorithm| {
-                !matches!(algorithm, CoreJwsSigningAlgorithm::None)
-                    && algorithm.key_type().as_ref() == Some(key.key_type())
-                    && match key.signing_alg() {
-                        JsonWebKeyAlgorithm::Algorithm(key_algorithm) => key_algorithm == algorithm,
-                        JsonWebKeyAlgorithm::Unspecified => true,
-                        JsonWebKeyAlgorithm::Unsupported => false,
-                    }
-            })
-    })
-}
-
-fn callback_token_error(error: &CoreRequestTokenError<GuardedHttpError>) -> CallbackError {
-    // A parsed OAuth error is a completed provider protocol exchange (for example invalid_grant
-    // after a PKCE failure), not an availability outage. Do not format it: response details can
-    // contain provider-controlled data. Transport, response parsing, and unexpected HTTP/status
-    // responses cannot establish a protocol outcome and remain recoverable availability failures.
-    let category = match error {
-        CoreRequestTokenError::ServerResponse(_) => CallbackError::Invalid,
-        CoreRequestTokenError::Parse(_, body)
-            if invalid_id_token_in_recognizable_response(body) =>
-        {
-            CallbackError::Invalid
-        }
-        CoreRequestTokenError::Request(_)
-        | CoreRequestTokenError::Parse(_, _)
-        | CoreRequestTokenError::Other(_) => CallbackError::Unavailable,
-    };
-    let status = match error {
-        CoreRequestTokenError::Request(GuardedHttpError::ServerStatus(status)) => {
-            Some(status.as_u16())
-        }
-        _ => None,
-    };
-    tracing::warn!(
-        operation = "token",
-        ?category,
-        status,
-        "OIDC provider failure"
-    );
-    category
-}
-
-// This reparses only the envelope to categorize deserialization failures, never to verify tokens.
-fn invalid_id_token_in_recognizable_response(body: &[u8]) -> bool {
-    let Ok(mut value) = serde_json::from_slice::<serde_json::Value>(body) else {
-        return false;
-    };
-    let Some(object) = value.as_object_mut() else {
-        return false;
-    };
-    if object.remove("id_token").is_none() {
-        return false;
-    }
-    serde_json::from_value::<openidconnect::core::CoreTokenResponse>(value).is_ok()
-}
-
-fn build_client(
-    config: &EnabledAuthConfig,
-    token_auth_method: TokenAuthMethod,
-    metadata: CoreProviderMetadata,
-) -> Result<CachedCoreClient, AuthStartupError> {
-    let redirect_url =
-        RedirectUrl::new(config.callback_url()).map_err(|_| AuthStartupError::Parsing)?;
-    Ok(openidconnect::core::CoreClient::from_provider_metadata(
-        metadata,
-        ClientId::new(config.client_id().to_string()),
-        Some(ClientSecret::new(config.client_secret().to_string())),
-    )
-    .set_auth_type(token_auth_method.oidc())
-    .set_redirect_uri(redirect_url))
-}
-
-fn rotation_may_resolve(error: &openidconnect::ClaimsVerificationError) -> bool {
-    matches!(
-        error,
-        openidconnect::ClaimsVerificationError::SignatureVerification(
-            openidconnect::SignatureVerificationError::NoMatchingKey
-                | openidconnect::SignatureVerificationError::CryptoError(_)
-        )
-    )
-}
-
-/// Selects the only supported confidential token-endpoint authentication method.
-///
-/// # Errors
-///
-/// Returns an error when discovery advertises neither Basic nor form-body client authentication.
-pub fn select_token_auth_method(
-    metadata: &CoreProviderMetadata,
-) -> Result<TokenAuthMethod, AuthStartupError> {
-    let Some(methods) = metadata.token_endpoint_auth_methods_supported() else {
-        return Ok(TokenAuthMethod::Basic);
-    };
-    if methods.contains(&CoreClientAuthMethod::ClientSecretBasic) {
-        Ok(TokenAuthMethod::Basic)
-    } else if methods.contains(&CoreClientAuthMethod::ClientSecretPost) {
-        Ok(TokenAuthMethod::RequestBody)
-    } else {
-        Err(AuthStartupError::UnsupportedTokenAuthentication)
-    }
-}
-
-#[cfg(test)]
-mod local_provider_tests;
-#[cfg(test)]
-mod provider_http_tests;
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn session_and_transaction_expiry_constants_are_bounded() {
-        assert_eq!(LOGIN_TRANSACTION_TTL, Duration::from_secs(300));
-        assert_eq!(SESSION_TTL, Duration::from_hours(12));
-        assert_eq!(MAX_PENDING_LOGIN_TRANSACTIONS, 1_024);
-    }
-
-    #[test]
-    fn unrelated_discovery_validation_remains_generic() {
-        let error = openidconnect::DiscoveryError::<GuardedHttpError>::Validation(
-            "provider-controlled validation detail".to_string(),
-        );
-        assert_eq!(
-            discovery_error_category(&error, "https://issuer.example"),
-            AuthStartupError::UnsafeMetadata
-        );
-    }
-
-    #[test]
-    fn provider_diagnostics_are_fixed_categories_without_sensitive_values() {
-        let sensitive = "secret-marker callback-code nonce verifier access-token response-body";
-        for error in [
-            AuthStartupError::Transport,
-            AuthStartupError::HttpStatus,
-            AuthStartupError::Parsing,
-            AuthStartupError::IssuerMismatch,
-            AuthStartupError::UnsafeMetadata,
-            AuthStartupError::UnsupportedTokenAuthentication,
-            AuthStartupError::CookieKey,
-        ] {
-            let diagnostic = error.to_string();
-            assert!(diagnostic.starts_with("OIDC discovery failed:"));
-            assert!(!diagnostic.contains(sensitive));
-            assert!(!diagnostic.contains("secret-marker"));
-        }
-        assert_eq!(format!("{:?}", CallbackError::Invalid), "Invalid");
-        assert_eq!(format!("{:?}", CallbackError::Unavailable), "Unavailable");
+    /// Unlayered protocol routes for deterministic session middleware tests.
+    #[doc(hidden)]
+    pub fn protocol_routes(self: &Arc<Self>) -> axum::Router {
+        routes::routes(self)
     }
 }

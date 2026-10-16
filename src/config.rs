@@ -1,11 +1,6 @@
 use std::env;
-use std::fmt;
 
-use openidconnect::IssuerUrl;
-use url::Url;
-
-pub const DEFAULT_OIDC_PROVIDER_NAME: &str = "OpenID Connect";
-pub const MAX_OIDC_PROVIDER_NAME_CHARS: usize = 80;
+pub use crate::auth::config::{AuthConfigError, OidcConfig as EnabledAuthConfig};
 
 pub trait ConfigSource {
     fn get(&self, key: &str) -> Option<String>;
@@ -106,35 +101,8 @@ impl AuthConfig {
     /// Returns an error when `FLOWL_AUTH_ENABLED` is malformed or enabled OIDC configuration is
     /// incomplete or unsafe.
     pub fn load_from(source: &impl ConfigSource) -> Result<Self, AuthConfigError> {
-        let enabled = match auth_value(source, "FLOWL_AUTH_ENABLED")? {
-            None => false,
-            Some(value) => value
-                .parse::<bool>()
-                .map_err(|_| AuthConfigError::InvalidEnabledFlag)?,
-        };
-
-        if !enabled {
-            return Ok(Self::Disabled);
-        }
-
-        let external_url_value = required(source, "FLOWL_EXTERNAL_URL")?;
-        let external_url = ExternalUrl::parse(&external_url_value)?;
-        let issuer_value = required(source, "FLOWL_OIDC_ISSUER")?;
-        let issuer = IssuerConfig::parse(&issuer_value)?;
-        let client_id = required(source, "FLOWL_OIDC_CLIENT_ID")?;
-        let client_secret = required(source, "FLOWL_OIDC_CLIENT_SECRET")?;
-        let provider_name = auth_value(source, "FLOWL_OIDC_PROVIDER_NAME")?.map_or_else(
-            || Ok(DEFAULT_OIDC_PROVIDER_NAME.to_string()),
-            |value| validate_provider_name(&value),
-        )?;
-
-        Ok(Self::Enabled(Box::new(EnabledAuthConfig {
-            external_url,
-            issuer,
-            client_id,
-            client_secret,
-            provider_name,
-        })))
+        crate::auth::config::load_from(&crate::auth::app::AuthSource(source))
+            .map(|config| config.map_or(Self::Disabled, |config| Self::Enabled(Box::new(config))))
     }
 
     pub fn enabled(&self) -> Option<&EnabledAuthConfig> {
@@ -143,197 +111,6 @@ impl AuthConfig {
             Self::Enabled(config) => Some(config.as_ref()),
         }
     }
-}
-
-#[derive(Clone)]
-pub struct EnabledAuthConfig {
-    external_url: ExternalUrl,
-    issuer: IssuerConfig,
-    client_id: String,
-    client_secret: String,
-    provider_name: String,
-}
-
-impl EnabledAuthConfig {
-    pub fn callback_url(&self) -> String {
-        self.external_url.callback_url()
-    }
-
-    pub const fn issuer(&self) -> &IssuerConfig {
-        &self.issuer
-    }
-
-    pub fn client_id(&self) -> &str {
-        &self.client_id
-    }
-
-    pub fn client_secret(&self) -> &str {
-        &self.client_secret
-    }
-
-    pub fn provider_name(&self) -> &str {
-        &self.provider_name
-    }
-
-    /// Constructs loopback-only HTTP configuration for in-crate OIDC tests. Production parsing
-    /// always uses [`AuthConfig::load`] and therefore cannot select this policy.
-    #[cfg(test)]
-    pub(crate) fn loopback_test(issuer: &str, external_url: &str) -> Self {
-        let issuer_url = IssuerUrl::new(issuer.to_string()).expect("test issuer URL is valid");
-        Self {
-            external_url: ExternalUrl(
-                Url::parse(external_url).expect("test external URL is valid"),
-            ),
-            issuer: IssuerConfig {
-                raw: issuer.to_string(),
-                issuer_url,
-            },
-            client_id: "flowl-test-client".to_string(),
-            client_secret: "flowl-test-secret".to_string(),
-            provider_name: DEFAULT_OIDC_PROVIDER_NAME.to_string(),
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn permits_loopback_http(&self) -> bool {
-        self.issuer.raw().parse::<Url>().is_ok_and(|url| {
-            url.scheme() == "http" && url.host().is_some_and(|host| is_loopback_host(&host))
-        })
-    }
-}
-
-#[cfg(test)]
-fn is_loopback_host(host: &url::Host<&str>) -> bool {
-    matches!(host, url::Host::Domain("localhost"))
-        || host
-            .to_string()
-            .parse::<std::net::IpAddr>()
-            .is_ok_and(|address| address.is_loopback())
-}
-
-#[derive(Clone)]
-pub struct IssuerConfig {
-    raw: String,
-    issuer_url: IssuerUrl,
-}
-
-impl IssuerConfig {
-    fn parse(raw: &str) -> Result<Self, AuthConfigError> {
-        let url = Url::parse(raw).map_err(|_| AuthConfigError::InvalidIssuerUrl)?;
-        if url.scheme() != "https"
-            || url.host().is_none()
-            || !url.username().is_empty()
-            || url.password().is_some()
-            || url.query().is_some()
-            || url.fragment().is_some()
-        {
-            return Err(AuthConfigError::InvalidIssuerUrl);
-        }
-
-        // Keep the configured spelling: `IssuerUrl` stores its original input separately from
-        // its parsed URL, so never construct this from `Url::to_string()`.
-        let issuer_url =
-            IssuerUrl::new(raw.to_string()).map_err(|_| AuthConfigError::InvalidIssuerUrl)?;
-        Ok(Self {
-            raw: raw.to_string(),
-            issuer_url,
-        })
-    }
-
-    pub fn raw(&self) -> &str {
-        &self.raw
-    }
-
-    pub const fn issuer_url(&self) -> &IssuerUrl {
-        &self.issuer_url
-    }
-
-    /// Compares a discovery or verified token issuer to the unmodified configured value.
-    pub fn matches_raw(&self, issuer: &str) -> bool {
-        issuer == self.raw
-    }
-}
-
-#[derive(Clone)]
-struct ExternalUrl(Url);
-
-impl ExternalUrl {
-    fn parse(value: &str) -> Result<Self, AuthConfigError> {
-        let url = Url::parse(value).map_err(|_| AuthConfigError::InvalidExternalUrl)?;
-        if url.scheme() != "https"
-            || url.host().is_none()
-            || !url.username().is_empty()
-            || url.password().is_some()
-            || url.query().is_some()
-            || url.fragment().is_some()
-            || url.path() != "/"
-        {
-            return Err(AuthConfigError::InvalidExternalUrl);
-        }
-        Ok(Self(url))
-    }
-
-    fn callback_url(&self) -> String {
-        self.0
-            .join("/auth/callback")
-            .expect("validated HTTPS origin can join the fixed callback path")
-            .into()
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AuthConfigError {
-    InvalidEnabledFlag,
-    NonUnicodeValue(&'static str),
-    MissingRequiredValue(&'static str),
-    InvalidExternalUrl,
-    InvalidIssuerUrl,
-    InvalidProviderName,
-}
-
-impl fmt::Display for AuthConfigError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::InvalidEnabledFlag => formatter.write_str("FLOWL_AUTH_ENABLED must be a boolean"),
-            Self::NonUnicodeValue(key) => write!(formatter, "{key} must be valid UTF-8"),
-            Self::MissingRequiredValue(key) => write!(formatter, "{key} must be non-empty"),
-            Self::InvalidExternalUrl => {
-                formatter.write_str("FLOWL_EXTERNAL_URL must be an HTTPS origin")
-            }
-            Self::InvalidIssuerUrl => formatter.write_str("FLOWL_OIDC_ISSUER must be an HTTPS URL"),
-            Self::InvalidProviderName => formatter.write_str("FLOWL_OIDC_PROVIDER_NAME is invalid"),
-        }
-    }
-}
-
-impl std::error::Error for AuthConfigError {}
-
-fn auth_value(
-    source: &impl ConfigSource,
-    key: &'static str,
-) -> Result<Option<String>, AuthConfigError> {
-    source
-        .get_auth(key)
-        .map_err(|_| AuthConfigError::NonUnicodeValue(key))
-}
-
-fn required(source: &impl ConfigSource, key: &'static str) -> Result<String, AuthConfigError> {
-    let value = auth_value(source, key)?.ok_or(AuthConfigError::MissingRequiredValue(key))?;
-    if value.trim().is_empty() {
-        return Err(AuthConfigError::MissingRequiredValue(key));
-    }
-    Ok(value)
-}
-
-fn validate_provider_name(value: &str) -> Result<String, AuthConfigError> {
-    let trimmed = value.trim();
-    if trimmed.is_empty()
-        || trimmed.chars().any(char::is_control)
-        || trimmed.chars().count() > MAX_OIDC_PROVIDER_NAME_CHARS
-    {
-        return Err(AuthConfigError::InvalidProviderName);
-    }
-    Ok(trimmed.to_string())
 }
 
 fn parse_or<T: std::str::FromStr>(source: &impl ConfigSource, key: &str, default: T) -> T {
@@ -411,7 +188,10 @@ mod tests {
             let error = AuthConfig::load_from(&source)
                 .err()
                 .expect("must reject invalid Unicode");
-            assert_eq!(error, AuthConfigError::NonUnicodeValue(key));
+            assert_eq!(
+                error,
+                AuthConfigError::NonUnicodeValue(key.strip_prefix("FLOWL_").unwrap().to_owned())
+            );
             assert!(error.to_string().contains(key));
             assert!(!error.to_string().contains("private-value-sentinel"));
             assert!(!format!("{error:?}").contains("private-value-sentinel"));
@@ -592,7 +372,7 @@ mod tests {
     fn auth_enabled_flag_is_strict() {
         assert!(matches!(
             AuthConfig::load_from(&MockConfig::new().with("FLOWL_AUTH_ENABLED", "true")),
-            Err(AuthConfigError::MissingRequiredValue("FLOWL_EXTERNAL_URL"))
+            Err(AuthConfigError::MissingRequiredValue(key)) if key == "EXTERNAL_URL"
         ));
         for value in ["", "1", "TRUE", "yes", " false "] {
             assert!(matches!(
@@ -620,13 +400,13 @@ mod tests {
             );
             assert!(matches!(
                 AuthConfig::load_from(&missing),
-                Err(AuthConfigError::MissingRequiredValue(candidate)) if candidate == key
+                Err(AuthConfigError::MissingRequiredValue(candidate)) if candidate == key.strip_prefix("FLOWL_").unwrap()
             ));
 
             let empty = enabled_config().with(key, " \t");
             assert!(matches!(
                 AuthConfig::load_from(&empty),
-                Err(AuthConfigError::MissingRequiredValue(candidate)) if candidate == key
+                Err(AuthConfigError::MissingRequiredValue(candidate)) if candidate == key.strip_prefix("FLOWL_").unwrap()
             ));
         }
     }
@@ -682,13 +462,13 @@ mod tests {
         let AuthConfig::Enabled(config) = AuthConfig::load_from(&enabled_config()).unwrap() else {
             panic!("expected enabled configuration");
         };
-        assert_eq!(config.provider_name(), DEFAULT_OIDC_PROVIDER_NAME);
+        assert_eq!(config.provider_name, "OpenID Connect");
 
         let custom = enabled_config().with("FLOWL_OIDC_PROVIDER_NAME", " \tCompany Login\n ");
         let AuthConfig::Enabled(config) = AuthConfig::load_from(&custom).unwrap() else {
             panic!("expected enabled configuration");
         };
-        assert_eq!(config.provider_name(), "Company Login");
+        assert_eq!(config.provider_name, "Company Login");
 
         for value in [
             "",
@@ -722,10 +502,8 @@ mod tests {
         let AuthConfig::Enabled(config) = AuthConfig::load_from(&source).unwrap() else {
             panic!("expected enabled configuration");
         };
-        let issuer = config.issuer();
-        assert_eq!(issuer.raw(), "https://issuer.example");
-        assert_eq!(issuer.issuer_url().as_str(), "https://issuer.example");
-        assert!(!issuer.matches_raw("https://issuer.example/"));
+        assert_eq!(config.issuer, "https://issuer.example");
+        assert_ne!(config.issuer, "https://issuer.example/");
     }
 
     #[test]
@@ -743,6 +521,9 @@ mod tests {
         headers.insert("x-forwarded-proto", "http".parse().unwrap());
 
         assert!(!headers.is_empty());
-        assert_eq!(config.callback_url(), "https://flowl.example/auth/callback");
+        assert_eq!(
+            config.callback_url.as_str(),
+            "https://flowl.example/auth/callback"
+        );
     }
 }

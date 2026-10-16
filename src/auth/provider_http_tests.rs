@@ -3,13 +3,13 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use openidconnect::{AsyncHttpClient, HttpRequest, http};
 
-use super::provider_http::{DiscoveryHttpClient, GuardedHttpClient};
-use super::{AuthHttpClient, GuardedHttpError, TransportFuture};
+use crate::auth::runtime::{DiscoveryHttpClient, GuardedHttpClient};
+use crate::auth::{GuardedHttpError, ProviderTransport, TransportFuture};
 use crate::config::EnabledAuthConfig;
 
 struct CountingTransport(AtomicUsize);
 
-impl AuthHttpClient for CountingTransport {
+impl ProviderTransport for CountingTransport {
     fn send(&self, _: HttpRequest) -> TransportFuture<'_> {
         self.0.fetch_add(1, Ordering::SeqCst);
         Box::pin(async { Ok(http::Response::new(Vec::new())) })
@@ -24,7 +24,8 @@ fn production_policy_config() -> EnabledAuthConfig {
 #[tokio::test]
 async fn injected_transport_cannot_bypass_production_policy() {
     let transport = Arc::new(CountingTransport(AtomicUsize::new(0)));
-    let guard = GuardedHttpClient::new(production_policy_config(), transport.clone());
+    let config = production_policy_config();
+    let guard = GuardedHttpClient::new(super::provider_policy(&config), transport.clone());
     for destination in [
         "http://example.invalid/jwks",
         "http://127.0.0.1/jwks",
@@ -55,12 +56,16 @@ async fn injected_transport_cannot_bypass_production_policy() {
         .unwrap();
     assert!(guard.call(request).await.is_ok());
     assert_eq!(transport.0.load(Ordering::SeqCst), 1);
+    assert!(config.secure_cookie());
+    assert!(
+        EnabledAuthConfig::loopback_test("http://127.0.0.1", "http://127.0.0.1").secure_cookie()
+    );
 }
 
 #[tokio::test]
 async fn initial_metadata_fragment_is_checked_before_library_jwks_fetch() {
     struct UnsafeMetadata(AtomicUsize);
-    impl AuthHttpClient for UnsafeMetadata {
+    impl ProviderTransport for UnsafeMetadata {
         fn send(&self, _: HttpRequest) -> TransportFuture<'_> {
             self.0.fetch_add(1, Ordering::SeqCst);
             Box::pin(async {
@@ -71,7 +76,10 @@ async fn initial_metadata_fragment_is_checked_before_library_jwks_fetch() {
         }
     }
     let transport = Arc::new(UnsafeMetadata(AtomicUsize::new(0)));
-    let guard = GuardedHttpClient::new(production_policy_config(), transport.clone());
+    let guard = GuardedHttpClient::new(
+        super::provider_policy(&production_policy_config()),
+        transport.clone(),
+    );
     let discovery = DiscoveryHttpClient::new(&guard);
     let request = http::Request::builder()
         .uri("https://issuer.example/metadata")
@@ -88,7 +96,7 @@ async fn initial_metadata_fragment_is_checked_before_library_jwks_fetch() {
 async fn library_token_and_refresh_requests_use_the_guard() {
     let transport = Arc::new(CountingTransport(AtomicUsize::new(0)));
     let config = production_policy_config();
-    let guard = GuardedHttpClient::new(config.clone(), transport.clone());
+    let guard = GuardedHttpClient::new(super::provider_policy(&config), transport.clone());
     for destination in [
         "http://127.0.0.1/provider",
         "https://user:private-sentinel@example.com/provider",
@@ -99,8 +107,16 @@ async fn library_token_and_refresh_requests_use_the_guard() {
             "response_types_supported": ["code"], "subject_types_supported": ["public"],
             "id_token_signing_alg_values_supported": ["RS256"]
         })).unwrap();
-        let client =
-            super::build_client(&config, super::TokenAuthMethod::Basic, metadata.clone()).unwrap();
+        let client = openidconnect::core::CoreClient::from_provider_metadata(
+            metadata.clone(),
+            openidconnect::ClientId::new(config.client_id.clone()),
+            Some(openidconnect::ClientSecret::new(
+                config.client_secret.clone(),
+            )),
+        )
+        .set_redirect_uri(
+            openidconnect::RedirectUrl::new(config.callback_url.to_string()).unwrap(),
+        );
         let error = client
             .exchange_code(openidconnect::AuthorizationCode::new(
                 "private-sentinel".into(),
@@ -109,10 +125,10 @@ async fn library_token_and_refresh_requests_use_the_guard() {
             .request_async(&guard)
             .await
             .unwrap_err();
-        assert_eq!(
-            super::callback_token_error(&error),
-            super::CallbackError::Unavailable
-        );
+        assert!(matches!(
+            error,
+            openidconnect::RequestTokenError::Request(GuardedHttpError::UnsafeUrl)
+        ));
         assert!(
             openidconnect::core::CoreJsonWebKeySet::fetch_async(metadata.jwks_uri(), &guard)
                 .await

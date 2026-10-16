@@ -2,7 +2,10 @@ import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 import { isProtectedCacheName } from "#lib/sw-policy.js";
 import { parseAuthConfig, type AuthConfig } from "#lib/auth-config.js";
-import { safeLocalTarget as commonSafeLocalTarget } from "#lib/auth-return.js";
+import {
+  loginUrl as commonLoginUrl,
+  safeLocalTarget as commonSafeLocalTarget,
+} from "#lib/auth-core.js";
 export { MAX_RETURN_TO_BYTES } from "#lib/auth-return.js";
 export type {
   AuthConfig,
@@ -26,7 +29,7 @@ export function currentReturnTarget(
 }
 
 export function loginUrl(target: string): `/login?return_to=${string}` {
-  return `/login?return_to=${encodeURIComponent(safeLocalTarget(target))}`;
+  return commonLoginUrl(target, ["/uploads"]) as `/login?return_to=${string}`;
 }
 
 export async function fetchAuthConfig(
