@@ -40,9 +40,9 @@ Commit the planning artifacts separately before implementation. For each coheren
 
 ## 6. Preserve login, logout, and response boundaries
 
-- [ ] 6.1 Implement authenticated `/login` -> HTTP 303 `/` and `/auth/login` -> HTTP 303 safe target bypasses. Verify result-state queries, invalid targets, full pending capacity, provider counters, registry count, unchanged identifier/state, and unchanged absolute deadline; unauthenticated login must still initiate PKCE S256 with random state/nonce and the configured callback.
+- [x] 6.1 Implement authenticated `/login` -> HTTP 303 `/` and `/auth/login` -> HTTP 303 safe target bypasses. Verify result-state queries, invalid targets, full pending capacity, provider counters, registry count, unchanged identifier/state, and unchanged absolute deadline; unauthenticated login must still initiate PKCE S256 with random state/nonce and the configured callback.
 - [ ] 6.2 Complete local logout invalidation for authenticated, pending, and in-flight state; inject invalidation/persistence failures and verify HTTP 500 plus matching cookie expiry, never a successful signed-out redirect. Verify successful/repeated POST logout returns 303 `/login?logged_out=1` and stale cookies cannot access protected routes.
-- [ ] 6.3 Apply `no-store` outside auth routing/session handling and preserve explicit unknown-auth routing. Verify `/auth` and descendants return no-store for 404, 405, handler/middleware failures, config, and logout in both enabled and disabled modes; assert exact `/api` and `/uploads` roots/descendants remain 401 no-store, document redirects remain no-store, and existing JSON error codes/fallback text are unchanged.
+- [x] 6.3 Apply `no-store` outside auth routing/session handling and preserve explicit unknown-auth routing. Verify `/auth` and descendants return no-store for 404, 405, handler/middleware failures, config, and logout in both enabled and disabled modes; assert exact `/api` and `/uploads` roots/descendants remain 401 no-store, document redirects remain no-store, and existing JSON error codes/fallback text are unchanged.
 
 ## 7. Preserve frontend and offline behavior
 

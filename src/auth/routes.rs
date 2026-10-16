@@ -45,6 +45,9 @@ pub async fn login(
     session: Session,
 ) -> Response {
     let return_to = SafeReturnTo::fallback(query.return_to.as_deref().unwrap_or("/"));
+    if has_authenticated_session(&session, &auth).await {
+        return no_store(Redirect::to(return_to.as_str()).into_response());
+    }
     let Ok((url, state_token, nonce, verifier)) = auth.authorization_url().await else {
         return generic_redirect("provider_unavailable", &return_to);
     };

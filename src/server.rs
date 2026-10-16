@@ -25,11 +25,12 @@ use crate::embedded::{exact_static_handler, index_handler, is_public_asset, stat
 use crate::state::AppState;
 
 pub fn router(state: AppState) -> Router {
-    if state.auth.is_some() {
+    let app = if state.auth.is_some() {
         enabled_router(&state)
     } else {
         disabled_router(state)
-    }
+    };
+    app.layer(middleware::from_fn(no_store_auth_responses))
 }
 
 fn disabled_router(state: AppState) -> Router {
@@ -61,7 +62,7 @@ fn enabled_router(state: &AppState) -> Router {
 
     Router::new()
         .route("/health", get(move || health(pool)))
-        .route("/login", get(index_handler))
+        .route("/login", get(login_document))
         .nest(
             "/auth",
             Router::new()
@@ -79,11 +80,19 @@ fn enabled_router(state: &AppState) -> Router {
             )),
         )
         .route("/api", any(authenticated_api_root))
+        .route("/api/", any(authenticated_api_root))
         .nest(
             "/api",
             api::router(api_state).layer(middleware::from_fn_with_state(
                 auth.clone(),
                 require_api_auth,
+            )),
+        )
+        .route(
+            "/uploads/",
+            any(|| async { StatusCode::NOT_FOUND }).layer(middleware::from_fn_with_state(
+                auth.clone(),
+                require_upload_auth,
             )),
         )
         .nest("/uploads", uploads)
@@ -104,7 +113,6 @@ fn enabled_router(state: &AppState) -> Router {
                 .with_expiry(Expiry::OnSessionEnd)
                 .with_private(tower_sessions::cookie::Key::generate()),
         )
-        .layer(middleware::from_fn(no_store_auth_responses))
         .layer(middleware::from_fn(access_log))
 }
 
@@ -119,6 +127,17 @@ async fn no_store_auth_responses(request: Request, next: Next) -> Response {
         );
     }
     response
+}
+
+async fn login_document(
+    Extension(auth): Extension<Arc<auth::AuthState>>,
+    session: Session,
+) -> Response {
+    if auth::routes::has_authenticated_session(&session, &auth).await {
+        Redirect::to("/").into_response()
+    } else {
+        index_handler().await
+    }
 }
 
 async fn authenticated_api_root(
@@ -262,4 +281,45 @@ async fn shutdown_signal() {
     }
 
     info!("Shutdown signal received");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn outer_auth_headers_cover_inner_middleware_errors_only_in_auth_namespace() {
+        // Synthetic middleware failure: this checks layer ordering, not session-store faults.
+        let app = Router::new()
+            .fallback(|| async { StatusCode::OK })
+            .layer(middleware::from_fn(|_: Request, _: Next| async {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }))
+            .layer(middleware::from_fn(no_store_auth_responses));
+        for path in ["/auth", "/auth/config", "/auth/unknown", "/authentic", "/"] {
+            let response = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .uri(path)
+                        .body(axum::body::Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+            assert_eq!(
+                response
+                    .headers()
+                    .get(axum::http::header::CACHE_CONTROL)
+                    .map(|value| value.to_str().unwrap()),
+                if path == "/auth" || path.starts_with("/auth/") {
+                    Some("no-store")
+                } else {
+                    None
+                },
+            );
+        }
+    }
 }

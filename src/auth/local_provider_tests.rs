@@ -428,22 +428,19 @@ async fn error_uri_sentinel(State(provider): State<Arc<Provider>>) -> StatusCode
     StatusCode::OK
 }
 
-async fn token(
-    State(provider): State<Arc<Provider>>,
-    headers: HeaderMap,
-    Form(form): Form<HashMap<String, String>>,
-) -> impl IntoResponse {
-    provider.token_requests.fetch_add(1, Ordering::SeqCst);
+async fn token_response_override(provider: &Provider) -> Option<Response> {
     if let Some((status, body)) = provider.token_response_override.lock().await.clone() {
-        return (
-            status,
-            [
-                (header::CONTENT_TYPE, "application/json"),
-                (header::LOCATION, "/redirected"),
-            ],
-            body,
-        )
-            .into_response();
+        return Some(
+            (
+                status,
+                [
+                    (header::CONTENT_TYPE, "application/json"),
+                    (header::LOCATION, "/redirected"),
+                ],
+                body,
+            )
+                .into_response(),
+        );
     }
     if provider.token_protocol_error.load(Ordering::SeqCst) {
         let mut error = serde_json::json!({ "error": "invalid_grant" });
@@ -455,10 +452,22 @@ async fn token(
         {
             error["error_description"] = serde_json::json!(description);
         }
-        return (StatusCode::BAD_REQUEST, Json(error)).into_response();
+        return Some((StatusCode::BAD_REQUEST, Json(error)).into_response());
     }
-    if provider.token_unparseable_response.load(Ordering::SeqCst) {
-        return StatusCode::SERVICE_UNAVAILABLE.into_response();
+    provider
+        .token_unparseable_response
+        .load(Ordering::SeqCst)
+        .then(|| StatusCode::SERVICE_UNAVAILABLE.into_response())
+}
+
+async fn token(
+    State(provider): State<Arc<Provider>>,
+    headers: HeaderMap,
+    Form(form): Form<HashMap<String, String>>,
+) -> impl IntoResponse {
+    provider.token_requests.fetch_add(1, Ordering::SeqCst);
+    if let Some(response) = token_response_override(&provider).await {
+        return response;
     }
     let has_basic = headers.get(header::AUTHORIZATION).is_some_and(|value| {
         value
@@ -539,9 +548,7 @@ async fn token(
     )
     .expect("sign ID token");
     if provider.unsigned_token.load(Ordering::SeqCst) {
-        let payload = id_token.split('.').nth(1).expect("JWT payload");
-        let header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(br#"{"alg":"none"}"#);
-        id_token = format!("{header}.{payload}.");
+        id_token = without_signature(&id_token);
     }
     let mut response = serde_json::json!({
         "access_token": "local-access-token",
@@ -556,6 +563,12 @@ async fn token(
             .remove("id_token");
     }
     Json(response).into_response()
+}
+
+fn without_signature(id_token: &str) -> String {
+    let payload = id_token.split('.').nth(1).expect("JWT payload");
+    let header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(br#"{"alg":"none"}"#);
+    format!("{header}.{payload}.")
 }
 
 async fn discover_provider(
@@ -1922,35 +1935,48 @@ async fn shared_callback_vectors_validate_bound_attempts() {
             !consumed,
             "{id}"
         );
-        let retry = app
-            .clone()
-            .oneshot(request(
-                &format!("/auth/callback?state={state}&code=accepted-code"),
-                Some(&browser_cookie),
-            ))
-            .await
-            .expect("retry original binding");
-        assert_eq!(retry.status(), StatusCode::SEE_OTHER, "{id}");
-        assert_eq!(
-            retry.headers().get(header::LOCATION).unwrap(),
-            if consumed {
-                "/login?error=authentication_failed&return_to=%2F"
-            } else {
-                "/plants?tab=care"
-            },
-            "{id} (retry original binding)"
-        );
-        assert_eq!(
-            provider.provider.token_requests.load(Ordering::SeqCst) - after,
-            usize::from(!consumed),
-            "{id}"
-        );
+        assert_original_callback_retry(&app, &provider, &browser_cookie, &state, consumed, id)
+            .await;
         assert_eq!(
             provider.provider.error_uri_requests.load(Ordering::SeqCst),
             0,
             "{id}"
         );
     }
+}
+
+async fn assert_original_callback_retry(
+    app: &Router,
+    provider: &RunningProvider,
+    cookie: &str,
+    state: &str,
+    consumed: bool,
+    id: &str,
+) {
+    let before = provider.provider.token_requests.load(Ordering::SeqCst);
+    let retry = app
+        .clone()
+        .oneshot(request(
+            &format!("/auth/callback?state={state}&code=accepted-code"),
+            Some(cookie),
+        ))
+        .await
+        .expect("retry original binding");
+    assert_eq!(retry.status(), StatusCode::SEE_OTHER, "{id}");
+    assert_eq!(
+        retry.headers()[header::LOCATION],
+        if consumed {
+            "/login?error=authentication_failed&return_to=%2F"
+        } else {
+            "/plants?tab=care"
+        },
+        "{id} (retry original binding)"
+    );
+    assert_eq!(
+        provider.provider.token_requests.load(Ordering::SeqCst) - before,
+        usize::from(!consumed),
+        "{id}"
+    );
 }
 
 #[tokio::test]
@@ -2278,65 +2304,7 @@ async fn token_claim_failures_are_invalid_without_jwks_refresh() {
         )
         .await
         .expect("local discovery succeeds");
-        match claim {
-            "id_token" => provider.omit_id_token(true),
-            "iss" => {
-                provider
-                    .set_token_claim(
-                        "iss",
-                        serde_json::json!(format!("{}/", provider.provider.base)),
-                    )
-                    .await
-            }
-            "aud" => {
-                provider
-                    .set_token_claim("aud", serde_json::json!("other-client"))
-                    .await
-            }
-            "aud_multiple" => {
-                provider
-                    .set_token_claim("aud", serde_json::json!([CLIENT_ID, "other-client"]))
-                    .await
-            }
-            "azp" => {
-                provider
-                    .set_token_claim("azp", serde_json::json!("other-client"))
-                    .await
-            }
-            "iat" | "nonce" => provider.remove_token_claim(claim).await,
-            "iat_zero" => provider.set_token_claim("iat", serde_json::json!(0)).await,
-            "iat_negative" => provider.set_token_claim("iat", serde_json::json!(-1)).await,
-            "iat_malformed" => {
-                provider
-                    .set_token_claim("iat", serde_json::json!("private-sentinel"))
-                    .await
-            }
-            "aud_azp" => {
-                provider
-                    .set_token_claim("aud", serde_json::json!([CLIENT_ID, "other-client"]))
-                    .await;
-                provider
-                    .set_token_claim("azp", serde_json::json!(CLIENT_ID))
-                    .await;
-            }
-            "unsigned" => provider
-                .provider
-                .unsigned_token
-                .store(true, Ordering::SeqCst),
-            "exp" => provider.set_token_claim("exp", serde_json::json!(1)).await,
-            "nonce_mismatch" => {
-                provider
-                    .set_token_claim("nonce", serde_json::json!("wrong-nonce"))
-                    .await
-            }
-            "at_hash" => {
-                provider
-                    .set_token_claim("at_hash", serde_json::json!("mismatch"))
-                    .await
-            }
-            "alg" => provider.set_token_algorithm(Algorithm::RS512).await,
-            _ => unreachable!("covered claim case"),
-        }
+        override_invalid_claim(&provider, claim).await;
         assert_eq!(
             auth.exchange_and_verify(
                 "accepted-code".to_string(),
@@ -2352,6 +2320,53 @@ async fn token_claim_failures_are_invalid_without_jwks_refresh() {
             "{description}"
         );
     }
+}
+
+async fn override_invalid_claim(provider: &RunningProvider, claim: &str) {
+    let override_value = match claim {
+        "id_token" => {
+            provider.omit_id_token(true);
+            return;
+        }
+        "iat" | "nonce" => {
+            provider.remove_token_claim(claim).await;
+            return;
+        }
+        "unsigned" => {
+            provider
+                .provider
+                .unsigned_token
+                .store(true, Ordering::SeqCst);
+            return;
+        }
+        "alg" => {
+            provider.set_token_algorithm(Algorithm::RS512).await;
+            return;
+        }
+        "iss" => (
+            "iss",
+            serde_json::json!(format!("{}/", provider.provider.base)),
+        ),
+        "aud" => ("aud", serde_json::json!("other-client")),
+        "aud_multiple" => ("aud", serde_json::json!([CLIENT_ID, "other-client"])),
+        "azp" => ("azp", serde_json::json!("other-client")),
+        "iat_zero" => ("iat", serde_json::json!(0)),
+        "iat_negative" => ("iat", serde_json::json!(-1)),
+        "iat_malformed" => ("iat", serde_json::json!("private-sentinel")),
+        "aud_azp" => {
+            provider
+                .set_token_claim("azp", serde_json::json!(CLIENT_ID))
+                .await;
+            ("aud", serde_json::json!([CLIENT_ID, "other-client"]))
+        }
+        "exp" => ("exp", serde_json::json!(1)),
+        "nonce_mismatch" => ("nonce", serde_json::json!("wrong-nonce")),
+        "at_hash" => ("at_hash", serde_json::json!("mismatch")),
+        _ => unreachable!("covered claim case"),
+    };
+    provider
+        .set_token_claim(override_value.0, override_value.1)
+        .await;
 }
 
 #[tokio::test]
@@ -2581,7 +2596,7 @@ async fn auth_config_is_minimal_data_and_all_auth_responses_are_no_store() {
         .await
         .expect("local discovery succeeds"),
     );
-    let (state, _directory) = test_state(auth);
+    let (state, _directory) = test_state(auth.clone());
     let app = server::router(state);
     let config = app
         .clone()
@@ -2602,25 +2617,70 @@ async fn auth_config_is_minimal_data_and_all_auth_responses_are_no_store() {
     for sensitive in [CLIENT_ID, CLIENT_SECRET, provider.provider.base.as_str()] {
         assert!(!serialized.contains(sensitive), "config leaked {sensitive}");
     }
-    for (method, uri) in [
-        ("GET", "/auth"),
-        ("GET", "/auth/config"),
-        ("GET", "/auth/login"),
-        ("GET", "/auth/callback?state=untrusted&code=untrusted"),
-        ("POST", "/auth/logout"),
-        ("GET", "/auth/logout"),
-        ("GET", "/auth/not-found"),
+    assert_auth_response_headers(&app, true, None).await;
+    assert_auth_response_headers(&app, true, Some("flowl.sid=invalid")).await;
+    let (mut disabled_state, _disabled_directory) = test_state(auth);
+    disabled_state.auth = None;
+    let disabled = server::router(disabled_state);
+    assert_auth_response_headers(&disabled, false, None).await;
+    let namespace_neighbor = disabled.oneshot(request("/authentic", None)).await.unwrap();
+    assert_eq!(namespace_neighbor.status(), StatusCode::OK);
+    assert!(
+        !namespace_neighbor
+            .headers()
+            .contains_key(header::CACHE_CONTROL)
+    );
+}
+
+async fn assert_auth_response_headers(app: &Router, enabled: bool, cookie: Option<&str>) {
+    for (method, uri, enabled_status, disabled_status) in [
+        ("GET", "/auth", 404, 200),
+        ("GET", "/auth/config", 200, 200),
+        ("POST", "/auth/config", 405, 405),
+        ("GET", "/auth/login", 303, 200),
+        ("GET", "/auth/login?return_to=a&return_to=b", 400, 200),
+        (
+            "GET",
+            "/auth/callback?state=untrusted&code=untrusted",
+            303,
+            200,
+        ),
+        ("POST", "/auth/callback", 405, 200),
+        ("POST", "/auth/logout", 303, 200),
+        ("GET", "/auth/logout", 405, 200),
+        ("GET", "/auth/not-found", 404, 200),
+        ("DELETE", "/auth/not-found", 404, 200),
     ] {
         let response = app
             .clone()
-            .oneshot(request_with_method(method, uri, None))
+            .oneshot(request_with_method(method, uri, cookie))
             .await
             .expect("auth route response");
         assert_eq!(
-            response.headers().get(header::CACHE_CONTROL),
-            Some(&HeaderValue::from_static("no-store")),
+            response.status().as_u16(),
+            if enabled {
+                enabled_status
+            } else {
+                disabled_status
+            },
             "{method} {uri}"
         );
+        assert_eq!(
+            response.headers()[header::CACHE_CONTROL],
+            "no-store",
+            "{method} {uri}"
+        );
+        if !enabled && disabled_status == 200 && uri != "/auth/config" {
+            let expected = crate::embedded::static_handler("/".parse().unwrap()).await;
+            assert_eq!(
+                axum::body::to_bytes(response.into_body(), usize::MAX)
+                    .await
+                    .unwrap(),
+                axum::body::to_bytes(expected.into_body(), usize::MAX)
+                    .await
+                    .unwrap(),
+            );
+        }
     }
 }
 
@@ -2697,13 +2757,14 @@ async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_co
             .await
             .expect("protected document");
         assert_eq!(document.status(), StatusCode::SEE_OTHER, "{path}");
+        assert_eq!(document.headers()[header::CACHE_CONTROL], "no-store");
         assert_eq!(
             document.headers().get(header::LOCATION),
             Some(&HeaderValue::from_str(expected_location).expect("expected redirect")),
             "{path}"
         );
     }
-    for path in ["/api", "/api/info", "/api/ai/status"] {
+    for path in ["/api", "/api/", "/api/info", "/api/ai/status"] {
         let api = app
             .clone()
             .oneshot(request(path, None))
@@ -2727,14 +2788,34 @@ async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_co
             "{path}"
         );
     }
-    assert_eq!(
-        app.clone()
-            .oneshot(request("/uploads/public-test.txt", None))
+    for path in ["/uploads", "/uploads/", "/uploads/public-test.txt"] {
+        let upload = app
+            .clone()
+            .oneshot(request(path, None))
             .await
-            .expect("unauthenticated upload")
-            .status(),
-        StatusCode::UNAUTHORIZED
-    );
+            .expect("unauthenticated upload");
+        assert_eq!(upload.status(), StatusCode::UNAUTHORIZED, "{path}");
+        assert_eq!(
+            upload.headers()[header::CACHE_CONTROL],
+            "no-store",
+            "{path}"
+        );
+        assert!(
+            axum::body::to_bytes(upload.into_body(), usize::MAX)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+    }
+    for path in [
+        "/service-worker.js",
+        "/favicon.svg",
+        immutable_asset.as_str(),
+    ] {
+        let asset = app.clone().oneshot(request(path, None)).await.unwrap();
+        assert_eq!(asset.status(), StatusCode::OK);
+        assert!(!asset.headers().contains_key(header::CACHE_CONTROL));
+    }
     let config = app
         .clone()
         .oneshot(request("/auth/config", None))
@@ -2778,6 +2859,21 @@ async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_co
         .await
         .expect("successful callback");
     let authenticated_cookie = cookie(&callback);
+    for path in ["/api/", "/uploads/"] {
+        let response = app
+            .clone()
+            .oneshot(request(path, Some(&authenticated_cookie)))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");
+        assert!(response.headers().get(header::LOCATION).is_none());
+        assert!(
+            axum::body::to_bytes(response.into_body(), usize::MAX)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+    }
     let upload = app
         .clone()
         .oneshot(request(
@@ -2896,7 +2992,13 @@ async fn authenticated_session_has_an_absolute_twelve_hour_deadline_and_does_not
             .status(),
         StatusCode::OK
     );
-    clock.advance(super::SESSION_TTL - Duration::from_secs(1));
+    assert_bypass_survives_five_minutes(&app, &clock, &authenticated_cookie).await;
+    clock.advance(
+        super::SESSION_TTL
+            .checked_sub(super::LOGIN_TRANSACTION_TTL)
+            .and_then(|remaining| remaining.checked_sub(Duration::from_secs(2)))
+            .expect("session lifetime exceeds the login regression interval"),
+    );
     assert_eq!(
         app.clone()
             .oneshot(request("/api/info", Some(&authenticated_cookie)))
@@ -3003,4 +3105,196 @@ async fn discovery_transport_redirect_and_signed_unknown_key_are_safely_rejected
         .await,
         Err(CallbackError::Invalid)
     );
+}
+
+async fn assert_bypass_survives_five_minutes(app: &Router, clock: &TestClock, cookie: &str) {
+    for path in ["/login?error=failed", "/auth/login?return_to=%2Fplants"] {
+        let bypass = app
+            .clone()
+            .oneshot(request(path, Some(cookie)))
+            .await
+            .unwrap();
+        assert_eq!(bypass.status(), StatusCode::SEE_OTHER);
+        assert!(!bypass.headers().contains_key(header::SET_COOKIE));
+    }
+    clock.advance(super::LOGIN_TRANSACTION_TTL + Duration::from_secs(1));
+    assert_eq!(
+        app.clone()
+            .oneshot(request("/api/info", Some(cookie)))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::OK,
+        "authenticated login must not shorten the session to five minutes",
+    );
+}
+
+#[tokio::test]
+async fn authenticated_login_preserves_the_entire_session_record() {
+    use tower_sessions::{MemoryStore, Session, SessionStore};
+
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = Arc::new(
+        AuthState::with_dependencies(
+            EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
+            Arc::new(super::SystemClock),
+            Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
+        )
+        .await
+        .expect("local discovery"),
+    );
+    let store = Arc::new(MemoryStore::default());
+    let session = Session::new(None, store.clone(), None);
+    let now = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    session
+        .insert("flowl.auth.authenticated", true)
+        .await
+        .unwrap();
+    session
+        .insert("flowl.auth.authenticated_at", now)
+        .await
+        .unwrap();
+    session
+        .insert("flowl.auth.expires_at", now + super::SESSION_TTL.as_secs())
+        .await
+        .unwrap();
+    session
+        .insert("unrelated", serde_json::json!({"keep": [1, 2]}))
+        .await
+        .unwrap();
+    session
+        .insert(super::routes::PREAUTH_STATE_KEY, "preserved-binding")
+        .await
+        .unwrap();
+    session.set_expiry(Some(tower_sessions::Expiry::AtDateTime(
+        (SystemTime::now() + super::SESSION_TTL).into(),
+    )));
+    session.save().await.unwrap();
+    let id = session.id().unwrap();
+    let before = store.load(&id).await.unwrap().unwrap();
+    let session = Session::new(
+        Some(id),
+        store.clone(),
+        Some(tower_sessions::Expiry::AtDateTime(before.expiry_date)),
+    );
+    let app = Router::new()
+        .route("/auth/login", get(super::routes::login))
+        .layer(axum::Extension(auth))
+        .layer(axum::Extension(session.clone()));
+    let response = app
+        .oneshot(request("/auth/login?return_to=%2Fplants", None))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(session.id(), Some(id));
+    assert!(!session.is_modified());
+    assert_eq!(session.expiry_date(), before.expiry_date);
+    session.save().await.unwrap();
+    let after = store.load(&id).await.unwrap().unwrap();
+    assert_eq!(after.data, before.data);
+    assert_eq!(after.expiry_date, before.expiry_date);
+}
+
+async fn registry_snapshot(auth: &AuthState) -> serde_json::Value {
+    let transactions = auth.transactions.lock().await;
+    serde_json::Value::Object(
+        transactions
+            .iter()
+            .map(|(state, pending)| {
+                (
+                    state.clone(),
+                    serde_json::json!({
+                        "nonce": pending.nonce.secret(),
+                        "verifier": pending.verifier.secret(),
+                        "return_to": pending.return_to.as_str(),
+                        "expires_at": pending.expires_at,
+                    }),
+                )
+            })
+            .collect(),
+    )
+}
+
+fn provider_counts(provider: &RunningProvider) -> [usize; 3] {
+    [
+        provider.provider.discovery_requests.load(Ordering::SeqCst),
+        provider.provider.jwks_requests.load(Ordering::SeqCst),
+        provider.provider.token_requests.load(Ordering::SeqCst),
+    ]
+}
+
+#[tokio::test]
+async fn authenticated_login_bypasses_full_registry_without_cookie_or_provider_changes() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = Arc::new(
+        AuthState::with_dependencies(
+            EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
+            Arc::new(super::SystemClock),
+            Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
+        )
+        .await
+        .expect("local discovery"),
+    );
+    let (state, _directory) = test_state(auth.clone());
+    let app = server::router(state);
+    let (preauth_cookie, state) = begin_login(&app, &provider).await;
+    let callback = app
+        .clone()
+        .oneshot(request(
+            &format!("/auth/callback?state={state}&code=accepted-code"),
+            Some(&preauth_cookie),
+        ))
+        .await
+        .expect("callback");
+    let authenticated_cookie = cookie(&callback);
+    for index in 0..super::MAX_PENDING_LOGIN_TRANSACTIONS {
+        auth.transactions.lock().await.insert(
+            format!("active-{index}"),
+            pending_login(&auth, &provider).await,
+        );
+    }
+    let registry = registry_snapshot(&auth).await;
+    let counts = provider_counts(&provider);
+    for (path, target) in [
+        ("/login", "/"),
+        (
+            "/login?error=authentication_failed&return_to=%2Fplants",
+            "/",
+        ),
+        (
+            "/login?logged_out=1&return_to=https%3A%2F%2Fevil.example",
+            "/",
+        ),
+        ("/auth/login", "/"),
+        (
+            "/auth/login?error=failed&logged_out=1&return_to=%2Fplants%3Ftab%3Dcare",
+            "/plants?tab=care",
+        ),
+        ("/auth/login?return_to=%2F%2Fevil.example", "/"),
+        ("/auth/login?return_to=%2Fauth%2Fconfig", "/"),
+        ("/auth/login?return_to=%2Fuploads", "/"),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(request(path, Some(&authenticated_cookie)))
+            .await
+            .expect("bypass response");
+        assert_eq!(response.status(), StatusCode::SEE_OTHER, "{path}");
+        assert_eq!(response.headers()[header::LOCATION], target);
+        assert!(
+            !response.headers().contains_key(header::SET_COOKIE),
+            "{path}"
+        );
+        assert!(
+            axum::body::to_bytes(response.into_body(), usize::MAX)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(registry_snapshot(&auth).await, registry);
+        assert_eq!(provider_counts(&provider), counts);
+    }
 }
