@@ -6,13 +6,18 @@ use provider_http::{DiscoveryHttpClient, GuardedHttpClient};
 
 pub mod return_to;
 pub mod routes;
+mod session;
+mod session_store;
+
+use session::SessionBackend;
+pub use session::{AuthSessionLayer, CookieKeyError, SESSION_COOKIE_NAME};
+#[doc(hidden)]
+pub use session_store::{SessionBarrier, SessionFaults, StoreOperation};
 
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
-
-use tower_sessions::{Expiry, Session};
 
 use openidconnect::core::{
     CoreClientAuthMethod, CoreJsonWebKeySet, CoreJwsSigningAlgorithm, CoreProviderMetadata,
@@ -22,8 +27,6 @@ use openidconnect::{
     AuthType, ClientId, ClientSecret, JsonWebKey, JsonWebKeyAlgorithm, JsonWebKeyUse,
     JwsSigningAlgorithm, OAuth2TokenResponse, RedirectUrl, TokenResponse,
 };
-#[cfg(test)]
-use tokio::sync::{Barrier, Notify};
 use tokio::sync::{Mutex, RwLock};
 
 use crate::auth::return_to::SafeReturnTo;
@@ -85,6 +88,7 @@ pub enum AuthStartupError {
     IssuerMismatch,
     UnsafeMetadata,
     UnsupportedTokenAuthentication,
+    CookieKey,
 }
 
 impl fmt::Display for AuthStartupError {
@@ -96,6 +100,7 @@ impl fmt::Display for AuthStartupError {
             Self::IssuerMismatch => "issuer mismatch",
             Self::UnsafeMetadata => "unsafe or incompatible metadata",
             Self::UnsupportedTokenAuthentication => "unsupported token endpoint authentication",
+            Self::CookieKey => "cookie key generation failure",
         };
         write!(formatter, "OIDC discovery failed: {category}")
     }
@@ -108,11 +113,6 @@ pub struct PendingLogin {
     pub verifier: openidconnect::PkceCodeVerifier,
     pub return_to: SafeReturnTo,
     pub expires_at: SystemTime,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum TransactionBindError {
-    Failed,
 }
 
 type CachedCoreClient = openidconnect::core::CoreClient<
@@ -144,13 +144,8 @@ pub struct AuthState {
     token_auth_method: TokenAuthMethod,
     clients: RwLock<ClientCache>,
     refresh_lock: Mutex<()>,
-    /// Serializes replacement and consumption of the browser binding with its registry entry.
-    login_lock: Mutex<()>,
+    sessions: SessionBackend,
     transactions: Mutex<HashMap<String, PendingLogin>>,
-    #[cfg(test)]
-    callback_consume_gate: Mutex<Option<(Arc<Barrier>, Arc<Barrier>)>>,
-    #[cfg(test)]
-    bind_transaction_reached: Mutex<Option<Arc<Notify>>>,
 }
 
 impl AuthState {
@@ -192,6 +187,30 @@ impl AuthState {
         monotonic_clock: Arc<dyn MonotonicClock>,
         http_client: Arc<dyn AuthHttpClient>,
     ) -> Result<Self, AuthStartupError> {
+        Self::with_session_faults(
+            config,
+            clock,
+            monotonic_clock,
+            http_client,
+            SessionFaults::default(),
+        )
+        .await
+    }
+
+    /// Initializes authentication with per-instance deterministic storage faults.
+    ///
+    /// # Errors
+    /// Returns the same safe startup errors as ordinary initialization.
+    #[doc(hidden)]
+    pub async fn with_session_faults(
+        config: EnabledAuthConfig,
+        clock: Arc<dyn Clock>,
+        monotonic_clock: Arc<dyn MonotonicClock>,
+        http_client: Arc<dyn AuthHttpClient>,
+        faults: SessionFaults,
+    ) -> Result<Self, AuthStartupError> {
+        let sessions = SessionBackend::new(true, Arc::clone(&clock), faults)
+            .map_err(|_| AuthStartupError::CookieKey)?;
         let guard = GuardedHttpClient::new(config.clone(), http_client.clone());
         guard
             .validate_raw_url(config.issuer().raw())
@@ -234,13 +253,14 @@ impl AuthState {
                 refresh_retry_at: None,
             }),
             refresh_lock: Mutex::new(()),
-            login_lock: Mutex::new(()),
+            sessions,
             transactions: Mutex::new(HashMap::new()),
-            #[cfg(test)]
-            callback_consume_gate: Mutex::new(None),
-            #[cfg(test)]
-            bind_transaction_reached: Mutex::new(None),
         })
+    }
+
+    /// Build the private process-local session layer owned by this authentication instance.
+    pub fn session_layer(&self) -> AuthSessionLayer {
+        self.sessions.layer()
     }
 
     pub const fn config(&self) -> &EnabledAuthConfig {
@@ -284,104 +304,29 @@ impl AuthState {
         Ok((url, state, nonce, verifier))
     }
 
-    /// Atomically replaces the current browser's pending transaction and its private-session
-    /// binding. A capacity rejection intentionally happens before removing the prior transaction.
-    ///
-    /// Explicit saves make the binding durable before the provider redirect. If either insertion
-    /// or save fails, the registry and session are rolled back while serialized against callbacks.
-    pub(crate) async fn bind_transaction(
+    /// Insert exchange permission without evicting the current attempt. The caller holds its
+    /// lineage gate and removes the prior entry only after the replacement binding persists.
+    pub(crate) async fn insert_transaction(
         &self,
-        session: &Session,
         state: String,
         transaction: PendingLogin,
-    ) -> Result<(), TransactionBindError> {
-        #[cfg(test)]
-        if let Some(reached) = self.bind_transaction_reached.lock().await.clone() {
-            reached.notify_one();
-        }
-        let _login = self.login_lock.lock().await;
-        let previous_state = session
-            .get::<String>(crate::auth::routes::PREAUTH_STATE_KEY)
-            .await
-            .map_err(|_| TransactionBindError::Failed)?;
+    ) -> Result<(), ()> {
         let now = self.clock.now();
         let mut transactions = self.transactions.lock().await;
         transactions.retain(|_, pending| pending.expires_at > now);
         if transactions.len() >= MAX_PENDING_LOGIN_TRANSACTIONS {
-            return Err(TransactionBindError::Failed);
+            return Err(());
         }
-        let previous = previous_state
-            .as_deref()
-            .and_then(|previous_state| transactions.remove(previous_state));
-        let expires_at = transaction.expires_at;
-        transactions.insert(state.clone(), transaction);
-
-        let saved = if session
-            .insert(crate::auth::routes::PREAUTH_STATE_KEY, state.clone())
-            .await
-            .is_ok()
-        {
-            session.set_expiry(Some(Expiry::AtDateTime(expires_at.into())));
-            session.save().await.is_ok()
-        } else {
-            false
-        };
-        if saved {
-            return Ok(());
-        }
-
-        transactions.remove(&state);
-        if let (Some(previous_state), Some(previous)) = (previous_state.as_deref(), previous) {
-            transactions.insert(previous_state.to_string(), previous);
-            let _ = session
-                .insert(crate::auth::routes::PREAUTH_STATE_KEY, previous_state)
-                .await;
-            let _ = session.save().await;
-        } else {
-            let _ = session
-                .remove::<String>(crate::auth::routes::PREAUTH_STATE_KEY)
-                .await;
-            let _ = session.flush().await;
-        }
-        Err(TransactionBindError::Failed)
+        transactions.insert(state, transaction);
+        Ok(())
     }
 
-    /// Consumes a browser-bound transaction exactly once before any provider I/O.
-    pub(crate) async fn consume_bound_transaction(
-        &self,
-        session: &Session,
-        state: &str,
-    ) -> Option<PendingLogin> {
-        let _login = self.login_lock.lock().await;
-        let bound_state = session
-            .get::<String>(crate::auth::routes::PREAUTH_STATE_KEY)
-            .await
-            .ok()
-            .flatten();
-        if bound_state.as_deref() != Some(state) {
-            return None;
-        }
-
-        let pending = self.consume_transaction(state).await?;
-        #[cfg(test)]
-        if let Some((consumed, resume)) = self.callback_consume_gate.lock().await.clone() {
-            consumed.wait().await;
-            resume.wait().await;
-        }
-        let _ = session
-            .remove::<String>(crate::auth::routes::PREAUTH_STATE_KEY)
-            .await;
-        let _ = session.save().await;
-        Some(pending)
-    }
-
-    /// Consumes a transaction exactly once. Callers coordinating a browser binding must hold
-    /// `login_lock` for the complete session/registry operation.
+    /// Consumes exchange permission exactly once; completion ownership lives in the store.
     pub async fn consume_transaction(&self, state: &str) -> Option<PendingLogin> {
         let now = self.clock.now();
         let mut transactions = self.transactions.lock().await;
-        let pending = transactions.remove(state)?;
-        (pending.expires_at > now).then_some(pending)
+        transactions.retain(|_, pending| pending.expires_at > now);
+        transactions.remove(state)
     }
 
     /// Exchanges a code and verifies the ID token using the cached metadata. The returned claims
@@ -792,6 +737,7 @@ mod tests {
             AuthStartupError::IssuerMismatch,
             AuthStartupError::UnsafeMetadata,
             AuthStartupError::UnsupportedTokenAuthentication,
+            AuthStartupError::CookieKey,
         ] {
             let diagnostic = error.to_string();
             assert!(diagnostic.starts_with("OIDC discovery failed:"));

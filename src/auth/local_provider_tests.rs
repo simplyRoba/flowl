@@ -22,7 +22,8 @@ use rsa::traits::PublicKeyParts;
 use sha2::{Digest, Sha256};
 use sqlx::SqlitePool;
 use tokio::net::TcpListener;
-use tokio::sync::{Barrier, Mutex, Notify};
+use tokio::sync::Mutex;
+
 use tower::ServiceExt;
 use tracing::Level;
 use tracing_subscriber::fmt::MakeWriter;
@@ -36,6 +37,9 @@ use crate::config::EnabledAuthConfig;
 use crate::images::ImageStore;
 use crate::server;
 use crate::state::AppState;
+
+#[path = "lifecycle_tests.rs"]
+mod lifecycle;
 
 const CLIENT_ID: &str = "flowl-test-client";
 const CLIENT_SECRET: &str = "flowl-test-secret";
@@ -77,6 +81,7 @@ struct Provider {
     jwks_redirect: AtomicBool,
     token_response_override: Mutex<Option<(StatusCode, String)>>,
     unsigned_token: AtomicBool,
+    token_gate: Mutex<Option<Arc<lifecycle::TokenGate>>>,
 }
 
 struct RunningProvider {
@@ -130,6 +135,7 @@ impl RunningProvider {
             jwks_redirect: AtomicBool::new(false),
             token_response_override: Mutex::new(None),
             unsigned_token: AtomicBool::new(false),
+            token_gate: Mutex::new(None),
         });
         let app = Router::new()
             .route("/.well-known/openid-configuration", get(discovery))
@@ -169,7 +175,7 @@ impl RunningProvider {
 
     async fn rotate_signing_key_with_same_kid(&self) {
         let kid = self.provider.signing_key.lock().await.kid.clone();
-        *self.provider.signing_key.lock().await = generate_signing_key_with_kid(kid);
+        *self.provider.signing_key.lock().await = generate_signing_key_with_kid(&kid);
     }
 
     fn fail_jwks(&self, failing: bool) {
@@ -245,7 +251,7 @@ impl RunningProvider {
     async fn sign_tokens_with_invalid_same_kid_key(&self) {
         let kid = self.provider.signing_key.lock().await.kid.clone();
         *self.provider.token_signing_key_override.lock().await =
-            Some(generate_signing_key_with_kid(kid));
+            Some(generate_signing_key_with_kid(&kid));
     }
 
     async fn set_token_algorithm(&self, algorithm: Algorithm) {
@@ -331,15 +337,15 @@ fn discovery_document(base: &str, methods: &serde_json::Value) -> serde_json::Va
 }
 
 fn generate_signing_key() -> SigningKey {
-    generate_signing_key_with_kid(format!("local-test-key-{}", uuid::Uuid::new_v4()))
+    generate_signing_key_with_kid(&format!("local-test-key-{}", uuid::Uuid::new_v4()))
 }
 
-fn generate_signing_key_with_kid(key_id: String) -> SigningKey {
+fn generate_signing_key_with_kid(key_id: &str) -> SigningKey {
     let private = RsaPrivateKey::new(&mut OsRng, 2_048).expect("generate test key");
     let public = private.to_public_key();
     let encode = base64::engine::general_purpose::URL_SAFE_NO_PAD;
     SigningKey {
-        kid: key_id.clone(),
+        kid: key_id.to_owned(),
         pem: private
             .to_pkcs8_pem(LineEnding::LF)
             .expect("serialize test key")
@@ -466,6 +472,7 @@ async fn token(
     Form(form): Form<HashMap<String, String>>,
 ) -> impl IntoResponse {
     provider.token_requests.fetch_add(1, Ordering::SeqCst);
+    lifecycle::wait_token_gate(&provider).await;
     if let Some(response) = token_response_override(&provider).await {
         return response;
     }
@@ -2192,9 +2199,11 @@ async fn callback_consumption_cannot_erase_a_concurrent_replacement_login() {
     let app = server::router(state);
     let (original_cookie, old_state) = begin_login(&app, &provider).await;
 
-    let consumed = Arc::new(Barrier::new(2));
-    let resume = Arc::new(Barrier::new(2));
-    *auth.callback_consume_gate.lock().await = Some((Arc::clone(&consumed), Arc::clone(&resume)));
+    let reload = auth
+        .sessions
+        .store
+        .faults
+        .pause_next(super::StoreOperation::Load);
 
     let old_callback = tokio::spawn({
         let app = app.clone();
@@ -2208,10 +2217,12 @@ async fn callback_consumption_cannot_erase_a_concurrent_replacement_login() {
             .expect("old provider-error callback")
         }
     });
-    consumed.wait().await;
-
-    let replacement_reached = Arc::new(Notify::new());
-    *auth.bind_transaction_reached.lock().await = Some(Arc::clone(&replacement_reached));
+    reload.wait_entered().await;
+    let replacement_load = auth
+        .sessions
+        .store
+        .faults
+        .pause_next(super::StoreOperation::Load);
     let replacement_login = tokio::spawn({
         let app = app.clone();
         let original_cookie = original_cookie.clone();
@@ -2224,8 +2235,10 @@ async fn callback_consumption_cannot_erase_a_concurrent_replacement_login() {
             .expect("replacement login")
         }
     });
-    replacement_reached.notified().await;
-    resume.wait().await;
+    replacement_load.wait_entered().await;
+    replacement_load.release();
+    assert!(!replacement_login.is_finished());
+    reload.release();
 
     let old_callback = old_callback.await.expect("old callback task");
     assert_eq!(old_callback.status(), StatusCode::SEE_OTHER);
@@ -2253,8 +2266,6 @@ async fn callback_consumption_cannot_erase_a_concurrent_replacement_login() {
         .find_map(|(key, value)| (key == "state").then(|| value.into_owned()))
         .expect("replacement state");
 
-    *auth.callback_consume_gate.lock().await = None;
-    *auth.bind_transaction_reached.lock().await = None;
     let replacement_callback = app
         .oneshot(request(
             &format!("/auth/callback?state={replacement_state}&error=access_denied"),
@@ -3131,7 +3142,8 @@ async fn assert_bypass_survives_five_minutes(app: &Router, clock: &TestClock, co
 
 #[tokio::test]
 async fn authenticated_login_preserves_the_entire_session_record() {
-    use tower_sessions::{MemoryStore, Session, SessionStore};
+    use super::session_store::{OWNER_KEY, Owner};
+    use tower_sessions::{Session, SessionStore};
 
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
     let auth = Arc::new(
@@ -3143,22 +3155,29 @@ async fn authenticated_login_preserves_the_entire_session_record() {
         .await
         .expect("local discovery"),
     );
-    let store = Arc::new(MemoryStore::default());
+    let store = Arc::new(auth.sessions.store.clone());
+    let expiry = (SystemTime::now() + super::SESSION_TTL).into();
+    let (key, lineage) = store.allocate(expiry);
+    let owner = Owner::fresh(key);
+    {
+        let mut authority = lineage.authority.lock().await;
+        authority.permit = Some(owner.clone());
+        authority.creating = true;
+    }
     let session = Session::new(None, store.clone(), None);
+    session.insert(OWNER_KEY, owner).await.unwrap();
     let now = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
         .as_secs();
     session
-        .insert("flowl.auth.authenticated", true)
-        .await
-        .unwrap();
-    session
-        .insert("flowl.auth.authenticated_at", now)
-        .await
-        .unwrap();
-    session
-        .insert("flowl.auth.expires_at", now + super::SESSION_TTL.as_secs())
+        .insert(
+            super::routes::AUTHENTICATED_KEY,
+            super::routes::AuthenticatedSession {
+                authenticated_at: i64::try_from(now).unwrap(),
+                expires_at: i64::try_from(now + super::SESSION_TTL.as_secs()).unwrap(),
+            },
+        )
         .await
         .unwrap();
     session
@@ -3183,6 +3202,7 @@ async fn authenticated_login_preserves_the_entire_session_record() {
     let app = Router::new()
         .route("/auth/login", get(super::routes::login))
         .layer(axum::Extension(auth))
+        .layer(axum::Extension(super::session::OriginalSessionId(Some(id))))
         .layer(axum::Extension(session.clone()));
     let response = app
         .oneshot(request("/auth/login?return_to=%2Fplants", None))

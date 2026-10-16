@@ -13,8 +13,7 @@ use sqlx::SqlitePool;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tower_http::services::ServeDir;
-use tower_sessions::cookie::SameSite;
-use tower_sessions::{Expiry, MemoryStore, Session, SessionManagerLayer};
+use tower_sessions::Session;
 use tracing::{debug, info};
 
 use crate::api;
@@ -100,19 +99,8 @@ fn enabled_router(state: &AppState) -> Router {
             let auth = auth.clone();
             move |session: Session, uri: Uri| protected_document(auth.clone(), session, uri)
         })
-        .layer(Extension(auth))
-        .layer(
-            SessionManagerLayer::new(MemoryStore::default())
-                .with_name("flowl.sid")
-                .with_http_only(true)
-                .with_secure(true)
-                .with_same_site(SameSite::Lax)
-                .with_path("/")
-                // Each login sets an absolute deadline: five minutes for pre-auth and twelve
-                // hours for the authenticated session. A global inactivity expiry would slide.
-                .with_expiry(Expiry::OnSessionEnd)
-                .with_private(tower_sessions::cookie::Key::generate()),
-        )
+        .layer(Extension(auth.clone()))
+        .layer(auth.session_layer())
         .layer(middleware::from_fn(access_log))
 }
 

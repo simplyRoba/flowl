@@ -92,7 +92,7 @@ Authentication is disabled by default. The enable flag accepts only `true` or `f
 
 The public URL and provider endpoints must use HTTPS; Flowl itself may use HTTP behind a TLS-terminating proxy. The issuer must exactly match the provider value, including any trailing slash.
 
-Sessions are process-local and expire after 12 hours. Restarts sign everyone out, and multi-instance deployments require sticky routing. When enabled, Flowl protects the API, uploads, and application pages; `/health` and login resources remain public.
+Sessions are process-local with a non-sliding 12-hour deadline. Pending logins expire after five minutes, with at most 1,024 pending per instance. Restarts sign everyone out; use a single instance or sticky routing. When enabled, Flowl protects the API, uploads, and application pages; `/health` and login resources remain public.
 
 Public `/auth/config` returns `{ "enabled": false }` when disabled, or `{ "enabled": true, "provider_name": "OpenID Connect" }` with the configured label when enabled. Deploy or roll back the backend and embedded frontend together, without disabling authentication.
 
@@ -146,7 +146,7 @@ With OIDC enabled, session expiry does not erase offline data. **Sign out** purg
 
 ## Security
 
-Flowl includes optional built-in OIDC authentication for the UI, API, and uploads. It does not add users, roles, per-user data, or provider logout; every accepted identity accesses the same data. If built-in authentication is disabled, use a trusted network or an authenticating reverse proxy.
+Flowl includes optional built-in OIDC authentication for the UI, API, and uploads. It does not add users, roles, per-user data, or provider logout; every accepted identity accesses the same data. A saved replacement login or local logout invalidates in-flight attempts. Authentication is saved before success; a failed save cannot grant access. Failed logout expires the cookie but returns HTTP 500, not a signed-out redirect. If built-in authentication is disabled, use a trusted network or an authenticating reverse proxy.
 
 ## Home Assistant
 
