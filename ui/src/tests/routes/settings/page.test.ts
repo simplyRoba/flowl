@@ -76,7 +76,6 @@ beforeEach(() => {
   mockLoadLocations.mockResolvedValue(undefined);
   mockFetchAuthConfig.mockResolvedValue({
     enabled: false,
-    provider_name: null,
   });
   mockPurgeProtectedCaches.mockResolvedValue(undefined);
   Object.defineProperty(window, "matchMedia", {

@@ -131,7 +131,7 @@ describe("login page", () => {
   );
 
   it("returns to the application root when auth is disabled", async () => {
-    fetchAuthConfig.mockResolvedValue({ enabled: false, provider_name: null });
+    fetchAuthConfig.mockResolvedValue({ enabled: false });
     render(Page);
 
     await waitFor(() => {

@@ -5,10 +5,19 @@ use openidconnect::IssuerUrl;
 use url::Url;
 
 pub const DEFAULT_OIDC_PROVIDER_NAME: &str = "OpenID Connect";
-pub const MAX_OIDC_PROVIDER_NAME_BYTES: usize = 128;
+pub const MAX_OIDC_PROVIDER_NAME_CHARS: usize = 80;
 
 pub trait ConfigSource {
     fn get(&self, key: &str) -> Option<String>;
+
+    /// Reads an authentication setting without discarding invalid Unicode.
+    ///
+    /// # Errors
+    ///
+    /// Returns `VarError::NotUnicode` for a present non-UTF-8 value.
+    fn get_auth(&self, key: &str) -> Result<Option<String>, env::VarError> {
+        Ok(self.get(key))
+    }
 }
 
 struct EnvConfigSource;
@@ -16,6 +25,14 @@ struct EnvConfigSource;
 impl ConfigSource for EnvConfigSource {
     fn get(&self, key: &str) -> Option<String> {
         env::var(key).ok()
+    }
+
+    fn get_auth(&self, key: &str) -> Result<Option<String>, env::VarError> {
+        match env::var(key) {
+            Ok(value) => Ok(Some(value)),
+            Err(env::VarError::NotPresent) => Ok(None),
+            Err(error @ env::VarError::NotUnicode(_)) => Err(error),
+        }
     }
 }
 
@@ -89,7 +106,7 @@ impl AuthConfig {
     /// Returns an error when `FLOWL_AUTH_ENABLED` is malformed or enabled OIDC configuration is
     /// incomplete or unsafe.
     pub fn load_from(source: &impl ConfigSource) -> Result<Self, AuthConfigError> {
-        let enabled = match source.get("FLOWL_AUTH_ENABLED") {
+        let enabled = match auth_value(source, "FLOWL_AUTH_ENABLED")? {
             None => false,
             Some(value) => value
                 .parse::<bool>()
@@ -106,9 +123,9 @@ impl AuthConfig {
         let issuer = IssuerConfig::parse(&issuer_value)?;
         let client_id = required(source, "FLOWL_OIDC_CLIENT_ID")?;
         let client_secret = required(source, "FLOWL_OIDC_CLIENT_SECRET")?;
-        let provider_name = source.get("FLOWL_OIDC_PROVIDER_NAME").map_or_else(
+        let provider_name = auth_value(source, "FLOWL_OIDC_PROVIDER_NAME")?.map_or_else(
             || Ok(DEFAULT_OIDC_PROVIDER_NAME.to_string()),
-            validate_provider_name,
+            |value| validate_provider_name(&value),
         )?;
 
         Ok(Self::Enabled(Box::new(EnabledAuthConfig {
@@ -267,6 +284,7 @@ impl ExternalUrl {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuthConfigError {
     InvalidEnabledFlag,
+    NonUnicodeValue(&'static str),
     MissingRequiredValue(&'static str),
     InvalidExternalUrl,
     InvalidIssuerUrl,
@@ -277,6 +295,7 @@ impl fmt::Display for AuthConfigError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidEnabledFlag => formatter.write_str("FLOWL_AUTH_ENABLED must be a boolean"),
+            Self::NonUnicodeValue(key) => write!(formatter, "{key} must be valid UTF-8"),
             Self::MissingRequiredValue(key) => write!(formatter, "{key} must be non-empty"),
             Self::InvalidExternalUrl => {
                 formatter.write_str("FLOWL_EXTERNAL_URL must be an HTTPS origin")
@@ -289,21 +308,32 @@ impl fmt::Display for AuthConfigError {
 
 impl std::error::Error for AuthConfigError {}
 
+fn auth_value(
+    source: &impl ConfigSource,
+    key: &'static str,
+) -> Result<Option<String>, AuthConfigError> {
+    source
+        .get_auth(key)
+        .map_err(|_| AuthConfigError::NonUnicodeValue(key))
+}
+
 fn required(source: &impl ConfigSource, key: &'static str) -> Result<String, AuthConfigError> {
-    let value = source
-        .get(key)
-        .ok_or(AuthConfigError::MissingRequiredValue(key))?;
+    let value = auth_value(source, key)?.ok_or(AuthConfigError::MissingRequiredValue(key))?;
     if value.trim().is_empty() {
         return Err(AuthConfigError::MissingRequiredValue(key));
     }
     Ok(value)
 }
 
-fn validate_provider_name(value: String) -> Result<String, AuthConfigError> {
-    if value.trim().is_empty() || value.len() > MAX_OIDC_PROVIDER_NAME_BYTES {
+fn validate_provider_name(value: &str) -> Result<String, AuthConfigError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty()
+        || trimmed.chars().any(char::is_control)
+        || trimmed.chars().count() > MAX_OIDC_PROVIDER_NAME_CHARS
+    {
         return Err(AuthConfigError::InvalidProviderName);
     }
-    Ok(value)
+    Ok(trimmed.to_string())
 }
 
 fn parse_or<T: std::str::FromStr>(source: &impl ConfigSource, key: &str, default: T) -> T {
@@ -338,6 +368,135 @@ mod tests {
         fn get(&self, key: &str) -> Option<String> {
             self.0.get(key).cloned()
         }
+    }
+
+    struct NonUnicodeConfig {
+        inner: MockConfig,
+        invalid_key: &'static str,
+    }
+
+    impl ConfigSource for NonUnicodeConfig {
+        fn get(&self, key: &str) -> Option<String> {
+            if key == self.invalid_key {
+                None
+            } else {
+                self.inner.get(key)
+            }
+        }
+
+        fn get_auth(&self, key: &str) -> Result<Option<String>, env::VarError> {
+            if key == self.invalid_key {
+                Err(env::VarError::NotUnicode("private-value-sentinel".into()))
+            } else {
+                Ok(self.inner.get(key))
+            }
+        }
+    }
+
+    const AUTH_FIELDS: [&str; 5] = [
+        "FLOWL_EXTERNAL_URL",
+        "FLOWL_OIDC_ISSUER",
+        "FLOWL_OIDC_CLIENT_ID",
+        "FLOWL_OIDC_CLIENT_SECRET",
+        "FLOWL_OIDC_PROVIDER_NAME",
+    ];
+
+    #[test]
+    fn non_unicode_auth_values_fail_closed_without_exposing_values() {
+        for key in std::iter::once("FLOWL_AUTH_ENABLED").chain(AUTH_FIELDS) {
+            let source = NonUnicodeConfig {
+                inner: enabled_config(),
+                invalid_key: key,
+            };
+            let error = AuthConfig::load_from(&source)
+                .err()
+                .expect("must reject invalid Unicode");
+            assert_eq!(error, AuthConfigError::NonUnicodeValue(key));
+            assert!(error.to_string().contains(key));
+            assert!(!error.to_string().contains("private-value-sentinel"));
+            assert!(!format!("{error:?}").contains("private-value-sentinel"));
+        }
+    }
+
+    #[test]
+    fn disabled_auth_never_reads_other_auth_fields() {
+        struct DisabledSource(Option<&'static str>);
+        impl ConfigSource for DisabledSource {
+            fn get(&self, _: &str) -> Option<String> {
+                panic!("auth parser must use get_auth");
+            }
+            fn get_auth(&self, key: &str) -> Result<Option<String>, env::VarError> {
+                assert_eq!(key, "FLOWL_AUTH_ENABLED");
+                Ok(self.0.map(str::to_string))
+            }
+        }
+        for flag in [None, Some("false")] {
+            assert!(matches!(
+                AuthConfig::load_from(&DisabledSource(flag)),
+                Ok(AuthConfig::Disabled)
+            ));
+            for key in AUTH_FIELDS {
+                let mut inner = enabled_config();
+                inner.0.remove("FLOWL_AUTH_ENABLED");
+                if let Some(flag) = flag {
+                    inner = inner.with("FLOWL_AUTH_ENABLED", flag);
+                }
+                let source = NonUnicodeConfig {
+                    inner,
+                    invalid_key: key,
+                };
+                assert!(matches!(
+                    AuthConfig::load_from(&source),
+                    Ok(AuthConfig::Disabled)
+                ));
+            }
+        }
+    }
+
+    #[test]
+    fn enabled_auth_keeps_ordinary_configuration_lenient() {
+        for key in [
+            "FLOWL_PORT",
+            "FLOWL_DB_PATH",
+            "FLOWL_LOG_LEVEL",
+            "FLOWL_MQTT_HOST",
+            "FLOWL_MQTT_PORT",
+            "FLOWL_MQTT_TOPIC_PREFIX",
+            "FLOWL_MQTT_DISABLED",
+            "FLOWL_AI_API_KEY",
+            "FLOWL_AI_BASE_URL",
+            "FLOWL_AI_MODEL",
+            "FLOWL_AI_RATE_LIMIT",
+        ] {
+            let source = NonUnicodeConfig {
+                inner: enabled_config(),
+                invalid_key: key,
+            };
+            assert!(AuthConfig::load_from(&source).is_ok());
+            let config = Config::load_from(&source);
+            assert_eq!(config.port, 4100);
+            assert_eq!(config.db_path, "/data/flowl.db");
+            assert_eq!(config.log_level, "info");
+            assert_eq!(config.mqtt_host, "localhost");
+            assert_eq!(config.mqtt_port, 1883);
+            assert_eq!(config.mqtt_topic_prefix, "flowl");
+            assert!(!config.mqtt_disabled);
+            assert!(config.ai_api_key.is_none());
+            assert_eq!(config.ai_base_url, "https://api.openai.com/v1");
+            assert_eq!(config.ai_model, "gpt-4.1-mini");
+            assert_eq!(config.ai_rate_limit, 10);
+        }
+        let source = enabled_config()
+            .with("FLOWL_PORT", "invalid")
+            .with("FLOWL_MQTT_PORT", "invalid")
+            .with("FLOWL_MQTT_DISABLED", "invalid")
+            .with("FLOWL_AI_RATE_LIMIT", "invalid");
+        assert!(AuthConfig::load_from(&source).is_ok());
+        let config = Config::load_from(&source);
+        assert_eq!(config.port, 4100);
+        assert_eq!(config.mqtt_port, 1883);
+        assert!(!config.mqtt_disabled);
+        assert_eq!(config.ai_rate_limit, 10);
     }
 
     fn enabled_config() -> MockConfig {
@@ -435,10 +594,12 @@ mod tests {
             AuthConfig::load_from(&MockConfig::new().with("FLOWL_AUTH_ENABLED", "true")),
             Err(AuthConfigError::MissingRequiredValue("FLOWL_EXTERNAL_URL"))
         ));
-        assert!(matches!(
-            AuthConfig::load_from(&MockConfig::new().with("FLOWL_AUTH_ENABLED", "yes")),
-            Err(AuthConfigError::InvalidEnabledFlag)
-        ));
+        for value in ["", "1", "TRUE", "yes", " false "] {
+            assert!(matches!(
+                AuthConfig::load_from(&MockConfig::new().with("FLOWL_AUTH_ENABLED", value)),
+                Err(AuthConfigError::InvalidEnabledFlag)
+            ));
+        }
     }
 
     #[test]
@@ -475,6 +636,9 @@ mod tests {
         for value in [
             "not a url",
             "http://flowl.example",
+            "http://localhost:4100",
+            "http://127.0.0.1:4100",
+            "http://[::1]:4100",
             "https://user:pass@flowl.example",
             "https://flowl.example?debug=1",
             "https://flowl.example#fragment",
@@ -493,6 +657,9 @@ mod tests {
         for value in [
             "not a url",
             "http://issuer.example",
+            "http://localhost:8080/issuer",
+            "http://127.0.0.1:8080/issuer",
+            "http://[::1]:8080/issuer",
             "https://user:pass@issuer.example",
             "https://issuer.example?tenant=flowl",
             "https://issuer.example#fragment",
@@ -511,19 +678,26 @@ mod tests {
     }
 
     #[test]
-    fn provider_name_defaults_and_has_a_byte_bound() {
+    fn provider_name_defaults_trims_and_has_a_scalar_bound() {
         let AuthConfig::Enabled(config) = AuthConfig::load_from(&enabled_config()).unwrap() else {
             panic!("expected enabled configuration");
         };
         assert_eq!(config.provider_name(), DEFAULT_OIDC_PROVIDER_NAME);
 
-        let custom = enabled_config().with("FLOWL_OIDC_PROVIDER_NAME", "Company Login");
+        let custom = enabled_config().with("FLOWL_OIDC_PROVIDER_NAME", " \tCompany Login\n ");
         let AuthConfig::Enabled(config) = AuthConfig::load_from(&custom).unwrap() else {
             panic!("expected enabled configuration");
         };
         assert_eq!(config.provider_name(), "Company Login");
 
-        for value in ["", " "] {
+        for value in [
+            "",
+            " ",
+            "bad\nname",
+            "bad\0name",
+            "bad\u{0085}name",
+            "bad\u{009f}name",
+        ] {
             let source = enabled_config().with("FLOWL_OIDC_PROVIDER_NAME", value);
             assert!(matches!(
                 AuthConfig::load_from(&source),
@@ -531,16 +705,15 @@ mod tests {
             ));
         }
 
-        let maximum = "a".repeat(MAX_OIDC_PROVIDER_NAME_BYTES);
-        let source = enabled_config().with("FLOWL_OIDC_PROVIDER_NAME", maximum);
-        assert!(AuthConfig::load_from(&source).is_ok());
-
-        let too_long = "a".repeat(MAX_OIDC_PROVIDER_NAME_BYTES + 1);
-        let source = enabled_config().with("FLOWL_OIDC_PROVIDER_NAME", too_long);
-        assert!(matches!(
-            AuthConfig::load_from(&source),
-            Err(AuthConfigError::InvalidProviderName)
-        ));
+        for scalar in ["a", "é", "🌱"] {
+            let source = enabled_config().with("FLOWL_OIDC_PROVIDER_NAME", scalar.repeat(80));
+            assert!(AuthConfig::load_from(&source).is_ok());
+            let source = enabled_config().with("FLOWL_OIDC_PROVIDER_NAME", scalar.repeat(81));
+            assert!(matches!(
+                AuthConfig::load_from(&source),
+                Err(AuthConfigError::InvalidProviderName)
+            ));
+        }
     }
 
     #[test]

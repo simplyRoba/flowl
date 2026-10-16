@@ -2345,6 +2345,11 @@ async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_co
         .oneshot(request("/auth/config", None))
         .await
         .expect("disabled config");
+    assert_eq!(disabled_config.status(), StatusCode::OK);
+    assert_eq!(
+        disabled_config.headers().get(header::CACHE_CONTROL),
+        Some(&HeaderValue::from_static("no-store"))
+    );
     assert_eq!(
         serde_json::from_slice::<serde_json::Value>(
             &axum::body::to_bytes(disabled_config.into_body(), usize::MAX)
@@ -2352,7 +2357,7 @@ async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_co
                 .expect("disabled config body")
         )
         .expect("disabled config JSON"),
-        serde_json::json!({ "enabled": false, "provider_name": null })
+        serde_json::json!({ "enabled": false })
     );
     for path in [
         "/health",

@@ -1,20 +1,14 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 import { isProtectedCacheName } from "#lib/sw-policy.js";
+import { parseAuthConfig, type AuthConfig } from "#lib/auth-config.js";
+export type {
+  AuthConfig,
+  EnabledAuthConfig,
+  DisabledAuthConfig,
+} from "#lib/auth-config.js";
 
 export const MAX_RETURN_TO_BYTES = 2048;
-
-export interface EnabledAuthConfig {
-  enabled: true;
-  provider_name: string;
-}
-
-export interface DisabledAuthConfig {
-  enabled: false;
-  provider_name: null;
-}
-
-export type AuthConfig = EnabledAuthConfig | DisabledAuthConfig;
 
 export type FetchLike = typeof fetch;
 
@@ -100,24 +94,11 @@ export async function fetchAuthConfig(
     throw new Error("Authentication configuration is unavailable");
   }
 
-  const data: unknown = await response.json();
-  if (
-    typeof data !== "object" ||
-    data === null ||
-    typeof (data as { enabled?: unknown }).enabled !== "boolean"
-  ) {
+  const config = parseAuthConfig(await response.json());
+  if (config === null) {
     throw new Error("Authentication configuration is invalid");
   }
-
-  const config = data as { enabled: boolean; provider_name?: unknown };
-  if (
-    (config.enabled && typeof config.provider_name !== "string") ||
-    (!config.enabled && config.provider_name !== null)
-  ) {
-    throw new Error("Authentication configuration is invalid");
-  }
-
-  return config as AuthConfig;
+  return config;
 }
 
 let authNavigationPending = false;

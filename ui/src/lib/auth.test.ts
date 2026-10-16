@@ -105,13 +105,9 @@ describe("auth configuration", () => {
       fetchAuthConfig(
         vi
           .fn()
-          .mockResolvedValue(
-            new Response(
-              JSON.stringify({ enabled: false, provider_name: null }),
-            ),
-          ),
+          .mockResolvedValue(new Response(JSON.stringify({ enabled: false }))),
       ),
-    ).resolves.toEqual({ enabled: false, provider_name: null });
+    ).resolves.toEqual({ enabled: false });
   });
 
   it("accepts an enabled backend payload and rejects invalid combinations", async () => {

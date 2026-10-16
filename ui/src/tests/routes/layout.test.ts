@@ -152,10 +152,7 @@ describe("app layout route isolation", () => {
     mockEnvironment.dev = false;
     mockUrl = new SvelteURL("http://localhost/login");
     mockFetchSettings.mockResolvedValue({ theme: "system", locale: "en" });
-    mockFetchAuthConfig.mockResolvedValue({
-      enabled: false,
-      provider_name: null,
-    });
+    mockFetchAuthConfig.mockResolvedValue({ enabled: false });
     mockMatchMedia({ standalone: false, coarsePointer: false });
     installIdleServiceWorker();
   });
@@ -390,10 +387,7 @@ describe("app layout service worker update notification", () => {
     isOffline.set(false);
     mockUrl = new URL("http://localhost/");
     mockFetchSettings.mockResolvedValue({ theme: "system", locale: "en" });
-    mockFetchAuthConfig.mockResolvedValue({
-      enabled: false,
-      provider_name: null,
-    });
+    mockFetchAuthConfig.mockResolvedValue({ enabled: false });
     mockMatchMedia({ standalone: false, coarsePointer: false });
 
     // Mock Cache API (not available in jsdom)

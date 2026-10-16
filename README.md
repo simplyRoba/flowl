@@ -84,15 +84,15 @@ docker compose up -d
 | `FLOWL_OIDC_ISSUER` | — | Required when auth is enabled. Exact HTTPS issuer identifier advertised by the provider. |
 | `FLOWL_OIDC_CLIENT_ID` | — | Required confidential-client identifier. |
 | `FLOWL_OIDC_CLIENT_SECRET` | — | Required confidential-client secret. |
-| `FLOWL_OIDC_PROVIDER_NAME` | `OpenID Connect` | Provider name shown on the login page. |
+| `FLOWL_OIDC_PROVIDER_NAME` | `OpenID Connect` | Login label: trimmed, non-empty, no remaining control characters, at most 80 Unicode scalar values (not bytes). |
 
 ### OIDC authentication
 
-Authentication is disabled by default. Configure the variables above and register `<FLOWL_EXTERNAL_URL>/auth/callback` on a confidential OpenID Connect client using Authorization Code flow.
+Authentication is disabled by default. The enable flag accepts only `true` or `false` and must be valid UTF-8. Other authentication settings must also be valid UTF-8 when enabled; they are ignored when the flag is absent or `false`. Configure the variables above and register `<FLOWL_EXTERNAL_URL>/auth/callback` on a confidential OpenID Connect client using Authorization Code flow.
 
 The public URL and provider endpoints must use HTTPS; Flowl itself may use HTTP behind a TLS-terminating proxy. The issuer must exactly match the provider value, including any trailing slash.
 
-Sessions are process-local and expire after 12 hours. Restarts sign everyone out, and multi-instance deployments require sticky routing. When enabled, Flowl protects the API, uploads, and application pages; `/health` and login resources remain public.
+Sessions are process-local and expire after 12 hours. Restarts sign everyone out, and multi-instance deployments require sticky routing. When enabled, Flowl protects the API, uploads, and application pages; `/health` and login resources remain public. Public `/auth/config` returns exactly `{ "enabled": false }` when disabled (no null provider name), or `{ "enabled": true, "provider_name": "OpenID Connect" }` with the configured label when enabled. Deploy the backend and embedded frontend together; roll back the complete artifact without disabling authentication.
 
 ### Compatible AI models
 

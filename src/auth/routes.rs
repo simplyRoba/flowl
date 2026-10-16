@@ -26,14 +26,17 @@ pub struct LoginQuery {
 /// Public, non-sensitive configuration consumed by the login page.
 pub async fn config(auth: Option<Extension<Arc<AuthState>>>) -> Response {
     let payload = match auth {
-        Some(Extension(auth)) => config_payload(true, Some(auth.config().provider_name())),
-        None => config_payload(false, None),
+        Some(Extension(auth)) => config_payload(Some(auth.config().provider_name())),
+        None => config_payload(None),
     };
     no_store((StatusCode::OK, axum::Json(payload)).into_response())
 }
 
-fn config_payload(enabled: bool, provider_name: Option<&str>) -> serde_json::Value {
-    serde_json::json!({ "enabled": enabled, "provider_name": provider_name })
+fn config_payload(provider_name: Option<&str>) -> serde_json::Value {
+    match provider_name {
+        Some(name) => serde_json::json!({ "enabled": true, "provider_name": name }),
+        None => serde_json::json!({ "enabled": false }),
+    }
 }
 
 pub async fn login(
@@ -350,7 +353,7 @@ mod tests {
     #[test]
     fn config_payload_keeps_provider_name_as_json_data() {
         let provider_name = "<provider>&\\\"name";
-        let payload = config_payload(true, Some(provider_name));
+        let payload = config_payload(Some(provider_name));
         assert_eq!(
             payload
                 .get("provider_name")
