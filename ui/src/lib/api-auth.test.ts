@@ -55,6 +55,35 @@ describe("authentication response classification", () => {
   });
 
   it.each([
+    [
+      "/plants/7?ratio=100%25#entry%20one",
+      "/plants/7?ratio=100%25#entry%20one",
+    ],
+    ["/apiary?tab=care#entry", "/apiary?tab=care#entry"],
+    ["/api", "/"],
+    ["/health", "/"],
+    ["/uploads/photo.jpg", "/"],
+    ["/plants%2f7?tab=care#entry", "/"],
+  ])(
+    "validates expiry navigation from %s without decoding its serialization",
+    async (path, expected) => {
+      window.history.replaceState({}, "", path);
+      await expect(
+        classifyResponse(
+          response(401, {
+            code: "AUTHENTICATION_REQUIRED",
+            message: "Authentication is required",
+          }),
+        ),
+      ).rejects.toBeInstanceOf(ApiError);
+      const destination = new URL(goto.mock.calls[0]![0], "http://localhost");
+      expect(destination.pathname).toBe("/login");
+      expect(destination.searchParams.get("return_to")).toBe(expected);
+      expect(goto.mock.calls[0]![1]).toEqual({ replace: true });
+    },
+  );
+
+  it.each([
     response(401, { code: "OTHER", message: "Nope" }),
     response(500, { code: "AUTHENTICATION_REQUIRED", message: "Nope" }),
     new Response("not json", { status: 401, statusText: "Unauthorized" }),

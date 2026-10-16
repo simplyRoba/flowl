@@ -14,7 +14,7 @@ impl SafeReturnTo {
     /// # Errors
     ///
     /// Returns an error when the target is external, malformed, ambiguous after percent decoding,
-    /// recursive into login/authentication routes, or exceeds the configured byte bound.
+    /// names a reserved non-document namespace, or exceeds the configured byte bound.
     pub fn parse(input: &str) -> Result<Self, SafeReturnToError> {
         if input.is_empty() || input.len() > MAX_SAFE_RETURN_TO_BYTES {
             return Err(SafeReturnToError::Invalid);
@@ -22,13 +22,6 @@ impl SafeReturnTo {
         if !input.starts_with('/') || input.starts_with("//") {
             return Err(SafeReturnToError::Invalid);
         }
-        if input
-            .chars()
-            .any(|character| character == '\\' || character.is_control())
-        {
-            return Err(SafeReturnToError::Invalid);
-        }
-
         let decoded = percent_decode(input)?;
         if decoded
             .chars()
@@ -40,7 +33,9 @@ impl SafeReturnTo {
         let path_end = input.find(['?', '#']).unwrap_or(input.len());
         let raw_path = &input[..path_end];
         let decoded_path = percent_decode(raw_path)?;
-        if decoded_path.contains('%') || contains_encoded_path_delimiter(raw_path) {
+        if decoded_path.contains(['%', '?', '#'])
+            || decoded_path.matches('/').count() != raw_path.matches('/').count()
+        {
             return Err(SafeReturnToError::Invalid);
         }
         if decoded_path
@@ -49,7 +44,7 @@ impl SafeReturnTo {
         {
             return Err(SafeReturnToError::Invalid);
         }
-        if is_auth_path(&decoded_path) {
+        if is_reserved_path(&decoded_path) {
             return Err(SafeReturnToError::Invalid);
         }
 
@@ -124,54 +119,25 @@ const fn hex_value(value: u8) -> Result<u8, SafeReturnToError> {
     }
 }
 
-fn contains_encoded_path_delimiter(path: &str) -> bool {
-    let bytes = path.as_bytes();
-    let mut index = 0;
-    while index < bytes.len() {
-        if bytes[index] == b'%' {
-            let Ok(high) = bytes
-                .get(index + 1)
-                .copied()
-                .ok_or(SafeReturnToError::Invalid)
-                .and_then(hex_value)
-            else {
-                return true;
-            };
-            let Ok(low) = bytes
-                .get(index + 2)
-                .copied()
-                .ok_or(SafeReturnToError::Invalid)
-                .and_then(hex_value)
-            else {
-                return true;
-            };
-            if matches!((high << 4) | low, b'/' | b'\\' | b'?' | b'#') {
-                return true;
-            }
-            index += 3;
-        } else {
-            index += 1;
-        }
-    }
-    false
-}
-
-fn is_auth_path(path: &str) -> bool {
-    matches!(path, "/login" | "/auth") || path.starts_with("/login/") || path.starts_with("/auth/")
+fn is_reserved_path(path: &str) -> bool {
+    const COMMON_RESERVED_PATHS: &[&str] = &["/auth", "/login", "/api", "/health"];
+    const APP_RESERVED_PATHS: &[&str] = &["/uploads"];
+    COMMON_RESERVED_PATHS
+        .iter()
+        .chain(APP_RESERVED_PATHS)
+        .any(|reserved| path == *reserved || path.starts_with(&format!("{reserved}/")))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // Characterize current namespace handling until the common policy is applied.
     #[test]
-    fn shared_return_vectors_characterize_stage1_baseline() {
+    fn shared_return_vectors_follow_the_common_contract() {
         let fixture: serde_json::Value = serde_json::from_str(include_str!(
             "../../tests/fixtures/auth/return-targets.json"
         ))
         .expect("return fixture should parse");
-        let mut gaps = Vec::new();
         for vector in fixture["vectors"].as_array().unwrap() {
             let id = vector["id"].as_str().unwrap();
             let input = &vector["input"];
@@ -191,20 +157,7 @@ mod tests {
                 ))
             };
             let target = vector["target"]["flowl"].as_bool().unwrap();
-            let baseline = target
-                || matches!(
-                    id,
-                    "api-root"
-                        | "api-child"
-                        | "api-query"
-                        | "health-root"
-                        | "health-child"
-                        | "health-query"
-                        | "encoded-reserved"
-                        | "uploads-root"
-                        | "uploads-child"
-                );
-            let expected = if baseline {
+            let expected = if target {
                 value.as_deref().unwrap_or("/")
             } else {
                 "/"
@@ -212,10 +165,10 @@ mod tests {
             assert_eq!(
                 SafeReturnTo::fallback(value.as_deref().unwrap_or("/")).as_str(),
                 expected,
-                "{id} (temporary baseline, final acceptance: {target})"
+                "{id}"
             );
             if let Some(value) = value.as_deref() {
-                assert_eq!(SafeReturnTo::parse(value).is_ok(), baseline, "{id}");
+                assert_eq!(SafeReturnTo::parse(value).is_ok(), target, "{id}");
             }
             // As in the peer harness, form-encode once and decode once before validation.
             let wire = value.as_ref().map(|value| {
@@ -232,24 +185,7 @@ mod tests {
                 expected,
                 "{id} (one form decode)"
             );
-            if baseline != target {
-                gaps.push(id);
-            }
         }
-        assert_eq!(
-            gaps,
-            [
-                "api-root",
-                "api-child",
-                "api-query",
-                "health-root",
-                "health-child",
-                "health-query",
-                "encoded-reserved",
-                "uploads-root",
-                "uploads-child"
-            ]
-        );
     }
 
     #[test]

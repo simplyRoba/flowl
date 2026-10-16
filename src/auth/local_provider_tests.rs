@@ -1077,12 +1077,20 @@ async fn loopback_provider_covers_discovery_pkce_callback_rotation_and_route_pol
 }
 
 async fn begin_login(app: &Router, provider: &RunningProvider) -> (String, String) {
+    begin_login_with_target(app, provider, "/plants?tab=care").await
+}
+
+async fn begin_login_with_target(
+    app: &Router,
+    provider: &RunningProvider,
+    target: &str,
+) -> (String, String) {
+    let query = url::form_urlencoded::Serializer::new(String::new())
+        .append_pair("return_to", target)
+        .finish();
     let login = app
         .clone()
-        .oneshot(request(
-            "/auth/login?return_to=%2Fplants%3Ftab%3Dcare",
-            None,
-        ))
+        .oneshot(request(&format!("/auth/login?{query}"), None))
         .await
         .expect("login response");
     assert_eq!(
@@ -1114,6 +1122,62 @@ async fn begin_login(app: &Router, provider: &RunningProvider) -> (String, Strin
         )
         .await;
     (cookie(&login), query.get("state").expect("state").clone())
+}
+
+#[tokio::test]
+async fn login_and_callback_preserve_only_safe_serialized_return_targets() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = Arc::new(
+        AuthState::with_dependencies(
+            EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1"),
+            Arc::new(super::SystemClock),
+            Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
+        )
+        .await
+        .expect("local discovery succeeds"),
+    );
+    let (state, _directory) = test_state(auth);
+    let app = server::router(state);
+    let boundary = format!("/{}a", "%61".repeat(682));
+    let oversized = format!("{boundary}a");
+    assert_eq!(boundary.len(), 2048);
+    assert_eq!(oversized.len(), 2049);
+    for (target, accepted) in [
+        ("/plants/42?label=a%20b&ratio=100%25#entry%20one", true),
+        ("/apiary?ratio=100%25", true),
+        (boundary.as_str(), true),
+        (oversized.as_str(), false),
+        ("/plants%2f42", false),
+        ("/plants%3fquery", false),
+        ("/plants%23entry", false),
+        ("/api", false),
+        ("/%61pi/plants", false),
+        ("/health", false),
+        ("/health/status", false),
+        ("/uploads", false),
+        ("/uploads/photo.jpg", false),
+    ] {
+        let expected = if accepted { target } else { "/" };
+        let (preauth_cookie, state) = begin_login_with_target(&app, &provider, target).await;
+        let callback_query = url::form_urlencoded::Serializer::new(String::new())
+            .append_pair("state", &state)
+            .append_pair("code", "accepted-code")
+            .finish();
+        let callback = app
+            .clone()
+            .oneshot(request(
+                &format!("/auth/callback?{callback_query}"),
+                Some(&preauth_cookie),
+            ))
+            .await
+            .expect("callback response");
+        assert_eq!(callback.status(), StatusCode::SEE_OTHER, "{target}");
+        assert_eq!(
+            callback.headers()[header::LOCATION].to_str().unwrap(),
+            expected,
+            "{target}"
+        );
+    }
 }
 
 #[tokio::test]
@@ -2220,6 +2284,16 @@ async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_co
     for (path, expected_location) in [
         ("/", "/login?return_to=%2F"),
         ("/index.html", "/login?return_to=%2Findex.html"),
+        (
+            "/apiary?ratio=100%25",
+            "/login?return_to=%2Fapiary%3Fratio%3D100%2525",
+        ),
+        ("/plants%2f42", "/login?return_to=%2F"),
+        ("/health/status", "/login?return_to=%2F"),
+        (
+            "/plants?ratio=100%25",
+            "/login?return_to=%2Fplants%3Fratio%3D100%2525",
+        ),
         (
             "/plants/42?tab=care",
             "/login?return_to=%2Fplants%2F42%3Ftab%3Dcare",

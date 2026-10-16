@@ -23,10 +23,9 @@ vi.mock("$app/state", () => ({
     },
   },
 }));
-vi.mock("#lib/auth.js", () => ({
+vi.mock("#lib/auth.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("#lib/auth.js")>()),
   fetchAuthConfig,
-  safeLocalTarget: (target: string | null) =>
-    target?.startsWith("/") && !target.startsWith("//") ? target : "/",
 }));
 
 beforeEach(() => {
@@ -78,6 +77,35 @@ describe("login page", () => {
     expect(document.querySelector(".login-page")).toBeTruthy();
     expect(document.querySelector(".login-card")).toBeTruthy();
   });
+
+  it.each([
+    ["/plants/42?label=a%20b&ratio=100%25#entry%20one", true],
+    ["/apiary?ratio=100%25#entry", true],
+    [`/${"%61".repeat(682)}a`, true],
+    [`/${"%61".repeat(682)}aa`, false],
+    ["/plants%2f42", false],
+    ["/plants%3fquery", false],
+    ["/plants%23entry", false],
+    ["/api", false],
+    ["/%61pi/plants", false],
+    ["/health", false],
+    ["/uploads/photo.jpg", false],
+  ])(
+    "preserves or rejects the serialized provider target %s",
+    async (target, accepted) => {
+      pageUrl = new URL("http://localhost/login");
+      pageUrl.searchParams.set("return_to", target as string);
+      render(Page);
+
+      const action = await screen.findByRole("link", {
+        name: "Continue with Garden SSO",
+      });
+      const href = new URL(action.getAttribute("href")!, "http://localhost");
+      expect(href.pathname).toBe("/auth/login");
+      expect(href.searchParams.get("return_to")).toBe(accepted ? target : "/");
+      expect(goto).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     [

@@ -18,9 +18,9 @@ Commit the planning artifacts separately before implementation. For each coheren
 
 ## 3. Converge strict navigation rules
 
-- [ ] 3.1 Implement equivalent backend/frontend safe-return validation against shared JSON vectors: one form decode, 2048 serialized UTF-8 bytes, unchanged accepted serialization, C0/C1 controls, invalid UTF-8/escapes, backslashes, dot segments, encoded path delimiters, and nested path escapes. Verify Rust vector tests and `npm run test --prefix ui -- src/lib/auth.test.ts` agree, including escaped query percent signs and byte-length boundaries.
-- [ ] 3.2 Apply namespace-root/descendant exclusions for `/auth`, `/login`, `/api`, `/health`, and Flowl `/uploads` through explicit app policy; verify encoded equivalents fall back to `/`, `/apiary` remains valid, backend redirects retain path/query, and SPA expiry navigation retains a valid hash in Rust and API-auth UI tests.
-- [ ] 3.3 Document excluded return destinations and serialization rules with accepted/rejected examples; verify examples against the common fixtures and confirm login URL construction does not double-decode or normalize accepted targets.
+- [x] 3.1 Implement equivalent backend/frontend safe-return validation against shared JSON vectors: one form decode, 2048 serialized UTF-8 bytes, unchanged accepted serialization, C0/C1 controls, invalid UTF-8/escapes, backslashes, dot segments, encoded path delimiters, and nested path escapes. Verify Rust vector tests and `npm run test --prefix ui -- src/lib/auth.test.ts` agree, including escaped query percent signs and byte-length boundaries.
+- [x] 3.2 Apply namespace-root/descendant exclusions for `/auth`, `/login`, `/api`, `/health`, and Flowl `/uploads` through explicit app policy; verify encoded equivalents fall back to `/`, `/apiary` remains valid, backend redirects retain path/query, and SPA expiry navigation retains a valid hash in Rust and API-auth UI tests.
+- [x] 3.3 Document excluded return destinations and serialization rules with accepted/rejected examples; verify examples against the common fixtures and confirm login URL construction does not double-decode or normalize accepted targets.
 
 ## 4. Guard provider transport and preserve verification
 

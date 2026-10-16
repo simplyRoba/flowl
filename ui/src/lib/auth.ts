@@ -2,76 +2,19 @@ import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 import { isProtectedCacheName } from "#lib/sw-policy.js";
 import { parseAuthConfig, type AuthConfig } from "#lib/auth-config.js";
+import { safeLocalTarget as commonSafeLocalTarget } from "#lib/auth-return.js";
+export { MAX_RETURN_TO_BYTES } from "#lib/auth-return.js";
 export type {
   AuthConfig,
   EnabledAuthConfig,
   DisabledAuthConfig,
 } from "#lib/auth-config.js";
 
-export const MAX_RETURN_TO_BYTES = 2048;
-
 export type FetchLike = typeof fetch;
 
-function byteLength(value: string): number {
-  return new TextEncoder().encode(value).byteLength;
-}
-
-function hasControlCharacter(value: string): boolean {
-  return [...value].some((character) => {
-    const code = character.charCodeAt(0);
-    return code <= 0x1f || code === 0x7f;
-  });
-}
-
-/** Returns a bounded, non-recursive local navigation target or `/`. */
+/** Applies Flowl's managed-upload exclusion to the common return rules. */
 export function safeLocalTarget(target: string | null | undefined): string {
-  if (!target || byteLength(target) > MAX_RETURN_TO_BYTES) return "/";
-  if (!target.startsWith("/") || target.startsWith("//")) return "/";
-  if (/\\/.test(target) || hasControlCharacter(target)) return "/";
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(target);
-  } catch {
-    return "/";
-  }
-  if (/\\/.test(decoded) || hasControlCharacter(decoded)) return "/";
-
-  const pathEnd = target.search(/[?#]/);
-  const rawPath = pathEnd === -1 ? target : target.slice(0, pathEnd);
-  let decodedPath: string;
-  try {
-    decodedPath = decodeURIComponent(rawPath);
-  } catch {
-    return "/";
-  }
-
-  if (decodedPath.includes("%") || /%(?:2f|5c|3f|23)/i.test(rawPath)) {
-    return "/";
-  }
-  if (
-    decodedPath
-      .split("/")
-      .some((segment) => segment === "." || segment === "..") ||
-    decodedPath === "/login" ||
-    decodedPath.startsWith("/login/") ||
-    decodedPath === "/auth" ||
-    decodedPath.startsWith("/auth/")
-  ) {
-    return "/";
-  }
-
-  try {
-    if (
-      new URL(target, "https://flowl.invalid").origin !==
-      "https://flowl.invalid"
-    ) {
-      return "/";
-    }
-  } catch {
-    return "/";
-  }
-
-  return target;
+  return commonSafeLocalTarget(target, ["/uploads"]);
 }
 
 export function currentReturnTarget(

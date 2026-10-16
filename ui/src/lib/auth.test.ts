@@ -8,6 +8,7 @@ import {
   MAX_RETURN_TO_BYTES,
   currentReturnTarget,
   fetchAuthConfig,
+  loginUrl,
   navigateToLogin,
   purgeProtectedCaches,
   resetAuthNavigationForTests,
@@ -15,21 +16,7 @@ import {
 } from "./auth";
 
 describe("safeLocalTarget", () => {
-  // Current differences from the common contract: reserved namespaces and C1 controls.
-  const stage1Gaps = [
-    "raw-c1",
-    "encoded-c1",
-    "api-root",
-    "api-child",
-    "api-query",
-    "health-root",
-    "health-child",
-    "health-query",
-    "encoded-reserved",
-    "uploads-root",
-    "uploads-child",
-  ];
-  it.each(returnVectors.vectors)("Stage 1 return fixture: $id", (vector) => {
+  it.each(returnVectors.vectors)("common return fixture: $id", (vector) => {
     const input = vector.input;
     const value =
       input === null
@@ -37,8 +24,7 @@ describe("safeLocalTarget", () => {
         : typeof input === "string"
           ? input
           : input.prefix + input.repeat.repeat(input.count) + input.suffix;
-    const baseline = vector.target.flowl || stage1Gaps.includes(vector.id);
-    const expected = baseline ? (value ?? "/") : "/";
+    const expected = vector.target.flowl ? (value ?? "/") : "/";
     expect(safeLocalTarget(value)).toBe(expected);
     // Match the peer harness's query round trip; accepted serialization is unchanged.
     const wire =
@@ -47,9 +33,6 @@ describe("safeLocalTarget", () => {
         : new URLSearchParams({ return_to: value }).toString();
     expect(safeLocalTarget(new URLSearchParams(wire).get("return_to"))).toBe(
       expected,
-    );
-    expect(baseline !== vector.target.flowl).toBe(
-      stage1Gaps.includes(vector.id),
     );
   });
 
@@ -92,6 +75,16 @@ describe("safeLocalTarget", () => {
       "/plants?query=%2F%23%25",
     );
     expect(safeLocalTarget("/plants/%252fprivate")).toBe("/");
+  });
+
+  it("constructs login URLs without decoding or normalizing accepted targets", () => {
+    const target = "/plants/42?label=a%20b&ratio=100%25#entry%20one";
+    const url = new URL(loginUrl(target), "https://flowl.invalid");
+    expect(url.pathname).toBe("/login");
+    expect(url.searchParams.get("return_to")).toBe(target);
+    expect(new URL(loginUrl("/api"), url).searchParams.get("return_to")).toBe(
+      "/",
+    );
   });
 
   it("rejects an oversized target", () => {

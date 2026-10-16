@@ -92,7 +92,11 @@ Authentication is disabled by default. The enable flag accepts only `true` or `f
 
 The public URL and provider endpoints must use HTTPS; Flowl itself may use HTTP behind a TLS-terminating proxy. The issuer must exactly match the provider value, including any trailing slash.
 
-Sessions are process-local and expire after 12 hours. Restarts sign everyone out, and multi-instance deployments require sticky routing. When enabled, Flowl protects the API, uploads, and application pages; `/health` and login resources remain public. Public `/auth/config` returns exactly `{ "enabled": false }` when disabled (no null provider name), or `{ "enabled": true, "provider_name": "OpenID Connect" }` with the configured label when enabled. Deploy the backend and embedded frontend together; roll back the complete artifact without disabling authentication.
+Sessions are process-local and expire after 12 hours. Restarts sign everyone out, and multi-instance deployments require sticky routing. When enabled, Flowl protects the API, uploads, and application pages; `/health` and login resources remain public.
+
+Public `/auth/config` returns `{ "enabled": false }` when disabled, or `{ "enabled": true, "provider_name": "OpenID Connect" }` with the configured label when enabled. Deploy or roll back the backend and embedded frontend together, without disabling authentication.
+
+Login return targets are local UI paths limited to 2,048 serialized UTF-8 bytes. API, health, upload, authentication, or ambiguous encoded paths fall back to `/`. Valid query escapes such as `?ratio=100%25` are preserved.
 
 ### Compatible AI models
 
