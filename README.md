@@ -84,7 +84,7 @@ docker compose up -d
 | `FLOWL_OIDC_ISSUER` | — | Required when auth is enabled. Exact HTTPS issuer identifier advertised by the provider. |
 | `FLOWL_OIDC_CLIENT_ID` | — | Required confidential-client identifier. |
 | `FLOWL_OIDC_CLIENT_SECRET` | — | Required confidential-client secret. |
-| `FLOWL_OIDC_PROVIDER_NAME` | `OpenID Connect` | Login button name. Trimmed, non-empty, no control characters, at most 80 Unicode code points. |
+| `FLOWL_OIDC_PROVIDER_NAME` | `OpenID Connect` | Name shown on the login button. |
 
 ### OIDC authentication
 
