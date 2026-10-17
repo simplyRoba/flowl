@@ -114,6 +114,7 @@ describe("settings authentication", () => {
     mockFetchAuthConfig.mockResolvedValue({
       enabled: true,
       provider_name: "Example SSO",
+      auto_redirect: false,
     });
     render(Page);
 
@@ -133,6 +134,7 @@ describe("settings authentication", () => {
       mockFetchAuthConfig.mockResolvedValue({
         enabled: true,
         provider_name: "Example SSO",
+        auto_redirect: false,
       });
       render(Page);
 
@@ -149,6 +151,7 @@ describe("settings authentication", () => {
     mockFetchAuthConfig.mockResolvedValue({
       enabled: true,
       provider_name: "Example SSO",
+      auto_redirect: false,
     });
     mockPurgeProtectedCaches.mockReturnValue(
       new Promise<void>((resolve) => {
@@ -189,6 +192,7 @@ describe("settings authentication", () => {
       mockFetchAuthConfig.mockResolvedValue({
         enabled: true,
         provider_name: "Example SSO",
+        auto_redirect: false,
       });
       const failure = new Error("provider-secret-sentinel");
       if (purgeFails) mockPurgeProtectedCaches.mockRejectedValue(failure);
@@ -234,7 +238,11 @@ describe("settings authentication", () => {
       respond = resolve;
     });
     const payloads: Record<string, unknown> = {
-      "/auth/config": { enabled: true, provider_name: "Example SSO" },
+      "/auth/config": {
+        enabled: true,
+        provider_name: "Example SSO",
+        auto_redirect: false,
+      },
       "/api/info": {
         version: "test",
         repository: "https://example.invalid",
@@ -340,6 +348,7 @@ describe("settings authentication", () => {
       mockFetchAuthConfig.mockResolvedValue({
         enabled: true,
         provider_name: "Example SSO",
+        auto_redirect: false,
       });
       render(Page);
 

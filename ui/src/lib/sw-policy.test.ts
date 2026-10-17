@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { parseAuthConfig } from "./auth-config.js";
+
 import {
   activationKeepCaches,
   cachedShellOrOffline,
@@ -47,6 +49,27 @@ function cacheStorage(cached?: Response) {
 }
 
 describe("authentication service-worker policy", () => {
+  it.each([true, false])(
+    "confirms enabled mode with auto_redirect=%s",
+    async (auto_redirect) => {
+      const config = {
+        enabled: true,
+        provider_name: "OpenID Connect",
+        auto_redirect,
+      };
+      expect(parseAuthConfig(config)).toEqual(config);
+
+      const worker = createAuthModeController();
+      const fetchConfig = vi
+        .fn()
+        .mockResolvedValueOnce(response(200, JSON.stringify(config)))
+        .mockResolvedValue(response(200, JSON.stringify({ enabled: false })));
+      await expect(worker.policyMode(fetchConfig)).resolves.toBe("enabled");
+      await expect(worker.policyMode(fetchConfig)).resolves.toBe("enabled");
+      expect(fetchConfig).toHaveBeenCalledOnce();
+    },
+  );
+
   it.each([
     null,
     [],
@@ -55,8 +78,14 @@ describe("authentication service-worker policy", () => {
     { enabled: false, provider_name: null },
     { enabled: false, extra: true },
     { enabled: true },
-    { enabled: true, provider_name: null },
-    { enabled: true, provider_name: "SSO", extra: true },
+    { enabled: true, provider_name: null, auto_redirect: false },
+    { enabled: true, provider_name: "SSO", auto_redirect: false, extra: true },
+    { enabled: true, provider_name: "SSO" },
+    ...[null, "false", "true", 0, 1, {}, []].map((auto_redirect) => ({
+      enabled: true,
+      provider_name: "SSO",
+      auto_redirect,
+    })),
     ...[
       "",
       " SSO ",
@@ -65,10 +94,15 @@ describe("authentication service-worker policy", () => {
       "bad\nname",
       "bad\0name",
       "bad\u0085name",
-    ].map((provider_name) => ({ enabled: true, provider_name })),
+    ].map((provider_name) => ({
+      enabled: true,
+      provider_name,
+      auto_redirect: false,
+    })),
   ])(
     "does not confirm either auth mode from malformed config %j",
     async (config) => {
+      expect(parseAuthConfig(config)).toBeNull();
       const worker = createAuthModeController();
       const fetchConfig = vi
         .fn()
@@ -292,7 +326,11 @@ describe("authentication service-worker policy", () => {
       .mockResolvedValueOnce(
         response(
           200,
-          JSON.stringify({ enabled: true, provider_name: "OpenID Connect" }),
+          JSON.stringify({
+            enabled: true,
+            provider_name: "OpenID Connect",
+            auto_redirect: false,
+          }),
           {
             "Content-Type": "application/json",
           },

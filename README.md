@@ -85,6 +85,7 @@ docker compose up -d
 | `FLOWL_OIDC_CLIENT_ID` | — | Required confidential-client identifier. |
 | `FLOWL_OIDC_CLIENT_SECRET` | — | Required confidential-client secret. |
 | `FLOWL_OIDC_PROVIDER_NAME` | `OpenID Connect` | Name shown on the login button. |
+| `FLOWL_OIDC_AUTO_REDIRECT` | `false` | Skip the login-button click. |
 
 ### OIDC authentication
 

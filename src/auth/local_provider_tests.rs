@@ -2789,10 +2789,10 @@ async fn auth_config_is_minimal_data_and_all_auth_responses_are_no_store() {
     let payload = serde_json::from_slice::<serde_json::Value>(&body).expect("config JSON");
     assert_eq!(
         payload,
-        serde_json::json!({ "enabled": true, "provider_name": "OpenID Connect" })
+        serde_json::json!({ "enabled": true, "provider_name": "OpenID Connect", "auto_redirect": false })
     );
     let object = payload.as_object().expect("config object");
-    assert_eq!(object.len(), 2);
+    assert_eq!(object.len(), 3);
     let serialized = String::from_utf8(body.to_vec()).expect("config body text");
     for sensitive in [CLIENT_ID, CLIENT_SECRET, provider.provider.base.as_str()] {
         assert!(!serialized.contains(sensitive), "config leaked {sensitive}");
@@ -2810,6 +2810,42 @@ async fn auth_config_is_minimal_data_and_all_auth_responses_are_no_store() {
             .headers()
             .contains_key(header::CACHE_CONTROL)
     );
+}
+
+#[tokio::test]
+async fn enabled_public_config_exposes_auto_redirect_without_redirecting_login() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let mut config = EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1");
+    config.auto_redirect = true;
+    let auth = Arc::new(
+        AuthState::with_dependencies(
+            config,
+            Arc::new(super::SystemClock),
+            Arc::new(ReqwestAuthHttpClient::new().expect("HTTP client")),
+        )
+        .await
+        .expect("local discovery succeeds"),
+    );
+    let (state, _directory) = test_state(auth);
+    let app = server::router(state);
+    let response = app
+        .clone()
+        .oneshot(request("/auth/config", None))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&body).unwrap(),
+        serde_json::json!({
+            "enabled": true, "provider_name": "OpenID Connect", "auto_redirect": true,
+        })
+    );
+    let login = app.oneshot(request("/login", None)).await.unwrap();
+    assert_eq!(login.status(), StatusCode::OK);
+    assert!(!login.headers().contains_key(header::LOCATION));
 }
 
 async fn assert_auth_response_headers(app: &Router, enabled: bool, cookie: Option<&str>) {
@@ -3014,7 +3050,7 @@ async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_co
         .expect("config body");
     assert_eq!(
         serde_json::from_slice::<serde_json::Value>(&config_body).expect("config JSON"),
-        serde_json::json!({ "enabled": true, "provider_name": "OpenID Connect" })
+        serde_json::json!({ "enabled": true, "provider_name": "OpenID Connect", "auto_redirect": false })
     );
     for _ in 0..2 {
         let logout = app

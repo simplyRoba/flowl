@@ -55,6 +55,31 @@ OIDC authentication SHALL be disabled by default. `FLOWL_AUTH_ENABLED` SHALL be 
 - **AND** rejects an empty trimmed name, any remaining Unicode control character, or a trimmed name longer than 80 Unicode scalar values
 - **AND** the limit is not measured in UTF-8 bytes
 
+### Requirement: Automatic OIDC login is optional
+
+When authentication is enabled, `FLOWL_OIDC_AUTO_REDIRECT` SHALL default to `false` when absent and SHALL accept only the exact strings `true` and `false`. Invalid or non-Unicode values SHALL fail startup with a safe error identifying the variable without exposing its value. When authentication is disabled, the flag SHALL NOT be read or validated.
+
+#### Scenario: Manual login by default
+
+- **WHEN** authentication is enabled and `FLOWL_OIDC_AUTO_REDIRECT` is absent or `false`
+- **THEN** public auth config reports `auto_redirect: false`
+
+#### Scenario: Automatic login enabled
+
+- **WHEN** authentication is enabled and `FLOWL_OIDC_AUTO_REDIRECT=true`
+- **THEN** public auth config reports `auto_redirect: true`
+
+#### Scenario: Invalid automatic-login flag
+
+- **WHEN** authentication is enabled and `FLOWL_OIDC_AUTO_REDIRECT` is non-Unicode or not exactly `true` or `false`, including an empty value
+- **THEN** startup fails safely without exposing the value or disabling authentication
+
+#### Scenario: Disabled authentication ignores automatic-login flag
+
+- **WHEN** `FLOWL_AUTH_ENABLED` is absent or `false` and `FLOWL_OIDC_AUTO_REDIRECT` is invalid or non-Unicode
+- **THEN** startup proceeds without reading or validating the flag
+- **AND** public auth config remains exactly `{ "enabled": false }`
+
 ### Requirement: Exact issuer and external URL validation
 
 Flowl SHALL retain `FLOWL_OIDC_ISSUER` as its exact configured string and separately validate it as an absolute HTTPS issuer URL without changing that representation. Discovery and signature-verified ID-token issuer values SHALL also be compared to the retained configured string as a defense-in-depth exact check. URL-normalized alternatives SHALL NOT be accepted. `FLOWL_EXTERNAL_URL` SHALL be an explicit absolute HTTPS origin without credentials, query, fragment, or a non-root path, and SHALL be the sole basis for callback and same-origin security decisions.
@@ -362,7 +387,7 @@ Authenticated sessions SHALL use an opaque, cryptographically random session ID 
 
 ### Requirement: Authentication route policy
 
-When authentication is enabled, only `/health`, `/login`, `/auth/config`, `/auth/login`, `/auth/callback`, `POST /auth/logout`, and exact non-data static resources required for login/PWA operation (including the service worker, manifest, icons, offline page, and immutable build assets) SHALL be public. `index.html` and normal application documents SHALL not become public merely because they are embedded files. All `/api` and `/uploads` namespace roots and descendants, and normal application SPA routes SHALL require an authenticated session. The public `GET /auth/config` response SHALL be exactly `{ "enabled": true, "provider_name": <string> }` when enabled and exactly `{ "enabled": false }` when disabled. Every `/auth` and `/auth/*` response, including errors and disabled-mode responses, and every authentication-required response SHALL be marked `Cache-Control: no-store`.
+When authentication is enabled, only `/health`, `/login`, `/auth/config`, `/auth/login`, `/auth/callback`, `POST /auth/logout`, and exact non-data static resources required for login/PWA operation (including the service worker, manifest, icons, offline page, and immutable build assets) SHALL be public. `index.html` and normal application documents SHALL not become public merely because they are embedded files. All `/api` and `/uploads` namespace roots and descendants, and normal application SPA routes SHALL require an authenticated session. The public `GET /auth/config` response SHALL be exactly `{ "enabled": true, "provider_name": <string>, "auto_redirect": <boolean> }` when enabled and exactly `{ "enabled": false }` when disabled. Every `/auth` and `/auth/*` response, including errors and disabled-mode responses, and every authentication-required response SHALL be marked `Cache-Control: no-store`.
 
 #### Scenario: Public health and login resources
 
@@ -383,7 +408,7 @@ When authentication is enabled, only `/health`, `/login`, `/auth/config`, `/auth
 #### Scenario: Auth config contains no sensitive values
 
 - **WHEN** a client requests `/auth/config`
-- **THEN** the enabled response contains exactly `enabled: true` and the string `provider_name`, or the disabled response contains exactly `enabled: false`
+- **THEN** the enabled response contains exactly `enabled: true`, the string `provider_name`, and the configured-or-default boolean `auto_redirect`, or the disabled response contains exactly `enabled: false`
 - **AND** it contains no issuer, client identifier, client secret, endpoint, token, session, or identity value
 
 #### Scenario: Disabled auth configuration omits provider name

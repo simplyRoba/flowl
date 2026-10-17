@@ -44,14 +44,17 @@ pub(crate) async fn public_config(
     auth: Option<axum::Extension<std::sync::Arc<super::Authentication>>>,
 ) -> axum::Json<serde_json::Value> {
     axum::Json(config_payload(
-        auth.as_ref()
-            .map(|axum::Extension(auth)| auth.config().provider_name.as_str()),
+        auth.as_ref().map(|axum::Extension(auth)| auth.config()),
     ))
 }
 
-fn config_payload(provider_name: Option<&str>) -> serde_json::Value {
-    match provider_name {
-        Some(name) => serde_json::json!({ "enabled": true, "provider_name": name }),
+fn config_payload(config: Option<&OidcConfig>) -> serde_json::Value {
+    match config {
+        Some(config) => serde_json::json!({
+            "enabled": true,
+            "provider_name": config.provider_name,
+            "auto_redirect": config.auto_redirect,
+        }),
         None => serde_json::json!({ "enabled": false }),
     }
 }
@@ -71,6 +74,7 @@ impl OidcConfig {
             client_id: "flowl-test-client".to_owned(),
             client_secret: "flowl-test-secret".to_owned(),
             provider_name: "OpenID Connect".to_owned(),
+            auto_redirect: false,
         }
     }
 }

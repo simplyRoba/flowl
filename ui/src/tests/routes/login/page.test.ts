@@ -42,12 +42,14 @@ beforeEach(() => {
   fetchAuthConfig.mockResolvedValue({
     enabled: true,
     provider_name: "Garden SSO",
+    auto_redirect: false,
   });
 });
 
 afterEach(() => {
   vi.useRealTimers();
   cleanup();
+  vi.unstubAllGlobals();
   setLocale("en");
 });
 
@@ -119,7 +121,11 @@ describe("login page", () => {
         realFetchAuthConfig(
           async () =>
             new Response(
-              JSON.stringify({ enabled: true, provider_name: providerName }),
+              JSON.stringify({
+                enabled: true,
+                provider_name: providerName,
+                auto_redirect: false,
+              }),
             ),
         ),
       );
@@ -138,6 +144,7 @@ describe("login page", () => {
     fetchAuthConfig.mockResolvedValue({
       enabled: true,
       provider_name: provider,
+      auto_redirect: false,
     });
     render(Page);
     const action = await screen.findByRole("link", {
@@ -264,6 +271,118 @@ describe("login page", () => {
       render(Page);
 
       expect(await screen.findByRole("link", { name: label })).toBeTruthy();
+    },
+  );
+
+  it.each(queryVectors.vectors)(
+    "automatically starts OIDC with the validated query: $id",
+    async (vector) => {
+      pageUrl = new URL(`http://localhost/login?${vector.query}`);
+      const replace = vi.fn();
+      vi.stubGlobal("window", { location: { replace } });
+      fetchAuthConfig.mockResolvedValue({
+        enabled: true,
+        provider_name: "Garden SSO",
+        auto_redirect: true,
+      });
+
+      const view = render(Page);
+      await waitFor(() => expect(replace).toHaveBeenCalledTimes(1), {
+        container: document.body,
+      });
+      expect(replace).toHaveBeenCalledWith(
+        `/auth/login?return_to=${encodeURIComponent(vector.target.flowl)}`,
+      );
+      await view.rerender({});
+      expect(replace).toHaveBeenCalledTimes(1);
+      expect(fetchAuthConfig).toHaveBeenCalledTimes(1);
+      expect(goto).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    "error=authentication_failed",
+    "error=provider_unavailable",
+    "error=unknown",
+    "error=",
+    "error",
+    "logged_out=1",
+    "logged_out=0",
+    "logged_out=",
+    "logged_out",
+  ])("keeps automatic mode manual for result query %j", async (query) => {
+    pageUrl = new URL(
+      `http://localhost/login?return_to=%2Fplants%2F7&${query}`,
+    );
+    const replace = vi.fn();
+    vi.stubGlobal("window", { location: { replace } });
+    fetchAuthConfig.mockResolvedValue({
+      enabled: true,
+      provider_name: "Garden SSO",
+      auto_redirect: true,
+    });
+    render(Page);
+    const action = await screen.findByRole("link");
+    expect(action.getAttribute("href")).toBe(
+      "/auth/login?return_to=%2Fplants%2F7",
+    );
+    expect(replace).not.toHaveBeenCalled();
+    expect(goto).not.toHaveBeenCalled();
+  });
+
+  it("does not automatically navigate with manual mode enabled", async () => {
+    const replace = vi.fn();
+    vi.stubGlobal("window", { location: { replace } });
+    render(Page);
+    await screen.findByRole("link");
+    expect(replace).not.toHaveBeenCalled();
+    expect(goto).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { enabled: true, provider_name: "Garden SSO" },
+    { enabled: true, provider_name: "Garden SSO", auto_redirect: "true" },
+    { enabled: false, auto_redirect: true },
+  ])("does not navigate with malformed public config %j", async (value) => {
+    const { fetchAuthConfig: realFetchAuthConfig } =
+      await vi.importActual<typeof import("#lib/auth.js")>("#lib/auth.js");
+    const replace = vi.fn();
+    vi.stubGlobal("window", { location: { replace } });
+    fetchAuthConfig.mockImplementationOnce(() =>
+      realFetchAuthConfig(async () => new Response(JSON.stringify(value))),
+    );
+    render(Page);
+    expect(
+      await screen.findByText(
+        "The sign-in provider is temporarily unavailable.",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(replace).not.toHaveBeenCalled();
+    expect(goto).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])(
+    "ignores a late config response after unmount with auto mode %j",
+    async (automatic) => {
+      const replace = vi.fn();
+      vi.stubGlobal("window", { location: { replace } });
+      let resolveConfig: ((value: unknown) => void) | undefined;
+      fetchAuthConfig.mockReturnValue(
+        new Promise((resolve) => {
+          resolveConfig = resolve;
+        }),
+      );
+      render(Page);
+      cleanup();
+      resolveConfig?.(
+        automatic
+          ? { enabled: true, provider_name: "Garden SSO", auto_redirect: true }
+          : { enabled: false },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(replace).not.toHaveBeenCalled();
+      expect(goto).not.toHaveBeenCalled();
     },
   );
 

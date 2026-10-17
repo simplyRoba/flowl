@@ -433,6 +433,8 @@ Explicit logout SHALL request removal of protected API, photo, and application-n
 
 ### Requirement: Authoritative authentication state for offline content
 
+The service worker SHALL accept auth config only as exactly `{ "enabled": true, "provider_name": <string>, "auto_redirect": <boolean> }` or exactly `{ "enabled": false }`; missing or non-boolean enabled `auto_redirect` and extra disabled fields SHALL be rejected as unconfirmed configuration. The automatic-login flag SHALL NOT alter service-worker offline, caching, or purge behavior.
+
 Whenever the service-worker global starts or restarts, including after eviction and reactivation, it SHALL treat the authentication state as unconfirmed and apply authentication-enabled fail-closed rules to cached application content. Authentication-disabled behavior SHALL be established only by a fresh, successful, non-redirected `/auth/config` response obtained directly from the backend while bypassing all caches; confirmation from an earlier service-worker global lifetime, cached content, or browser-reported state SHALL NOT establish it. Before using authentication-disabled behavior for navigation, API data, or thumbnails, the service worker SHALL recheck the backend configuration so a change to enabled authentication is applied first. When disabled authentication was confirmed during the current service-worker global lifetime and the recheck fails solely because the network is unavailable, the existing authentication-disabled offline behavior SHALL remain available.
 
 #### Scenario: Unconfirmed authentication state fails closed

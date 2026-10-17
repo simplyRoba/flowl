@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
@@ -9,6 +10,7 @@
     type AuthConfig,
   } from "#lib/auth.js";
   import { translations } from "#lib/stores/locale.js";
+  import { shouldAutoRedirect } from "#lib/auth-core.js";
 
   let config: AuthConfig | null = $state(null);
   let configUnavailable = $state(false);
@@ -32,15 +34,25 @@
     return null;
   });
 
-  $effect(() => {
+  onMount(() => {
+    let active = true;
     void (async () => {
       try {
-        config = await fetchAuthConfig();
-        if (!config.enabled) await goto(resolve("/"), { replace: true });
+        const value = await fetchAuthConfig();
+        if (!active) return;
+        config = value;
+        if (!value.enabled) {
+          await goto(resolve("/"), { replace: true });
+        } else if (shouldAutoRedirect(value, page.url.search)) {
+          window.location.replace(loginHref);
+        }
       } catch {
-        configUnavailable = true;
+        if (active) configUnavailable = true;
       }
     })();
+    return () => {
+      active = false;
+    };
   });
 </script>
 

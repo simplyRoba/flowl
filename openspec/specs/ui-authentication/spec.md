@@ -6,11 +6,11 @@ Defines Flowl's public authentication experience, safe session-expiry navigation
 
 ### Requirement: Public authentication configuration
 
-The frontend SHALL accept public `GET /auth/config` only as exactly `{ "enabled": true, "provider_name": <string> }` or exactly `{ "enabled": false }`. It SHALL obtain enablement and provider display name from this response and SHALL NOT receive or retain OIDC endpoints, identifiers, secrets, tokens, claims, or session values.
+The frontend SHALL accept public `GET /auth/config` only as exactly `{ "enabled": true, "provider_name": <string>, "auto_redirect": <boolean> }` or exactly `{ "enabled": false }`. It SHALL obtain enablement, provider display name, and the automatic-login flag from this response and SHALL NOT receive or retain OIDC endpoints, identifiers, secrets, tokens, claims, or session values.
 
 #### Scenario: Authentication enabled
 
-- **WHEN** `/auth/config` returns exactly `enabled: true` and a string `provider_name`
+- **WHEN** `/auth/config` returns exactly `enabled: true`, a string `provider_name`, and a boolean `auto_redirect`
 - **THEN** the frontend enables the login and logout experiences
 - **AND** displays the returned provider name as untrusted text
 
@@ -34,7 +34,7 @@ The frontend SHALL accept public `GET /auth/config` only as exactly `{ "enabled"
 
 #### Scenario: Invalid configuration shape fails closed
 
-- **WHEN** `/auth/config` returns non-boolean enablement, a missing or non-string enabled provider name, unexpected fields, or disabled configuration containing `provider_name` even as null
+- **WHEN** `/auth/config` returns missing or non-boolean enablement, a missing or non-string enabled provider name, missing or non-boolean enabled `auto_redirect` (including the old enabled shape), unexpected fields, or disabled configuration containing any extra field even as null
 - **THEN** the frontend treats configuration as unavailable
 - **AND** shows the generic provider-unavailable state without rendering or enabling the provider action
 
@@ -78,9 +78,9 @@ For unauthenticated users, the `/login` Svelte route SHALL render outside the no
 - **THEN** it receives HTTP 303 to `/` without login HTML
 - **AND** no provider authentication starts and the session identifier and absolute deadline remain unchanged
 
-#### Scenario: Provider action is manual
+#### Scenario: Provider action is manual by default
 
-- **WHEN** an unauthenticated user opens the login page with valid enabled configuration
+- **WHEN** an unauthenticated user opens the login page with valid enabled configuration and `auto_redirect: false`
 - **THEN** the page waits for explicit activation of the provider action before starting `/auth/login`
 - **AND** does not automatically redirect to the provider
 
@@ -90,6 +90,27 @@ For unauthenticated users, the `/login` Svelte route SHALL render outside the no
 - **THEN** it waits for a deliberate provider-action activation to retry authentication
 - **AND** neither immediately nor after a delay automatically starts login
 - **AND** displays only generic translated status text, never callback or provider error details
+
+### Requirement: Optional automatic login uses the validated provider action
+
+On ordinary `/login` entry with valid enabled public configuration and `auto_redirect: true`, the mounted page SHALL perform exactly one top-level navigation to `/auth/login`, replacing the login history entry and using the same validated, serialized `return_to` as the manual button. This SHALL apply to direct browser entry and SPA/API-expiry entry. The page SHALL NOT navigate automatically when the query contains `error` or `logged_out`, regardless of value, while configuration is loading, failed, or malformed, or after unmount.
+
+#### Scenario: Ordinary automatic-login entry
+
+- **WHEN** a direct browser entry or SPA/API-expiry navigation reaches `/login` without `error` or `logged_out` and valid enabled config reports `auto_redirect: true`
+- **THEN** the page replaces the login history entry with exactly one top-level navigation to the manual button's `/auth/login` target
+- **AND** preserves the same validated `return_to`, including `/` for absent or unsafe targets
+
+#### Scenario: Result query suppresses automatic login
+
+- **WHEN** `/login` contains `error` or `logged_out`, including an empty or unknown value, even with `auto_redirect: true`
+- **THEN** the page does not automatically start OIDC
+- **AND** existing generic result messages and the manual retry action remain unchanged
+
+#### Scenario: Configuration cannot trigger navigation after unmount
+
+- **WHEN** config is pending, fails, is malformed, or completes after the login page unmounts
+- **THEN** the page does not automatically navigate to `/auth/login`
 
 ### Requirement: Responsive two-area login composition
 
@@ -230,7 +251,7 @@ When authentication is enabled, the Settings Sign out action SHALL clear protect
 
 ### Requirement: Authentication UI privacy
 
-The frontend SHALL use only the provider display name and generic result states. It SHALL NOT store OIDC tokens, authorization codes, state, nonce, PKCE values, client secrets, identity claims, or session IDs in JavaScript-readable storage, URLs it constructs, service-worker caches, logs, or analytics.
+The frontend SHALL use only public authentication enablement, the provider display name, the automatic-login boolean, and generic result states. It SHALL NOT store OIDC tokens, authorization codes, state, nonce, PKCE values, client secrets, identity claims, or session IDs in JavaScript-readable storage, URLs it constructs, service-worker caches, logs, or analytics.
 
 #### Scenario: Successful login leaves no frontend token
 

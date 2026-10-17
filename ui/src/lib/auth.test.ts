@@ -106,15 +106,21 @@ describe("auth configuration", () => {
   it("accepts an enabled backend payload and rejects invalid combinations", async () => {
     await expect(
       fetchAuthConfig(
-        vi
-          .fn()
-          .mockResolvedValue(
-            new Response(
-              JSON.stringify({ enabled: true, provider_name: "Example SSO" }),
-            ),
+        vi.fn().mockResolvedValue(
+          new Response(
+            JSON.stringify({
+              enabled: true,
+              provider_name: "Example SSO",
+              auto_redirect: false,
+            }),
           ),
+        ),
       ),
-    ).resolves.toEqual({ enabled: true, provider_name: "Example SSO" });
+    ).resolves.toEqual({
+      enabled: true,
+      provider_name: "Example SSO",
+      auto_redirect: false,
+    });
 
     await expect(
       fetchAuthConfig(

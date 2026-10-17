@@ -30,12 +30,17 @@ fn raw_login_queries_preserve_serialization_and_reject_invalid_destinations() {
 #[test]
 fn config_payload_keeps_provider_name_as_json_data() {
     let provider_name = "<provider>&\\\"name";
-    assert_eq!(
-        super::config_payload(Some(provider_name)),
-        serde_json::json!({
-            "enabled": true, "provider_name": provider_name,
-        })
-    );
+    let mut config = super::OidcConfig::loopback_test("http://127.0.0.1", "http://127.0.0.1");
+    config.provider_name = provider_name.to_owned();
+    for auto_redirect in [false, true] {
+        config.auto_redirect = auto_redirect;
+        assert_eq!(
+            super::config_payload(Some(&config)),
+            serde_json::json!({
+                "enabled": true, "provider_name": provider_name, "auto_redirect": auto_redirect,
+            })
+        );
+    }
     assert_eq!(
         super::config_payload(None),
         serde_json::json!({ "enabled": false })
