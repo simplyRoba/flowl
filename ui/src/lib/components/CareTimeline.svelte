@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import { SvelteSet } from "svelte/reactivity";
   import {
     Droplet,
     Leaf,
@@ -19,11 +20,18 @@
   } from "#lib/careTimeline.js";
   import { locale, translations } from "#lib/stores/locale.js";
 
+  export interface WateringFeedback {
+    plantId: number;
+    eventId: number;
+    request: number;
+  }
+
   export interface Props {
     plantId: number;
     events: readonly CareEvent[];
     loading?: boolean;
     historyError?: boolean;
+    wateringFeedback?: WateringFeedback | null;
     foregroundElements?: readonly HTMLElement[];
     onMinimumHeight?: (height: number) => void;
   }
@@ -32,6 +40,7 @@
     events,
     loading = false,
     historyError = false,
+    wateringFeedback = null,
     foregroundElements = [],
     onMinimumHeight,
   }: Props = $props();
@@ -49,6 +58,69 @@
   let visitEntered = false;
   let entranceStartedAt = 0;
   let entranceTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const feedbackAnimations = new SvelteSet<Animation>();
+  let playedWateringRequest: string | undefined;
+
+  function finishFeedback() {
+    for (const animation of feedbackAnimations) animation.cancel();
+    feedbackAnimations.clear();
+  }
+
+  function showWateringFeedback(
+    node: SVGElement,
+    feedback: WateringFeedback | null,
+  ) {
+    let running: Animation[] = [];
+    const cancel = () => {
+      for (const animation of running) {
+        if (feedbackAnimations.delete(animation)) animation.cancel();
+      }
+      running = [];
+    };
+    const update = (next: WateringFeedback | null) => {
+      if (!next || next.plantId !== plantId) return;
+      // Confirmed watering must not wait for the visit entrance's time stagger.
+      const icon = node.querySelector<SVGElement>(".event-icon");
+      const stem = node.querySelector<SVGElement>(".stem");
+      node.style.animation = "none";
+      if (icon) icon.style.animation = "none";
+      if (stem) stem.style.animation = "none";
+      node.dataset.waterFeedback = "true";
+      const request = `${next.plantId}:${next.request}`;
+      if (playedWateringRequest === request) return;
+      playedWateringRequest = request;
+      cancel();
+      if (!motionReady || reducedMotion || !icon || !stem) return;
+      running = [
+        node.animate([{ opacity: 0.4 }, { opacity: 1 }], {
+          duration: 180,
+          easing: "ease-out",
+        }),
+        stem.animate([{ transform: "scaleY(0)" }, { transform: "scaleY(1)" }], {
+          duration: 360,
+          easing: "ease-out",
+        }),
+        icon.animate(
+          [
+            { opacity: 1, transform: "scale(0.55)" },
+            { opacity: 1, transform: "scale(1)", offset: 0.45 },
+            { opacity: 0.46, transform: "scale(1)" },
+          ],
+          { duration: 900, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+        ),
+      ];
+      for (const animation of running) {
+        feedbackAnimations.add(animation);
+        animation.onfinish = () => feedbackAnimations.delete(animation);
+      }
+    };
+    untrack(() => update(feedback));
+    return {
+      update: (next: WateringFeedback | null) => untrack(() => update(next)),
+      destroy: cancel,
+    };
+  }
 
   function finishEntrance() {
     clearTimeout(entranceTimer);
@@ -101,7 +173,23 @@
     normalizeCareTimelineEvents(sourceEvents, sourcePlantId),
   );
   const eligible = $derived(selectCareTimelineEvents(history, now));
-  const plan = $derived(planCareTimelineEvents(eligible, now, size.width));
+  // Keep complete markers inside the opaque area of the 6% edge fades.
+  // Plan collisions on the actual, inset time span before sampling the ground.
+  const timeInset = $derived(size.width * 0.1);
+  const plan = $derived.by(() => {
+    const projected = planCareTimelineEvents(
+      eligible,
+      now,
+      size.width - timeInset * 2,
+    );
+    return {
+      ...projected,
+      placements: projected.placements.map((point) => ({
+        ...point,
+        x: point.x + timeInset,
+      })),
+    };
+  });
   const minimumHeight = $derived(plan.minimumHeight);
   const layoutHeight = $derived(Math.max(size.height, minimumHeight));
   const ground = $derived(
@@ -239,7 +327,10 @@
     reducedMotion = media?.matches ?? false;
     const motionChanged = (event: MediaQueryListEvent) => {
       reducedMotion = event.matches;
-      if (reducedMotion) finishEntrance();
+      if (reducedMotion) {
+        finishEntrance();
+        finishFeedback();
+      }
     };
     media?.addEventListener("change", motionChanged);
     motionReady = true;
@@ -258,6 +349,7 @@
     visibilityChanged();
     return () => {
       finishEntrance();
+      finishFeedback();
       media?.removeEventListener("change", motionChanged);
       clearInterval(timer);
       document.removeEventListener("visibilitychange", visibilityChanged);
@@ -349,6 +441,10 @@
             <g
               class="event"
               use:joinEntrance
+              use:showWateringFeedback={wateringFeedback?.eventId ===
+              point.event.id
+                ? wateringFeedback
+                : null}
               style:--event-delay={`${Math.max(0, Math.min(1, point.x / size.width)) * 2200}ms`}
               data-event-id={point.event.id}
               data-event-type={point.event.eventType}
@@ -418,6 +514,10 @@
     animation: event-entrance 220ms ease-out both;
     animation-delay: calc(var(--event-delay) - var(--entrance-elapsed, 0ms));
   }
+  .revealing .event .stem {
+    animation: stem-entrance 360ms ease-out both;
+    animation-delay: calc(var(--event-delay) - var(--entrance-elapsed, 0ms));
+  }
   .event :global(.event-icon) {
     transform-box: fill-box;
     transform-origin: center;
@@ -442,6 +542,14 @@
     }
     to {
       opacity: 1;
+    }
+  }
+  @keyframes stem-entrance {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
     }
   }
   @keyframes icon-entrance {
@@ -472,5 +580,7 @@
   .stem {
     stroke: currentColor;
     opacity: 0.28;
+    transform-box: fill-box;
+    transform-origin: center bottom;
   }
 </style>

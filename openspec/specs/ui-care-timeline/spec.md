@@ -24,7 +24,7 @@ The plant-detail hero SHALL display eligible raw care events from the current pl
 
 ### Requirement: True horizontal time
 
-Event x-coordinates SHALL represent proportional elapsed time within the trailing 42-day period ending at the actual current time. Supported timestamp representations SHALL normalize to actual instants, with timezone-less timestamps interpreted as UTC. Equal-instant records SHALL retain separate identities. The timeline SHALL NOT draw a forecast.
+Event x-coordinates SHALL represent proportional elapsed time within the trailing 42-day period ending at the actual current time. The time span SHALL be inset from the faded edges so complete boundary markers remain visible. Supported timestamp representations SHALL normalize to actual instants, with timezone-less timestamps interpreted as UTC. Equal-instant records SHALL retain separate identities. The timeline SHALL NOT draw a forecast.
 
 #### Scenario: Equivalent timestamps
 
@@ -37,6 +37,13 @@ Event x-coordinates SHALL represent proportional elapsed time within the trailin
 - **WHEN** time advances while visible or the page becomes visible again
 - **THEN** window positions and eligibility update without a history reload
 - **AND** a future event appears only after real time reaches its occurrence
+
+#### Scenario: Visible time boundaries
+
+- **WHEN** an eligible event occurs at the beginning of the displayed period or at the current time
+- **THEN** its complete icon remains inside the fully visible portion of the boundary fade, including at 320px viewport width
+- **AND** event spacing remains proportional to elapsed time within the inset time span
+- **AND** the decorative ground can continue into the faded edges without representing a forecast
 
 ### Requirement: Decorative vertical placement
 
@@ -120,14 +127,14 @@ The timeline SHALL remain a transparent, noninteractive hero background in both 
 
 ### Requirement: Progressive entrance
 
-The timeline SHALL reveal the ground from left to right once per plant visit over approximately 2200ms, with stems and icons appearing in time order as the reveal reaches their positions. Appearance animation SHALL NOT move recorded time coordinates. Ordinary updates SHALL NOT replay it. Reduced motion SHALL display the final appearance immediately.
+The timeline SHALL reveal the ground from left to right once per plant visit over approximately 2200ms, with stems growing from the ground and icons appearing in time order as the reveal reaches their positions. Appearance animation SHALL NOT move recorded time coordinates. Ordinary updates SHALL NOT replay it. Reduced motion SHALL display the final appearance immediately. Successfully recorded waterings SHALL receive immediate, one-time marker feedback.
 
 #### Scenario: First eligible history
 
 - **WHEN** eligible events first become available during a plant visit
 - **AND** reduced motion is not requested
 - **THEN** the ground progressively appears from left to right
-- **AND** event icons gently pop into place as their time position is reached
+- **AND** dotted stems grow upward from fixed ground contact points as event icons gently pop into place
 - **AND** the complete entrance finishes in approximately 2600ms
 
 #### Scenario: Redraws during a visit
@@ -136,11 +143,26 @@ The timeline SHALL reveal the ground from left to right once per plant visit ove
 - **THEN** it does not restart
 - **AND** navigating to another plant establishes a new visit
 
+#### Scenario: Water now marker feedback
+
+- **WHEN** Water now succeeds and the current view accepts refreshed history containing the newly recorded watering
+- **THEN** its marker appears immediately with a gentle pop, a growing dotted stem, and brief visual emphasis
+- **AND** it does not wait for or restart the visit entrance, ground reveal, or existing markers
+- **AND** its recorded time position, ground contact, and collision clearance remain unchanged throughout the feedback
+- **AND** no optimistic or synthetic care event is added
+
+#### Scenario: Feedback ownership and replay protection
+
+- **WHEN** initial history loads, a request fails or is superseded, or a previous plant visit completes
+- **THEN** it does not trigger successful-watering feedback in the active view
+- **AND** refreshes, clock ticks, theme/language changes, resizing, and recreating existing markers do not replay consumed feedback
+
 #### Scenario: Reduced motion and cleanup
 
-- **WHEN** reduced motion is requested, including during an entrance
-- **THEN** the final timeline appears without entrance effects
-- **AND** leaving the component clears entrance timers and preference listeners
+- **WHEN** reduced motion is requested, including during an entrance or watering feedback
+- **THEN** the final timeline appears without entrance or feedback effects
+- **AND** active animation effects stop immediately
+- **AND** leaving the component clears entrance timers, animation effects, and preference listeners
 
 ### Requirement: Shared history lifecycle
 

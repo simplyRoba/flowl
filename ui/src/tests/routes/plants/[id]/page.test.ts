@@ -233,6 +233,14 @@ function timelineMarkers() {
   );
 }
 
+function wateringFeedbackIds() {
+  return [
+    ...document.querySelectorAll(
+      '.care-timeline g.event[data-water-feedback="true"]',
+    ),
+  ].map((marker) => Number(marker.getAttribute("data-event-id")));
+}
+
 function timelineSnapshot() {
   if (!document.querySelector(".care-timeline > svg")) return undefined;
   return JSON.stringify(timelineMarkers());
@@ -248,7 +256,7 @@ function expectedTimeline(events: CareEvent[], plant = makePlant()) {
       id,
       eventType,
       x: Number(
-        (((occurredAt - (now - 42 * DAY)) / (42 * DAY)) * 320).toFixed(6),
+        (32 + ((occurredAt - (now - 42 * DAY)) / (42 * DAY)) * 256).toFixed(6),
       ),
     })),
   );
@@ -500,9 +508,9 @@ describe("care timeline integration", () => {
 
     await waitFor(() =>
       expect(timelineMarkers()).toEqual([
-        { id: 2, eventType: "watered", x: 53.333333 },
+        { id: 2, eventType: "watered", x: 74.666667 },
         { id: 3, eventType: "watered", x: 160 },
-        { id: 4, eventType: "watered", x: 266.666667 },
+        { id: 4, eventType: "watered", x: 245.333333 },
       ]),
     );
     expect(screen.getByText("Older journal entry")).toBeTruthy();
@@ -1282,6 +1290,7 @@ describe("care timeline integration", () => {
       expect(timelineSnapshot()).toBe(
         expectedTimeline([fresh, edited], reconciled),
       );
+      expect(wateringFeedbackIds()).toEqual([fresh.id]);
       expect(mockPushNotification).not.toHaveBeenCalled();
     },
   );
@@ -1457,6 +1466,7 @@ describe("care timeline integration", () => {
     expect(timelineSnapshot()).toBe(expectedTimeline(events));
     expect(mockFetchCareEventsApi).toHaveBeenCalledTimes(1);
     expect(mockFetchPlantApi).not.toHaveBeenCalled();
+    expect(wateringFeedbackIds()).toEqual([]);
   });
 
   it("does not clear the current event-delete flag or toast when an old visit's deletion fails", async () => {
@@ -1518,6 +1528,7 @@ describe("care timeline integration", () => {
     expect(screen.queryByText("Obsolete Fern")).toBeNull();
     expect(mockFetchCareEventsApi).toHaveBeenCalledTimes(3);
     expect(timelineSnapshot()).toBe(expectedTimeline(events));
+    expect(wateringFeedbackIds()).toEqual([]);
     expect(mockPushNotification).not.toHaveBeenCalled();
   });
 
@@ -1760,6 +1771,7 @@ describe("care timeline integration", () => {
       '.care-timeline g.event[data-event-id="1"]',
     );
     const previous = timelineSnapshot();
+    expect(wateringFeedbackIds()).toEqual([]);
     clock.mockReturnValue(TIMELINE_NOW + 30_000);
     const fresh = makeCareEvent({
       id: 2,
@@ -1776,8 +1788,12 @@ describe("care timeline integration", () => {
     expect(timelineMarkers().at(-1)).toEqual({
       id: fresh.id,
       eventType: "watered",
-      x: 320,
+      x: 288,
     });
+    expect(wateringFeedbackIds()).toEqual([fresh.id]);
+    expect(mockWaterPlant).toHaveBeenCalledExactlyOnceWith(1);
+    expect(mockFetchCareEventsApi).toHaveBeenCalledTimes(2);
+    expect(mockFetchPlantApi).not.toHaveBeenCalled();
     expect(timelineSnapshot()).not.toBe(previous);
     expect(
       document.querySelector('.care-timeline g.event[data-event-id="1"]'),
@@ -1787,6 +1803,183 @@ describe("care timeline integration", () => {
     );
     expect(mockPushNotification).not.toHaveBeenCalled();
   });
+
+  it("highlights the first persisted Water now event after empty history", async () => {
+    const view = await renderWithPlant({ last_watered: null });
+    await screen.findByText("No care events recorded yet.");
+    expect(wateringFeedbackIds()).toEqual([]);
+    const fresh = recentEvent(1, 0);
+    mockWaterPlant.mockResolvedValueOnce(
+      makePlant({ last_watered: fresh.occurred_at }),
+    );
+    mockFetchCareEventsApi.mockResolvedValueOnce([fresh]);
+    await fireEvent.click(screen.getByRole("button", { name: "Water now" }));
+    await waitFor(() => expect(wateringFeedbackIds()).toEqual([fresh.id]));
+    expect(timelineSnapshot()).toBe(expectedTimeline([fresh]));
+    expect(mockWaterPlant).toHaveBeenCalledExactlyOnceWith(1);
+    expect(mockFetchCareEventsApi).toHaveBeenCalledTimes(2);
+    expect(mockFetchPlantApi).not.toHaveBeenCalled();
+
+    mockFetchCareEventsApi.mockResolvedValueOnce([]);
+    await view.rerender({ data: routeData(makePlant({ id: 2 })) });
+    await screen.findByText("No care events recorded yet.");
+    expect(wateringFeedbackIds()).toEqual([]);
+    mockFetchCareEventsApi.mockResolvedValueOnce([fresh]);
+    await view.rerender({ data: routeData() });
+    await waitFor(() =>
+      expect(timelineSnapshot()).toBe(expectedTimeline([fresh])),
+    );
+    expect(wateringFeedbackIds()).toEqual([]);
+  });
+
+  it("selects only the latest new eligible watering by time and ID, not response order", async () => {
+    const base = recentEvent(100, 1);
+    // Snapshot every ID, including a previously non-watering event.
+    const existing = recentEvent(101, 0, { event_type: "fertilized" });
+    await renderWithPlant({}, [base, existing]);
+    await waitFor(() =>
+      expect(timelineSnapshot()).toBe(expectedTimeline([base, existing])),
+    );
+    const fresh = recentEvent(3, 0);
+    const events = [
+      fresh,
+      recentEvent(2, 0),
+      recentEvent(99, 2),
+      { ...existing, event_type: "watered" as const },
+      recentEvent(102, 0, { plant_id: 2 }),
+      recentEvent(103, -1),
+      recentEvent(104, 43),
+      recentEvent(105, 0, {
+        event_type: "unsupported" as CareEvent["event_type"],
+      }),
+      recentEvent(106, 0, { event_type: "fertilized" }),
+      recentEvent(107, 0, { occurred_at: "invalid" }),
+      base,
+    ];
+    mockWaterPlant.mockResolvedValueOnce(makePlant());
+    mockFetchCareEventsApi.mockResolvedValueOnce(events);
+    await fireEvent.click(screen.getByRole("button", { name: "Water now" }));
+    await waitFor(() => expect(wateringFeedbackIds()).toEqual([fresh.id]));
+    expect(timelineSnapshot()).toBe(expectedTimeline(events));
+    expect(mockFetchCareEventsApi).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not highlight existing or ineligible events when the accepted history has no new visible watering", async () => {
+    const base = recentEvent(1, 3);
+    await renderWithPlant({}, [base]);
+    await waitFor(() =>
+      expect(timelineSnapshot()).toBe(expectedTimeline([base])),
+    );
+    const events = [
+      recentEvent(2, -1),
+      recentEvent(3, 43),
+      recentEvent(4, 0, { plant_id: 2 }),
+      recentEvent(5, 0, { event_type: "fertilized" }),
+      base,
+    ];
+    mockWaterPlant.mockResolvedValueOnce(makePlant());
+    mockFetchCareEventsApi.mockResolvedValueOnce(events);
+    await fireEvent.click(screen.getByRole("button", { name: "Water now" }));
+    await waitFor(() =>
+      expect(timelineSnapshot()).toBe(expectedTimeline(events)),
+    );
+    expect(wateringFeedbackIds()).toEqual([]);
+    expect(mockFetchCareEventsApi).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["water", "history"] as const)(
+    "does not retain feedback intent after failed %s or transfer it to unrelated history",
+    async (failure) => {
+      const base = recentEvent(1, 3, { notes: "Retained history" });
+      await renderWithPlant({}, [base]);
+      await screen.findByText("Retained history");
+      const marker = document.querySelector(
+        '.care-timeline g.event[data-event-id="1"]',
+      );
+      mockWaterPlant.mockResolvedValueOnce(
+        failure === "water" ? null : makePlant(),
+      );
+      if (failure === "history") {
+        mockFetchCareEventsApi.mockRejectedValueOnce(
+          new Error("History failed"),
+        );
+      }
+      await fireEvent.click(screen.getByRole("button", { name: "Water now" }));
+      if (failure === "water") {
+        await waitFor(() =>
+          expect(mockPushNotification).toHaveBeenCalledTimes(1),
+        );
+      } else {
+        await waitFor(() =>
+          expect(
+            document.querySelector(".care-timeline desc")?.textContent,
+          ).toContain("Failed to load care events"),
+        );
+      }
+      expect(screen.getByText("Retained history")).toBeTruthy();
+      expect(
+        document.querySelector('.care-timeline g.event[data-event-id="1"]'),
+      ).toBe(marker);
+      expect(wateringFeedbackIds()).toEqual([]);
+      expect(mockFetchCareEventsApi).toHaveBeenCalledTimes(
+        failure === "water" ? 1 : 2,
+      );
+
+      // An unrelated edit later returns a new watering: no saved intent may play it.
+      const edited = { ...base, notes: "Edited history" };
+      const fresh = recentEvent(2, 0);
+      mockUpdateCareEventApi.mockResolvedValueOnce(edited);
+      mockFetchCareEventsApi.mockResolvedValueOnce([fresh, edited]);
+      await fireEvent.click(
+        screen.getByRole("button", { name: "Edit log entry" }),
+      );
+      await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+      await screen.findByText("Edited history");
+      expect(timelineSnapshot()).toBe(expectedTimeline([fresh, edited]));
+      expect(wateringFeedbackIds()).toEqual([]);
+    },
+  );
+
+  it.each(["refresh", "visit"] as const)(
+    "does not arm feedback from a Water now history request superseded by a newer %s",
+    async (superseding) => {
+      const base = recentEvent(1, 3, { notes: "Original history" });
+      const view = await renderWithPlant({}, [base]);
+      await screen.findByText("Original history");
+      const history = deferred<CareEvent[]>();
+      const fresh = recentEvent(2, 0);
+      mockWaterPlant.mockResolvedValueOnce(makePlant());
+      mockFetchCareEventsApi.mockReturnValueOnce(history.promise);
+      await fireEvent.click(screen.getByRole("button", { name: "Water now" }));
+      await waitFor(() =>
+        expect(mockFetchCareEventsApi).toHaveBeenCalledTimes(2),
+      );
+      expect(wateringFeedbackIds()).toEqual([]);
+      if (superseding === "refresh") {
+        const edited = { ...base, notes: "Current history" };
+        mockUpdateCareEventApi.mockResolvedValueOnce(edited);
+        mockFetchCareEventsApi.mockResolvedValueOnce([fresh, edited]);
+        await fireEvent.click(
+          screen.getByRole("button", { name: "Edit log entry" }),
+        );
+        await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+        await screen.findByText("Current history");
+      } else {
+        mockFetchCareEventsApi.mockResolvedValueOnce([
+          recentEvent(3, 1, { plant_id: 2, notes: "Current history" }),
+        ]);
+        await view.rerender({ data: routeData(makePlant({ id: 2 })) });
+        await screen.findByText("Current history");
+      }
+      const current = timelineSnapshot();
+      history.resolve([fresh, base]);
+      await settleRequests(history.promise);
+      expect(timelineSnapshot()).toBe(current);
+      expect(wateringFeedbackIds()).toEqual([]);
+      expect(mockFetchCareEventsApi).toHaveBeenCalledTimes(3);
+      expect(mockPushNotification).not.toHaveBeenCalled();
+    },
+  );
 
   it("adds and deletes a watering with real recent timestamps and no retained deleted marker", async () => {
     const base = recentEvent(1, 20, { notes: "Base" });

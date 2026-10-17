@@ -191,6 +191,8 @@ The plant detail view SHALL display watering status and a "Water now" action.
 
 - **WHEN** the user clicks the "Water now" button and the request succeeds
 - **THEN** the visible current-plant data updates immediately to show the new watering status
+- **AND** once the current view accepts the newly recorded watering in refreshed history, its background marker is visible inside the edge fade and receives immediate one-time feedback
+- **AND** reduced motion shows the final marker without animation
 - **AND** no toast notification is required for success
 
 #### Scenario: Water now failure feedback

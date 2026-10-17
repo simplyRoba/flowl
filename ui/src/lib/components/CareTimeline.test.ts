@@ -10,7 +10,10 @@ import {
 } from "#lib/careTimeline.js";
 import { en } from "#lib/i18n/en.js";
 import { locale, translations, type Locale } from "#lib/stores/locale.js";
-import CareTimeline, { type Props } from "./CareTimeline.svelte";
+import CareTimeline, {
+  type Props,
+  type WateringFeedback,
+} from "./CareTimeline.svelte";
 import source from "./CareTimeline.svelte?raw";
 
 vi.mock("#lib/careTimeline.js", async (importOriginal) => {
@@ -195,8 +198,8 @@ describe("CareTimeline presentation", () => {
     const ground = createCareTimelineGround(1, 320, 140);
     expect(positions(container).map(({ xy }) => xy[0])).toEqual([
       160,
-      (28 / 42) * 320,
-      (35 / 42) * 320,
+      32 + (28 / 42) * 256,
+      32 + (35 / 42) * 256,
     ]);
     expect(groundPath(container)).toBe(ground.path);
     expect(ground.path.match(/C/g)).toHaveLength(4);
@@ -461,9 +464,9 @@ describe("CareTimeline presentation", () => {
       },
     });
     expect(positions(container).map(({ id, xy }) => [id, xy[0]])).toEqual([
-      [1, (28 / 42) * 320],
-      [2, (28 / 42) * 320],
-      [3, (28 / 42) * 320],
+      [1, 32 + (28 / 42) * 256],
+      [2, 32 + (28 / 42) * 256],
+      [3, 32 + (28 / 42) * 256],
     ]);
   });
 
@@ -482,11 +485,64 @@ describe("CareTimeline presentation", () => {
       },
     });
     expect(positions(container).map(({ id, xy }) => [id, xy[0]])).toEqual([
-      [1, 0],
-      [2, (7 / 42) * 320],
+      [1, 32],
+      [2, 32 + (7 / 42) * 256],
     ]);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it.each([240, 288, 320, 640, 1024])(
+    "keeps complete boundary icons inside the opaque fade at %spx with precise time gaps and full-width ground contact",
+    (width) => {
+      hostBounds(0, 0, width, 140);
+      const data = [
+        event(1, 42),
+        event(2, 35),
+        event(3, 35 - 1 / 24),
+        event(4, 0),
+      ];
+      const { container } = render(CareTimeline, {
+        props: { ...props, events: data },
+      });
+      const points = positions(container);
+      const span = width * 0.8;
+      expect(points[0].xy[0]).toBeCloseTo(width * 0.1, 10);
+      expect(points[1].xy[0]).toBeCloseTo(width * 0.1 + span / 6, 10);
+      expect(points[3].xy[0]).toBeCloseTo(width * 0.9, 10);
+      expect(points[1].xy[0] - points[0].xy[0]).toBeCloseTo(
+        (7 / 42) * span,
+        10,
+      );
+      expect(points[2].xy[0] - points[1].xy[0]).toBeCloseTo(
+        span / (42 * 24),
+        10,
+      );
+      const stops = container.querySelectorAll("linearGradient stop");
+      expect(stops[1].getAttribute("offset")).toBe("0.06");
+      expect(stops[2].getAttribute("offset")).toBe("0.94");
+      expect(stops[1].getAttribute("stop-opacity")).toBe("1");
+      expect(stops[2].getAttribute("stop-opacity")).toBe("1");
+      const ground = createCareTimelineGround(1, width, 140);
+      expect(groundPath(container)).toBe(ground.path);
+      for (const [index, { xy }] of points.entries()) {
+        const node = container.querySelectorAll(".event")[index];
+        expect(node.querySelector(".event-icon")?.getAttribute("width")).toBe(
+          "14",
+        );
+        expect(xy[0] - 7).toBeGreaterThanOrEqual(width * 0.06);
+        expect(xy[0] + 7).toBeLessThanOrEqual(width * 0.94);
+        const foot = Number(node.querySelector(".stem")?.getAttribute("y2"));
+        expect(xy[1] + foot).toBeCloseTo(
+          sampleCareTimelineGround(ground, xy[0]),
+          10,
+        );
+        expect(Number(node.querySelector(".contact")?.getAttribute("cy"))).toBe(
+          foot,
+        );
+      }
+      expectRenderedClearance(container);
+    },
+  );
 
   it("is noninteractive and transparent with soft outer edges and achromatic paint confined to masks", () => {
     const { container } = render(CareTimeline, { props });
@@ -648,11 +704,19 @@ describe("CareTimeline progressive entrance", () => {
       [...view.container.querySelectorAll<SVGElement>(".event")].map((node) =>
         node.style.getPropertyValue("--event-delay"),
       ),
-    ).toEqual(["0ms", "550ms", "1100ms", "2200ms"]);
+    ).toEqual(["220ms", "660ms", "1100ms", "1980ms"]);
     expect(source).toContain(
       "Math.max(0, Math.min(1, point.x / size.width)) * 2200",
     );
     expect(source).toMatch(/event-entrance 220ms ease-out both/);
+    expect(source).toMatch(/stem-entrance 360ms ease-out both/);
+    expect(source).toMatch(
+      /\.stem\s*\{[^}]*transform-box: fill-box;[^}]*transform-origin: center bottom;/,
+    );
+    const stem = source
+      .split("@keyframes stem-entrance")[1]
+      .split("@keyframes")[0];
+    expect(stem.match(/scaleY\([\d.]+\)/g)).toEqual(["scaleY(0)", "scaleY(1)"]);
     expect(source).toMatch(/icon-entrance 300ms ease-out both/);
     expect(source).toMatch(/var\(--event-delay\) \+ 80ms/);
     const fade = source
@@ -888,6 +952,359 @@ describe("CareTimeline progressive entrance", () => {
   });
 });
 
+describe("CareTimeline confirmed watering feedback", () => {
+  const feedback: WateringFeedback = { plantId: 1, eventId: 9, request: 1 };
+  const watered = event(9, 0);
+
+  function controlAnimations() {
+    const animations: {
+      cancel: ReturnType<typeof vi.fn>;
+      onfinish: Animation["onfinish"];
+    }[] = [];
+    const animate = vi
+      .spyOn(Element.prototype, "animate")
+      .mockImplementation(() => {
+        const animation = {
+          cancel: vi.fn(),
+          onfinish: null as Animation["onfinish"],
+        };
+        animations.push(animation);
+        return animation as unknown as Animation;
+      });
+    return { animate, animations };
+  }
+
+  function expectFeedback(
+    container: HTMLElement,
+    controlled: ReturnType<typeof controlAnimations>,
+    eventId = 9,
+    callOffset = 0,
+  ) {
+    const marker = container.querySelector<SVGElement>(
+      `[data-event-id="${eventId}"]`,
+    )!;
+    const icon = marker.querySelector<SVGElement>(".event-icon")!;
+    const stem = marker.querySelector<SVGElement>(".stem")!;
+    expect(stem.style.animation).toBe("none");
+    expect(marker.dataset.waterFeedback).toBe("true");
+    expect(marker.style.animation).toBe("none");
+    expect(icon.style.animation).toBe("none");
+    expect(icon.getAttribute("opacity")).toBe("0.46");
+    expect(controlled.animate).toHaveBeenCalledTimes(callOffset + 3);
+    expect(controlled.animate.mock.contexts.slice(callOffset)).toEqual([
+      marker,
+      stem,
+      icon,
+    ]);
+    expect(controlled.animate.mock.calls.slice(callOffset)).toEqual([
+      [
+        [{ opacity: 0.4 }, { opacity: 1 }],
+        { duration: 180, easing: "ease-out" },
+      ],
+      [
+        [{ transform: "scaleY(0)" }, { transform: "scaleY(1)" }],
+        { duration: 360, easing: "ease-out" },
+      ],
+      [
+        [
+          { opacity: 1, transform: "scale(0.55)" },
+          { opacity: 1, transform: "scale(1)", offset: 0.45 },
+          { opacity: 0.46, transform: "scale(1)" },
+        ],
+        { duration: 900, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+      ],
+    ]);
+    // Exact frames keep x positions fixed and bound stem/icon growth to their final size.
+    expect(
+      container.querySelectorAll('[data-water-feedback="true"]'),
+    ).toHaveLength(1);
+    for (const other of container.querySelectorAll<SVGElement>(
+      `.event:not([data-event-id="${eventId}"])`,
+    )) {
+      expect(other.style.animation).toBe("");
+      expect(
+        other.querySelector<SVGElement>(".event-icon")!.style.animation,
+      ).toBe("");
+    }
+    return marker;
+  }
+
+  it.each([600, 2600])(
+    "immediately animates only the confirmed marker after %sms without restarting the ground",
+    async (elapsed) => {
+      const controlled = controlAnimations();
+      const view = render(CareTimeline, { props });
+      const ground = view.container.querySelector(".ground-reveal-clip");
+      const path = groundPath(view.container);
+      await advance(elapsed);
+      const previous = positions(view.container);
+      await view.rerender({
+        ...props,
+        events: [...events, watered],
+        wateringFeedback: feedback,
+      });
+      expectFeedback(view.container, controlled);
+      const retained = positions(view.container).filter(({ id }) => id !== 9);
+      expect(retained.map(({ id }) => id)).toEqual(
+        previous.map(({ id }) => id),
+      );
+      for (const [index, { xy }] of retained.entries()) {
+        // The history refresh samples real time between minute ticks.
+        expect(xy[0]).toBeCloseTo(
+          previous[index].xy[0] - (elapsed / (42 * DAY)) * 256,
+          10,
+        );
+        expect(xy[1]).toBe(previous[index].xy[1]);
+      }
+      expect(view.container.querySelector(".ground-reveal-clip")).toBe(ground);
+      expect(groundPath(view.container)).toBe(path);
+      expect(isRevealing(view.container)).toBe(elapsed < 2600);
+      expect(
+        controlled.animations.every((animation) => animation.onfinish !== null),
+      ).toBe(true);
+      if (elapsed < 2600) {
+        await advance(2599 - elapsed);
+        expect(isRevealing(view.container)).toBe(true);
+        await advance(1);
+      }
+      expect(isRevealing(view.container)).toBe(false);
+      expect(controlled.animate).toHaveBeenCalledTimes(3);
+    },
+  );
+
+  it("does not replay a request for history, theme, locale, resize, clock, visibility or recreated DOM updates", async () => {
+    const controlled = controlAnimations();
+    const view = render(CareTimeline, { props });
+    await advance(2600);
+    const data = [...events, watered];
+    await view.rerender({ ...props, events: data, wateringFeedback: feedback });
+    const marker = expectFeedback(view.container, controlled);
+    await view.rerender({
+      ...props,
+      events: [...data].reverse(),
+      wateringFeedback: { ...feedback },
+    });
+    document.documentElement.classList.add("dark");
+    try {
+      await setLanguage("de");
+      SizeObserver.instances.at(-1)!.resize(640, 140);
+      await tick();
+      await advance(60_000);
+      await visibility(true);
+      await advance(60_000);
+      await visibility(false);
+      await view.rerender({ ...props, events: [], wateringFeedback: feedback });
+      expect(marker.isConnected).toBe(false);
+      expect(
+        controlled.animations.every(
+          (animation) => animation.cancel.mock.calls.length === 1,
+        ),
+      ).toBe(true);
+      await view.rerender({
+        ...props,
+        events: data,
+        wateringFeedback: { ...feedback },
+      });
+      const recreated = view.container.querySelector<SVGElement>(
+        '[data-event-id="9"]',
+      )!;
+      expect(recreated).not.toBe(marker);
+      expect(recreated.dataset.waterFeedback).toBe("true");
+      expect(recreated.style.animation).toBe("none");
+      expect(
+        recreated.querySelector<SVGElement>(".event-icon")!.style.animation,
+      ).toBe("none");
+      expect(controlled.animate).toHaveBeenCalledTimes(3);
+    } finally {
+      document.documentElement.classList.remove("dark");
+    }
+  });
+
+  it("plays a new request for the same marker, canceling its previous native animations", async () => {
+    const controlled = controlAnimations();
+    const view = render(CareTimeline, {
+      props: { ...props, events: [...events, watered] },
+    });
+    await view.rerender({
+      ...props,
+      events: [...events, watered],
+      wateringFeedback: feedback,
+    });
+    expectFeedback(view.container, controlled);
+    await view.rerender({
+      ...props,
+      events: [...events, watered],
+      wateringFeedback: { ...feedback, request: 2 },
+    });
+    expectFeedback(view.container, controlled, 9, 3);
+    expect(
+      controlled.animations
+        .slice(0, 3)
+        .every((animation) => animation.cancel.mock.calls.length === 1),
+    ).toBe(true);
+    expect(
+      controlled.animations
+        .slice(3)
+        .every((animation) => animation.cancel.mock.calls.length === 0),
+    ).toBe(true);
+  });
+
+  it("animates first watering from empty history while the first ground entrance runs", async () => {
+    const controlled = controlAnimations();
+    const view = render(CareTimeline, { props: { ...props, events: [] } });
+    expect(view.container.querySelector("svg")).toBeNull();
+    await view.rerender({
+      ...props,
+      events: [watered],
+      wateringFeedback: feedback,
+    });
+    expectFeedback(view.container, controlled);
+    expect(isRevealing(view.container)).toBe(true);
+    await advance(2600);
+    expect(isRevealing(view.container)).toBe(false);
+    expect(controlled.animate).toHaveBeenCalledTimes(3);
+  });
+
+  it("consumes initial mount feedback without playing, including after DOM recreation", async () => {
+    const controlled = controlAnimations();
+    const initial = {
+      ...props,
+      events: [...events, watered],
+      wateringFeedback: feedback,
+    };
+    const view = render(CareTimeline, { props: initial });
+    const marker = view.container.querySelector<SVGElement>(
+      '[data-event-id="9"]',
+    )!;
+    expect(marker.dataset.waterFeedback).toBe("true");
+    expect(marker.style.animation).toBe("none");
+    expect(
+      marker.querySelector<SVGElement>(".event-icon")!.style.animation,
+    ).toBe("none");
+    await advance(2600);
+    await view.rerender({ ...initial, events: [] });
+    await view.rerender({ ...initial, wateringFeedback: { ...feedback } });
+    expect(controlled.animate).not.toHaveBeenCalled();
+    await view.rerender({
+      ...initial,
+      wateringFeedback: { ...feedback, request: 2 },
+    });
+    expectFeedback(view.container, controlled);
+  });
+
+  it("shows final visible feedback without animation under initial reduced motion and consumes its request", async () => {
+    motionPreference(true);
+    const controlled = controlAnimations();
+    const view = render(CareTimeline, { props });
+    const next = {
+      ...props,
+      events: [...events, watered],
+      wateringFeedback: feedback,
+    };
+    await view.rerender(next);
+    const marker = view.container.querySelector<SVGElement>(
+      '[data-event-id="9"]',
+    )!;
+    expect(marker.dataset.waterFeedback).toBe("true");
+    expect(marker.style.animation).toBe("none");
+    expect(
+      marker.querySelector<SVGElement>(".event-icon")!.style.animation,
+    ).toBe("none");
+    expect(marker.querySelector(".event-icon")!.getAttribute("opacity")).toBe(
+      "0.46",
+    );
+    expect(isRevealing(view.container)).toBe(false);
+    motionPreference(false);
+    await tick();
+    await view.rerender({ ...next, wateringFeedback: { ...feedback } });
+    expect(controlled.animate).not.toHaveBeenCalled();
+  });
+
+  it("cancels in-flight feedback on live reduced motion without replaying or hiding the marker", async () => {
+    const controlled = controlAnimations();
+    const view = render(CareTimeline, { props });
+    await view.rerender({
+      ...props,
+      events: [...events, watered],
+      wateringFeedback: feedback,
+    });
+    const marker = expectFeedback(view.container, controlled);
+    motionPreference(true);
+    await tick();
+    expect(
+      controlled.animations.every(
+        (animation) => animation.cancel.mock.calls.length === 1,
+      ),
+    ).toBe(true);
+    expect(marker.isConnected).toBe(true);
+    expect(marker.style.animation).toBe("none");
+    expect(
+      marker.querySelector<SVGElement>(".event-icon")!.style.animation,
+    ).toBe("none");
+    expect(marker.querySelector(".event-icon")!.getAttribute("opacity")).toBe(
+      "0.46",
+    );
+    expect(isRevealing(view.container)).toBe(false);
+    motionPreference(false);
+    await tick();
+    await view.rerender({
+      ...props,
+      events: [...events, watered],
+      wateringFeedback: { ...feedback },
+    });
+    expect(controlled.animate).toHaveBeenCalledTimes(3);
+    view.unmount();
+    expect(
+      controlled.animations.every(
+        (animation) => animation.cancel.mock.calls.length === 1,
+      ),
+    ).toBe(true);
+  });
+
+  it.each(["remove", "unmount"] as const)(
+    "cancels all unfinished native animations on %s",
+    async (action) => {
+      const controlled = controlAnimations();
+      const view = render(CareTimeline, { props });
+      await view.rerender({
+        ...props,
+        events: [...events, watered],
+        wateringFeedback: feedback,
+      });
+      expectFeedback(view.container, controlled);
+      if (action === "remove") {
+        await view.rerender({ ...props, wateringFeedback: feedback });
+        expect(view.container.querySelector('[data-event-id="9"]')).toBeNull();
+      }
+      view.unmount();
+      expect(
+        controlled.animations.every(
+          (animation) => animation.cancel.mock.calls.length === 1,
+        ),
+      ).toBe(true);
+      expect(vi.getTimerCount()).toBe(0);
+    },
+  );
+
+  it.each([null, { ...feedback, plantId: 2 }, { ...feedback, eventId: 999 }])(
+    "does not animate unrelated history without a matching confirmed marker (%j)",
+    async (wateringFeedback) => {
+      const controlled = controlAnimations();
+      const view = render(CareTimeline, { props });
+      await advance(2600);
+      await view.rerender({
+        ...props,
+        events: [...events, watered],
+        wateringFeedback,
+      });
+      expect(controlled.animate).not.toHaveBeenCalled();
+      expect(
+        view.container.querySelector('[data-water-feedback="true"]'),
+      ).toBeNull();
+    },
+  );
+});
+
 describe("CareTimeline history and clock lifecycle", () => {
   it.each([
     ["empty", [], false, false],
@@ -968,7 +1385,7 @@ describe("CareTimeline history and clock lifecycle", () => {
     await advance(1);
     const minute = positions(view.container);
     expect(minute[0].xy[0]).toBeCloseTo(
-      ((21 * DAY - 60_000) / (42 * DAY)) * 320,
+      32 + ((21 * DAY - 60_000) / (42 * DAY)) * 256,
     );
     expect(minute).not.toEqual(original);
     await visibility(true);
@@ -977,7 +1394,7 @@ describe("CareTimeline history and clock lifecycle", () => {
     expect(positions(view.container)).toEqual(minute);
     await visibility(false);
     expect(positions(view.container)[0].xy[0]).toBeCloseTo(
-      ((21 * DAY - 7 * 60_000) / (42 * DAY)) * 320,
+      32 + ((21 * DAY - 7 * 60_000) / (42 * DAY)) * 256,
     );
     expect(vi.getTimerCount()).toBe(1);
     expect(normalizeCareTimelineEvents).toHaveBeenCalledTimes(1);
@@ -994,7 +1411,7 @@ describe("CareTimeline history and clock lifecycle", () => {
     await advance(60_000);
     expect(view.container.querySelector("svg")).toBeNull();
     await visibility(false);
-    expect(positions(view.container)[0].xy[0]).toBe(320);
+    expect(positions(view.container)[0].xy[0]).toBe(288);
     expect(normalizeCareTimelineEvents).toHaveBeenCalledTimes(1);
   });
 
@@ -1006,7 +1423,7 @@ describe("CareTimeline history and clock lifecycle", () => {
     expect(positions(view.container)).toHaveLength(1);
     expect(positions(view.container)[0]).toMatchObject({
       id: 2,
-      xy: [320, expect.any(Number)],
+      xy: [288, expect.any(Number)],
     });
     SizeObserver.instances[0].resize(500, 200);
     await setLanguage("de");
@@ -1022,7 +1439,7 @@ describe("CareTimeline history and clock lifecycle", () => {
     vi.setSystemTime(NOW + 30_000);
     const fresh = [...events, event(4, -30_000 / DAY)];
     await view.rerender({ ...props, events: fresh });
-    expect(positions(view.container).at(-1)?.xy[0]).toBe(320);
+    expect(positions(view.container).at(-1)?.xy[0]).toBe(288);
     const current = positions(view.container);
     await view.rerender({ ...props, events: [...fresh, event(5, -1)] });
     expect(positions(view.container)).toEqual(current);

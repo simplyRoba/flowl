@@ -45,7 +45,13 @@
   import { emojiToSvgPath } from "#lib/emoji.js";
   import { thumbUrl, thumbSrcset } from "#lib/thumbUrl.js";
   import StatusBadge from "#lib/components/StatusBadge.svelte";
-  import CareTimeline from "#lib/components/CareTimeline.svelte";
+  import CareTimeline, {
+    type WateringFeedback,
+  } from "#lib/components/CareTimeline.svelte";
+  import {
+    normalizeCareTimelineEvents,
+    selectCareTimelineEvents,
+  } from "#lib/careTimeline.js";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import PhotoLightbox from "#lib/components/PhotoLightbox.svelte";
   import ModalDialog from "#lib/components/ModalDialog.svelte";
@@ -77,6 +83,7 @@
   let plantLoadErrorCode = $state<string | null>(null);
   let careEvents = $state<CareEvent[]>([]);
   let careEventsPlantId = $state<number | null>(null);
+  let wateringFeedback = $state<WateringFeedback | null>(null);
   let careLoading = $state(false);
   let careLoadError = $state<string | null>(null);
   let notFound = $state(false);
@@ -152,7 +159,10 @@
     };
   });
 
-  async function loadCareEvents(ticket: CareTicket): Promise<boolean> {
+  async function loadCareEvents(
+    ticket: CareTicket,
+    beforeWatering?: ReadonlySet<number>,
+  ): Promise<boolean> {
     if (!ownsCare(ticket)) return false;
     const plantId = ticket.plantId;
     const previousCareEvents = untrack(() =>
@@ -166,6 +176,24 @@
       const events = await fetchCareEvents(plantId);
       if (!ownsCare(ticket)) return false;
       careEvents = events;
+      if (beforeWatering) {
+        const latest = selectCareTimelineEvents(
+          normalizeCareTimelineEvents(events, ticket.plantId),
+          Date.now(),
+        )
+          .filter(
+            (event) =>
+              event.eventType === "watered" && !beforeWatering.has(event.id),
+          )
+          .at(-1);
+        wateringFeedback = latest
+          ? {
+              plantId: ticket.plantId,
+              eventId: latest.id,
+              request: ticket.request,
+            }
+          : null;
+      }
       return true;
     } catch (error) {
       if (!ownsCare(ticket)) return false;
@@ -192,6 +220,7 @@
     editingEvent = null;
     deleting = false;
     watering = false;
+    wateringFeedback = null;
     deletingEventId = null;
     deleteEventDialogTarget = null;
     deleteDialogOpen = false;
@@ -217,13 +246,16 @@
     backHref = from && BACK_PATHS.has(from) ? from : "/";
   });
 
-  async function refreshPlantDetails(visit: ViewTicket): Promise<boolean> {
+  async function refreshPlantDetails(
+    visit: ViewTicket,
+    beforeWatering?: ReadonlySet<number>,
+  ): Promise<boolean> {
     const ticket = beginCareRequest(visit);
     if (!ticket) return false;
     try {
       const [nextPlant, careEventsLoaded] = await Promise.all([
         fetchPlant(ticket.plantId),
-        loadCareEvents(ticket),
+        loadCareEvents(ticket, beforeWatering),
       ]);
       if (!ownsCare(ticket)) return false;
       plant = nextPlant;
@@ -281,6 +313,12 @@
     if (!plant || !viewTicket || watering) return;
     const visit = viewTicket;
     const careGeneration = careRequestGeneration;
+    const beforeWatering = new Set(
+      careEventsPlantId === visit.plantId
+        ? careEvents.map((event) => event.id)
+        : [],
+    );
+    wateringFeedback = null;
     watering = true;
     try {
       const wateredPlant = await waterPlant(visit.plantId);
@@ -298,7 +336,7 @@
         // A newer care refresh may have changed metadata or missed this water.
         // Keep its visible plant until a post-mutation refetch reconciles both.
         try {
-          await refreshPlantDetails(visit);
+          await refreshPlantDetails(visit, beforeWatering);
         } catch {
           if (!ownsView(visit)) return;
           pushNotification({
@@ -311,7 +349,7 @@
         const ticket = beginCareRequest(visit);
         if (!ticket) return;
         plant = wateredPlant;
-        void loadCareEvents(ticket);
+        void loadCareEvents(ticket, beforeWatering);
       }
     } finally {
       if (ownsView(visit)) watering = false;
@@ -584,6 +622,9 @@
               events={careEvents}
               loading={careLoading}
               historyError={Boolean(careLoadError)}
+              wateringFeedback={wateringFeedback?.plantId === plant.id
+                ? wateringFeedback
+                : null}
               foregroundElements={timelineForeground}
               onMinimumHeight={(height) => {
                 timelineMinimum = { plantId: plant!.id, height };
