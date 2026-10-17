@@ -1,379 +1,515 @@
-//! OIDC endpoint handlers and session helpers.
-
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 
-use axum::Extension;
-use axum::extract::Query;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Redirect, Response};
-use serde::Deserialize;
-use tower_sessions::Session;
+use axum::Router;
+use axum::extract::{Extension, RawQuery, State};
+use axum::http::{HeaderValue, StatusCode, header};
+use axum::response::Response;
+use axum::routing::{get, post};
+use openidconnect::CsrfToken;
+use tower_sessions::{Expiry, Session};
 
-use super::{AuthState, CallbackError, Clock, LOGIN_TRANSACTION_TTL, PendingLogin, SESSION_TTL};
-use crate::auth::return_to::SafeReturnTo;
+use super::Authentication;
+use super::return_to::{SafeReturnTo, decode_query_component, return_to_from_query};
+use super::runtime::ProtocolError;
+use super::session::{AUTHENTICATED_SESSION_KEY, AUTHENTICATED_TTL, AuthenticatedSession};
+use super::transaction::{LoginTransaction, TRANSACTION_TTL};
 
-pub(crate) const PREAUTH_STATE_KEY: &str = "flowl.auth.pending_state";
-const AUTHENTICATED_KEY: &str = "flowl.auth.authenticated";
-const AUTHENTICATED_AT_KEY: &str = "flowl.auth.authenticated_at";
-const EXPIRES_AT_KEY: &str = "flowl.auth.expires_at";
+const TRANSACTION_SESSION_KEY: &str = "oidc_transaction";
 
-#[derive(Deserialize)]
-pub struct LoginQuery {
-    return_to: Option<String>,
+pub(crate) fn routes(authentication: &Arc<Authentication>) -> Router {
+    Router::new()
+        .route("/auth/login", get(login))
+        .route("/auth/callback", get(callback))
+        .route("/auth/logout", post(logout))
+        .with_state(Arc::clone(authentication))
 }
 
-/// Public, non-sensitive configuration consumed by the login page.
-pub async fn config(auth: Option<Extension<Arc<AuthState>>>) -> Response {
-    let payload = match auth {
-        Some(Extension(auth)) => config_payload(true, Some(auth.config().provider_name())),
-        None => config_payload(false, None),
-    };
-    no_store((StatusCode::OK, axum::Json(payload)).into_response())
-}
-
-fn config_payload(enabled: bool, provider_name: Option<&str>) -> serde_json::Value {
-    serde_json::json!({ "enabled": enabled, "provider_name": provider_name })
-}
-
-pub async fn login(
-    Extension(auth): Extension<Arc<AuthState>>,
-    Query(query): Query<LoginQuery>,
+async fn login(
+    State(authentication): State<Arc<Authentication>>,
     session: Session,
+    Extension(super::session::OriginalSessionId(original_id)): Extension<
+        super::session::OriginalSessionId,
+    >,
+    RawQuery(raw_query): RawQuery,
 ) -> Response {
-    let return_to = SafeReturnTo::fallback(query.return_to.as_deref().unwrap_or("/"));
-    let Ok((url, state_token, nonce, verifier)) = auth.authorization_url().await else {
-        return generic_redirect("provider_unavailable", &return_to);
+    let return_to = return_to_from_query(raw_query.as_deref());
+    let store = &authentication.sessions.store;
+    let now = authentication.clock.now();
+    // Loading can clear an unknown ID. Remember known aliases first, and retain
+    // the ORIGINAL request revision: reloading must not promote a stale request.
+    let known = original_id.and_then(|id| store.for_id(id));
+    let Ok(snapshot) = session
+        .get::<super::session::Owner>(super::session::OWNER_KEY)
+        .await
+    else {
+        return failure_redirect(FailureCode::ProviderUnavailable, &return_to);
     };
-    let pending = PendingLogin {
-        nonce,
-        verifier,
-        return_to: return_to.clone(),
-        expires_at: auth.clock().now() + LOGIN_TRANSACTION_TTL,
+    let (key, lineage) = if let Some(marker) = &snapshot {
+        let Some(lineage) = store.lineage(&marker.lineage) else {
+            return failure_redirect(FailureCode::ProviderUnavailable, &return_to);
+        };
+        (marker.lineage.clone(), lineage)
+    } else if known.is_some() {
+        return failure_redirect(FailureCode::ProviderUnavailable, &return_to);
+    } else {
+        store.allocate(now + TRANSACTION_TTL)
     };
-    let state_value = state_token.secret().clone();
-    if auth
-        .bind_transaction(&session, state_value, pending)
+    let snapshot_id = session.id();
+    let _gate = lineage.gate.lock().await;
+    if let Some(snapshot) = snapshot {
+        let owned = match snapshot_id {
+            Some(id) => store.owns(id, &snapshot).await,
+            None => false,
+        };
+        if !owned || store.refresh(&session).await.is_err() || !store.current(&session).await {
+            return failure_redirect(FailureCode::ProviderUnavailable, &return_to);
+        }
+    }
+    if authentication.is_authenticated(&session).await {
+        return redirect(&return_to);
+    }
+
+    let old_state = session
+        .get::<String>(TRANSACTION_SESSION_KEY)
+        .await
+        .ok()
+        .flatten();
+    let (authorization_url, state, nonce, pkce_verifier) =
+        authentication.runtime.authorization_url().await;
+    let state_secret = state.secret().clone();
+    let now = authentication.clock.now();
+    let expires_at = now + TRANSACTION_TTL;
+    if authentication
+        .transactions
+        .replace(
+            None,
+            state_secret.clone(),
+            LoginTransaction {
+                nonce,
+                pkce_verifier,
+                return_to: SafeReturnTo::new(Some(&return_to)),
+                expires_at,
+            },
+            now,
+        )
         .await
         .is_err()
     {
-        return generic_redirect("provider_unavailable", &return_to);
+        if lineage.authority.lock().await.committed.is_none() {
+            store.retire_empty(&key);
+        }
+        return failure_redirect(FailureCode::ProviderUnavailable, &return_to);
     }
-    no_store(Redirect::to(url.as_str()).into_response())
+
+    let marker = super::session::Owner::fresh(key.clone());
+    {
+        let mut authority = lineage.authority.lock().await;
+        authority.permit = Some(marker.clone());
+        authority.creating = session.id().is_none();
+    }
+    session.set_expiry(Some(Expiry::AtDateTime(expires_at)));
+    let saved = async {
+        session.insert(super::session::OWNER_KEY, marker).await?;
+        session
+            .insert(TRANSACTION_SESSION_KEY, &state_secret)
+            .await?;
+        session.save().await
+    }
+    .await;
+    if saved.is_err() || !store.current(&session).await {
+        authentication
+            .transactions
+            .consume(&state_secret, now)
+            .await;
+        store.rollback_binding(&session, &lineage, &key).await;
+        return failure_redirect(FailureCode::ProviderUnavailable, &return_to);
+    }
+    if let Some(old) = old_state {
+        authentication.transactions.consume(&old, now).await;
+    }
+    redirect(authorization_url.as_str())
 }
 
-/// Parses callback parameters manually so duplicate and mixed success/error values are rejected
-/// before a state can cause any provider request.
-pub async fn callback(
-    Extension(auth): Extension<Arc<AuthState>>,
+async fn callback(
+    State(authentication): State<Arc<Authentication>>,
     session: Session,
-    raw_query: axum::extract::RawQuery,
+    Extension(capture): Extension<super::session::ResponseCapture>,
+    RawQuery(raw_query): RawQuery,
 ) -> Response {
-    let parameters = raw_query.0.unwrap_or_default();
-    let parsed = parse_callback_parameters(&parameters);
-    let (state_value, code) = match parsed {
-        Ok(CallbackParameters::Success { state, code }) => (state, code),
-        Ok(CallbackParameters::ProviderError {
-            state: provider_state,
-        }) => {
-            let target = if let Some(state) = provider_state.as_deref() {
-                auth.consume_bound_transaction(&session, state)
-                    .await
-                    .map_or_else(|| SafeReturnTo::fallback("/"), |pending| pending.return_to)
-            } else {
-                SafeReturnTo::fallback("/")
-            };
-            return generic_redirect("authentication_failed", &target);
-        }
-        Err(()) => return generic_redirect("authentication_failed", &SafeReturnTo::fallback("/")),
-    };
-
-    let Some(pending) = auth.consume_bound_transaction(&session, &state_value).await else {
-        return generic_redirect("authentication_failed", &SafeReturnTo::fallback("/"));
-    };
-
-    let return_to = pending.return_to.clone();
-    match auth.exchange_and_verify(code, pending).await {
-        Ok(()) => {
-            if establish_authenticated_session(&session, auth.clock().as_ref())
-                .await
-                .is_err()
-            {
-                return generic_redirect("provider_unavailable", &return_to);
-            }
-            no_store(Redirect::to(return_to.as_str()).into_response())
-        }
-        Err(CallbackError::Unavailable) => generic_redirect("provider_unavailable", &return_to),
-        Err(CallbackError::Invalid) => generic_redirect("authentication_failed", &return_to),
+    let response = complete_callback(&authentication, &session, raw_query.as_deref()).await;
+    if let Some(intent) = response
+        .extensions()
+        .get::<super::session::CallbackIntent>()
+    {
+        capture.remember_callback(intent.clone());
     }
+    response
 }
 
-pub async fn logout(session: Session) -> Response {
-    let _ = session.flush().await;
-    no_store(Redirect::to("/login?logged_out=1").into_response())
-}
-
-/// Checks the local marker and absolute deadline. This deliberately does not touch timestamps,
-/// making the server-side twelve-hour expiration non-sliding.
-pub async fn has_authenticated_session(session: &Session, auth: &AuthState) -> bool {
-    let authenticated = session
-        .get::<bool>(AUTHENTICATED_KEY)
+async fn complete_callback(
+    authentication: &Authentication,
+    session: &Session,
+    raw_query: Option<&str>,
+) -> Response {
+    let Some(query) = CallbackQuery::parse(raw_query) else {
+        return callback_failure(FailureCode::AuthenticationFailed, "/");
+    };
+    let (returned_state, code) = match query {
+        CallbackQuery::Success { state, code } => (state, Some(code)),
+        CallbackQuery::ProviderError { state } => (state, None),
+    };
+    let store = &authentication.sessions.store;
+    let Some(lineage) = session.id().and_then(|id| store.for_id(id)) else {
+        return callback_failure(FailureCode::AuthenticationFailed, "/");
+    };
+    let gate = lineage.gate.lock().await;
+    if store.refresh(session).await.is_err() {
+        return callback_failure(FailureCode::ProviderUnavailable, "/");
+    }
+    if !store.current(session).await {
+        return callback_failure(FailureCode::AuthenticationFailed, "/");
+    }
+    let bound_state = session
+        .get::<String>(TRANSACTION_SESSION_KEY)
         .await
         .ok()
-        .flatten()
-        .unwrap_or(false);
-    let expires_at = session.get::<u64>(EXPIRES_AT_KEY).await.ok().flatten();
-    let now = seconds_since_epoch(auth.clock().now());
-    if authenticated && expires_at.is_some_and(|deadline| now < deadline) {
-        return true;
+        .flatten();
+    let state_matches = bound_state.is_some_and(|bound_state| {
+        CsrfToken::new(bound_state) == CsrfToken::new(returned_state.clone())
+    });
+    if !state_matches {
+        return callback_failure(FailureCode::AuthenticationFailed, "/");
     }
-    if authenticated || expires_at.is_some() {
+
+    let Some(transaction) = authentication
+        .transactions
+        .consume(&returned_state, authentication.clock.now())
+        .await
+    else {
+        return callback_failure(FailureCode::AuthenticationFailed, "/");
+    };
+    // Consumption only grants exchange permission. The session's committed
+    // revision remains the completion guard until replacement/logout/expiry.
+    drop(gate);
+
+    let Some(code) = code else {
+        return callback_failure(
+            FailureCode::AuthenticationFailed,
+            transaction.return_to.as_str(),
+        );
+    };
+
+    match authentication
+        .runtime
+        .exchange_and_verify(code, &transaction.nonce, transaction.pkce_verifier)
+        .await
+    {
+        Ok(()) => {}
+        Err(ProtocolError::Authentication) => {
+            return callback_failure(
+                FailureCode::AuthenticationFailed,
+                transaction.return_to.as_str(),
+            );
+        }
+        Err(ProtocolError::ProviderUnavailable) => {
+            return callback_failure(
+                FailureCode::ProviderUnavailable,
+                transaction.return_to.as_str(),
+            );
+        }
+    }
+
+    persist_callback(
+        authentication,
+        session,
+        &lineage,
+        transaction.return_to.as_str(),
+    )
+    .await
+}
+
+async fn persist_callback(
+    authentication: &Authentication,
+    session: &Session,
+    lineage: &super::session::Lineage,
+    return_to: &str,
+) -> Response {
+    let store = &authentication.sessions.store;
+    let _gate = lineage.gate.lock().await;
+    if !store.current(session).await {
+        return callback_failure(FailureCode::AuthenticationFailed, return_to);
+    }
+    if store.refresh(session).await.is_err() {
+        let _ = store.revoke(lineage).await;
+        session.clear().await;
         let _ = session.flush().await;
+        return callback_failure(FailureCode::ProviderUnavailable, return_to);
     }
-    false
-}
-
-async fn establish_authenticated_session(session: &Session, clock: &dyn Clock) -> Result<(), ()> {
-    // Rotate only after all OIDC checks succeeded. Remove the pre-auth binding before persisting
-    // the authenticated marker, so the only retained data is local authentication timing.
-    session.cycle_id().await.map_err(|_| ())?;
-    session.clear().await;
-    let authenticated_time = clock.now();
-    let authenticated_at = seconds_since_epoch(authenticated_time);
-    let expires_at = authenticated_at.saturating_add(SESSION_TTL.as_secs());
-    session
-        .insert(AUTHENTICATED_KEY, true)
+    let now = authentication.clock.now();
+    let expires_at = now + AUTHENTICATED_TTL;
+    let previous = match session
+        .get::<super::session::Owner>(super::session::OWNER_KEY)
         .await
-        .map_err(|_| ())?;
-    session
-        .insert(AUTHENTICATED_AT_KEY, authenticated_at)
-        .await
-        .map_err(|_| ())?;
-    session
-        .insert(EXPIRES_AT_KEY, expires_at)
-        .await
-        .map_err(|_| ())?;
-    session.set_expiry(Some(tower_sessions::Expiry::AtDateTime(
-        (authenticated_time + SESSION_TTL).into(),
-    )));
-    session.save().await.map_err(|_| ())?;
-    Ok(())
+    {
+        Ok(Some(previous)) => previous,
+        Ok(None) => return callback_failure(FailureCode::AuthenticationFailed, return_to),
+        Err(_) => return callback_failure(FailureCode::ProviderUnavailable, return_to),
+    };
+    if !store.current(session).await {
+        return callback_failure(FailureCode::AuthenticationFailed, return_to);
+    }
+    let marker = super::session::Owner::fresh(previous.lineage);
+    {
+        let mut authority = lineage.authority.lock().await;
+        authority.permit = Some(marker.clone());
+        authority.creating = true;
+    }
+    let saved = async {
+        session.cycle_id().await?;
+        session.clear().await;
+        session.set_expiry(Some(Expiry::AtDateTime(expires_at)));
+        session.insert(super::session::OWNER_KEY, marker).await?;
+        session
+            .insert(
+                AUTHENTICATED_SESSION_KEY,
+                AuthenticatedSession {
+                    authenticated_at: now.unix_timestamp(),
+                    expires_at: expires_at.unix_timestamp(),
+                },
+            )
+            .await?;
+        session.save().await
+    }
+    .await;
+    if saved.is_err() || !store.current(session).await {
+        let _ = store.revoke(lineage).await;
+        // cycle_id has already deleted the old ID. Do not let middleware retry
+        // a provisional create, including after a partial backing-store write.
+        session.clear().await;
+        let _ = session.flush().await;
+        return callback_failure(FailureCode::ProviderUnavailable, return_to);
+    }
+    let mut response = redirect(return_to);
+    response
+        .extensions_mut()
+        .insert(super::session::CallbackIntent::verified(return_to));
+    response
 }
 
-fn seconds_since_epoch(time: SystemTime) -> u64 {
-    time.duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs()
-}
-
-fn generic_redirect(error: &str, return_to: &SafeReturnTo) -> Response {
-    let target = format!(
-        "/login?error={error}&return_to={}",
-        url::form_urlencoded::byte_serialize(return_to.as_str().as_bytes()).collect::<String>()
-    );
-    no_store(Redirect::to(&target).into_response())
-}
-
-fn no_store(mut response: Response) -> Response {
-    response.headers_mut().insert(
-        axum::http::header::CACHE_CONTROL,
-        axum::http::HeaderValue::from_static("no-store"),
+async fn logout(
+    State(authentication): State<Arc<Authentication>>,
+    session: Session,
+    Extension(super::session::OriginalSessionId(original_id)): Extension<
+        super::session::OriginalSessionId,
+    >,
+    Extension(capture): Extension<super::session::ResponseCapture>,
+) -> Response {
+    capture.remember_logout();
+    let store = &authentication.sessions.store;
+    let lineage = original_id.and_then(|id| store.for_id(id));
+    let mut failed;
+    if let Some(lineage) = lineage {
+        let _gate = lineage.gate.lock().await;
+        let state = lineage
+            .authority
+            .lock()
+            .await
+            .committed
+            .as_ref()
+            .and_then(|record| record.data.get(TRANSACTION_SESSION_KEY))
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned);
+        if let Some(state) = state {
+            authentication
+                .transactions
+                .consume(&state, authentication.clock.now())
+                .await;
+        }
+        failed = store.revoke(&lineage).await.is_err();
+        // Flush the independently cached request too. Aliases cannot restore the
+        // current record, and a failure still returns 500 with cookie expiry.
+        failed |= session.flush().await.is_err();
+    } else {
+        failed = session.flush().await.is_err();
+    }
+    let mut response = if failed {
+        Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(axum::body::Body::empty())
+            .expect("static response builds")
+    } else {
+        redirect("/login?logged_out=1")
+    };
+    response
+        .extensions_mut()
+        .insert(super::session::LogoutExpiry);
+    response.headers_mut().append(
+        header::SET_COOKIE,
+        super::session::removal_cookie(authentication.config.secure_cookie()),
     );
     response
 }
 
-enum CallbackParameters {
+#[derive(Debug)]
+enum CallbackQuery {
     Success { state: String, code: String },
-    ProviderError { state: Option<String> },
+    ProviderError { state: String },
 }
 
-fn parse_callback_parameters(query: &str) -> Result<CallbackParameters, ()> {
-    let mut state = None;
-    let mut code = None;
-    let mut provider_error = None;
-    let mut has_error_details = false;
-    for (key, value) in url::form_urlencoded::parse(query.as_bytes()) {
-        match key.as_ref() {
-            "state" => {
-                if state.replace(value.into_owned()).is_some() {
-                    return Err(());
-                }
+impl CallbackQuery {
+    fn parse(raw_query: Option<&str>) -> Option<Self> {
+        let mut state = None;
+        let mut code = None;
+        let mut error = None;
+        let mut error_description = None;
+        let mut error_uri = None;
+        let raw_query = raw_query?;
+        for pair in raw_query.split('&') {
+            let (key, value) = pair.split_once('=').unwrap_or((pair, ""));
+            let key = decode_query_component(key)?;
+            let value = decode_query_component(value)?;
+            let target = match key.as_str() {
+                "code" => &mut code,
+                "state" => &mut state,
+                "error" => &mut error,
+                "error_description" => &mut error_description,
+                "error_uri" => &mut error_uri,
+                _ => continue,
+            };
+            if target.replace(value).is_some() {
+                return None;
             }
-            "code" => {
-                if code.replace(value.into_owned()).is_some() {
-                    return Err(());
-                }
+        }
+        let state = state.filter(|state| !state.is_empty())?;
+        match (code, error, error_description, error_uri) {
+            (Some(code), None, None, None) if !code.is_empty() => {
+                Some(Self::Success { state, code })
             }
-            "error" => {
-                if provider_error.replace(value.into_owned()).is_some() {
-                    return Err(());
-                }
-            }
-            "error_description" | "error_uri" => {
-                if has_error_details {
-                    return Err(());
-                }
-                has_error_details = true;
-            }
-            _ => {}
+            (None, Some(error), _, _) if !error.is_empty() => Some(Self::ProviderError { state }),
+            _ => None,
         }
     }
-    if provider_error.is_some() || has_error_details {
-        return if code.is_some() || provider_error.is_none() {
-            Err(())
-        } else {
-            Ok(CallbackParameters::ProviderError { state })
-        };
-    }
-    match (state, code) {
-        (Some(state), Some(code)) if !state.is_empty() && !code.is_empty() => {
-            Ok(CallbackParameters::Success { state, code })
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum FailureCode {
+    AuthenticationFailed,
+    ProviderUnavailable,
+}
+
+impl FailureCode {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::AuthenticationFailed => "authentication_failed",
+            Self::ProviderUnavailable => "provider_unavailable",
         }
-        _ => Err(()),
+    }
+}
+
+fn callback_failure(error: FailureCode, return_to: &str) -> Response {
+    let mut response = failure_redirect(error, return_to);
+    response
+        .extensions_mut()
+        .insert(super::session::CallbackIntent::failed(return_to));
+    response
+}
+
+pub(super) fn failure_redirect(error: FailureCode, return_to: &str) -> Response {
+    let location = relative_url_with_query(
+        "/login",
+        &[("error", error.as_str()), ("return_to", return_to)],
+    );
+    redirect(&location)
+}
+
+pub(crate) fn redirect(location: &str) -> Response {
+    match HeaderValue::from_str(location) {
+        Ok(location) => Response::builder()
+            .status(StatusCode::SEE_OTHER)
+            .header(header::LOCATION, location)
+            .body(axum::body::Body::empty())
+            .expect("static redirect response should build"),
+        Err(_) => Response::builder()
+            .status(StatusCode::SEE_OTHER)
+            .header(header::LOCATION, "/")
+            .body(axum::body::Body::empty())
+            .expect("fallback redirect response should build"),
+    }
+}
+
+pub(crate) fn login_redirect(return_to: &str) -> Response {
+    let location = relative_url_with_query("/login", &[("return_to", return_to)]);
+    let mut response = redirect(&location);
+    response
+        .headers_mut()
+        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    response
+}
+
+fn relative_url_with_query(path: &str, pairs: &[(&str, &str)]) -> String {
+    let mut url = url::Url::parse("http://localhost/").expect("static URL should parse");
+    url.set_path(path);
+    {
+        let mut query = url.query_pairs_mut();
+        for (key, value) in pairs {
+            query.append_pair(key, value);
+        }
+    }
+    match url.query() {
+        Some(query) => format!("{}?{query}", url.path()),
+        None => url.path().to_string(),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, Mutex};
-
-    use async_trait::async_trait;
-    use tower_sessions::session::Record;
-    use tower_sessions::{SessionStore, session_store};
-
     use super::*;
 
-    #[derive(Debug, Default)]
-    struct CapturingStore {
-        record: Mutex<Option<Record>>,
-    }
-
-    #[async_trait]
-    impl SessionStore for CapturingStore {
-        async fn create(&self, record: &mut Record) -> session_store::Result<()> {
-            *self.record.lock().expect("record lock") = Some(record.clone());
-            Ok(())
-        }
-
-        async fn save(&self, record: &Record) -> session_store::Result<()> {
-            *self.record.lock().expect("record lock") = Some(record.clone());
-            Ok(())
-        }
-
-        async fn load(
-            &self,
-            _: &tower_sessions::session::Id,
-        ) -> session_store::Result<Option<Record>> {
-            Ok(None)
-        }
-
-        async fn delete(&self, _: &tower_sessions::session::Id) -> session_store::Result<()> {
-            Ok(())
-        }
-    }
-
-    struct FixedClock(SystemTime);
-
-    impl Clock for FixedClock {
-        fn now(&self) -> SystemTime {
-            self.0
-        }
-    }
-
     #[test]
-    fn config_payload_keeps_provider_name_as_json_data() {
-        let provider_name = "<provider>&\\\"name";
-        let payload = config_payload(true, Some(provider_name));
-        assert_eq!(
-            payload
-                .get("provider_name")
-                .and_then(serde_json::Value::as_str),
-            Some(provider_name)
-        );
-        assert_eq!(payload.get("enabled"), Some(&serde_json::json!(true)));
-    }
-
-    #[tokio::test]
-    async fn successful_session_retains_only_local_authentication_timestamps() {
-        let store = Arc::new(CapturingStore::default());
-        let session = Session::new(None, store.clone(), None);
-        for (key, value) in [
-            (PREAUTH_STATE_KEY, "seeded-state"),
-            ("oidc.nonce", "seeded-nonce"),
-            ("oidc.code", "seeded-code"),
-            ("oidc.token", "seeded-token"),
-            ("oidc.claims", "seeded-claims"),
-            ("oidc.secret", "seeded-secret"),
-        ] {
-            session
-                .insert(key, value)
-                .await
-                .expect("seed session value");
-        }
-        let clock = FixedClock(UNIX_EPOCH + std::time::Duration::from_secs(100));
-
-        establish_authenticated_session(&session, &clock)
-            .await
-            .expect("establish session");
-
-        let record = store
-            .record
-            .lock()
-            .expect("record lock")
-            .clone()
-            .expect("saved session record");
-        assert_eq!(record.data.len(), 3);
-        assert_eq!(
-            record.data.get(AUTHENTICATED_KEY),
-            Some(&serde_json::json!(true))
-        );
-        assert_eq!(
-            record.data.get(AUTHENTICATED_AT_KEY),
-            Some(&serde_json::json!(100))
-        );
-        assert_eq!(
-            record.data.get(EXPIRES_AT_KEY),
-            Some(&serde_json::json!(100 + SESSION_TTL.as_secs()))
-        );
-        for secret in [
-            "seeded-state",
-            "seeded-nonce",
-            "seeded-code",
-            "seeded-token",
-            "seeded-claims",
-            "seeded-secret",
-        ] {
-            assert!(
-                !record.data.values().any(|value| value == secret),
-                "session retained {secret}"
+    fn shared_callback_vectors_validate_success_and_provider_error_shapes() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/auth/callbacks.json"))
+                .expect("callback fixture should parse");
+        for vector in fixture["vectors"].as_array().unwrap() {
+            let kind = match CallbackQuery::parse(vector["query"].as_str()) {
+                Some(CallbackQuery::Success { .. }) => "success",
+                Some(CallbackQuery::ProviderError { .. }) => "error",
+                None => "invalid",
+            };
+            assert_eq!(
+                kind,
+                vector["target"][super::super::app::FIXTURE_APP],
+                "{}",
+                vector["id"]
             );
         }
     }
 
     #[test]
-    fn callback_rejects_duplicate_and_mixed_parameters() {
+    fn callback_shapes_decode_names_and_values_before_validation() {
         for query in [
-            "state=one&state=two&code=code",
-            "state=one&code=one&code=two",
-            "state=one&code=one&error=access_denied",
-            "state=one&error=access_denied&error=server_error",
-            "state=one&code=one&error_description=pollution",
-            "code=one",
-            "state=one",
+            "error=denied",
+            "error=denied&state=",
+            "state=s&code",
+            "error=&state=s&error_uri=detail",
+            "error=denied&state=s&error_description=&%65rror_description=detail",
+            "error=denied&state=s&error_uri=&%65rror_uri=detail",
+            "code=c&state=s&%63ode=",
+            "error=denied&state=s&%65rror=",
+            "code=c&state=s&%GG=ignored",
+            "code=c&state=s&extra=ok&extra=%FF",
         ] {
-            assert!(parse_callback_parameters(query).is_err(), "{query}");
+            assert!(CallbackQuery::parse(Some(query)).is_none(), "{query}");
         }
-    }
-
-    #[test]
-    fn callback_accepts_only_unambiguous_success_or_error() {
         assert!(matches!(
-            parse_callback_parameters("state=one&code=two"),
-            Ok(CallbackParameters::Success { .. })
+            CallbackQuery::parse(Some(
+                "error=denied&state=s&error_description=&error_uri="
+            )),
+            Some(CallbackQuery::ProviderError { state }) if state == "s"
         ));
         assert!(matches!(
-            parse_callback_parameters("error=access_denied&state=one"),
-            Ok(CallbackParameters::ProviderError { .. })
+            CallbackQuery::parse(Some("%63ode=a%2Bb+c&%73tate=s%2Bt+u&extra=1&extra=2")),
+            Some(CallbackQuery::Success { state, code }) if state == "s+t u" && code == "a+b c"
         ));
     }
 }

@@ -5,7 +5,7 @@
   import Logo from "#lib/components/Logo.svelte";
   import {
     fetchAuthConfig,
-    safeLocalTarget,
+    returnToFromQuery,
     type AuthConfig,
   } from "#lib/auth.js";
   import { translations } from "#lib/stores/locale.js";
@@ -13,9 +13,7 @@
   let config: AuthConfig | null = $state(null);
   let configUnavailable = $state(false);
 
-  const returnTo = $derived(
-    safeLocalTarget(page.url.searchParams.get("return_to")),
-  );
+  const returnTo = $derived(returnToFromQuery(page.url.search));
   const loginHref = $derived(
     `/auth/login?return_to=${encodeURIComponent(returnTo)}`,
   );
@@ -64,13 +62,14 @@
         {:else if config === null}
           <p class="status" role="status">{$translations.common.loading}</p>
         {:else if config.enabled}
+          {@const providerName = config.provider_name}
           {#if status}<p class="status" role="status">{status}</p>{/if}
-          <!-- Backend-only auth endpoint; its target is derived from resolve('/login'). -->
+          <!-- Auth endpoints are not SvelteKit routes. -->
           <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
           <a class="btn btn-primary provider-action" href={loginHref}>
             {$translations.auth.continueWith.replace(
               "{provider}",
-              config.provider_name,
+              () => providerName,
             )}
           </a>
         {/if}

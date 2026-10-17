@@ -214,6 +214,7 @@ export const es: Translations = {
     appearance: "Apariencia",
     authentication: "Autenticación",
     signOut: "Cerrar sesión",
+    signOutFailed: "No se pudo cerrar la sesión. Inténtalo de nuevo.",
     theme: "Tema",
     themeLight: "Claro",
     themeDark: "Oscuro",

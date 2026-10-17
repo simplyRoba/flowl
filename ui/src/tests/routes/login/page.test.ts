@@ -1,8 +1,15 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import Page from "../../../routes/login/+page.svelte";
 import loginSource from "../../../routes/login/+page.svelte?raw";
+import queryVectors from "../../../../../tests/fixtures/auth/return-queries.json";
 import { setLocale } from "#lib/stores/locale.js";
 
 const { goto, fetchAuthConfig } = vi.hoisted(() => ({
@@ -23,10 +30,9 @@ vi.mock("$app/state", () => ({
     },
   },
 }));
-vi.mock("#lib/auth.js", () => ({
+vi.mock("#lib/auth.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("#lib/auth.js")>()),
   fetchAuthConfig,
-  safeLocalTarget: (target: string | null) =>
-    target?.startsWith("/") && !target.startsWith("//") ? target : "/",
 }));
 
 beforeEach(() => {
@@ -40,6 +46,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   setLocale("en");
 });
@@ -78,6 +85,136 @@ describe("login page", () => {
     expect(document.querySelector(".login-page")).toBeTruthy();
     expect(document.querySelector(".login-card")).toBeTruthy();
   });
+
+  it.each(queryVectors.vectors)(
+    "uses strict raw query decoding in the provider action: $id",
+    async (vector) => {
+      pageUrl = new URL(`http://localhost/login?${vector.query}`);
+      render(Page);
+      const action = await screen.findByRole("link", {
+        name: "Continue with Garden SSO",
+      });
+      expect(action.getAttribute("href")).toBe(
+        `/auth/login?return_to=${encodeURIComponent(vector.target.flowl)}`,
+      );
+      expect(goto).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    "\ufeffProvider",
+    "Provider\ufeff",
+    "Pro\ufeffvider",
+    "\ufeff",
+    "$$",
+    "$&",
+    "$`",
+    "$'",
+  ])(
+    "consumes and renders a backend-valid provider label %j",
+    async (providerName) => {
+      const { fetchAuthConfig: realFetchAuthConfig } =
+        await vi.importActual<typeof import("#lib/auth.js")>("#lib/auth.js");
+      fetchAuthConfig.mockImplementationOnce(() =>
+        realFetchAuthConfig(
+          async () =>
+            new Response(
+              JSON.stringify({ enabled: true, provider_name: providerName }),
+            ),
+        ),
+      );
+      render(Page);
+      const action = await screen.findByRole("link");
+      expect(action.textContent).toContain(`Continue with ${providerName}`);
+      expect(action.getAttribute("href")).toBe(
+        "/auth/login?return_to=%2Fplants%2F7",
+      );
+      expect(screen.queryByRole("status")).toBeNull();
+    },
+  );
+
+  it("renders an untrusted provider label as text, not markup", async () => {
+    const provider = '<img src=x onerror="alert(1)">';
+    fetchAuthConfig.mockResolvedValue({
+      enabled: true,
+      provider_name: provider,
+    });
+    render(Page);
+    const action = await screen.findByRole("link", {
+      name: `Continue with ${provider}`,
+    });
+    expect(action.textContent).toContain(provider);
+    expect(action.querySelector("img")).toBeNull();
+  });
+
+  it.each([
+    "",
+    "?error=authentication_failed",
+    "?error=provider_unavailable",
+    "?logged_out=1",
+  ])(
+    "waits for one manual provider activation without immediate or delayed login in state %j",
+    async (query) => {
+      pageUrl = new URL(`http://localhost/login${query}`);
+      pageUrl.searchParams.set("error_description", "provider-secret-sentinel");
+      const activations = vi.fn((event: MouseEvent) => {
+        event.preventDefault();
+      });
+      document.addEventListener("click", activations);
+      vi.useFakeTimers();
+      try {
+        render(Page);
+        await vi.advanceTimersByTimeAsync(0);
+        const action = screen.getByRole("link", {
+          name: "Continue with Garden SSO",
+        });
+        expect(activations).not.toHaveBeenCalled();
+        expect(goto).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(30_000);
+        expect(activations).not.toHaveBeenCalled();
+        expect(goto).not.toHaveBeenCalled();
+        expect(fetchAuthConfig).toHaveBeenCalledTimes(1);
+        expect(document.querySelectorAll(".provider-action")).toHaveLength(1);
+        expect(document.body.textContent).not.toContain(
+          "provider-secret-sentinel",
+        );
+        expect(action.getAttribute("href")).toBe("/auth/login?return_to=%2F");
+        await fireEvent.click(action);
+        expect(activations).toHaveBeenCalledTimes(1);
+      } finally {
+        document.removeEventListener("click", activations);
+      }
+    },
+  );
+
+  it.each([
+    ["/plants/42?label=a%20b&ratio=100%25#entry%20one", true],
+    ["/apiary?ratio=100%25#entry", true],
+    [`/${"%61".repeat(682)}a`, true],
+    [`/${"%61".repeat(682)}aa`, false],
+    ["/plants%2f42", false],
+    ["/plants%3fquery", false],
+    ["/plants%23entry", false],
+    ["/api", false],
+    ["/%61pi/plants", false],
+    ["/health", false],
+    ["/uploads/photo.jpg", false],
+  ])(
+    "preserves or rejects the serialized provider target %s",
+    async (target, accepted) => {
+      pageUrl = new URL("http://localhost/login");
+      pageUrl.searchParams.set("return_to", target as string);
+      render(Page);
+
+      const action = await screen.findByRole("link", {
+        name: "Continue with Garden SSO",
+      });
+      const href = new URL(action.getAttribute("href")!, "http://localhost");
+      expect(href.pathname).toBe("/auth/login");
+      expect(href.searchParams.get("return_to")).toBe(accepted ? target : "/");
+      expect(goto).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     [
@@ -131,7 +268,7 @@ describe("login page", () => {
   );
 
   it("returns to the application root when auth is disabled", async () => {
-    fetchAuthConfig.mockResolvedValue({ enabled: false, provider_name: null });
+    fetchAuthConfig.mockResolvedValue({ enabled: false });
     render(Page);
 
     await waitFor(() => {
@@ -141,13 +278,17 @@ describe("login page", () => {
 
   it("uses a generic provider-unavailable state if config cannot be read", async () => {
     fetchAuthConfig.mockRejectedValue(new Error("offline"));
+    vi.useFakeTimers();
     render(Page);
+    await vi.advanceTimersByTimeAsync(0);
 
     expect(
-      await screen.findByText(
-        "The sign-in provider is temporarily unavailable.",
-      ),
+      screen.getByText("The sign-in provider is temporarily unavailable."),
     ).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(goto).not.toHaveBeenCalled();
+    expect(fetchAuthConfig).toHaveBeenCalledTimes(1);
   });
 });

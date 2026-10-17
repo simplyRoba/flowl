@@ -216,6 +216,7 @@ export const de: Translations = {
     appearance: "Darstellung",
     authentication: "Authentifizierung",
     signOut: "Abmelden",
+    signOutFailed: "Abmelden fehlgeschlagen. Bitte erneut versuchen.",
     theme: "Thema",
     themeLight: "Hell",
     themeDark: "Dunkel",

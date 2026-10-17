@@ -47,6 +47,40 @@ function cacheStorage(cached?: Response) {
 }
 
 describe("authentication service-worker policy", () => {
+  it.each([
+    null,
+    [],
+    {},
+    { enabled: "false" },
+    { enabled: false, provider_name: null },
+    { enabled: false, extra: true },
+    { enabled: true },
+    { enabled: true, provider_name: null },
+    { enabled: true, provider_name: "SSO", extra: true },
+    ...[
+      "",
+      " SSO ",
+      "é".repeat(81),
+      "🌱".repeat(81),
+      "bad\nname",
+      "bad\0name",
+      "bad\u0085name",
+    ].map((provider_name) => ({ enabled: true, provider_name })),
+  ])(
+    "does not confirm either auth mode from malformed config %j",
+    async (config) => {
+      const worker = createAuthModeController();
+      const fetchConfig = vi
+        .fn()
+        .mockResolvedValue(response(200, JSON.stringify(config)));
+      await expect(worker.policyMode(fetchConfig)).resolves.toBe("enabled");
+      fetchConfig.mockResolvedValue(
+        response(200, JSON.stringify({ enabled: false })),
+      );
+      await expect(worker.policyMode(fetchConfig)).resolves.toBe("disabled");
+      expect(fetchConfig).toHaveBeenCalledTimes(2);
+    },
+  );
   it.each(["/auth/config", "/auth/login", "/auth/callback", "/auth/logout"])(
     "keeps %s network-only without touching application caches",
     async (path) => {
@@ -256,9 +290,13 @@ describe("authentication service-worker policy", () => {
         }),
       )
       .mockResolvedValueOnce(
-        response(200, JSON.stringify({ enabled: true }), {
-          "Content-Type": "application/json",
-        }),
+        response(
+          200,
+          JSON.stringify({ enabled: true, provider_name: "OpenID Connect" }),
+          {
+            "Content-Type": "application/json",
+          },
+        ),
       );
 
     await expect(worker.policyMode(fetchConfig)).resolves.toBe("disabled");

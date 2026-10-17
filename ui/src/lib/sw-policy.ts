@@ -1,3 +1,5 @@
+import { parseAuthConfig } from "#lib/auth-config.js";
+
 export const PROTECTED_CACHE_PREFIXES = [
   "flowl-api-",
   "flowl-photo-",
@@ -74,16 +76,12 @@ export function createAuthModeController(): AuthModeController {
       throw new Error("Authentication configuration is unavailable");
     }
 
-    const config: unknown = await response.json();
-    if (
-      typeof config !== "object" ||
-      config === null ||
-      typeof (config as { enabled?: unknown }).enabled !== "boolean"
-    ) {
+    const config = parseAuthConfig(await response.json());
+    if (config === null) {
       throw new Error("Authentication configuration is invalid");
     }
 
-    return (config as { enabled: boolean }).enabled ? "enabled" : "disabled";
+    return config.enabled ? "enabled" : "disabled";
   }
 
   return {

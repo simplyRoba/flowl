@@ -1,83 +1,27 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 import { isProtectedCacheName } from "#lib/sw-policy.js";
-
-export const MAX_RETURN_TO_BYTES = 2048;
-
-export interface EnabledAuthConfig {
-  enabled: true;
-  provider_name: string;
-}
-
-export interface DisabledAuthConfig {
-  enabled: false;
-  provider_name: null;
-}
-
-export type AuthConfig = EnabledAuthConfig | DisabledAuthConfig;
+import { parseAuthConfig, type AuthConfig } from "#lib/auth-config.js";
+import {
+  loginUrl as commonLoginUrl,
+  returnToFromQuery as commonReturnToFromQuery,
+  safeLocalTarget as commonSafeLocalTarget,
+} from "#lib/auth-core.js";
+export { MAX_RETURN_TO_BYTES } from "#lib/auth-return.js";
+export type {
+  AuthConfig,
+  EnabledAuthConfig,
+  DisabledAuthConfig,
+} from "#lib/auth-config.js";
 
 export type FetchLike = typeof fetch;
 
-function byteLength(value: string): number {
-  return new TextEncoder().encode(value).byteLength;
-}
-
-function hasControlCharacter(value: string): boolean {
-  return [...value].some((character) => {
-    const code = character.charCodeAt(0);
-    return code <= 0x1f || code === 0x7f;
-  });
-}
-
-/** Returns a bounded, non-recursive local navigation target or `/`. */
 export function safeLocalTarget(target: string | null | undefined): string {
-  if (!target || byteLength(target) > MAX_RETURN_TO_BYTES) return "/";
-  if (!target.startsWith("/") || target.startsWith("//")) return "/";
-  if (/\\/.test(target) || hasControlCharacter(target)) return "/";
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(target);
-  } catch {
-    return "/";
-  }
-  if (/\\/.test(decoded) || hasControlCharacter(decoded)) return "/";
+  return commonSafeLocalTarget(target, ["/uploads"]);
+}
 
-  const pathEnd = target.search(/[?#]/);
-  const rawPath = pathEnd === -1 ? target : target.slice(0, pathEnd);
-  let decodedPath: string;
-  try {
-    decodedPath = decodeURIComponent(rawPath);
-  } catch {
-    return "/";
-  }
-
-  if (decodedPath.includes("%") || /%(?:2f|5c|3f|23)/i.test(rawPath)) {
-    return "/";
-  }
-  if (
-    decodedPath
-      .split("/")
-      .some((segment) => segment === "." || segment === "..") ||
-    decodedPath === "/login" ||
-    decodedPath.startsWith("/login/") ||
-    decodedPath === "/auth" ||
-    decodedPath.startsWith("/auth/")
-  ) {
-    return "/";
-  }
-
-  try {
-    if (
-      new URL(target, "https://flowl.invalid").origin !==
-      "https://flowl.invalid"
-    ) {
-      return "/";
-    }
-  } catch {
-    return "/";
-  }
-
-  return target;
+export function returnToFromQuery(rawQuery: string): string {
+  return commonReturnToFromQuery(rawQuery, ["/uploads"]);
 }
 
 export function currentReturnTarget(
@@ -89,7 +33,7 @@ export function currentReturnTarget(
 }
 
 export function loginUrl(target: string): `/login?return_to=${string}` {
-  return `/login?return_to=${encodeURIComponent(safeLocalTarget(target))}`;
+  return commonLoginUrl(target, ["/uploads"]) as `/login?return_to=${string}`;
 }
 
 export async function fetchAuthConfig(
@@ -100,24 +44,11 @@ export async function fetchAuthConfig(
     throw new Error("Authentication configuration is unavailable");
   }
 
-  const data: unknown = await response.json();
-  if (
-    typeof data !== "object" ||
-    data === null ||
-    typeof (data as { enabled?: unknown }).enabled !== "boolean"
-  ) {
+  const config = parseAuthConfig(await response.json());
+  if (config === null) {
     throw new Error("Authentication configuration is invalid");
   }
-
-  const config = data as { enabled: boolean; provider_name?: unknown };
-  if (
-    (config.enabled && typeof config.provider_name !== "string") ||
-    (!config.enabled && config.provider_name !== null)
-  ) {
-    throw new Error("Authentication configuration is invalid");
-  }
-
-  return config as AuthConfig;
+  return config;
 }
 
 let authNavigationPending = false;
@@ -196,12 +127,31 @@ export function setServiceWorkerAuthMode(enabled: boolean): void {
   setWorkerAuthMode(navigator.serviceWorker?.controller, enabled);
 }
 
-/** Submits a real same-origin form so the backend owns logout navigation. */
-export function postLogout(): void {
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = "/auth/logout";
-  form.style.display = "none";
-  document.body.append(form);
-  form.submit();
+export async function postLogout(
+  fetchFn: FetchLike = fetch,
+  navigate: (url: "/login?logged_out=1") => void = (url) =>
+    window.location.assign(url),
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetchFn("/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+      redirect: "manual",
+    });
+  } catch {
+    throw new Error("Sign out failed. Please try again.");
+  }
+
+  // Browsers hide manual redirects as opaqueredirect (status 0), including same-origin 303s.
+  if (
+    (response.type === "opaqueredirect" && response.status === 0) ||
+    (response.status === 303 &&
+      response.headers.get("Location") === "/login?logged_out=1")
+  ) {
+    navigate("/login?logged_out=1");
+    return;
+  }
+  throw new Error("Sign out failed. Please try again.");
 }

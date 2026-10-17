@@ -54,6 +54,66 @@ describe("authentication response classification", () => {
     );
   });
 
+  it("deduplicates concurrent exact expiry responses without rechecking health", async () => {
+    const received = () =>
+      response(401, {
+        code: "AUTHENTICATION_REQUIRED",
+        message: "Authentication is required",
+      });
+    const results = await Promise.allSettled([
+      classifyResponse(received()),
+      classifyResponse(received()),
+      classifyResponse(received()),
+    ]);
+    expect(results.every((result) => result.status === "rejected")).toBe(true);
+    expect(goto).toHaveBeenCalledExactlyOnceWith(
+      "/login?return_to=%2Fplants%2F7%3Ftab%3Dcare%23log",
+      { replace: true },
+    );
+    expect(recheckHealth).not.toHaveBeenCalled();
+  });
+
+  it.each(["/login", "/auth", "/auth/callback"])(
+    "suppresses expiry recursion from %s",
+    async (path) => {
+      window.history.replaceState({}, "", path);
+      await expect(
+        classifyResponse(response(401, { code: "AUTHENTICATION_REQUIRED" })),
+      ).rejects.toBeInstanceOf(ApiError);
+      expect(goto).not.toHaveBeenCalled();
+      expect(recheckHealth).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    [
+      "/plants/7?ratio=100%25#entry%20one",
+      "/plants/7?ratio=100%25#entry%20one",
+    ],
+    ["/apiary?tab=care#entry", "/apiary?tab=care#entry"],
+    ["/api", "/"],
+    ["/health", "/"],
+    ["/uploads/photo.jpg", "/"],
+    ["/plants%2f7?tab=care#entry", "/"],
+  ])(
+    "validates expiry navigation from %s without decoding its serialization",
+    async (path, expected) => {
+      window.history.replaceState({}, "", path);
+      await expect(
+        classifyResponse(
+          response(401, {
+            code: "AUTHENTICATION_REQUIRED",
+            message: "Authentication is required",
+          }),
+        ),
+      ).rejects.toBeInstanceOf(ApiError);
+      const destination = new URL(goto.mock.calls[0]![0], "http://localhost");
+      expect(destination.pathname).toBe("/login");
+      expect(destination.searchParams.get("return_to")).toBe(expected);
+      expect(goto.mock.calls[0]![1]).toEqual({ replace: true });
+    },
+  );
+
   it.each([
     response(401, { code: "OTHER", message: "Nope" }),
     response(500, { code: "AUTHENTICATION_REQUIRED", message: "Nope" }),

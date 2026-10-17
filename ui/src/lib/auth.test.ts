@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { goto } from "$app/navigation";
+import returnVectors from "../../../tests/fixtures/auth/return-targets.json";
 
 vi.mock("$app/navigation", () => ({ goto: vi.fn() }));
 
@@ -7,13 +8,34 @@ import {
   MAX_RETURN_TO_BYTES,
   currentReturnTarget,
   fetchAuthConfig,
+  loginUrl,
   navigateToLogin,
+  postLogout,
   purgeProtectedCaches,
   resetAuthNavigationForTests,
   safeLocalTarget,
 } from "./auth";
 
 describe("safeLocalTarget", () => {
+  it.each(returnVectors.vectors)("common return fixture: $id", (vector) => {
+    const input = vector.input;
+    const value =
+      input === null
+        ? null
+        : typeof input === "string"
+          ? input
+          : input.prefix + input.repeat.repeat(input.count) + input.suffix;
+    const expected = vector.target.flowl ? (value ?? "/") : "/";
+    expect(safeLocalTarget(value)).toBe(expected);
+    const wire =
+      value === null
+        ? ""
+        : new URLSearchParams({ return_to: value }).toString();
+    expect(safeLocalTarget(new URLSearchParams(wire).get("return_to"))).toBe(
+      expected,
+    );
+  });
+
   it("preserves a SPA path, query, and fragment", () => {
     expect(safeLocalTarget("/plants/42?tab=care#entry-7")).toBe(
       "/plants/42?tab=care#entry-7",
@@ -55,24 +77,30 @@ describe("safeLocalTarget", () => {
     expect(safeLocalTarget("/plants/%252fprivate")).toBe("/");
   });
 
+  it("constructs login URLs without decoding or normalizing accepted targets", () => {
+    const target = "/plants/42?label=a%20b&ratio=100%25#entry%20one";
+    const url = new URL(loginUrl(target), "https://flowl.invalid");
+    expect(url.pathname).toBe("/login");
+    expect(url.searchParams.get("return_to")).toBe(target);
+    expect(new URL(loginUrl("/api"), url).searchParams.get("return_to")).toBe(
+      "/",
+    );
+  });
+
   it("rejects an oversized target", () => {
     expect(safeLocalTarget(`/${"a".repeat(MAX_RETURN_TO_BYTES)}`)).toBe("/");
   });
 });
 
 describe("auth configuration", () => {
-  it("accepts the disabled backend payload with a null provider", async () => {
+  it("accepts the disabled backend payload without a provider", async () => {
     await expect(
       fetchAuthConfig(
         vi
           .fn()
-          .mockResolvedValue(
-            new Response(
-              JSON.stringify({ enabled: false, provider_name: null }),
-            ),
-          ),
+          .mockResolvedValue(new Response(JSON.stringify({ enabled: false }))),
       ),
-    ).resolves.toEqual({ enabled: false, provider_name: null });
+    ).resolves.toEqual({ enabled: false });
   });
 
   it("accepts an enabled backend payload and rejects invalid combinations", async () => {
@@ -99,6 +127,118 @@ describe("auth configuration", () => {
           ),
       ),
     ).rejects.toThrow("invalid");
+  });
+});
+
+describe("postLogout", () => {
+  beforeEach(() => vi.mocked(goto).mockClear());
+
+  function opaqueResponse(type: "opaqueredirect" | "opaque"): Response {
+    return Object.defineProperty(Response.error(), "type", { value: type });
+  }
+
+  it.each([
+    [
+      "visible 303",
+      () =>
+        new Response(null, {
+          status: 303,
+          headers: { Location: "/login?logged_out=1" },
+        }),
+    ],
+    ["browser manual redirect", () => opaqueResponse("opaqueredirect")],
+  ] as const)(
+    "POSTs logout and hard-navigates only after %s",
+    async (_kind, response) => {
+      let finish!: (response: Response) => void;
+      const fetchFn = vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            finish = resolve;
+          }),
+      );
+      const navigate = vi.fn();
+      const logout = postLogout(fetchFn, navigate);
+
+      expect(fetchFn).toHaveBeenCalledExactlyOnceWith("/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        redirect: "manual",
+      });
+      expect(navigate).not.toHaveBeenCalled();
+      finish(response());
+      await logout;
+      expect(navigate).toHaveBeenCalledExactlyOnceWith("/login?logged_out=1");
+    },
+  );
+
+  it.each([
+    [
+      "HTTP 500",
+      () => new Response("provider-secret-sentinel", { status: 500 }),
+    ],
+    [
+      "HTTP 401",
+      () =>
+        new Response(JSON.stringify({ code: "AUTHENTICATION_REQUIRED" }), {
+          status: 401,
+        }),
+    ],
+    ["HTTP 200", () => new Response("provider-secret-sentinel")],
+    ["opaque non-redirect", () => opaqueResponse("opaque")],
+    [
+      "external redirect",
+      () =>
+        new Response(null, {
+          status: 303,
+          headers: {
+            Location: "https://provider.invalid/provider-secret-sentinel",
+          },
+        }),
+    ],
+    [
+      "unexpected local redirect",
+      () =>
+        new Response(null, {
+          status: 303,
+          headers: { Location: "/auth/login" },
+        }),
+    ],
+    ["missing redirect target", () => new Response(null, { status: 303 })],
+    [
+      "wrong redirect status",
+      () =>
+        new Response(null, {
+          status: 302,
+          headers: { Location: "/login?logged_out=1" },
+        }),
+    ],
+  ] as const)(
+    "fails closed with a fixed error for %s",
+    async (_kind, response) => {
+      const received = response();
+      const readBody = vi.spyOn(received, "text");
+      const navigate = vi.fn();
+      await expect(
+        postLogout(vi.fn().mockResolvedValue(received), navigate),
+      ).rejects.toEqual(new Error("Sign out failed. Please try again."));
+      expect(readBody).not.toHaveBeenCalled();
+      expect(received.bodyUsed).toBe(false);
+      expect(navigate).not.toHaveBeenCalled();
+      expect(goto).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not reflect network errors or navigate after transport failure", async () => {
+    const navigate = vi.fn();
+    await expect(
+      postLogout(
+        vi.fn().mockRejectedValue(new Error("provider-secret-sentinel")),
+        navigate,
+      ),
+    ).rejects.toEqual(new Error("Sign out failed. Please try again."));
+    expect(navigate).not.toHaveBeenCalled();
   });
 });
 

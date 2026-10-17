@@ -210,6 +210,7 @@ const en = {
     appearance: "Appearance",
     authentication: "Authentication",
     signOut: "Sign out",
+    signOutFailed: "Sign out failed. Please try again.",
     theme: "Theme",
     themeLight: "Light",
     themeDark: "Dark",

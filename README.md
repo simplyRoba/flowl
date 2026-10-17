@@ -79,20 +79,18 @@ docker compose up -d
 | `FLOWL_AI_BASE_URL` | `https://api.openai.com/v1` | Base URL for the AI API. |
 | `FLOWL_AI_MODEL` | `gpt-4.1-mini` | Model name used for all AI tasks. |
 | `FLOWL_AI_RATE_LIMIT` | `10` | Max AI requests per minute (0 to disable). |
-| `FLOWL_AUTH_ENABLED` | `false` | Enable built-in OIDC authentication. Only `true` or `false` is accepted. |
-| `FLOWL_EXTERNAL_URL` | — | Required when auth is enabled. Public HTTPS origin of Flowl, with no path, query, or fragment. |
-| `FLOWL_OIDC_ISSUER` | — | Required when auth is enabled. Exact HTTPS issuer identifier advertised by the provider. |
+| `FLOWL_AUTH_ENABLED` | `false` | Enable OIDC login. |
+| `FLOWL_EXTERNAL_URL` | — | Required public HTTPS URL of Flowl, without a subpath. |
+| `FLOWL_OIDC_ISSUER` | — | Required OIDC issuer URL. |
 | `FLOWL_OIDC_CLIENT_ID` | — | Required confidential-client identifier. |
 | `FLOWL_OIDC_CLIENT_SECRET` | — | Required confidential-client secret. |
-| `FLOWL_OIDC_PROVIDER_NAME` | `OpenID Connect` | Provider name shown on the login page. |
+| `FLOWL_OIDC_PROVIDER_NAME` | `OpenID Connect` | Name shown on the login button. |
 
 ### OIDC authentication
 
-Authentication is disabled by default. Configure the variables above and register `<FLOWL_EXTERNAL_URL>/auth/callback` on a confidential OpenID Connect client using Authorization Code flow.
+Register `<FLOWL_EXTERNAL_URL>/auth/callback` with a confidential Authorization Code client supporting `client_secret_basic` or `client_secret_post`.
 
-The public URL and provider endpoints must use HTTPS; Flowl itself may use HTTP behind a TLS-terminating proxy. The issuer must exactly match the provider value, including any trailing slash.
-
-Sessions are process-local and expire after 12 hours. Restarts sign everyone out, and multi-instance deployments require sticky routing. When enabled, Flowl protects the API, uploads, and application pages; `/health` and login resources remain public.
+Flowl serves HTTP behind a TLS-terminating reverse proxy. Public and provider URLs require HTTPS; the provider needs a publicly trusted certificate. Use the issuer URL exactly as advertised, including any trailing slash. The provider must be reachable at startup.
 
 ### Compatible AI models
 
@@ -138,11 +136,15 @@ flowl works as an installable PWA and remains usable when your device can't reac
 
 An orange dot on the Settings icon indicates the app is offline. Pages that can't load any cached data show an offline message. When the server becomes reachable again, all controls re-enable automatically.
 
-With OIDC enabled, session expiry does not erase offline data. **Sign out** purges protected caches while retaining login resources and theme/language preferences.
+With OIDC enabled, session expiry does not erase cached data. Use **Sign out** to clear cached plant data and photos on shared devices.
 
 ## Security
 
-Flowl includes optional built-in OIDC authentication for the UI, API, and uploads. It does not add users, roles, per-user data, or provider logout; every accepted identity accesses the same data. If built-in authentication is disabled, use a trusted network or an authenticating reverse proxy.
+Enable OIDC or use an authenticating reverse proxy before exposing Flowl outside a trusted network.
+
+- All signed-in users share the same data. Restrict access to the OIDC client at your provider.
+- Sessions end 12 hours after login or on restart. Use one instance or sticky routing; instances do not share sessions.
+- Signing out ends only the Flowl session, not the provider session.
 
 ## Home Assistant
 

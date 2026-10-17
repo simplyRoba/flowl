@@ -6,30 +6,29 @@ use axum::Router;
 use axum::extract::Request;
 use axum::http::{StatusCode, Uri};
 use axum::middleware::{self, Next};
-use axum::response::{IntoResponse, Json, Redirect, Response};
-use axum::routing::{any, get, post};
+use axum::response::{IntoResponse, Json, Response};
+use axum::routing::{any, get};
 use serde_json::{Value, json};
 use sqlx::SqlitePool;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tower_http::services::ServeDir;
-use tower_sessions::cookie::SameSite;
-use tower_sessions::{Expiry, MemoryStore, Session, SessionManagerLayer};
+use tower_sessions::Session;
 use tracing::{debug, info};
 
 use crate::api;
 use crate::api::error::ApiError;
 use crate::auth;
-use crate::auth::return_to::SafeReturnTo;
 use crate::embedded::{exact_static_handler, index_handler, is_public_asset, static_handler};
 use crate::state::AppState;
 
 pub fn router(state: AppState) -> Router {
-    if state.auth.is_some() {
+    let app = if state.auth.is_some() {
         enabled_router(&state)
     } else {
         disabled_router(state)
-    }
+    };
+    app.layer(middleware::from_fn(no_store_auth_responses))
 }
 
 fn disabled_router(state: AppState) -> Router {
@@ -37,7 +36,7 @@ fn disabled_router(state: AppState) -> Router {
     let pool = state.pool.clone();
     Router::new()
         .route("/health", get(move || health(pool)))
-        .route("/auth/config", get(auth::routes::config))
+        .route("/auth/config", get(auth::app::public_config))
         .route("/api/info", get(info))
         .nest("/api", api::router(state))
         .nest_service("/uploads", uploads)
@@ -61,16 +60,12 @@ fn enabled_router(state: &AppState) -> Router {
 
     Router::new()
         .route("/health", get(move || health(pool)))
-        .route("/login", get(index_handler))
-        .nest(
-            "/auth",
-            Router::new()
-                .route("/config", get(auth::routes::config))
-                .route("/login", get(auth::routes::login))
-                .route("/callback", get(auth::routes::callback))
-                .route("/logout", post(auth::routes::logout))
-                .fallback(StatusCode::NOT_FOUND),
-        )
+        .route("/login", get(login_document))
+        .route("/auth/config", get(auth::app::public_config))
+        .merge(auth.protocol_routes())
+        .route("/auth", any(|| async { StatusCode::NOT_FOUND }))
+        .route("/auth/", any(|| async { StatusCode::NOT_FOUND }))
+        .route("/auth/{*path}", any(|| async { StatusCode::NOT_FOUND }))
         .route(
             "/api/info",
             get(info).route_layer(middleware::from_fn_with_state(
@@ -79,6 +74,7 @@ fn enabled_router(state: &AppState) -> Router {
             )),
         )
         .route("/api", any(authenticated_api_root))
+        .route("/api/", any(authenticated_api_root))
         .nest(
             "/api",
             api::router(api_state).layer(middleware::from_fn_with_state(
@@ -86,25 +82,20 @@ fn enabled_router(state: &AppState) -> Router {
                 require_api_auth,
             )),
         )
+        .route(
+            "/uploads/",
+            any(|| async { StatusCode::NOT_FOUND }).layer(middleware::from_fn_with_state(
+                auth.clone(),
+                require_upload_auth,
+            )),
+        )
         .nest("/uploads", uploads)
         .fallback({
             let auth = auth.clone();
             move |session: Session, uri: Uri| protected_document(auth.clone(), session, uri)
         })
-        .layer(Extension(auth))
-        .layer(
-            SessionManagerLayer::new(MemoryStore::default())
-                .with_name("flowl.sid")
-                .with_http_only(true)
-                .with_secure(true)
-                .with_same_site(SameSite::Lax)
-                .with_path("/")
-                // Each login sets an absolute deadline: five minutes for pre-auth and twelve
-                // hours for the authenticated session. A global inactivity expiry would slide.
-                .with_expiry(Expiry::OnSessionEnd)
-                .with_private(tower_sessions::cookie::Key::generate()),
-        )
-        .layer(middleware::from_fn(no_store_auth_responses))
+        .layer(Extension(auth.clone()))
+        .layer(auth.session_layer())
         .layer(middleware::from_fn(access_log))
 }
 
@@ -121,8 +112,19 @@ async fn no_store_auth_responses(request: Request, next: Next) -> Response {
     response
 }
 
+async fn login_document(
+    Extension(auth): Extension<Arc<auth::Authentication>>,
+    session: Session,
+) -> Response {
+    if auth.is_authenticated(&session).await {
+        auth::redirect("/")
+    } else {
+        index_handler().await
+    }
+}
+
 async fn authenticated_api_root(
-    Extension(auth): Extension<Arc<auth::AuthState>>,
+    Extension(auth): Extension<Arc<auth::Authentication>>,
     session: Session,
 ) -> Response {
     if has_session(auth.as_ref(), Some(session)).await {
@@ -133,7 +135,7 @@ async fn authenticated_api_root(
 }
 
 async fn require_api_auth(
-    Extension(auth): Extension<Arc<auth::AuthState>>,
+    Extension(auth): Extension<Arc<auth::Authentication>>,
     request: Request,
     next: Next,
 ) -> Response {
@@ -146,7 +148,7 @@ async fn require_api_auth(
 }
 
 async fn require_upload_auth(
-    Extension(auth): Extension<Arc<auth::AuthState>>,
+    Extension(auth): Extension<Arc<auth::Authentication>>,
     request: Request,
     next: Next,
 ) -> Response {
@@ -163,34 +165,35 @@ async fn require_upload_auth(
     }
 }
 
-async fn has_session(auth: &auth::AuthState, session: Option<Session>) -> bool {
+async fn has_session(auth: &auth::Authentication, session: Option<Session>) -> bool {
     let Some(session) = session else {
         return false;
     };
-    auth::routes::has_authenticated_session(&session, auth).await
+    auth.is_authenticated(&session).await
 }
 
-async fn protected_document(auth: Arc<auth::AuthState>, session: Session, uri: Uri) -> Response {
-    if is_public_asset(uri.path()) {
+async fn protected_document(
+    auth: Arc<auth::Authentication>,
+    session: Session,
+    uri: Uri,
+) -> Response {
+    let is_api = uri.path() == "/api" || uri.path().starts_with("/api/");
+    if !is_api && is_public_asset(uri.path()) {
         return exact_static_handler(uri).await;
     }
-    if auth::routes::has_authenticated_session(&session, auth.as_ref()).await {
+    if auth.is_authenticated(&session).await {
         return static_handler(uri).await;
     }
-    let target = SafeReturnTo::fallback(
-        &uri.path_and_query()
-            .map_or_else(|| "/".to_string(), |value| value.as_str().to_string()),
+    // Unmatched nested API paths inherit this fallback, not the API router's
+    // middleware. They still belong to the API authentication boundary.
+    if is_api {
+        return ApiError::Unauthorized("AUTHENTICATION_REQUIRED").into_response();
+    }
+    let target = auth::validate_return_to(
+        uri.path_and_query()
+            .map(axum::http::uri::PathAndQuery::as_str),
     );
-    let location = format!(
-        "/login?return_to={}",
-        url::form_urlencoded::byte_serialize(target.as_str().as_bytes()).collect::<String>()
-    );
-    let mut response = Redirect::to(&location).into_response();
-    response.headers_mut().insert(
-        axum::http::header::CACHE_CONTROL,
-        axum::http::HeaderValue::from_static("no-store"),
-    );
-    response
+    auth::login_redirect(&target)
 }
 
 async fn access_log(request: Request, next: Next) -> Response {
@@ -262,4 +265,44 @@ async fn shutdown_signal() {
     }
 
     info!("Shutdown signal received");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn outer_auth_headers_cover_inner_middleware_errors_only_in_auth_namespace() {
+        let app = Router::new()
+            .fallback(|| async { StatusCode::OK })
+            .layer(middleware::from_fn(|_: Request, _: Next| async {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }))
+            .layer(middleware::from_fn(no_store_auth_responses));
+        for path in ["/auth", "/auth/config", "/auth/unknown", "/authentic", "/"] {
+            let response = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .uri(path)
+                        .body(axum::body::Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+            assert_eq!(
+                response
+                    .headers()
+                    .get(axum::http::header::CACHE_CONTROL)
+                    .map(|value| value.to_str().unwrap()),
+                if path == "/auth" || path.starts_with("/auth/") {
+                    Some("no-store")
+                } else {
+                    None
+                },
+            );
+        }
+    }
 }
