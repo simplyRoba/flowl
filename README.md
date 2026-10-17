@@ -84,19 +84,20 @@ docker compose up -d
 | `FLOWL_OIDC_ISSUER` | — | Required when auth is enabled. Exact HTTPS issuer identifier advertised by the provider. |
 | `FLOWL_OIDC_CLIENT_ID` | — | Required confidential-client identifier. |
 | `FLOWL_OIDC_CLIENT_SECRET` | — | Required confidential-client secret. |
-| `FLOWL_OIDC_PROVIDER_NAME` | `OpenID Connect` | Login label: trimmed, non-empty, no remaining control characters, at most 80 Unicode scalar values (not bytes). |
+| `FLOWL_OIDC_PROVIDER_NAME` | `OpenID Connect` | Login button name. Trimmed, non-empty, no control characters, at most 80 Unicode code points. |
 
 ### OIDC authentication
 
-Authentication is disabled by default. The enable flag accepts only `true` or `false` and must be valid UTF-8. Other authentication settings must also be valid UTF-8 when enabled; they are ignored when the flag is absent or `false`. Configure the variables above and register `<FLOWL_EXTERNAL_URL>/auth/callback` on a confidential OpenID Connect client using Authorization Code flow.
+Authentication is disabled by default. To enable OIDC:
 
-The public URL and provider endpoints must use HTTPS; Flowl itself may use HTTP behind a TLS-terminating proxy. The issuer must exactly match the provider value, including any trailing slash.
+1. Create a confidential Authorization Code client with your provider. Flowl supports `client_secret_basic` and `client_secret_post`.
+2. Register `<FLOWL_EXTERNAL_URL>/auth/callback` as its redirect URI.
+3. Set `FLOWL_AUTH_ENABLED=true` and the required OIDC variables above.
+4. Restart Flowl.
 
-Sessions are process-local with a non-sliding 12-hour deadline. Pending logins expire after five minutes, with at most 1,024 pending per instance. Restarts sign everyone out; use a single instance or sticky routing. When enabled, Flowl protects the API, uploads, and application pages; `/health` and login resources remain public.
+The public URL and provider endpoints require HTTPS, with a publicly trusted certificate for the provider. Terminate TLS at your reverse proxy; Flowl serves HTTP internally. Use the issuer exactly as advertised, including any trailing slash. With OIDC enabled, invalid settings or failed provider discovery prevent startup.
 
-Public `/auth/config` returns `{ "enabled": false }` when disabled, or `{ "enabled": true, "provider_name": "OpenID Connect" }` with the configured label when enabled. Deploy or roll back the backend and embedded frontend together, without disabling authentication.
-
-Login return targets are local UI paths limited to 2,048 serialized UTF-8 bytes. API, health, upload, authentication, or ambiguous encoded paths fall back to `/`. Valid query escapes such as `?ratio=100%25` are preserved.
+Update or roll back the complete application image, including its embedded UI. Keep authentication enabled.
 
 ### Compatible AI models
 
@@ -142,11 +143,15 @@ flowl works as an installable PWA and remains usable when your device can't reac
 
 An orange dot on the Settings icon indicates the app is offline. Pages that can't load any cached data show an offline message. When the server becomes reachable again, all controls re-enable automatically.
 
-With OIDC enabled, session expiry does not erase offline data. **Sign out** purges protected caches while retaining login resources and theme/language preferences. If logout returns HTTP 500, Settings shows a generic failure notice without a signed-out confirmation or automatic sign-in retry.
+With OIDC enabled, session expiry does not erase cached data. Use **Sign out** to clear cached plant data and photos on shared devices. Theme, language, and login resources remain available.
 
 ## Security
 
-Flowl includes optional built-in OIDC authentication for the UI, API, and uploads. It does not add users, roles, per-user data, or provider logout; every accepted identity accesses the same data. A saved replacement login or local logout invalidates in-flight attempts. Authentication is saved before success; a failed save cannot grant access. Failed logout expires the cookie but returns HTTP 500, not a signed-out redirect. If built-in authentication is disabled, use a trusted network or an authenticating reverse proxy.
+Enable OIDC or use an authenticating reverse proxy before exposing Flowl outside a trusted network. OIDC protects application pages, the API, and uploads; health checks and login resources stay public.
+
+- All signed-in users share the same data. Restrict access to the OIDC client at your provider.
+- Sessions end 12 hours after login or on restart. Use one instance or sticky routing; instances do not share sessions.
+- Signing out ends only the Flowl session, not the provider session.
 
 ## Home Assistant
 
