@@ -71,6 +71,8 @@ Commit the planning artifacts separately before implementation. For each coheren
 - [x] 10.4 Replace the misleading restart assertion with fresh authentication and an unexpired original session; independently verify both authenticated cookies and pending callbacks are invalidated without conflating restart with expiry or logout.
 - [x] 10.5 Rerun the ordered full gates, strict OpenSpec validation, bidirectional parity and regression probes in both repositories; review updated verification evidence and confirm all findings are resolved without changing offline/deployment policies or archiving.
 
+- [x] 10.6 Render configured provider names literally using callback interpolation, retaining translations and unchanged label validation. Mirror shared valid-label fixtures from Gazel and test actual config decoding/login rendering for all JavaScript replacement metacharacters; verify both repositories' full gates and parity before archiving.
+
 ## Workflow follow-up
 
 - Archive the paired changes only after implementation, verification, and human review are complete; verify the archived specs and artifacts.

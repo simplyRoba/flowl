@@ -101,8 +101,17 @@ describe("login page", () => {
     },
   );
 
-  it.each(["\ufeffProvider", "Provider\ufeff", "Pro\ufeffvider", "\ufeff"])(
-    "consumes and renders a backend-valid U+FEFF provider label %j",
+  it.each([
+    "\ufeffProvider",
+    "Provider\ufeff",
+    "Pro\ufeffvider",
+    "\ufeff",
+    "$$",
+    "$&",
+    "$`",
+    "$'",
+  ])(
+    "consumes and renders a backend-valid provider label %j",
     async (providerName) => {
       const { fetchAuthConfig: realFetchAuthConfig } =
         await vi.importActual<typeof import("#lib/auth.js")>("#lib/auth.js");
