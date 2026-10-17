@@ -74,7 +74,6 @@ describe("authentication service-worker policy", () => {
         .fn()
         .mockResolvedValue(response(200, JSON.stringify(config)));
       await expect(worker.policyMode(fetchConfig)).resolves.toBe("enabled");
-      // Invalid enabled data must not establish sticky enabled mode either.
       fetchConfig.mockResolvedValue(
         response(200, JSON.stringify({ enabled: false })),
       );

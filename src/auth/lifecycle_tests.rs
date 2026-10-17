@@ -950,7 +950,7 @@ async fn mutate_after_callback(
         *failure.provisional.lock().unwrap() = Some(session.clone());
         match failure.mode {
             PostHandlerFailureMode::SaveBeforeWrite | PostHandlerFailureMode::SaveAfterWrite => {
-                // A REAL nonduplicate write, not the manager's idempotent auto-save.
+                // Force a backing write rather than an idempotent duplicate save.
                 session.insert("test_post_handler", true).await.unwrap();
                 failure.faults.fail_next(
                     StoreOperation::Save,
@@ -1264,8 +1264,6 @@ fn protocol_routes(auth: &Arc<AuthState>) -> Router {
 }
 
 fn server_app(auth: Arc<AuthState>) -> Router {
-    // These requests do not serve uploads; the ordinary Flowl server and owned
-    // session layer are still used for protected-route assertions.
     let (state, _directory) = test_state(auth);
     server::router(state)
 }

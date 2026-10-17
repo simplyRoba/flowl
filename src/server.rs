@@ -274,7 +274,6 @@ mod tests {
 
     #[tokio::test]
     async fn outer_auth_headers_cover_inner_middleware_errors_only_in_auth_namespace() {
-        // Synthetic middleware failure: this checks layer ordering, not session-store faults.
         let app = Router::new()
             .fallback(|| async { StatusCode::OK })
             .layer(middleware::from_fn(|_: Request, _: Next| async {

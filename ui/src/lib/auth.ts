@@ -16,12 +16,10 @@ export type {
 
 export type FetchLike = typeof fetch;
 
-/** Applies Flowl's managed-upload exclusion to the common return rules. */
 export function safeLocalTarget(target: string | null | undefined): string {
   return commonSafeLocalTarget(target, ["/uploads"]);
 }
 
-/** Strictly reads the login query with Flowl's managed-upload exclusion. */
 export function returnToFromQuery(rawQuery: string): string {
   return commonReturnToFromQuery(rawQuery, ["/uploads"]);
 }

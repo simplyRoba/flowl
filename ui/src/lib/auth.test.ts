@@ -27,7 +27,6 @@ describe("safeLocalTarget", () => {
           : input.prefix + input.repeat.repeat(input.count) + input.suffix;
     const expected = vector.target.flowl ? (value ?? "/") : "/";
     expect(safeLocalTarget(value)).toBe(expected);
-    // Match the peer harness's query round trip; accepted serialization is unchanged.
     const wire =
       value === null
         ? ""

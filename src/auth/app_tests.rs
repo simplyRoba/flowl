@@ -1,5 +1,3 @@
-//! Flowl adapter regressions retained across common-core extraction.
-
 use crate::auth::validate_return_to;
 
 #[test]
@@ -91,8 +89,6 @@ fn session_and_transaction_expiry_constants_are_bounded() {
         crate::auth::session::AUTHENTICATED_TTL,
         time::Duration::hours(12)
     );
-    // The actual registry cap is exercised by both the common registry tests and
-    // the app's final-slot/saturation/recovery HTTP test, not a facade constant.
 }
 
 #[test]

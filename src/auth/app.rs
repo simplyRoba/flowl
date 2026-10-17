@@ -1,5 +1,3 @@
-//! Flowl-owned authentication policy and configuration-source adapter.
-
 use super::config::{AuthConfigSource, OidcConfig};
 use super::runtime::UrlPolicy;
 
@@ -42,7 +40,6 @@ impl<S: crate::config::ConfigSource> AuthConfigSource for AuthSource<'_, S> {
     }
 }
 
-/// Public app DTO; no provider protocol or navigation implementation lives here.
 pub(crate) async fn public_config(
     auth: Option<axum::Extension<std::sync::Arc<super::Authentication>>>,
 ) -> axum::Json<serde_json::Value> {
@@ -111,7 +108,6 @@ const JWKS_REFRESH_COOLDOWN: std::time::Duration = std::time::Duration::from_sec
 #[cfg(test)]
 const MAX_PENDING_LOGIN_TRANSACTIONS: usize = 1_024;
 
-// Local compatibility seams adapt the older Flowl harness, not production behavior.
 #[cfg(test)]
 trait MonotonicClock: Send + Sync {
     fn now(&self) -> std::time::Instant;

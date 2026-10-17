@@ -64,7 +64,7 @@
         {:else if config.enabled}
           {@const providerName = config.provider_name}
           {#if status}<p class="status" role="status">{status}</p>{/if}
-          <!-- Backend-only auth endpoint; its target is derived from resolve('/login'). -->
+          <!-- Auth endpoints are not SvelteKit routes. -->
           <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
           <a class="btn btn-primary provider-action" href={loginHref}>
             {$translations.auth.continueWith.replace(

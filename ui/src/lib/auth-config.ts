@@ -1,4 +1,4 @@
-// Worker-safe compatibility exports: this module has no app/navigation side effects.
+// Shared with the service worker.
 export { parseAuthConfig } from "./auth-core.js";
 export type {
   AuthConfig,
