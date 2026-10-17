@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.10.0](https://github.com/simplyRoba/flowl/compare/v1.9.1...v1.10.0) (2026-10-17)
+
+
+### Features
+
+* **auth:** add optional automatic OIDC redirect ([b0e2448](https://github.com/simplyRoba/flowl/commit/b0e2448c99c1ebfd5663ed76b928c5f0ca3291ed))
+
+
+### Bug Fixes
+
+* **ui:** improve care timeline watering feedback ([c101274](https://github.com/simplyRoba/flowl/commit/c101274fc909f547a7b1747612d0f0fef79c4ef3))
+
+
+### Code Refactoring
+
+* **auth:** unify and harden OIDC authentication ([#391](https://github.com/simplyRoba/flowl/issues/391)) ([5805011](https://github.com/simplyRoba/flowl/commit/580501112b1a6ec06b7c1449fe7089ff31a53054))
+
+
+### Dependencies
+
+* bump @testing-library/user-event from 14.6.7 to 14.6.8 in /ui ([b6fc368](https://github.com/simplyRoba/flowl/commit/b6fc3683efb79a58aeafb8075a6c629b484bba02))
+* bump jsdom from 30.0.1 to 30.1.2 in /ui ([74b2705](https://github.com/simplyRoba/flowl/commit/74b270556ecdce4e84965d325fe7e5b2dd105685))
+* bump sha2 from 0.11.0 to 0.11.1 ([9e8d238](https://github.com/simplyRoba/flowl/commit/9e8d238e9626bee40a7b4e13aa81120f73043fd1))
+* bump tokio ([2b2e35a](https://github.com/simplyRoba/flowl/commit/2b2e35a9718ae6eca6b920d06e843cde61236403))
+* bump typescript-eslint ([3023364](https://github.com/simplyRoba/flowl/commit/30233645e099f7a7fe7869c119bba6fa27b8bc10))
+* bump vitest from 5.0.3 to 5.0.4 in /ui ([5611ac0](https://github.com/simplyRoba/flowl/commit/5611ac01452c40e38bd784e962193b20b15361eb))
+
 ## [1.9.1](https://github.com/simplyRoba/flowl/compare/v1.9.0...v1.9.1) (2026-10-15)
 
 
