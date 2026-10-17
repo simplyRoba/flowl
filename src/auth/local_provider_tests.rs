@@ -417,10 +417,18 @@ async fn jwks(State(provider): State<Arc<Provider>>) -> Response {
         return (StatusCode::FOUND, [(header::LOCATION, "/redirected")]).into_response();
     }
     if provider.jwks_failing.load(Ordering::SeqCst) {
-        return StatusCode::SERVICE_UNAVAILABLE.into_response();
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "jwks-body-private-sentinel",
+        )
+            .into_response();
     }
     if provider.malformed_jwks.load(Ordering::SeqCst) {
-        return ([(header::CONTENT_TYPE, "application/json")], "not-json").into_response();
+        return (
+            [(header::CONTENT_TYPE, "application/json")],
+            "jwks-parsing-private-sentinel",
+        )
+            .into_response();
     }
     let jwks = match provider.jwks_override.lock().await.clone() {
         Some(jwks) => jwks,
@@ -2503,6 +2511,166 @@ async fn missing_key_refresh_is_deduplicated_for_concurrent_callbacks() {
     assert_eq!(provider.provider.jwks_requests.load(Ordering::SeqCst), 2);
 }
 
+fn diagnostic_subscriber(
+    captured: &Arc<StdMutex<Vec<u8>>>,
+) -> impl tracing::Subscriber + Send + Sync {
+    tracing_subscriber::fmt()
+        .with_writer(CapturedWriter(captured.clone()))
+        .with_ansi(false)
+        .without_time()
+        .with_max_level(Level::TRACE)
+        .finish()
+}
+
+fn safe_diagnostics(captured: &Arc<StdMutex<Vec<u8>>>, expected: &str) -> String {
+    let logs = String::from_utf8(captured.lock().expect("captured log lock").clone()).unwrap();
+    assert!(logs.contains(expected), "{logs}");
+    for sensitive in [
+        "private-sentinel",
+        CLIENT_ID,
+        CLIENT_SECRET,
+        "http://",
+        "https://",
+    ] {
+        assert!(
+            !logs.contains(sensitive),
+            "diagnostic leaked {sensitive}: {logs}"
+        );
+    }
+    logs
+}
+
+#[tokio::test]
+async fn startup_discovery_failures_emit_safe_categories() {
+    use tracing::instrument::WithSubscriber;
+
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let unavailable = format!(
+        "http://{}/transport-private-sentinel",
+        listener.local_addr().unwrap()
+    );
+    drop(listener);
+    let captured = Arc::new(StdMutex::new(Vec::new()));
+    assert!(
+        AuthState::with_dependencies(
+            EnabledAuthConfig::loopback_test(&unavailable, "http://127.0.0.1"),
+            Arc::new(super::SystemClock),
+            Arc::new(ReqwestAuthHttpClient::new().unwrap()),
+        )
+        .with_subscriber(diagnostic_subscriber(&captured))
+        .await
+        .is_err()
+    );
+    safe_diagnostics(&captured, "transport failure");
+
+    for (mode, category) in [
+        ("status", "HTTP 503"),
+        ("parsing", "parsing failure"),
+        ("validation", "validation failure"),
+    ] {
+        provider.fail_jwks(mode == "status");
+        provider.fail_jwks_parsing(mode == "parsing");
+        if mode == "validation" {
+            provider
+                .set_discovery_issuer("https://issuer-private-sentinel.invalid".into())
+                .await;
+        }
+        let captured = Arc::new(StdMutex::new(Vec::new()));
+        assert!(
+            discover_provider(&provider)
+                .with_subscriber(diagnostic_subscriber(&captured))
+                .await
+                .is_err()
+        );
+        let logs = safe_diagnostics(&captured, "OIDC discovery failed");
+        assert!(logs.contains(category), "{logs}");
+    }
+    assert_eq!(provider.provider.token_requests.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn actual_refresh_failures_emit_safe_categories_and_only_retained_status() {
+    use tracing::instrument::WithSubscriber;
+
+    for method in [TokenAuthMethod::Basic, TokenAuthMethod::Post] {
+        for (mode, category, status) in [
+            ("redirect", "http_status", Some(302)),
+            ("status", "http_status", Some(503)),
+            ("parsing", "parsing", None),
+            ("empty", "validation", None),
+            ("unusable", "validation", None),
+        ] {
+            let provider = RunningProvider::start(method).await;
+            let auth = discover_provider(&provider).await.unwrap();
+            let original = provider.provider.signing_key.lock().await.clone();
+            provider.rotate_signing_key().await;
+            provider
+                .provider
+                .jwks_redirect
+                .store(mode == "redirect", Ordering::SeqCst);
+            provider.fail_jwks(mode == "status");
+            provider.fail_jwks_parsing(mode == "parsing");
+            if mode == "empty" {
+                provider
+                    .set_jwks_override(serde_json::json!({"keys": [], "private-sentinel": true}))
+                    .await;
+            } else if mode == "unusable" {
+                let mut keys = provider.provider.signing_key.lock().await.jwks.clone();
+                keys["keys"][0]["use"] = serde_json::json!("enc");
+                keys["keys"][0]["kid"] = serde_json::json!("key-private-sentinel");
+                provider.set_jwks_override(keys).await;
+            }
+            let captured = Arc::new(StdMutex::new(Vec::new()));
+            async {
+                for _ in 0..2 {
+                    assert_eq!(
+                        auth.exchange_and_verify(
+                            "accepted-code".into(),
+                            pending_login(&auth, &provider).await,
+                        )
+                        .await,
+                        Err(CallbackError::ProviderUnavailable)
+                    );
+                }
+            }
+            .with_subscriber(diagnostic_subscriber(&captured))
+            .await;
+            let logs = safe_diagnostics(&captured, "operation=\"jwks_refresh\"");
+            assert_eq!(logs.matches("jwks_refresh").count(), 1);
+            assert!(logs.contains(&format!("category=\"{category}\"")), "{logs}");
+            if let Some(status) = status {
+                assert!(logs.contains(&format!("status={status}")), "{logs}");
+            } else {
+                assert!(!logs.contains("status="), "{logs}");
+            }
+            // Failed refreshes retain the old usable keys, including client-auth selection.
+            *provider.provider.signing_key.lock().await = original;
+            assert_eq!(
+                auth.exchange_and_verify(
+                    "accepted-code".into(),
+                    pending_login(&auth, &provider).await,
+                )
+                .await,
+                Ok(())
+            );
+            assert_eq!(
+                *provider.provider.observed_basic.lock().await,
+                Some(method == TokenAuthMethod::Basic)
+            );
+            assert_eq!(
+                provider.provider.discovery_requests.load(Ordering::SeqCst),
+                1
+            );
+            assert_eq!(provider.provider.jwks_requests.load(Ordering::SeqCst), 2);
+            assert_eq!(
+                provider.provider.error_uri_requests.load(Ordering::SeqCst),
+                0
+            );
+        }
+    }
+}
+
 #[tokio::test]
 async fn access_logs_redact_login_token_callback_and_logout_values() {
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
@@ -3058,7 +3226,7 @@ async fn unmatched_api_paths_require_authentication_without_changing_authenticat
 }
 
 #[tokio::test]
-async fn authenticated_session_has_an_absolute_twelve_hour_deadline_and_does_not_survive_restart() {
+async fn authenticated_session_has_an_absolute_twelve_hour_deadline_and_idempotent_logout() {
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
     let clock = Arc::new(TestClock {
         time: StdMutex::new(SystemTime::now()),
@@ -3150,13 +3318,110 @@ async fn authenticated_session_has_an_absolute_twelve_hour_deadline_and_does_not
             );
         }
     }
+}
 
-    let (restarted_state, _directory) = test_state(auth);
-    let restarted = server::router(restarted_state)
-        .oneshot(request("/api/info", Some(&authenticated_cookie)))
+async fn assert_authenticated_cookie(app: &Router, authenticated_cookie: &str) {
+    assert_eq!(
+        app.clone()
+            .oneshot(request("/api/info", Some(authenticated_cookie)))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::OK
+    );
+}
+
+#[tokio::test]
+async fn fresh_authentication_invalidates_unexpired_cookie_and_pending_callback() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let clock = Arc::new(TestClock {
+        time: StdMutex::new(SystemTime::now()),
+    });
+    let config = EnabledAuthConfig::loopback_test(&provider.provider.base, "http://127.0.0.1");
+    let original = Arc::new(
+        AuthState::with_dependencies(
+            config.clone(),
+            clock.clone(),
+            Arc::new(ReqwestAuthHttpClient::new().unwrap()),
+        )
         .await
-        .expect("restart response");
-    assert_eq!(restarted.status(), StatusCode::UNAUTHORIZED);
+        .unwrap(),
+    );
+    let (state, _original_directory) = test_state(original);
+    let original_app = server::router(state);
+    let (preauth, state) = begin_login(&original_app, &provider).await;
+    let callback = original_app
+        .clone()
+        .oneshot(request(
+            &format!("/auth/callback?state={state}&code=accepted-code"),
+            Some(&preauth),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(callback.status(), StatusCode::SEE_OTHER);
+    assert_eq!(callback.headers()[header::LOCATION], "/plants?tab=care");
+    let authenticated = cookie(&callback);
+    assert_authenticated_cookie(&original_app, &authenticated).await;
+    // This is a separate browser, not a replacement of the authenticated browser.
+    let (pending_cookie, pending_state) =
+        begin_login_with_target(&original_app, &provider, "/pending-target-private-sentinel").await;
+    let restarted = Arc::new(
+        AuthState::with_dependencies(
+            config,
+            clock,
+            Arc::new(ReqwestAuthHttpClient::new().unwrap()),
+        )
+        .await
+        .unwrap(),
+    );
+    let (state, _restarted_directory) = test_state(restarted);
+    let restarted_app = server::router(state);
+    let rejected = restarted_app
+        .clone()
+        .oneshot(request("/api/info", Some(&authenticated)))
+        .await
+        .unwrap();
+    assert_eq!(rejected.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(rejected.headers()[header::CACHE_CONTROL], "no-store");
+    let token_requests = provider.provider.token_requests.load(Ordering::SeqCst);
+    // Submit before fresh login: the provider's expected authorization is still the old one.
+    let rejected = restarted_app
+        .clone()
+        .oneshot(request(
+            &format!("/auth/callback?state={pending_state}&code=accepted-code"),
+            Some(&pending_cookie),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(rejected.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        rejected.headers()[header::LOCATION],
+        "/login?error=authentication_failed&return_to=%2F"
+    );
+    assert_eq!(rejected.headers()[header::CACHE_CONTROL], "no-store");
+    assert_eq!(
+        provider.provider.token_requests.load(Ordering::SeqCst),
+        token_requests
+    );
+    let (fresh_cookie, fresh_state) = begin_login(&restarted_app, &provider).await;
+    let callback = restarted_app
+        .clone()
+        .oneshot(request(
+            &format!("/auth/callback?state={fresh_state}&code=accepted-code"),
+            Some(&fresh_cookie),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(callback.status(), StatusCode::SEE_OTHER);
+    assert_eq!(callback.headers()[header::LOCATION], "/plants?tab=care");
+    let replacement = cookie(&callback);
+    assert_authenticated_cookie(&restarted_app, &replacement).await;
+    assert_eq!(
+        provider.provider.token_requests.load(Ordering::SeqCst),
+        token_requests + 1
+    );
+    // No clock advance or logout: the original cookie remains independently valid.
+    assert_authenticated_cookie(&original_app, &authenticated).await;
 }
 
 #[tokio::test]

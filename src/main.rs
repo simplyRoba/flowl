@@ -31,13 +31,13 @@ async fn bootstrap_authentication() -> Option<Arc<auth::Authentication>> {
 #[tokio::main]
 async fn main() {
     let config = config::Config::load();
-    let auth_state = bootstrap_authentication().await;
-
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_new(&config.log_level).unwrap_or_else(|_| EnvFilter::new("info")),
         )
         .init();
+
+    let auth_state = bootstrap_authentication().await;
 
     info!("Starting flowl v{}", env!("CARGO_PKG_VERSION"));
 
