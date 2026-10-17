@@ -59,9 +59,9 @@ Commit the planning artifacts separately before implementation. For each coheren
 
 ## 9. Review integrated behavior and run release gates
 
-- [ ] 9.1 Exercise the complete embedded application through the configured proxy: public login/PWA assets, protected SPA/index/fallbacks, `/api` and `/uploads` 401 boundaries, authenticated bypass/deadlines, provider failures, strict config consumers, offline distinctions, and acknowledged logout purge including failed logout. Record expected/actual results and confirm complete-artifact rollback remains possible without an auth bypass.
-- [ ] 9.2 Run `npx -y @fission-ai/openspec validate unify-oidc-authentication --strict` in both change checkouts and rerun bidirectional explicit-peer parity after all edits. Present strict-validation output, parity results/revisions, integration evidence, and both change diffs for human review; keep results pending until reviewed and do not merge or push.
-- [ ] 9.3 Run the full gate in order in Flowl and the coordinated Gazel checkout, recording each result: `cargo fmt -- --check`, `cargo clippy -- -D warnings`, `npm run format:check --prefix ui`, `npm run lint --prefix ui`, `npm run check --prefix ui`, `cargo test`.
+- [x] 9.1 Exercise the complete embedded application through the configured proxy: public login/PWA assets, protected SPA/index/fallbacks, `/api` and `/uploads` 401 boundaries, authenticated bypass/deadlines, provider failures, strict config consumers, offline distinctions, and acknowledged logout purge including failed logout. Record expected/actual results and confirm complete-artifact rollback remains possible without an auth bypass.
+- [x] 9.2 Run `npx -y @fission-ai/openspec validate unify-oidc-authentication --strict` in both change checkouts and rerun bidirectional explicit-peer parity after all edits. Present strict-validation output, parity results/revisions, integration evidence, and both change diffs for human review; keep results pending until reviewed and do not merge or push.
+- [x] 9.3 Run the full gate in order in Flowl and the coordinated Gazel checkout, recording each result: `cargo fmt -- --check`, `cargo clippy -- -D warnings`, `npm run format:check --prefix ui`, `npm run lint --prefix ui`, `npm run check --prefix ui`, `cargo test`.
 
 ## Workflow follow-up
 
