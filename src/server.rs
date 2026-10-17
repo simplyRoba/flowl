@@ -177,11 +177,17 @@ async fn protected_document(
     session: Session,
     uri: Uri,
 ) -> Response {
-    if is_public_asset(uri.path()) {
+    let is_api = uri.path() == "/api" || uri.path().starts_with("/api/");
+    if !is_api && is_public_asset(uri.path()) {
         return exact_static_handler(uri).await;
     }
     if auth.is_authenticated(&session).await {
         return static_handler(uri).await;
+    }
+    // Unmatched nested API paths inherit this fallback, not the API router's
+    // middleware. They still belong to the API authentication boundary.
+    if is_api {
+        return ApiError::Unauthorized("AUTHENTICATION_REQUIRED").into_response();
     }
     let target = auth::validate_return_to(
         uri.path_and_query()

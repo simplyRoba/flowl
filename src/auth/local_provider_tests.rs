@@ -2974,6 +2974,90 @@ async fn enabled_and_disabled_route_policy_keeps_public_resources_and_uploads_co
 }
 
 #[tokio::test]
+async fn unmatched_api_paths_require_authentication_without_changing_authenticated_fallbacks() {
+    let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
+    let auth = Arc::new(discover_provider(&provider).await.unwrap());
+    let (state, _directory) = test_state(auth);
+    let mut disabled_state = state.clone();
+    disabled_state.auth = None;
+    let disabled = server::router(disabled_state);
+    let app = server::router(state);
+    let paths = [
+        "/api/unknown",
+        "/api/unknown/deep?source=test",
+        "/api/plants/123/unknown",
+        "/api//unknown",
+        "/api/unknown.json",
+    ];
+    for path in paths {
+        for method in ["GET", "POST", "DELETE", "HEAD", "OPTIONS"] {
+            let response = app
+                .clone()
+                .oneshot(request_with_method(method, path, None))
+                .await
+                .unwrap();
+            assert_eq!(
+                response.status(),
+                StatusCode::UNAUTHORIZED,
+                "{method} {path}"
+            );
+            assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+            assert!(response.headers().get(header::LOCATION).is_none());
+            let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+                .await
+                .unwrap();
+            if method == "HEAD" {
+                assert!(body.is_empty());
+            } else {
+                assert_eq!(
+                    serde_json::from_slice::<serde_json::Value>(&body).unwrap(),
+                    serde_json::json!({
+                        "code": "AUTHENTICATION_REQUIRED",
+                        "message": "Authentication is required"
+                    }),
+                    "{method} {path}"
+                );
+            }
+        }
+    }
+    assert_eq!(provider.provider.token_requests.load(Ordering::SeqCst), 0);
+    let (preauth_cookie, state) = begin_login(&app, &provider).await;
+    let callback = app
+        .clone()
+        .oneshot(request(
+            &format!("/auth/callback?state={state}&code=accepted-code"),
+            Some(&preauth_cookie),
+        ))
+        .await
+        .unwrap();
+    let authenticated_cookie = cookie(&callback);
+    for path in paths {
+        let authenticated = app
+            .clone()
+            .oneshot(request(path, Some(&authenticated_cookie)))
+            .await
+            .unwrap();
+        let existing_fallback = disabled.clone().oneshot(request(path, None)).await.unwrap();
+        assert_eq!(authenticated.status(), existing_fallback.status(), "{path}");
+        assert_eq!(
+            authenticated.headers(),
+            existing_fallback.headers(),
+            "{path}"
+        );
+        assert_eq!(
+            axum::body::to_bytes(authenticated.into_body(), usize::MAX)
+                .await
+                .unwrap(),
+            axum::body::to_bytes(existing_fallback.into_body(), usize::MAX)
+                .await
+                .unwrap(),
+            "{path}"
+        );
+    }
+    assert_eq!(provider.provider.token_requests.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
 async fn authenticated_session_has_an_absolute_twelve_hour_deadline_and_does_not_survive_restart() {
     let provider = RunningProvider::start(TokenAuthMethod::Basic).await;
     let clock = Arc::new(TestClock {
