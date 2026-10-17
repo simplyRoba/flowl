@@ -5,7 +5,7 @@
   import Logo from "#lib/components/Logo.svelte";
   import {
     fetchAuthConfig,
-    safeLocalTarget,
+    returnToFromQuery,
     type AuthConfig,
   } from "#lib/auth.js";
   import { translations } from "#lib/stores/locale.js";
@@ -13,9 +13,7 @@
   let config: AuthConfig | null = $state(null);
   let configUnavailable = $state(false);
 
-  const returnTo = $derived(
-    safeLocalTarget(page.url.searchParams.get("return_to")),
-  );
+  const returnTo = $derived(returnToFromQuery(page.url.search));
   const loginHref = $derived(
     `/auth/login?return_to=${encodeURIComponent(returnTo)}`,
   );

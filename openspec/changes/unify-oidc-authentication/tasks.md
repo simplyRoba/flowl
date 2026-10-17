@@ -63,6 +63,14 @@ Commit the planning artifacts separately before implementation. For each coheren
 - [x] 9.2 Run `npx -y @fission-ai/openspec validate unify-oidc-authentication --strict` in both change checkouts and rerun bidirectional explicit-peer parity after all edits. Present strict-validation output, parity results/revisions, integration evidence, and both change diffs for human review; keep results pending until reviewed and do not merge or push.
 - [x] 9.3 Run the full gate in order in Flowl and the coordinated Gazel checkout, recording each result: `cargo fmt -- --check`, `cargo clippy -- -D warnings`, `npm run format:check --prefix ui`, `npm run lint --prefix ui`, `npm run check --prefix ui`, `cargo test`.
 
+## 10. Resolve verification findings
+
+- [x] 10.1 Mirror the reviewed shared provider-label correction and fixtures from Gazel; verify backend-valid U+FEFF labels work in Flowl's login and strict config consumers while non-normalized labels remain rejected.
+- [x] 10.2 Mirror strict raw login-query decoding and shared wire-level fixtures from Gazel; retain Flowl's upload exclusion, navigation policy, and accepted target serialization, with malformed outer UTF-8 falling back to `/`.
+- [ ] 10.3 Mirror safe JWKS-refresh diagnostics and retain categorized discovery failures in normal executable startup. Add captured-log and startup-diagnostic regressions for transport, status, parsing, and validation failures without exposing provider or credential text.
+- [ ] 10.4 Replace the misleading restart assertion with fresh authentication and an unexpired original session; independently verify both authenticated cookies and pending callbacks are invalidated without conflating restart with expiry or logout.
+- [ ] 10.5 Rerun the ordered full gates, strict OpenSpec validation, bidirectional parity and regression probes in both repositories; review updated verification evidence and confirm all findings are resolved without changing offline/deployment policies or archiving.
+
 ## Workflow follow-up
 
 - Archive the paired changes only after implementation, verification, and human review are complete; verify the archived specs and artifacts.

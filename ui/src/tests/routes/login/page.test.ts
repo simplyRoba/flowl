@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import Page from "../../../routes/login/+page.svelte";
 import loginSource from "../../../routes/login/+page.svelte?raw";
+import queryVectors from "../../../../../tests/fixtures/auth/return-queries.json";
 import { setLocale } from "#lib/stores/locale.js";
 
 const { goto, fetchAuthConfig } = vi.hoisted(() => ({
@@ -84,6 +85,44 @@ describe("login page", () => {
     expect(document.querySelector(".login-page")).toBeTruthy();
     expect(document.querySelector(".login-card")).toBeTruthy();
   });
+
+  it.each(queryVectors.vectors)(
+    "uses strict raw query decoding in the provider action: $id",
+    async (vector) => {
+      pageUrl = new URL(`http://localhost/login?${vector.query}`);
+      render(Page);
+      const action = await screen.findByRole("link", {
+        name: "Continue with Garden SSO",
+      });
+      expect(action.getAttribute("href")).toBe(
+        `/auth/login?return_to=${encodeURIComponent(vector.target.flowl)}`,
+      );
+      expect(goto).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["\ufeffProvider", "Provider\ufeff", "Pro\ufeffvider", "\ufeff"])(
+    "consumes and renders a backend-valid U+FEFF provider label %j",
+    async (providerName) => {
+      const { fetchAuthConfig: realFetchAuthConfig } =
+        await vi.importActual<typeof import("#lib/auth.js")>("#lib/auth.js");
+      fetchAuthConfig.mockImplementationOnce(() =>
+        realFetchAuthConfig(
+          async () =>
+            new Response(
+              JSON.stringify({ enabled: true, provider_name: providerName }),
+            ),
+        ),
+      );
+      render(Page);
+      const action = await screen.findByRole("link");
+      expect(action.textContent).toContain(`Continue with ${providerName}`);
+      expect(action.getAttribute("href")).toBe(
+        "/auth/login?return_to=%2Fplants%2F7",
+      );
+      expect(screen.queryByRole("status")).toBeNull();
+    },
+  );
 
   it("renders an untrusted provider label as text, not markup", async () => {
     const provider = '<img src=x onerror="alert(1)">';

@@ -4,6 +4,7 @@ import { isProtectedCacheName } from "#lib/sw-policy.js";
 import { parseAuthConfig, type AuthConfig } from "#lib/auth-config.js";
 import {
   loginUrl as commonLoginUrl,
+  returnToFromQuery as commonReturnToFromQuery,
   safeLocalTarget as commonSafeLocalTarget,
 } from "#lib/auth-core.js";
 export { MAX_RETURN_TO_BYTES } from "#lib/auth-return.js";
@@ -18,6 +19,11 @@ export type FetchLike = typeof fetch;
 /** Applies Flowl's managed-upload exclusion to the common return rules. */
 export function safeLocalTarget(target: string | null | undefined): string {
   return commonSafeLocalTarget(target, ["/uploads"]);
+}
+
+/** Strictly reads the login query with Flowl's managed-upload exclusion. */
+export function returnToFromQuery(rawQuery: string): string {
+  return commonReturnToFromQuery(rawQuery, ["/uploads"]);
 }
 
 export function currentReturnTarget(
