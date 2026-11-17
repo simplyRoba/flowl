@@ -219,7 +219,7 @@ pub fn build_summarize_system_prompt(
     species: Option<&str>,
     locale: &str,
 ) -> String {
-    let species_part = species.map(|s| format!(" ({s})")).unwrap_or_default();
+    let species_part = species.map_or_default(|s| format!(" ({s})"));
 
     let lang_instruction = locale_instruction(locale);
 
