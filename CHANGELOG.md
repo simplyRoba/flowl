@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.10.1](https://github.com/simplyRoba/flowl/compare/v1.10.0...v1.10.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* satisfy clippy map_unwrap_or on Rust 1.100 ([#419](https://github.com/simplyRoba/flowl/issues/419)) ([019e2ef](https://github.com/simplyRoba/flowl/commit/019e2efd4f4b93845188df3851a642b2f126c71b))
+
+
+### Dependencies
+
+* bump @sveltejs/adapter-static from 4.0.0 to 4.0.1 in /ui ([#412](https://github.com/simplyRoba/flowl/issues/412)) ([81b9ed7](https://github.com/simplyRoba/flowl/commit/81b9ed77ae9a8e14f2a26d9f9ecb1c24d4529182))
+* bump @sveltejs/kit from 3.0.1 to 3.2.1 in /ui ([#413](https://github.com/simplyRoba/flowl/issues/413)) ([2a811d5](https://github.com/simplyRoba/flowl/commit/2a811d5d5780194b0c92744f56e40a21f41b8c62))
+* bump getrandom from 0.4.1 to 0.4.3 ([#400](https://github.com/simplyRoba/flowl/issues/400)) ([b3ef45f](https://github.com/simplyRoba/flowl/commit/b3ef45f0e09fe070342b820078bc80d995f72913))
+* bump jsdom from 30.1.2 to 30.1.3 in /ui ([#402](https://github.com/simplyRoba/flowl/issues/402)) ([6367222](https://github.com/simplyRoba/flowl/commit/6367222f60381e4f1ad213c1c623e28ff544ccb5))
+* bump minimatch and typescript-eslint in /ui ([#420](https://github.com/simplyRoba/flowl/issues/420)) ([85d8d23](https://github.com/simplyRoba/flowl/commit/85d8d23dce6eb45cad813fda291e733d901050d9))
+* bump rust-embed from 8.13.0 to 8.14.0 ([#416](https://github.com/simplyRoba/flowl/issues/416)) ([b74a119](https://github.com/simplyRoba/flowl/commit/b74a119284ab469547be32d748f66ff5593fe845))
+* bump rustls from 0.23.45 to 0.23.46 ([#408](https://github.com/simplyRoba/flowl/issues/408)) ([a56ab3b](https://github.com/simplyRoba/flowl/commit/a56ab3b8ab4932441c65b2a910d640496276883a))
+* bump the eslint group across 1 directory with 3 updates ([#411](https://github.com/simplyRoba/flowl/issues/411)) ([76e43ae](https://github.com/simplyRoba/flowl/commit/76e43ae0e46c16e9d4d8ba20b381de0e586b810f))
+* bump the svelte group across 1 directory with 3 updates ([#422](https://github.com/simplyRoba/flowl/issues/422)) ([f7b18e3](https://github.com/simplyRoba/flowl/commit/f7b18e38e44e8713aaf069b630481dc09d8877da))
+* bump tokio from 1.53.3 to 1.54.1 in the tokio group across 1 directory ([#404](https://github.com/simplyRoba/flowl/issues/404)) ([ddda488](https://github.com/simplyRoba/flowl/commit/ddda48872bea82d4dd82da2d2daeca8b594e40db))
+* bump uuid from 1.28.0 to 1.29.2 ([#414](https://github.com/simplyRoba/flowl/issues/414)) ([0b43666](https://github.com/simplyRoba/flowl/commit/0b436662292b9c153b78049bbcafdb4748c9de9a))
+* bump vitest from 5.0.4 to 5.0.5 in /ui ([#403](https://github.com/simplyRoba/flowl/issues/403)) ([b1a0567](https://github.com/simplyRoba/flowl/commit/b1a056798b8bcc9568b66682a48cf41dd133931f))
+
 ## [1.10.0](https://github.com/simplyRoba/flowl/compare/v1.9.1...v1.10.0) (2026-10-17)
 
 
