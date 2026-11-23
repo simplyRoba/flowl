@@ -548,9 +548,10 @@
   <div class="not-found">
     <h2>{$translations.plant.notFound}</h2>
     <p>{$translations.plant.notFoundHint}</p>
-    <a href={resolve("/")} class="back-link"
-      ><ArrowLeft size={16} /> {$translations.plant.backToPlants}</a
-    >
+    <a href={resolve("/")} class="back-link">
+      <ArrowLeft size={16} />
+      {$translations.plant.backToPlants}
+    </a>
   </div>
 {:else if plant && viewTicket}
   {@const visit = viewTicket}
@@ -634,9 +635,9 @@
               <div class="detail-name">
                 <h2 bind:this={nameElement}>{plant.name}</h2>
                 {#if plant.species}
-                  <span class="detail-species" bind:this={speciesElement}
-                    >{plant.species}</span
-                  >
+                  <span class="detail-species" bind:this={speciesElement}>
+                    {plant.species}
+                  </span>
                 {/if}
               </div>
               {#if plant.location_name}
@@ -693,42 +694,43 @@
               {$translations.plant.wateringSection}
             </div>
             <div class="detail-row">
-              <span class="detail-row-label"
-                >{$translations.plant.interval}</span
-              ><span class="detail-row-value"
-                >{$translations.plant.everyNDays.replace(
+              <span class="detail-row-label">
+                {$translations.plant.interval}
+              </span><span class="detail-row-value">
+                {$translations.plant.everyNDays.replace(
                   "{n}",
                   String(plant.watering_interval_days),
                 )}
-                <Repeat size={14} /></span
-              >
+                <Repeat size={14} />
+              </span>
             </div>
             <div class="detail-row">
-              <span class="detail-row-label"
-                >{$translations.plant.lastWatered}</span
-              ><span class="detail-row-value"
-                >{formatDate(plant.last_watered)}
-                <CalendarCheck size={14} /></span
-              >
+              <span class="detail-row-label">
+                {$translations.plant.lastWatered}
+              </span><span class="detail-row-value">
+                {formatDate(plant.last_watered)}
+                <CalendarCheck size={14} />
+              </span>
             </div>
             <div class="detail-row">
-              <span class="detail-row-label">{$translations.plant.nextDue}</span
-              ><span class="detail-row-value"
-                >{plant.next_due
+              <span class="detail-row-label">
+                {$translations.plant.nextDue}
+              </span><span class="detail-row-value">
+                {plant.next_due
                   ? formatDate(plant.next_due)
                   : $translations.plant.na}
-                <CalendarClock size={14} /></span
-              >
+                <CalendarClock size={14} />
+              </span>
             </div>
             {#if plant.soil_moisture}
               <div class="detail-row">
-                <span class="detail-row-label"
-                  >{$translations.plant.soilMoisture}</span
-                >
-                <span class="detail-row-value"
-                  >{soilMoistureLabel(plant.soil_moisture)}
-                  <Droplets size={14} /></span
-                >
+                <span class="detail-row-label">
+                  {$translations.plant.soilMoisture}
+                </span>
+                <span class="detail-row-value">
+                  {soilMoistureLabel(plant.soil_moisture)}
+                  <Droplets size={14} />
+                </span>
               </div>
             {/if}
           </div>
@@ -746,44 +748,44 @@
             </div>
             {#if plant.difficulty}
               <div class="detail-row">
-                <span class="detail-row-label"
-                  >{$translations.plant.difficulty}</span
-                >
-                <span class="detail-row-value"
-                  >{difficultyLabel(plant.difficulty)}
-                  <Gauge size={14} /></span
-                >
+                <span class="detail-row-label">
+                  {$translations.plant.difficulty}
+                </span>
+                <span class="detail-row-value">
+                  {difficultyLabel(plant.difficulty)}
+                  <Gauge size={14} />
+                </span>
               </div>
             {/if}
             {#if plant.pet_safety}
               <div class="detail-row">
-                <span class="detail-row-label"
-                  >{$translations.plant.petSafety}</span
-                >
-                <span class="detail-row-value"
-                  >{petSafetyLabel(plant.pet_safety)}
-                  <PawPrint size={14} /></span
-                >
+                <span class="detail-row-label">
+                  {$translations.plant.petSafety}
+                </span>
+                <span class="detail-row-value">
+                  {petSafetyLabel(plant.pet_safety)}
+                  <PawPrint size={14} />
+                </span>
               </div>
             {/if}
             {#if plant.growth_speed}
               <div class="detail-row">
-                <span class="detail-row-label"
-                  >{$translations.plant.growth}</span
-                >
-                <span class="detail-row-value"
-                  >{growthSpeedLabel(plant.growth_speed)}
-                  <TrendingUp size={14} /></span
-                >
+                <span class="detail-row-label">
+                  {$translations.plant.growth}
+                </span>
+                <span class="detail-row-value">
+                  {growthSpeedLabel(plant.growth_speed)}
+                  <TrendingUp size={14} />
+                </span>
               </div>
             {/if}
             {#if plant.soil_type}
               <div class="detail-row">
                 <span class="detail-row-label">{$translations.plant.soil}</span>
-                <span class="detail-row-value"
-                  >{soilTypeLabel(plant.soil_type)}
-                  <Layers size={14} /></span
-                >
+                <span class="detail-row-value">
+                  {soilTypeLabel(plant.soil_type)}
+                  <Layers size={14} />
+                </span>
               </div>
             {/if}
           </div>
@@ -847,16 +849,16 @@
                       </span>
                       <span class="timeline-text">
                         <span class="timeline-top">
-                          <span class="timeline-label"
-                            >{careGroupLabel(item)}</span
-                          >
-                          <span class="timeline-date"
-                            >{formatShortDate(
+                          <span class="timeline-label">
+                            {careGroupLabel(item)}
+                          </span>
+                          <span class="timeline-date">
+                            {formatShortDate(
                               item.firstAt,
                               new Date(item.firstAt).getFullYear() !==
                                 new Date(item.lastAt).getFullYear(),
-                            )} – {formatShortDate(item.lastAt)}</span
-                          >
+                            )} – {formatShortDate(item.lastAt)}
+                          </span>
                         </span>
                       </span>
                       <span class="timeline-group-chevron" class:expanded>
@@ -873,12 +875,12 @@
                           </span>
                           <span class="timeline-text">
                             <span class="timeline-top">
-                              <span class="timeline-label"
-                                >{$translations.care.watered}</span
-                              >
-                              <span class="timeline-date"
-                                >{formatShortDate(event.occurred_at)}</span
-                              >
+                              <span class="timeline-label">
+                                {$translations.care.watered}
+                              </span>
+                              <span class="timeline-date">
+                                {formatShortDate(event.occurred_at)}
+                              </span>
                             </span>
                           </span>
                           <span class="timeline-actions">
@@ -923,12 +925,12 @@
                     </span>
                     <span class="timeline-text">
                       <span class="timeline-top">
-                        <span class="timeline-label"
-                          >{eventTypeLabel(item.event_type)}</span
-                        >
-                        <span class="timeline-date"
-                          >{formatShortDate(item.occurred_at)}</span
-                        >
+                        <span class="timeline-label">
+                          {eventTypeLabel(item.event_type)}
+                        </span>
+                        <span class="timeline-date">
+                          {formatShortDate(item.occurred_at)}
+                        </span>
                       </span>
                       {#if item.photo_url}
                         <button

@@ -487,8 +487,10 @@
                 <div class="log-entry-content">
                   <a
                     href={resolve(`plants/${item.plantId}?from=/care-journal`)}
-                    class="log-entry-plant">{item.plantName}</a
+                    class="log-entry-plant"
                   >
+                    {item.plantName}
+                  </a>
                   <div class="log-entry-action">
                     {groupSummaryText(item)}
                   </div>
@@ -562,8 +564,10 @@
                 <div class="log-entry-content">
                   <a
                     href={resolve(`plants/${item.plant_id}?from=/care-journal`)}
-                    class="log-entry-plant">{item.plant_name}</a
+                    class="log-entry-plant"
                   >
+                    {item.plant_name}
+                  </a>
                   {#if item.photo_url}
                     <button
                       class="log-entry-photo"

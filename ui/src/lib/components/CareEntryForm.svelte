@@ -346,9 +346,9 @@
     </div>
 
     <div class="toolbar-right">
-      <button class="btn btn-outline" onclick={handleCancel}
-        >{$translations.common.cancel}</button
-      >
+      <button class="btn btn-outline" onclick={handleCancel}>
+        {$translations.common.cancel}
+      </button>
       <button
         class="btn btn-primary"
         onclick={handleSubmit}

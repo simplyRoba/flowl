@@ -375,9 +375,9 @@
         aria-describedby={`${id}-description`}
         focusable="false"
       >
-        <title id={`${id}-title`}
-          >{$translations.plant.careJournalSection}</title
-        >
+        <title id={`${id}-title`}>
+          {$translations.plant.careJournalSection}
+        </title>
         <desc id={`${id}-description`}>{description}</desc>
         <defs>
           <clipPath id={`${id}-ground-reveal`} clipPathUnits="userSpaceOnUse">

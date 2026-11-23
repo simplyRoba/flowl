@@ -437,15 +437,17 @@
     <section class="section settings-section authentication-section">
       <h2 class="section-title">{$translations.settings.authentication}</h2>
       <div class="about-row">
-        <span class="setting-label"
-          >{$translations.settings.authentication}</span
-        >
+        <span class="setting-label">
+          {$translations.settings.authentication}
+        </span>
         <button
           type="button"
           class="btn btn-outline btn-sm"
           disabled={logoutLoading}
-          onclick={handleSignOut}>{$translations.settings.signOut}</button
+          onclick={handleSignOut}
         >
+          {$translations.settings.signOut}
+        </button>
       </div>
     </section>
   {/if}
@@ -516,12 +518,12 @@
                 <div class="location-info">
                   <span class="location-name">{location.name}</span>
                   {#if location.plant_count > 0}
-                    <span class="plant-count"
-                      >{plural(
+                    <span class="plant-count">
+                      {plural(
                         $translations.settings.plantCount,
                         location.plant_count,
-                      )}</span
-                    >
+                      )}
+                    </span>
                   {/if}
                 </div>
                 <div class="location-actions">
@@ -577,8 +579,9 @@
           <span>{mqttStatus.broker}</span>
         </div>
         <div class="about-row">
-          <span class="setting-label">{$translations.settings.topicPrefix}</span
-          >
+          <span class="setting-label">
+            {$translations.settings.topicPrefix}
+          </span>
           <span>{mqttStatus.topic_prefix}</span>
         </div>
         <div class="about-row">
@@ -692,8 +695,8 @@
       {#if stats}
         <div class="about-row">
           <span class="setting-label">{$translations.settings.statsLabel}</span>
-          <span
-            >{plural($translations.settings.statsPlants, stats.plant_count)}, {plural(
+          <span>
+            {plural($translations.settings.statsPlants, stats.plant_count)}, {plural(
               $translations.settings.statsPhotos,
               stats.photo_count,
             )}, {plural(
@@ -702,8 +705,8 @@
             )}, {plural(
               $translations.settings.statsLocations,
               stats.location_count,
-            )}</span
-          >
+            )}
+          </span>
         </div>
       {/if}
     </section>

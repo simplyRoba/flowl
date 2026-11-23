@@ -380,10 +380,10 @@
               <span>{$translations.form.addPhoto}</span>
               <span class="upload-hint">{$translations.form.clickOrDrag}</span>
               {#if aiEnabled}
-                <span class="upload-hint upload-hint-ai"
-                  ><Sparkles size={12} />
-                  {$translations.form.addPhotoHint}</span
-                >
+                <span class="upload-hint upload-hint-ai">
+                  <Sparkles size={12} />
+                  {$translations.form.addPhotoHint}
+                </span>
               {/if}
               <input
                 type="file"
@@ -456,9 +456,9 @@
     {/if}
 
     <div class="form-group">
-      <label class="form-label" for="plant-name"
-        >{$translations.form.nameLabel}</label
-      >
+      <label class="form-label" for="plant-name">
+        {$translations.form.nameLabel}
+      </label>
       <input
         id="plant-name"
         type="text"
@@ -476,9 +476,9 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label" for="plant-species"
-        >{$translations.form.speciesLabel}</label
-      >
+      <label class="form-label" for="plant-species">
+        {$translations.form.speciesLabel}
+      </label>
       <input
         id="plant-species"
         type="text"
@@ -561,9 +561,10 @@
     </div>
 
     <div class="care-info-group">
-      <span class="care-info-label"
-        ><Gauge size={14} /> {$translations.form.difficulty}</span
-      >
+      <span class="care-info-label">
+        <Gauge size={14} />
+        {$translations.form.difficulty}
+      </span>
       <div class="light-selector">
         {#each [{ value: "easy", label: $translations.form.easy }, { value: "moderate", label: $translations.form.moderate }, { value: "demanding", label: $translations.form.demanding }] as opt (opt.value)}
           <button
@@ -581,9 +582,10 @@
     </div>
 
     <div class="care-info-group">
-      <span class="care-info-label"
-        ><PawPrint size={14} /> {$translations.form.petSafety}</span
-      >
+      <span class="care-info-label">
+        <PawPrint size={14} />
+        {$translations.form.petSafety}
+      </span>
       <div class="light-selector">
         {#each [{ value: "safe", label: $translations.form.safe }, { value: "caution", label: $translations.form.caution }, { value: "toxic", label: $translations.form.toxic }] as opt (opt.value)}
           <button
@@ -601,9 +603,10 @@
     </div>
 
     <div class="care-info-group">
-      <span class="care-info-label"
-        ><TrendingUp size={14} /> {$translations.form.growthSpeed}</span
-      >
+      <span class="care-info-label">
+        <TrendingUp size={14} />
+        {$translations.form.growthSpeed}
+      </span>
       <div class="light-selector">
         {#each [{ value: "slow", label: $translations.form.slow }, { value: "moderate", label: $translations.form.moderate }, { value: "fast", label: $translations.form.fast }] as opt (opt.value)}
           <button
@@ -621,9 +624,10 @@
     </div>
 
     <div class="care-info-group">
-      <span class="care-info-label"
-        ><Layers size={14} /> {$translations.form.soilType}</span
-      >
+      <span class="care-info-label">
+        <Layers size={14} />
+        {$translations.form.soilType}
+      </span>
       <div class="light-selector">
         {#each [{ value: "standard", label: $translations.form.standard }, { value: "cactus-mix", label: $translations.form.cactusMix }, { value: "orchid-bark", label: $translations.form.orchidBark }, { value: "peat-moss", label: $translations.form.peatMoss }] as opt (opt.value)}
           <button
@@ -641,9 +645,10 @@
     </div>
 
     <div class="care-info-group">
-      <span class="care-info-label"
-        ><Droplets size={14} /> {$translations.form.soilMoisture}</span
-      >
+      <span class="care-info-label">
+        <Droplets size={14} />
+        {$translations.form.soilMoisture}
+      </span>
       <div class="light-selector">
         {#each [{ value: "dry", label: $translations.form.dry }, { value: "moderate", label: $translations.form.moderate }, { value: "moist", label: $translations.form.moist }] as opt (opt.value)}
           <button
