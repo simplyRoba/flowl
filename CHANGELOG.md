@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.11.0](https://github.com/simplyRoba/flowl/compare/v1.10.1...v1.11.0) (2026-11-23)
+
+
+### Features
+
+* publish plant URLs in MQTT attributes ([2b91bb9](https://github.com/simplyRoba/flowl/commit/2b91bb9850ef66502e75a1d54f5b213f80a223b0))
+
+
+### Dependencies
+
+* bump jsdom from 30.1.3 to 31.0.1 in /ui ([92f5e33](https://github.com/simplyRoba/flowl/commit/92f5e33c4985e382b7d3ab368896efdbf59eb008))
+* bump sqlx from 0.9.0 to 0.9.1 ([8e35d80](https://github.com/simplyRoba/flowl/commit/8e35d80efe02527d7ac00503e546e2ddb4cfa15b))
+* bump the prettier group in /ui with 2 updates ([b588f70](https://github.com/simplyRoba/flowl/commit/b588f702a4fe7a476c1a52eafd7b67c23f47e292))
+* bump the svelte group in /ui with 3 updates ([b5da5c2](https://github.com/simplyRoba/flowl/commit/b5da5c23dff2c56abe7ae14ad449cbc82c0752e1))
+* bump uuid from 1.29.2 to 1.29.3 ([1cfc525](https://github.com/simplyRoba/flowl/commit/1cfc525ea9e7cee6560435bde680af6257ce01cd))
+* bump vitest from 5.0.5 to 5.1.1 in /ui ([6108d15](https://github.com/simplyRoba/flowl/commit/6108d151f7301c3aec624aedd1ed5e071d5e3d98))
+
 ## [1.10.1](https://github.com/simplyRoba/flowl/compare/v1.10.0...v1.10.1) (2026-11-17)
 
 
