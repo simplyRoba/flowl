@@ -58,6 +58,7 @@ pub struct AppState {
     pub mqtt_connected: Option<Arc<AtomicBool>>,
     pub mqtt_host: String,
     pub mqtt_port: u16,
+    pub mqtt_external_url: Option<url::Url>,
     pub mqtt_disabled: bool,
     pub ai_provider: Option<Arc<dyn AiProvider>>,
     pub ai_base_url: String,

@@ -21,6 +21,7 @@ async fn test_app_mqtt_enabled(connected: bool) -> (Router, tempfile::TempDir) {
         mqtt_connected: Some(flag),
         mqtt_host: "broker.local".to_string(),
         mqtt_port: 1883,
+        mqtt_external_url: None,
         mqtt_disabled: false,
         ai_provider: None,
         ai_base_url: String::new(),

@@ -80,7 +80,7 @@ docker compose up -d
 | `FLOWL_AI_MODEL` | `gpt-4.1-mini` | Model name used for all AI tasks. |
 | `FLOWL_AI_RATE_LIMIT` | `10` | Max AI requests per minute (0 to disable). |
 | `FLOWL_AUTH_ENABLED` | `false` | Enable OIDC login. |
-| `FLOWL_EXTERNAL_URL` | — | Required public HTTPS URL of Flowl, without a subpath. |
+| `FLOWL_EXTERNAL_URL` | — | Address you use to open Flowl in your browser, without a subpath. |
 | `FLOWL_OIDC_ISSUER` | — | Required OIDC issuer URL. |
 | `FLOWL_OIDC_CLIENT_ID` | — | Required confidential-client identifier. |
 | `FLOWL_OIDC_CLIENT_SECRET` | — | Required confidential-client secret. |

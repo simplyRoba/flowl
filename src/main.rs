@@ -10,11 +10,22 @@ use tokio::sync::Notify;
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
-async fn bootstrap_authentication() -> Option<Arc<auth::Authentication>> {
-    let config = config::AuthConfig::load().unwrap_or_else(|error| {
+fn load_auth_and_mqtt_origin(mqtt_disabled: bool) -> (config::AuthConfig, Option<url::Url>) {
+    let auth_config = config::AuthConfig::load().unwrap_or_else(|error| {
         eprintln!("Invalid authentication configuration: {error}");
         std::process::exit(1);
     });
+    let mqtt_origin = if mqtt_disabled {
+        None
+    } else if let Some(oidc) = auth_config.enabled() {
+        Some(oidc.external_url.clone())
+    } else {
+        config::load_mqtt_external_url()
+    };
+    (auth_config, mqtt_origin)
+}
+
+async fn bootstrap_authentication(config: config::AuthConfig) -> Option<Arc<auth::Authentication>> {
     match config {
         config::AuthConfig::Disabled => None,
         config::AuthConfig::Enabled(config) => Some(Arc::new(
@@ -37,7 +48,8 @@ async fn main() {
         )
         .init();
 
-    let auth_state = bootstrap_authentication().await;
+    let (auth_config, mqtt_external_url) = load_auth_and_mqtt_origin(config.mqtt_disabled);
+    let auth_state = bootstrap_authentication(auth_config).await;
 
     info!("Starting flowl v{}", env!("CARGO_PKG_VERSION"));
 
@@ -50,7 +62,6 @@ async fn main() {
         .expect("Failed to run database migrations");
     info!("Database ready at {}", config.db_path);
 
-    let mqtt_prefix = config.mqtt_topic_prefix.clone();
     let (mqtt_handle, mqtt_connected, mqtt_republish) = if config.mqtt_disabled {
         info!("FLOWL_MQTT_DISABLED set, skipping MQTT initialization");
         (None, None, None)
@@ -67,6 +78,7 @@ async fn main() {
         (handle, Some(connected), Some(republish_notify))
     };
     let mqtt_client = mqtt_handle.as_ref().map(|h| h.client.clone());
+    let mqtt_prefix = config.mqtt_topic_prefix;
 
     let upload_dir = PathBuf::from(&config.db_path)
         .parent()
@@ -101,8 +113,9 @@ async fn main() {
         image_store,
         mqtt_client: mqtt_client.clone(),
         mqtt_prefix: mqtt_prefix.clone(),
-        mqtt_connected: mqtt_connected.clone(),
-        mqtt_host: config.mqtt_host.clone(),
+        mqtt_external_url: mqtt_external_url.clone(),
+        mqtt_connected,
+        mqtt_host: config.mqtt_host,
         mqtt_port: config.mqtt_port,
         mqtt_disabled: config.mqtt_disabled,
         ai_provider,
@@ -117,8 +130,13 @@ async fn main() {
     };
     let router = server::router(state);
 
-    let checker_handle =
-        mqtt::spawn_state_checker(pool, mqtt_client.clone(), mqtt_prefix, mqtt_republish);
+    let checker_handle = mqtt::spawn_state_checker(
+        pool,
+        mqtt_client,
+        mqtt_prefix,
+        mqtt_republish,
+        mqtt_external_url,
+    );
 
     if let Err(e) = server::serve(router, config.port).await {
         error!("Server error: {e}");

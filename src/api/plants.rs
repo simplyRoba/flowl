@@ -376,6 +376,7 @@ pub async fn create_plant(
         plant.last_watered.as_deref(),
         plant.next_due.as_deref(),
         plant.watering_interval_days,
+        state.mqtt_external_url.as_ref(),
     )
     .await;
 
@@ -483,6 +484,7 @@ pub async fn update_plant(
         plant.last_watered.as_deref(),
         plant.next_due.as_deref(),
         plant.watering_interval_days,
+        state.mqtt_external_url.as_ref(),
     )
     .await;
 
@@ -545,6 +547,7 @@ pub async fn water_plant(
         plant.last_watered.as_deref(),
         plant.next_due.as_deref(),
         plant.watering_interval_days,
+        state.mqtt_external_url.as_ref(),
     )
     .await;
 

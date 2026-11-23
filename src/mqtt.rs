@@ -9,6 +9,7 @@ use sqlx::SqlitePool;
 use tokio::sync::Notify;
 use tokio::task::JoinHandle;
 use tracing::{debug, info, warn};
+use url::Url;
 
 use crate::api::plants::compute_watering_status;
 use crate::config::Config;
@@ -20,8 +21,12 @@ pub struct MqttHandle {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::time::Duration;
+
+    use rumqttc::{EventLoop, Publish, Request};
     use sqlx::sqlite::SqlitePoolOptions;
+
+    use super::*;
 
     #[tokio::test]
     async fn spawn_state_checker_skips_when_mqtt_disabled() {
@@ -30,7 +35,7 @@ mod tests {
             .await
             .expect("Failed to create in-memory pool");
 
-        let handle = spawn_state_checker(pool, None, "flowl".to_string(), None);
+        let handle = spawn_state_checker(pool, None, "flowl".to_string(), None, None);
         assert!(handle.is_none());
     }
 
@@ -49,6 +54,121 @@ mod tests {
         .expect("connection notification should wake checker");
 
         assert_eq!(wake, CheckerWake::FullRepublish);
+    }
+
+    async fn checker_test_pool(plant_ids: &[i64]) -> SqlitePool {
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .unwrap();
+        crate::db::run_migrations(&pool).await.unwrap();
+        for id in plant_ids {
+            sqlx::query(
+                "INSERT INTO plants (id, name, created_at, updated_at) VALUES \
+                 (?, 'Test plant', '2026-03-01T10:00:00Z', '2026-03-01T10:00:00Z')",
+            )
+            .bind(id)
+            .execute(&pool)
+            .await
+            .unwrap();
+        }
+        pool
+    }
+
+    async fn next_queued_publish(event_loop: &mut EventLoop) -> Publish {
+        tokio::time::timeout(Duration::from_secs(2), async {
+            loop {
+                // Drain queued requests into the retransmission buffer without opening a socket.
+                event_loop.clean();
+                match event_loop.pending.pop_front() {
+                    Some(Request::Publish(publish)) => return publish,
+                    Some(other) => panic!("expected an MQTT publish, got {other:?}"),
+                    None => tokio::time::sleep(Duration::from_millis(1)).await,
+                }
+            }
+        })
+        .await
+        .expect("checker queued an MQTT publish")
+    }
+
+    async fn assert_checker_state_and_attributes(event_loop: &mut EventLoop, id: i64) {
+        let state = next_queued_publish(event_loop).await;
+        assert_eq!(state.topic, format!("myplants/plant/{id}/state"));
+        assert_eq!(&state.payload[..], b"due");
+
+        let attributes = next_queued_publish(event_loop).await;
+        assert_eq!(attributes.topic, format!("myplants/plant/{id}/attributes"));
+        assert!(attributes.retain);
+        let payload: serde_json::Value = serde_json::from_slice(&attributes.payload).unwrap();
+        assert_eq!(
+            payload,
+            json!({
+                "last_watered": null,
+                "next_due": null,
+                "watering_interval_days": 7,
+                "plant_url": format!("https://flowl.example.org/plants/{id}"),
+            })
+        );
+    }
+
+    #[tokio::test]
+    async fn checker_full_sync_publishes_links_on_initial_connection_and_reconnect() {
+        let pool = checker_test_pool(&[7, 42]).await;
+        let (client, mut event_loop) =
+            AsyncClient::new(MqttOptions::new("test", "localhost", 1883), 10);
+        let notify = Arc::new(Notify::new());
+        let origin = Url::parse("https://flowl.example.org").unwrap();
+        // The connection loop uses this same notification for each CONNACK.
+        notify.notify_one();
+        let checker = spawn_state_checker(
+            pool,
+            Some(client),
+            "myplants".to_string(),
+            Some(notify.clone()),
+            Some(origin),
+        )
+        .unwrap();
+
+        for reconnect in [false, true] {
+            if reconnect {
+                notify.notify_one();
+            }
+            let mut seen = HashSet::new();
+            for _ in 0..2 {
+                let discovery = next_queued_publish(&mut event_loop).await;
+                let id = extract_plant_id(&discovery.topic, "myplants").unwrap();
+                assert!(seen.insert(id));
+                assert_eq!(
+                    discovery.topic,
+                    format!("homeassistant/sensor/myplants_plant_{id}/config")
+                );
+                let payload: serde_json::Value =
+                    serde_json::from_slice(&discovery.payload).unwrap();
+                assert_eq!(payload["unique_id"], format!("myplants_plant_{id}"));
+                assert!(payload["device"].get("configuration_url").is_none());
+                assert_checker_state_and_attributes(&mut event_loop, id).await;
+            }
+            assert_eq!(seen, HashSet::from([7, 42]));
+        }
+        checker.abort();
+    }
+
+    #[tokio::test]
+    async fn checker_periodic_reconciliation_publishes_links() {
+        let pool = checker_test_pool(&[7]).await;
+        let (client, mut event_loop) =
+            AsyncClient::new(MqttOptions::new("test", "localhost", 1883), 10);
+        let checker = spawn_checker_with_period(
+            pool,
+            client,
+            "myplants".to_string(),
+            Arc::new(Notify::new()),
+            Some(Url::parse("https://flowl.example.org").unwrap()),
+            Duration::from_millis(10),
+        );
+        assert_checker_state_and_attributes(&mut event_loop, 7).await;
+        checker.abort();
     }
 
     #[test]
@@ -171,6 +291,7 @@ mod tests {
             Some("2026-03-01T10:00:00Z"),
             Some("2026-03-08T10:00:00Z"),
             7,
+            None,
         );
         assert_eq!(topic, "flowl/plant/7/attributes");
 
@@ -178,16 +299,26 @@ mod tests {
         assert_eq!(json["last_watered"], "2026-03-01T10:00:00Z");
         assert_eq!(json["next_due"], "2026-03-08T10:00:00Z");
         assert_eq!(json["watering_interval_days"], 7);
+        assert!(json.get("plant_url").is_none());
     }
 
     #[test]
-    fn attributes_payload_with_null_fields() {
-        let (_, payload) = attributes_topic_and_payload("flowl", 1, None, None, 14);
+    fn attributes_payload_links_each_never_watered_plant_with_custom_prefix() {
+        let origin = Url::parse("http://flowl.lan:4100/").unwrap();
+        for id in [7, 42] {
+            let (topic, payload) =
+                attributes_topic_and_payload("myplants", id, None, None, 14, Some(&origin));
+            assert_eq!(topic, format!("myplants/plant/{id}/attributes"));
 
-        let json: serde_json::Value = serde_json::from_str(&payload).unwrap();
-        assert!(json["last_watered"].is_null());
-        assert!(json["next_due"].is_null());
-        assert_eq!(json["watering_interval_days"], 14);
+            let json: serde_json::Value = serde_json::from_str(&payload).unwrap();
+            assert!(json["last_watered"].is_null());
+            assert!(json["next_due"].is_null());
+            assert_eq!(json["watering_interval_days"], 14);
+            assert_eq!(
+                json["plant_url"],
+                format!("http://flowl.lan:4100/plants/{id}")
+            );
+        }
     }
 
     #[test]
@@ -276,13 +407,19 @@ fn attributes_topic_and_payload(
     last_watered: Option<&str>,
     next_due: Option<&str>,
     interval_days: i64,
+    external_url: Option<&Url>,
 ) -> (String, String) {
     let topic = format!("{prefix}/plant/{plant_id}/attributes");
-    let payload = json!({
+    let mut payload = json!({
         "last_watered": last_watered,
         "next_due": next_due,
         "watering_interval_days": interval_days,
     });
+    if let Some(origin) = external_url {
+        let mut plant_url = origin.clone();
+        plant_url.set_path(&format!("/plants/{plant_id}"));
+        payload["plant_url"] = json!(plant_url.as_str());
+    }
     (topic, payload.to_string())
 }
 
@@ -351,7 +488,7 @@ pub async fn publish_state(
     publish_with_retry(client, &topic, status.as_bytes(), "state").await
 }
 
-/// Publish watering attributes (`next_due`, `last_watered`, interval) to the plant's attributes topic.
+/// Publish watering attributes and the optional link to the plant's attributes topic.
 pub async fn publish_attributes(
     client: Option<&AsyncClient>,
     prefix: &str,
@@ -359,10 +496,17 @@ pub async fn publish_attributes(
     last_watered: Option<&str>,
     next_due: Option<&str>,
     interval_days: i64,
+    external_url: Option<&Url>,
 ) -> bool {
     let Some(client) = client else { return false };
-    let (topic, payload) =
-        attributes_topic_and_payload(prefix, plant_id, last_watered, next_due, interval_days);
+    let (topic, payload) = attributes_topic_and_payload(
+        prefix,
+        plant_id,
+        last_watered,
+        next_due,
+        interval_days,
+        external_url,
+    );
     publish_with_retry(client, &topic, payload.as_bytes(), "attributes").await
 }
 
@@ -482,6 +626,7 @@ pub async fn repair(
     host: &str,
     port: u16,
     prefix: &str,
+    external_url: Option<&Url>,
 ) -> RepairResult {
     // Discover what's on the broker
     let broker_ids = discover_broker_plant_ids(host, port, prefix).await;
@@ -510,7 +655,7 @@ pub async fn repair(
     }
 
     // Republish fresh state for all current plants
-    republish_all(pool, client, prefix).await;
+    republish_all(pool, client, prefix, external_url).await;
     let published = db_ids.len();
 
     info!("MQTT repair complete: cleared {cleared} orphans, published {published} plants");
@@ -519,7 +664,12 @@ pub async fn repair(
 }
 
 /// Republish discovery, state, and attributes for all current plants.
-pub async fn republish_all(pool: &SqlitePool, client: &AsyncClient, prefix: &str) {
+pub async fn republish_all(
+    pool: &SqlitePool,
+    client: &AsyncClient,
+    prefix: &str,
+    external_url: Option<&Url>,
+) {
     let rows = match sqlx::query_as::<_, CheckerRow>(
         "SELECT p.id, p.name, p.watering_interval_days, lw.last_watered \
          FROM plants p LEFT JOIN plant_last_watered lw ON lw.plant_id = p.id",
@@ -547,6 +697,7 @@ pub async fn republish_all(pool: &SqlitePool, client: &AsyncClient, prefix: &str
             row.last_watered.as_deref(),
             next_due.as_deref(),
             row.watering_interval_days,
+            external_url,
         )
         .await;
     }
@@ -591,21 +742,40 @@ async fn next_checker_wake(
 }
 
 /// Spawn a background task that checks all plants hourly and publishes state transitions to MQTT.
-/// On initial connection or reconnection, immediately publishes discovery configs for all plants.
+/// On initial connection or reconnection, immediately republishes all plant topics.
 pub fn spawn_state_checker(
     pool: SqlitePool,
     client: Option<AsyncClient>,
     prefix: String,
     republish_notify: Option<Arc<Notify>>,
+    external_url: Option<Url>,
 ) -> Option<JoinHandle<()>> {
     let client = client?;
     let republish_notify = republish_notify?;
 
     info!("Starting MQTT background state checker");
 
-    Some(tokio::spawn(async move {
+    Some(spawn_checker_with_period(
+        pool,
+        client,
+        prefix,
+        republish_notify,
+        external_url,
+        std::time::Duration::from_hours(1),
+    ))
+}
+
+fn spawn_checker_with_period(
+    pool: SqlitePool,
+    client: AsyncClient,
+    prefix: String,
+    republish_notify: Arc<Notify>,
+    external_url: Option<Url>,
+    period: std::time::Duration,
+) -> JoinHandle<()> {
+    tokio::spawn(async move {
         let mut cache: HashMap<i64, String> = HashMap::new();
-        let mut interval = tokio::time::interval(std::time::Duration::from_hours(1));
+        let mut interval = tokio::time::interval(period);
         interval.tick().await;
 
         loop {
@@ -613,7 +783,7 @@ pub fn spawn_state_checker(
                 == CheckerWake::FullRepublish
             {
                 info!("MQTT (re)connected, triggering full republish");
-                republish_all(&pool, &client, &prefix).await;
+                republish_all(&pool, &client, &prefix, external_url.as_ref()).await;
                 cache.clear();
                 continue;
             }
@@ -643,6 +813,7 @@ pub fn spawn_state_checker(
                                 row.last_watered.as_deref(),
                                 next_due.as_deref(),
                                 row.watering_interval_days,
+                                external_url.as_ref(),
                             )
                             .await;
                             cache_successful_publish(
@@ -663,5 +834,5 @@ pub fn spawn_state_checker(
                 }
             }
         }
-    }))
+    })
 }

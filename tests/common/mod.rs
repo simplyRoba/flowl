@@ -37,6 +37,7 @@ fn make_state(pool: SqlitePool, upload_dir: &std::path::Path) -> AppState {
         mqtt_connected: None,
         mqtt_host: "localhost".to_string(),
         mqtt_port: 1883,
+        mqtt_external_url: None,
         mqtt_disabled: true,
         ai_provider: None,
         ai_base_url: String::new(),
@@ -60,11 +61,15 @@ pub async fn test_app_with_uploads() -> (Router, TempDir) {
     (flowl::server::router(state), tmp)
 }
 
-pub async fn test_app_with_mqtt(mqtt_client: AsyncClient) -> (Router, TempDir) {
+pub async fn test_app_with_mqtt(
+    mqtt_client: AsyncClient,
+    mqtt_external_url: url::Url,
+) -> (Router, TempDir) {
     let pool = test_pool().await;
     let tmp = TempDir::new().expect("Failed to create temp dir");
     let mut state = make_state(pool, tmp.path());
     state.mqtt_client = Some(mqtt_client);
+    state.mqtt_external_url = Some(mqtt_external_url);
     state.mqtt_disabled = false;
     (flowl::server::router(state), tmp)
 }

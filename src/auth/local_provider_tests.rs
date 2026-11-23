@@ -895,6 +895,7 @@ fn test_state(auth: Arc<AuthState>) -> (AppState, tempfile::TempDir) {
         mqtt_connected: None,
         mqtt_host: "localhost".to_string(),
         mqtt_port: 1883,
+        mqtt_external_url: None,
         mqtt_disabled: true,
         ai_provider: None,
         ai_base_url: String::new(),

@@ -149,6 +149,7 @@ async fn publish_plant_watering_mqtt(state: &AppState, plant_id: i64) {
         plant.last_watered.as_deref(),
         plant.next_due.as_deref(),
         plant.watering_interval_days,
+        state.mqtt_external_url.as_ref(),
     )
     .await;
 }

@@ -1,5 +1,7 @@
 use std::env;
 
+use url::Url;
+
 pub use crate::auth::config::{AuthConfigError, OidcConfig as EnabledAuthConfig};
 
 pub trait ConfigSource {
@@ -78,6 +80,43 @@ impl Config {
             ai_rate_limit: parse_or(source, "FLOWL_AI_RATE_LIMIT", 10),
         }
     }
+}
+
+/// Loads `FLOWL_EXTERNAL_URL` for MQTT when OIDC is disabled.
+/// Invalid values are ignored with a warning; call after logging is initialized.
+pub fn load_mqtt_external_url() -> Option<Url> {
+    mqtt_external_url(env::var("FLOWL_EXTERNAL_URL"))
+}
+
+fn mqtt_external_url(value: Result<String, env::VarError>) -> Option<Url> {
+    match value {
+        Ok(value) => {
+            if let Some(url) = parse_http_origin(&value) {
+                return Some(url);
+            }
+        }
+        Err(env::VarError::NotPresent) => return None,
+        Err(env::VarError::NotUnicode(_)) => {}
+    }
+    tracing::warn!("Ignoring invalid FLOWL_EXTERNAL_URL; MQTT plant links are disabled");
+    None
+}
+
+fn parse_http_origin(value: &str) -> Option<Url> {
+    let (scheme, rest) = value.split_once("://")?;
+    let authority = rest.strip_suffix('/').unwrap_or(rest);
+    // Check the raw authority before the URL parser can normalize away a path or credentials.
+    if !(scheme.eq_ignore_ascii_case("http") || scheme.eq_ignore_ascii_case("https"))
+        || authority.is_empty()
+        || authority.contains(['/', '\\', '@', '?', '#'])
+        || authority
+            .chars()
+            .any(|c| c.is_whitespace() || c.is_control())
+    {
+        return None;
+    }
+    let url = Url::parse(value).ok()?;
+    url.has_host().then_some(url)
 }
 
 /// Strict, authentication-specific configuration. Ordinary [`Config`] values remain lenient.
@@ -168,6 +207,66 @@ mod tests {
                 Ok(self.inner.get(key))
             }
         }
+    }
+
+    #[test]
+    fn mqtt_external_url_accepts_http_and_https_origins() {
+        for (value, expected) in [
+            ("http://flowl.lan:4100/", "http://flowl.lan:4100/"),
+            ("https://flowl.example.org", "https://flowl.example.org/"),
+            ("https://flowl.example.org/", "https://flowl.example.org/"),
+        ] {
+            assert_eq!(
+                mqtt_external_url(Ok(value.into())).unwrap().as_str(),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn mqtt_external_url_ignores_absent_and_invalid_values() {
+        assert!(mqtt_external_url(Err(env::VarError::NotPresent)).is_none());
+        assert!(
+            mqtt_external_url(Err(env::VarError::NotUnicode(
+                "private-value-sentinel".into()
+            )))
+            .is_none()
+        );
+        for invalid in [
+            "",
+            "/plants",
+            "//flowl.example.org",
+            "https:flowl.example.org",
+            "ftp://flowl.example.org",
+            "https:///",
+            "https://flowl.example.org:invalid",
+            "https://user:password@flowl.example.org",
+            "https://@flowl.example.org",
+            "https://flowl.example.org/app",
+            "https://flowl.example.org/app/..",
+            "https://flowl.example.org/%2e",
+            "https://flowl.example.org//",
+            "https://flowl.example.org?",
+            "https://flowl.example.org#",
+            "https://flowl.example.org\\app",
+            "https://flowl.example.org\n",
+        ] {
+            assert!(
+                mqtt_external_url(Ok(invalid.into())).is_none(),
+                "{invalid:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn http_external_url_is_allowed_for_mqtt_but_not_oidc() {
+        let value = "http://flowl.lan:4100";
+        assert!(mqtt_external_url(Ok(value.into())).is_some());
+        let auth = enabled_config().with("FLOWL_EXTERNAL_URL", value);
+        assert!(matches!(
+            AuthConfig::load_from(&auth),
+            Err(AuthConfigError::InvalidExternalUrl)
+        ));
     }
 
     const AUTH_FIELDS: [&str; 5] = [

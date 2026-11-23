@@ -151,6 +151,7 @@ async fn export_populated_database_with_photo() {
     let state = flowl::state::AppState {
         pool: pool.clone(),
         image_store: flowl::images::ImageStore::new(dir.path().to_path_buf()),
+        mqtt_external_url: None,
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,
@@ -696,6 +697,7 @@ async fn failed_import_preserves_existing_photos() {
         mqtt_connected: None,
         mqtt_host: "localhost".to_string(),
         mqtt_port: 1883,
+        mqtt_external_url: None,
         mqtt_disabled: true,
         ai_provider: None,
         ai_base_url: String::new(),
@@ -790,6 +792,7 @@ async fn round_trip_export_import_export() {
         mqtt_connected: None,
         mqtt_host: "localhost".to_string(),
         mqtt_port: 1883,
+        mqtt_external_url: None,
         mqtt_disabled: true,
         ai_provider: None,
         ai_base_url: String::new(),
@@ -835,6 +838,7 @@ async fn round_trip_export_import_export() {
     let state2 = flowl::state::AppState {
         pool: pool2,
         image_store: flowl::images::ImageStore::new(tmp2.path().to_path_buf()),
+        mqtt_external_url: None,
         mqtt_client: None,
         mqtt_prefix: "flowl".to_string(),
         mqtt_connected: None,

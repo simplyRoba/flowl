@@ -27,6 +27,7 @@ async fn test_app_ai_enabled() -> (Router, tempfile::TempDir) {
         mqtt_connected: None,
         mqtt_host: "localhost".to_string(),
         mqtt_port: 1883,
+        mqtt_external_url: None,
         mqtt_disabled: true,
         ai_provider: Some(provider),
         ai_base_url: "https://api.openai.com/v1".to_string(),

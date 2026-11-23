@@ -29,6 +29,7 @@ async fn app_with_pool() -> (axum::Router, SqlitePool, tempfile::TempDir) {
         mqtt_connected: None,
         mqtt_host: "localhost".to_string(),
         mqtt_port: 1883,
+        mqtt_external_url: None,
         mqtt_disabled: true,
         ai_provider: None,
         ai_base_url: String::new(),
@@ -259,6 +260,8 @@ async fn next_mqtt_publication(
         .expect("MQTT publication channel closed")
 }
 
+const MQTT_EXTERNAL_URL: &str = "http://flowl.lan:4100";
+
 async fn assert_watering_mqtt_publications(
     publications: &mut mpsc::Receiver<MqttPublication>,
     plant_id: i64,
@@ -283,10 +286,12 @@ async fn assert_watering_mqtt_publications(
         .iter()
         .find(|message| message.topic == expected_attributes_topic)
         .expect("watering attributes publication");
+    let payload: serde_json::Value =
+        serde_json::from_slice(&attributes.payload).expect("attributes JSON");
+    assert_eq!(payload["last_watered"], serde_json::json!(last_watered));
     assert_eq!(
-        serde_json::from_slice::<serde_json::Value>(&attributes.payload).expect("attributes JSON")
-            ["last_watered"],
-        serde_json::json!(last_watered)
+        payload["plant_url"],
+        format!("{MQTT_EXTERNAL_URL}/plants/{plant_id}")
     );
 }
 
@@ -817,12 +822,15 @@ async fn update_watering_mqtt_publications_follow_old_and_new_event_types() {
     let event_loop_task = tokio::spawn(async move { while event_loop.poll().await.is_ok() {} });
     connected.await.expect("MQTT client receives CONNACK");
 
-    let (app, _dir) = common::test_app_with_mqtt(client).await;
+    let (app, _dir) =
+        common::test_app_with_mqtt(client, url::Url::parse(MQTT_EXTERNAL_URL).unwrap()).await;
     let plant_id = create_plant(&app).await;
-    // Plant creation publishes discovery plus its initial state and attributes.
-    for _ in 0..3 {
-        next_mqtt_publication(&mut publications).await;
-    }
+    let discovery = next_mqtt_publication(&mut publications).await;
+    assert_eq!(
+        discovery.topic,
+        format!("homeassistant/sensor/flowl_plant_{plant_id}/config")
+    );
+    assert_watering_mqtt_publications(&mut publications, plant_id, None).await;
     let now = chrono::Utc::now();
     let added_at =
         (now - chrono::Duration::minutes(3)).to_rfc3339_opts(chrono::SecondsFormat::Secs, true);

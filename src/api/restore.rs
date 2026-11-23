@@ -364,6 +364,7 @@ pub async fn import_data(
                 &state.mqtt_host,
                 state.mqtt_port,
                 &state.mqtt_prefix,
+                state.mqtt_external_url.as_ref(),
             )
             .await;
         }
