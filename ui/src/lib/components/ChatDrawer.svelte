@@ -516,9 +516,9 @@
               <X size={12} />
             </button>
           </div>
-          <span class="summary-photo-label"
-            >{$translations.chat.attachChatPhoto}</span
-          >
+          <span class="summary-photo-label">
+            {$translations.chat.attachChatPhoto}
+          </span>
         </div>
       {/if}
       <div class="summary-actions">

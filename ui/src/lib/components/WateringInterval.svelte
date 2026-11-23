@@ -55,8 +55,9 @@
         <span class="preset-icon"><Droplet size={16} /></span>
         <span class="preset-value">
           <span class="preset-long">{$translations.form[preset.labelKey]}</span>
-          <span class="preset-short">{$translations.form[preset.shortKey]}</span
-          >
+          <span class="preset-short">
+            {$translations.form[preset.shortKey]}
+          </span>
         </span>
         <span class="preset-label">{$translations.form[preset.descKey]}</span>
       </button>

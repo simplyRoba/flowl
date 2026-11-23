@@ -22,10 +22,10 @@
 
 <div>
   <div data-testid="draft-name">{draftName}</div>
-  <button type="button" onclick={() => onsave?.(data)}
-    >Save without photo</button
-  >
-  <button type="button" onclick={() => onsave?.(data, file)}
-    >Save with photo</button
-  >
+  <button type="button" onclick={() => onsave?.(data)}>
+    Save without photo
+  </button>
+  <button type="button" onclick={() => onsave?.(data, file)}>
+    Save with photo
+  </button>
 </div>

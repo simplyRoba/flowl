@@ -100,9 +100,9 @@
             createError = "";
           }}
         />
-        <button type="submit" class="chip add-btn"
-          >{$translations.form.add}</button
-        >
+        <button type="submit" class="chip add-btn">
+          {$translations.form.add}
+        </button>
         <button
           type="button"
           class="chip"

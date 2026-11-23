@@ -174,12 +174,14 @@
             <div class="attention-card-body">
               <a
                 href={resolve(`plants/${plant.id}?from=/`)}
-                class="attention-card-name">{plant.name}</a
+                class="attention-card-name"
               >
+                {plant.name}
+              </a>
               {#if plant.location_name}
-                <span class="attention-card-location"
-                  >{plant.location_name}</span
-                >
+                <span class="attention-card-location">
+                  {plant.location_name}
+                </span>
               {/if}
               <StatusBadge
                 status={plant.watering_status}

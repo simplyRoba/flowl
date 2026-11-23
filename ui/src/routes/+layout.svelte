@@ -468,30 +468,32 @@
         <div class="logo">
           <Logo size={32} /><span class="nav-label brand">flowl</span>
         </div>
-        <a href={resolve("/")} class="nav-item" class:active={isActive("/")}
-          ><Leaf size={20} /><span class="nav-label"
-            >{$translations.nav.plants}</span
-          ></a
-        >
+        <a href={resolve("/")} class="nav-item" class:active={isActive("/")}>
+          <Leaf size={20} /><span class="nav-label">
+            {$translations.nav.plants}
+          </span>
+        </a>
         <a
           href={resolve("/care-journal")}
           class="nav-item"
           class:active={isActive("/care-journal")}
-          ><BookOpen size={20} /><span class="nav-label"
-            >{$translations.nav.careJournal}</span
-          ></a
         >
+          <BookOpen size={20} /><span class="nav-label">
+            {$translations.nav.careJournal}
+          </span>
+        </a>
         <a
           href={resolve("/settings")}
           class="nav-item bottom"
           class:active={isActive("/settings")}
-          ><span class="icon-badge"
-            ><Settings size={20} />{#if isOffline}<span
+        >
+          <span class="icon-badge">
+            <Settings size={20} />{#if isOffline}<span
                 class="offline-dot"
                 aria-label="offline"
-              ></span>{/if}</span
-          ><span class="nav-label">{$translations.nav.settings}</span></a
-        >
+              ></span>{/if}
+          </span><span class="nav-label">{$translations.nav.settings}</span>
+        </a>
       </nav>
       <main
         class="content"

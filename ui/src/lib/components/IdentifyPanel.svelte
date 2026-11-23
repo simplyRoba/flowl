@@ -301,11 +301,11 @@
       <Sparkles size={14} />
       {$translations.identify.aiSuggestion}
       {#if suggestionCount > 1}
-        <span class="suggestion-counter"
-          >{$translations.identify.suggestionCount
+        <span class="suggestion-counter">
+          {$translations.identify.suggestionCount
             .replace("{current}", String(currentSuggestion + 1))
-            .replace("{total}", String(suggestionCount))}</span
-        >
+            .replace("{total}", String(suggestionCount))}
+        </span>
       {/if}
     </div>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -315,16 +315,16 @@
       onpointerup={suggestionCount > 1 ? handleSwipeEnd : undefined}
     >
       <div class="suggestion-name">
-        <span class="suggestion-scientific"
-          >{activeSuggestion.scientific_name}</span
-        >
+        <span class="suggestion-scientific">
+          {activeSuggestion.scientific_name}
+        </span>
         {#if activeSuggestion.confidence != null}
-          <span class="suggestion-confidence"
-            >{$translations.identify.confidence.replace(
+          <span class="suggestion-confidence">
+            {$translations.identify.confidence.replace(
               "{n}",
               String(Math.round(activeSuggestion.confidence * 100)),
-            )}</span
-          >
+            )}
+          </span>
         {/if}
       </div>
       {#if activeSuggestion.common_name}
@@ -342,9 +342,10 @@
           </div>
           <div class="fill-chips">
             {#each willFillChips as chip (`${chip.label}-${chip.value}`)}
-              <span class="fill-chip"
-                ><Check size={11} /> {chip.label} ({chip.value})</span
-              >
+              <span class="fill-chip">
+                <Check size={11} />
+                {chip.label} ({chip.value})
+              </span>
             {/each}
           </div>
         </div>
@@ -386,25 +387,22 @@
       </div>
     {/if}
     <div class="suggestion-actions">
-      <button type="button" class="btn btn-ai" onclick={handleApply}
-        >{$translations.identify.applyToForm}</button
-      >
-      <button type="button" class="btn btn-outline" onclick={handleDismiss}
-        >{$translations.identify.dismiss}</button
-      >
+      <button type="button" class="btn btn-ai" onclick={handleApply}>
+        {$translations.identify.applyToForm}
+      </button>
+      <button type="button" class="btn btn-outline" onclick={handleDismiss}>
+        {$translations.identify.dismiss}
+      </button>
     </div>
   {:else if identifyState === "applied"}
     <div class="applied-banner">
       <Check size={18} />
-      <span
-        >{$translations.identify.applied.replace(
-          "{n}",
-          String(appliedCount),
-        )}</span
-      >
-      <button type="button" class="applied-undo" onclick={handleUndoClick}
-        >{$translations.identify.undo}</button
-      >
+      <span>
+        {$translations.identify.applied.replace("{n}", String(appliedCount))}
+      </span>
+      <button type="button" class="applied-undo" onclick={handleUndoClick}>
+        {$translations.identify.undo}
+      </button>
     </div>
   {:else if identifyState === "error"}
     <div class="identify-error">
@@ -414,15 +412,18 @@
         <button
           type="button"
           class="btn btn-outline btn-ai btn-sm"
-          onclick={handleIdentify}>{$translations.identify.retry}</button
+          onclick={handleIdentify}
         >
+          {$translations.identify.retry}
+        </button>
       {:else}
         <button
           type="button"
           class="btn btn-outline btn-sm"
           onclick={() => (identifyState = "idle")}
-          >{$translations.identify.dismiss}</button
         >
+          {$translations.identify.dismiss}
+        </button>
       {/if}
     </div>
   {/if}
